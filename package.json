@@ -1,7 +1,7 @@
 {
   "name": "personal-website",
   "version": "1.0.0",
-  "description": "个人博客与小游戏平台 - 简化版",
+  "description": "个人博客与小游戏平台",
   "main": "backend/app.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
@@ -16,20 +16,20 @@
     "lint:backend": "cd backend && npm run lint",
     "lint:fix": "npm run lint:frontend -- --fix && npm run lint:backend -- --fix",
     "format": "prettier --write \"**/*.{js,vue,ts,json,md}\"",
-    "setup": "npm install && npm run setup:frontend && npm run setup:backend",
+    "type-check": "cd frontend && npm run type-check",
+    "setup": "npm run setup:frontend && npm run setup:backend",
     "setup:frontend": "cd frontend && npm install",
     "setup:backend": "cd backend && npm install",
-    "deploy:simple": "npm run build && npm start",
-    "deploy:docker": "docker-compose -f docker-compose.simple.yml up --build -d",
+    "deploy": "npm run build && npm start",
     "deploy:pm2": "npm run build && pm2 start backend/app.js --name website",
-    "stop:docker": "docker-compose -f docker-compose.simple.yml down",
-    "stop:pm2": "pm2 stop website",
-    "logs:docker": "docker-compose -f docker-compose.simple.yml logs -f",
-    "logs:pm2": "pm2 logs website",
     "backup": "scripts/backup.sh",
     "restore": "scripts/restore.sh",
-    "clean": "rm -rf frontend/node_modules frontend/dist backend/node_modules",
-    "health": "curl -f http://localhost:3000/health || echo 'Service not running'",
+    "logs:pm2": "pm2 logs website",
+    "clean": "npm run clean:frontend && npm run clean:backend",
+    "clean:frontend": "cd frontend && rm -rf node_modules dist",
+    "clean:backend": "cd backend && rm -rf node_modules dist",
+    "security:audit": "npm audit && cd frontend && npm audit && cd ../backend && npm audit",
+    "security:fix": "npm audit fix && cd frontend && npm audit fix && cd ../backend && npm audit fix",
     "db:init": "cd backend && npm run db:init",
     "db:seed": "cd backend && npm run db:seed"
   },
@@ -38,7 +38,8 @@
     "games",
     "vue",
     "node",
-    "sqlite",
+    "mongodb",
+    "express",
     "personal-website"
   ],
   "author": "Your Name <your.email@example.com>",
@@ -47,6 +48,10 @@
     "type": "git",
     "url": "https://github.com/yourusername/personal-website.git"
   },
+  "bugs": {
+    "url": "https://github.com/yourusername/personal-website/issues"
+  },
+  "homepage": "https://github.com/yourusername/personal-website#readme",
   "devDependencies": {
     "concurrently": "^7.6.0",
     "prettier": "^2.8.0"
