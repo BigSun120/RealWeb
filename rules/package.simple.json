@@ -1,0 +1,58 @@
+{
+  "name": "personal-website",
+  "version": "1.0.0",
+  "description": "个人博客与小游戏平台 - 简化版",
+  "main": "backend/app.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "test": "npm run test:backend",
+    "test:backend": "cd backend && npm test",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:fix": "npm run lint:frontend -- --fix && npm run lint:backend -- --fix",
+    "format": "prettier --write \"**/*.{js,vue,ts,json,md}\"",
+    "setup": "npm install && npm run setup:frontend && npm run setup:backend",
+    "setup:frontend": "cd frontend && npm install",
+    "setup:backend": "cd backend && npm install",
+    "deploy:simple": "npm run build && npm start",
+    "deploy:docker": "docker-compose -f docker-compose.simple.yml up --build -d",
+    "deploy:pm2": "npm run build && pm2 start backend/app.js --name website",
+    "stop:docker": "docker-compose -f docker-compose.simple.yml down",
+    "stop:pm2": "pm2 stop website",
+    "logs:docker": "docker-compose -f docker-compose.simple.yml logs -f",
+    "logs:pm2": "pm2 logs website",
+    "backup": "scripts/backup.sh",
+    "restore": "scripts/restore.sh",
+    "clean": "rm -rf frontend/node_modules frontend/dist backend/node_modules",
+    "health": "curl -f http://localhost:3000/health || echo 'Service not running'",
+    "db:init": "cd backend && npm run db:init",
+    "db:seed": "cd backend && npm run db:seed"
+  },
+  "keywords": [
+    "blog",
+    "games",
+    "vue",
+    "node",
+    "sqlite",
+    "personal-website"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/personal-website.git"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "prettier": "^2.8.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}

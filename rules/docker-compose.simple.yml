@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # 个人网站应用（前后端一体）
+  website:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data              # 数据持久化
+      - ./uploads:/app/uploads        # 文件上传目录
+      - ./logs:/app/logs              # 日志目录
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_PATH=/app/data/database.sqlite
+      - JWT_SECRET=your_jwt_secret_key_here
+      - UPLOAD_PATH=/app/uploads
+    restart: unless-stopped
+    networks:
+      - website-network
+
+  # Nginx反向代理（可选，用于SSL和静态文件服务）
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/simple.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./uploads:/var/www/uploads:ro
+    depends_on:
+      - website
+    restart: unless-stopped
+    networks:
+      - website-network
+
+networks:
+  website-network:
+    driver: bridge
+
+# 如果只想要最简单的部署，可以注释掉nginx服务，直接使用website服务

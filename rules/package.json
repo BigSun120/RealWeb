@@ -1,0 +1,131 @@
+{
+  "name": "personal-website",
+  "version": "1.0.0",
+  "description": "个人博客与小游戏平台",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "start": "cd backend && npm start",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm run test",
+    "test:backend": "cd backend && npm test",
+    "test:e2e": "cd e2e && npm run test",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:fix": "npm run lint:frontend -- --fix && npm run lint:backend -- --fix",
+    "format": "prettier --write \"**/*.{js,vue,ts,json,md}\"",
+    "type-check": "cd frontend && npm run type-check",
+    "docker:dev": "docker-compose -f docker-compose.yml up --build",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up --build -d",
+    "docker:down": "docker-compose down",
+    "setup": "npm run setup:frontend && npm run setup:backend",
+    "setup:frontend": "cd frontend && npm install",
+    "setup:backend": "cd backend && npm install",
+    "db:seed": "cd backend && npm run db:seed",
+    "db:migrate": "cd backend && npm run db:migrate",
+    "deploy": "npm run build && npm run deploy:prod",
+    "deploy:test": "npm run build && npm run deploy:staging",
+    "deploy:prod": "echo 'Deploying to production...' && npm run docker:prod",
+    "deploy:staging": "echo 'Deploying to staging...' && docker-compose -f docker-compose.staging.yml up --build -d",
+    "backup": "scripts/backup.sh",
+    "restore": "scripts/restore.sh",
+    "logs": "docker-compose logs -f",
+    "logs:backend": "docker-compose logs -f backend",
+    "logs:frontend": "docker-compose logs -f frontend",
+    "monitor": "docker-compose -f docker-compose.monitoring.yml up -d",
+    "clean": "npm run clean:frontend && npm run clean:backend && docker system prune -f",
+    "clean:frontend": "cd frontend && rm -rf node_modules dist",
+    "clean:backend": "cd backend && rm -rf node_modules dist",
+    "security:audit": "npm audit && cd frontend && npm audit && cd ../backend && npm audit",
+    "security:fix": "npm audit fix && cd frontend && npm audit fix && cd ../backend && npm audit fix",
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "blog",
+    "games",
+    "vue",
+    "node",
+    "mongodb",
+    "personal-website"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/personal-website.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/personal-website/issues"
+  },
+  "homepage": "https://github.com/yourusername/personal-website#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^17.0.0",
+    "@commitlint/config-conventional": "^17.0.0",
+    "concurrently": "^7.6.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^13.0.0",
+    "prettier": "^2.8.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+      "pre-push": "npm run test"
+    }
+  },
+  "lint-staged": {
+    "*.{js,vue,ts}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,scss,less}": [
+      "stylelint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml}": [
+      "prettier --write"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ],
+    "rules": {
+      "type-enum": [
+        2,
+        "always",
+        [
+          "feat",
+          "fix",
+          "docs",
+          "style",
+          "refactor",
+          "perf",
+          "test",
+          "build",
+          "ci",
+          "chore",
+          "revert"
+        ]
+      ],
+      "subject-max-length": [2, "always", 100],
+      "subject-case": [2, "never", ["sentence-case", "start-case", "pascal-case", "upper-case"]]
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}
