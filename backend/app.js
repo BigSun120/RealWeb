@@ -19,6 +19,7 @@ const articleRoutes = require('./src/routes/articles');
 const gameRoutes = require('./src/routes/games');
 const securityRoutes = require('./src/routes/security');
 const adminRoutes = require('./src/routes/admin');
+const settingsRoutes = require('./src/routes/settings');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -62,28 +63,34 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// 限流中间件
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15分钟
-  max: 100, // 限制每个IP 100次请求
-  message: {
-    code: 429,
-    message: '请求过于频繁，请稍后再试'
-  }
-});
-app.use('/api/', limiter);
+// 限流中间件 - 仅在生产环境启用
+if (process.env.NODE_ENV === 'production') {
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15分钟
+    max: 100, // 限制每个IP 100次请求
+    message: {
+      code: 429,
+      message: '请求过于频繁，请稍后再试'
+    }
+  });
+  app.use('/api/', limiter);
 
-// 登录接口特殊限流
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  skipSuccessfulRequests: true,
-  message: {
-    code: 429,
-    message: '登录尝试过于频繁，请稍后再试'
-  }
-});
-app.use('/api/auth/login', loginLimiter);
+  // 登录接口特殊限流
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    skipSuccessfulRequests: true,
+    message: {
+      code: 429,
+      message: '登录尝试过于频繁，请稍后再试'
+    }
+  });
+  app.use('/api/auth/login', loginLimiter);
+
+  logger.info('生产环境：已启用API限流保护');
+} else {
+  logger.info('开发环境：已禁用API限流保护');
+}
 
 // 解析中间件
 app.use(express.json({ limit: '10mb' }));
@@ -117,6 +124,7 @@ app.use('/api/articles', articleRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

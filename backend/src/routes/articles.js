@@ -14,7 +14,10 @@ router.get('/', optionalAuth, async (req, res, next) => {
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    let query = { status: 'published' };
+    let query = {
+      status: 'published',
+      isDeleted: { $ne: true }  // 排除已删除的文章
+    };
     let sort = { isTop: -1, publishedAt: -1 };
 
     // 分类筛选
@@ -63,7 +66,10 @@ router.get('/my', auth, async (req, res, next) => {
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    let query = { authorId: req.user._id };
+    let query = {
+      authorId: req.user._id,
+      isDeleted: { $ne: true }  // 排除已删除的文章
+    };
 
     // 状态筛选
     if (status && ['draft', 'published', 'archived'].includes(status)) {
@@ -100,7 +106,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
     const article = await Article.findById(req.params.id)
       .populate('author', 'username avatar bio');
 
-    if (!article || article.status !== 'published') {
+    if (!article || article.status !== 'published' || article.isDeleted) {
       return res.status(404).json({
         code: 404,
         message: '文章不存在'
@@ -123,13 +129,21 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
 // 创建文章
 router.post('/', auth, async (req, res, next) => {
   try {
+    // 检查用户是否有发博客权限
+    if (!req.user.isAdmin && !req.user.hasPermission('blog:create')) {
+      return res.status(403).json({
+        code: 403,
+        message: '您没有发布博客的权限，请联系管理员'
+      });
+    }
+
     const { title, content, summary, category, tags, coverImage, status = 'draft' } = req.body;
 
     const article = new Article({
       title,
       content,
       excerpt: summary, // 使用summary作为excerpt
-      category,
+      category: category || 'other', // 确保category有值
       tags,
       coverImage,
       status,
@@ -175,7 +189,7 @@ router.put('/:id', auth, async (req, res, next) => {
     if (title !== undefined) article.title = title;
     if (content !== undefined) article.content = content;
     if (summary !== undefined) article.excerpt = summary;
-    if (category !== undefined) article.category = category;
+    if (category !== undefined) article.category = category || 'other'; // 确保category有值
     if (tags !== undefined) article.tags = tags;
     if (coverImage !== undefined) article.coverImage = coverImage;
     if (status !== undefined) article.status = status;
@@ -193,7 +207,7 @@ router.put('/:id', auth, async (req, res, next) => {
   }
 });
 
-// 删除文章
+// 软删除文章
 router.delete('/:id', auth, async (req, res, next) => {
   try {
     const article = await Article.findById(req.params.id);
@@ -205,15 +219,24 @@ router.delete('/:id', auth, async (req, res, next) => {
       });
     }
 
-    // 检查权限
-    if (article.authorId.toString() !== req.user._id.toString()) {
+    // 检查权限：只有作者或管理员可以删除
+    if (article.authorId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
       return res.status(403).json({
         code: 403,
         message: '无权限删除此文章'
       });
     }
 
-    await Article.findByIdAndDelete(req.params.id);
+    // 检查是否已经删除
+    if (article.isDeleted) {
+      return res.status(400).json({
+        code: 400,
+        message: '文章已被删除'
+      });
+    }
+
+    // 执行软删除
+    await article.softDelete(req.user._id);
 
     res.json({
       code: 200,

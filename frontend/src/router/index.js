@@ -55,19 +55,19 @@ const routes = [
     path: '/articles/new',
     name: 'ArticleCreate',
     component: () => import('@/views/ArticleEdit.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresBlogPermission: true }
   },
   {
     path: '/articles/:id/edit',
     name: 'ArticleEdit',
     component: () => import('@/views/ArticleEdit.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresBlogPermission: true }
   },
   {
     path: '/articles',
     name: 'ArticleList',
     component: () => import('@/views/ArticleList.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
+    meta: { requiresAuth: true }
   },
   // 管理员路由组
   {
@@ -102,6 +102,12 @@ const routes = [
         name: 'ActivityLog',
         component: () => import('@/views/admin/ActivityLog.vue'),
         meta: { title: '活动日志', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'articles',
+        name: 'AdminArticleManagement',
+        component: () => import('@/views/admin/ArticleManagement.vue'),
+        meta: { title: '文章管理', requiresAuth: true, requiresAdmin: true }
       }
     ]
   },
@@ -149,6 +155,9 @@ router.beforeEach(async (to, from, next) => {
     next({ name: 'Login', query: { redirect: to.fullPath } });
   } else if (to.meta.requiresAdmin && !userStore.isAdmin) {
     ElMessage.error('需要管理员权限才能访问此页面');
+    next({ name: 'Home' });
+  } else if (to.meta.requiresBlogPermission && !userStore.isAdmin && !userStore.user?.canPublishBlog) {
+    ElMessage.error('您没有发布博客的权限，请联系管理员');
     next({ name: 'Home' });
   } else if (to.meta.guest && userStore.isLoggedIn) {
     next({ name: 'Home' });

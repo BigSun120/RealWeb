@@ -322,6 +322,28 @@
           </template>
         </el-table-column>
 
+        <el-table-column label="角色" width="100">
+          <template #default="{ row }">
+            <el-tag
+              :type="getRoleTagType(row.role)"
+              size="small"
+            >
+              {{ getRoleDisplayName(row.role) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="权限" width="120">
+          <template #default="{ row }">
+            <el-tag
+              :type="row.canPublishBlog ? 'success' : 'info'"
+              size="small"
+            >
+              {{ row.canPublishBlog ? '可发博客' : '基础用户' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
         <el-table-column label="注册时间" width="160">
           <template #default="{ row }">
             {{ formatDate(row.createdAt) }}
@@ -371,7 +393,10 @@
                     :command="`role:${row._id}`"
                     :disabled="row._id === userStore.user?._id"
                   >
-                    {{ row.isAdmin ? '取消管理员' : '设为管理员' }}
+                    设置角色
+                  </el-dropdown-item>
+                  <el-dropdown-item :command="`permissions:${row._id}`">
+                    管理权限
                   </el-dropdown-item>
                   <el-dropdown-item :command="`password:${row._id}`">
                     重置密码
@@ -423,6 +448,89 @@
       v-model="showImportDialog"
       @success="handleDialogSuccess"
     />
+
+    <!-- 角色设置对话框 -->
+    <el-dialog
+      v-model="roleDialogVisible"
+      title="设置用户角色"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="currentEditUser" class="role-dialog-content">
+        <div class="user-info">
+          <el-avatar :src="currentEditUser.avatar" :size="40">
+            {{ currentEditUser.username?.charAt(0) }}
+          </el-avatar>
+          <div class="user-details">
+            <div class="username">{{ currentEditUser.username }}</div>
+            <div class="current-role">
+              当前角色：
+              <el-tag :type="getRoleTagType(currentEditUser.role)" size="small">
+                {{ getRoleDisplayName(currentEditUser.role || 'user') }}
+              </el-tag>
+            </div>
+          </div>
+        </div>
+
+        <el-divider />
+
+        <div class="role-selection">
+          <div class="selection-label">选择新角色：</div>
+          <el-select
+            v-model="selectedRole"
+            placeholder="请选择角色"
+            style="width: 100%"
+            size="large"
+          >
+            <el-option
+              v-for="role in roleOptions"
+              :key="role.value"
+              :label="role.label"
+              :value="role.value"
+              :disabled="currentEditUser._id === userStore.user?._id && role.value !== 'admin'"
+            >
+              <div class="role-option">
+                <div class="role-header">
+                  <el-tag :color="role.color" effect="light" size="small">
+                    {{ role.label }}
+                  </el-tag>
+                </div>
+                <div class="role-description">{{ role.description }}</div>
+              </div>
+            </el-option>
+          </el-select>
+        </div>
+
+        <div v-if="selectedRole" class="role-preview">
+          <div class="preview-title">角色权限预览：</div>
+          <div class="permissions-list">
+            <el-tag
+              v-for="permission in getRolePermissions(selectedRole)"
+              :key="permission"
+              size="small"
+              type="info"
+              style="margin: 2px 4px 2px 0"
+            >
+              {{ getPermissionDisplayName(permission) }}
+            </el-tag>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="cancelRoleChange">取消</el-button>
+          <el-button
+            type="primary"
+            :loading="roleDialogLoading"
+            :disabled="!selectedRole || selectedRole === currentEditUser?.role"
+            @click="confirmRoleChange"
+          >
+            确定
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -444,9 +552,11 @@ import {
   getUsers,
   updateUserStatus,
   updateUserRole,
+  updateUserPermissions,
   resetUserPassword,
   deleteUser,
-  batchUserOperation
+  batchUserOperation,
+  toggleUserBlogPermission
 } from '@/api/admin';
 
 // 导入组件
@@ -516,6 +626,63 @@ export default {
     const formatDate = (dateString) => {
       if (!dateString) return '--';
       return new Date(dateString).toLocaleString('zh-CN');
+    };
+
+    // 获取角色显示名称
+    const getRoleDisplayName = (role) => {
+      const roleNames = {
+        user: '普通用户',
+        blogger: '博主',
+        moderator: '版主',
+        admin: '管理员'
+      };
+      return roleNames[role] || '普通用户';
+    };
+
+    // 获取角色标签类型
+    const getRoleTagType = (role) => {
+      const tagTypes = {
+        user: 'info',
+        blogger: 'success',
+        moderator: 'warning',
+        admin: 'danger'
+      };
+      return tagTypes[role] || 'info';
+    };
+
+    // 获取角色对应的权限列表
+    const getRolePermissions = (role) => {
+      const rolePermissions = {
+        user: ['comment:create', 'profile:edit'],
+        blogger: [
+          'comment:create', 'profile:edit', 'file:upload',
+          'blog:create', 'blog:edit', 'blog:delete', 'blog:publish'
+        ],
+        moderator: [
+          'comment:create', 'comment:edit', 'comment:delete',
+          'profile:edit', 'file:upload',
+          'blog:create', 'blog:edit', 'blog:delete', 'blog:publish'
+        ],
+        admin: ['所有权限']
+      };
+      return rolePermissions[role] || [];
+    };
+
+    // 获取权限显示名称
+    const getPermissionDisplayName = (permission) => {
+      const permissionNames = {
+        'blog:create': '创建博客',
+        'blog:edit': '编辑博客',
+        'blog:delete': '删除博客',
+        'blog:publish': '发布博客',
+        'comment:create': '发表评论',
+        'comment:edit': '编辑评论',
+        'comment:delete': '删除评论',
+        'profile:edit': '编辑个人资料',
+        'file:upload': '上传文件',
+        '所有权限': '所有权限'
+      };
+      return permissionNames[permission] || permission;
     };
 
     // 构建搜索参数
@@ -905,11 +1072,14 @@ export default {
 
     // 用户操作菜单
     const handleUserAction = async (command, user) => {
-      const [action, userId] = command.split(':');
+      const [action] = command.split(':');
 
       switch (action) {
         case 'role':
-          await handleToggleRole(user);
+          await handleSetRole(user);
+          break;
+        case 'permissions':
+          await handleManagePermissions(user);
           break;
         case 'password':
           await handleResetPassword(user);
@@ -920,31 +1090,116 @@ export default {
       }
     };
 
-    // 切换用户角色
-    const handleToggleRole = async (user) => {
-      const newRole = !user.isAdmin;
-      const roleText = newRole ? '管理员' : '普通用户';
+    // 角色设置对话框状态
+    const roleDialogVisible = ref(false);
+    const roleDialogLoading = ref(false);
+    const currentEditUser = ref(null);
+    const selectedRole = ref('');
+
+    // 角色选项
+    const roleOptions = [
+      {
+        value: 'user',
+        label: '普通用户',
+        description: '基础权限：评论、编辑个人资料',
+        color: '#909399'
+      },
+      {
+        value: 'blogger',
+        label: '博主',
+        description: '可以创建、编辑、发布博客',
+        color: '#67C23A'
+      },
+      {
+        value: 'moderator',
+        label: '版主',
+        description: '可以管理评论和博客内容',
+        color: '#E6A23C'
+      },
+      {
+        value: 'admin',
+        label: '管理员',
+        description: '拥有所有权限',
+        color: '#F56C6C'
+      }
+    ];
+
+    // 设置用户角色
+    const handleSetRole = async (user) => {
+      // 防止管理员取消自己的管理员权限
+      if (user._id === userStore.user?._id && user.isAdmin) {
+        ElMessage.warning('不能修改自己的角色');
+        return;
+      }
+
+      currentEditUser.value = user;
+      selectedRole.value = user.role || 'user';
+      roleDialogVisible.value = true;
+    };
+
+    // 确认角色设置
+    const confirmRoleChange = async () => {
+      if (!currentEditUser.value || !selectedRole.value) {
+        return;
+      }
+
+      if (selectedRole.value === currentEditUser.value.role) {
+        ElMessage.info('角色未发生变化');
+        roleDialogVisible.value = false;
+        return;
+      }
 
       try {
-        await ElMessageBox.confirm(
-          `确定要将用户 "${user.username}" 设置为${roleText}吗？`,
-          '角色变更确认',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        );
+        roleDialogLoading.value = true;
 
-        await updateUserRole(user._id, newRole);
-        user.isAdmin = newRole;
-        ElMessage.success(`用户角色更新成功`);
+        await updateUserRole(currentEditUser.value._id, selectedRole.value);
+
+        // 重新加载用户数据以获取最新权限
+        await loadUsers();
+
+        ElMessage.success(`用户角色已更新为 ${getRoleDisplayName(selectedRole.value)}`);
+        roleDialogVisible.value = false;
 
       } catch (error) {
-        if (error.response) {
-          ElMessage.error(error.response.data.message || '角色更新失败');
-        }
-        // 用户取消操作或API错误
+        ElMessage.error(error.response?.data?.message || '设置角色失败');
+      } finally {
+        roleDialogLoading.value = false;
+      }
+    };
+
+    // 取消角色设置
+    const cancelRoleChange = () => {
+      roleDialogVisible.value = false;
+      currentEditUser.value = null;
+      selectedRole.value = '';
+    };
+
+    // 管理用户权限
+    const handleManagePermissions = async (user) => {
+      const allPermissions = [
+        { value: 'blog:create', label: '创建博客', category: '博客' },
+        { value: 'blog:edit', label: '编辑博客', category: '博客' },
+        { value: 'blog:delete', label: '删除博客', category: '博客' },
+        { value: 'blog:publish', label: '发布博客', category: '博客' },
+        { value: 'comment:create', label: '发表评论', category: '评论' },
+        { value: 'comment:edit', label: '编辑评论', category: '评论' },
+        { value: 'comment:delete', label: '删除评论', category: '评论' },
+        { value: 'profile:edit', label: '编辑个人资料', category: '个人' },
+        { value: 'file:upload', label: '上传文件', category: '文件' }
+      ];
+
+      if (user.isAdmin) {
+        ElMessage.info('管理员拥有所有权限，无需单独设置');
+        return;
+      }
+
+      try {
+        // 这里应该打开一个权限管理对话框
+        // 为了简化，我们先用角色设置来代替
+        await handleSetRole(user);
+
+      } catch (error) {
+        ElMessage.error('权限管理失败');
       }
     };
 
@@ -1054,12 +1309,26 @@ export default {
       handleExportCommand,
       handleBatchAction,
       handleUserAction,
-      handleToggleRole,
+      handleSetRole,
+      handleManagePermissions,
       handleResetPassword,
       handleDeleteUser,
       // 对话框处理
       handleDialogSuccess,
-      handleEditSuccess
+      handleEditSuccess,
+      // 角色管理
+      roleDialogVisible,
+      roleDialogLoading,
+      currentEditUser,
+      selectedRole,
+      roleOptions,
+      confirmRoleChange,
+      cancelRoleChange,
+      // 工具函数
+      getRoleDisplayName,
+      getRoleTagType,
+      getRolePermissions,
+      getPermissionDisplayName
     };
   }
 };
@@ -1221,5 +1490,85 @@ export default {
   .pagination-wrapper {
     overflow-x: auto;
   }
+}
+
+/* 角色设置对话框样式 */
+.role-dialog-content {
+  padding: 0;
+}
+
+.role-dialog-content .user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.role-dialog-content .user-details {
+  flex: 1;
+}
+
+.role-dialog-content .username {
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.role-dialog-content .current-role {
+  font-size: 14px;
+  color: #606266;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.role-selection {
+  margin-bottom: 20px;
+}
+
+.selection-label {
+  font-size: 14px;
+  color: #606266;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.role-option {
+  padding: 8px 0;
+}
+
+.role-header {
+  margin-bottom: 4px;
+}
+
+.role-description {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+}
+
+.role-preview {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 16px;
+  border: 1px solid #e4e7ed;
+}
+
+.preview-title {
+  font-size: 14px;
+  color: #606266;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.permissions-list {
+  line-height: 1.8;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 </style>

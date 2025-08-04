@@ -85,10 +85,7 @@ export const updateSeoSettings = (settings) => {
   return api.put('/admin/settings/seo', settings);
 };
 
-// 更新用户角色
-export const updateUserRole = (id, isAdmin) => {
-  return api.put(`/admin/users/${id}/role`, { isAdmin });
-};
+
 
 // 批量操作用户
 export const batchUserOperation = (userIds, action, data = {}) => {
@@ -113,6 +110,22 @@ export const importUsers = (users) => {
 // 获取活动日志
 export const getActivityLog = (params) => {
   return api.get('/admin/activity-log', { params });
+};
+
+// 设置用户角色
+export const updateUserRole = (userId, role) => {
+  return api.put(`/admin/users/${userId}/role`, { role });
+};
+
+// 设置用户权限
+export const updateUserPermissions = (userId, permissions) => {
+  return api.put(`/admin/users/${userId}/permissions`, { permissions });
+};
+
+// 向后兼容的发博客权限设置
+export const toggleUserBlogPermission = (userId, canPublishBlog) => {
+  const role = canPublishBlog ? 'blogger' : 'user';
+  return updateUserRole(userId, role);
 };
 
 export default {

@@ -3,6 +3,7 @@ const { auth } = require('../middleware/auth');
 const User = require('../models/User');
 const Article = require('../models/Article');
 const ActivityLog = require('../models/ActivityLog');
+const Settings = require('../models/Settings');
 const ActivityLogger = require('../middleware/activityLogger');
 const { generateRealtimeActivity, clearTestActivityData } = require('../utils/initActivityData');
 const logger = require('../utils/logger');
@@ -516,63 +517,7 @@ router.put('/users/:id/status', async (req, res, next) => {
   }
 });
 
-// 更新用户角色
-router.put('/users/:id/role', async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { isAdmin } = req.body;
 
-    if (typeof isAdmin !== 'boolean') {
-      return res.status(400).json({
-        code: 400,
-        message: '角色参数无效'
-      });
-    }
-
-    // 防止管理员取消自己的管理员权限
-    if (req.user._id.toString() === id && !isAdmin) {
-      return res.status(400).json({
-        code: 400,
-        message: '不能取消自己的管理员权限'
-      });
-    }
-
-    const user = await User.findByIdAndUpdate(
-      id,
-      { isAdmin },
-      { new: true }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({
-        code: 404,
-        message: '用户不存在'
-      });
-    }
-
-    // 记录管理员操作
-    await ActivityLogger.logAdminAction(
-      req.user._id,
-      'toggle_user_role',
-      `将用户 ${user.username} 设置为${isAdmin ? '管理员' : '普通用户'}`,
-      req,
-      user._id,
-      'User'
-    );
-
-    logger.info(`管理员 ${req.user.username} 将用户 ${user.username} 设置为${isAdmin ? '管理员' : '普通用户'}`);
-
-    res.json({
-      code: 200,
-      message: `用户角色更新成功`,
-      data: user
-    });
-
-  } catch (error) {
-    logger.error('更新用户角色失败:', error);
-    next(error);
-  }
-});
 
 // 重置用户密码
 router.put('/users/:id/password', async (req, res, next) => {
@@ -739,61 +684,7 @@ router.post('/users/batch', async (req, res, next) => {
   }
 });
 
-// 获取网站设置
-router.get('/settings/site', async (req, res, next) => {
-  try {
-    // 这里可以从数据库或配置文件中读取网站设置
-    // 暂时返回默认设置
-    const siteSettings = {
-      title: '个人博客',
-      description: '分享技术与生活',
-      keywords: '博客,技术,生活,分享',
-      logo: '',
-      contactEmail: 'admin@example.com',
-      contactPhone: '',
-      address: ''
-    };
 
-    res.json({
-      code: 200,
-      message: '获取网站设置成功',
-      data: siteSettings
-    });
-
-  } catch (error) {
-    logger.error('获取网站设置失败:', error);
-    next(error);
-  }
-});
-
-// 更新网站设置
-router.put('/settings/site', async (req, res, next) => {
-  try {
-    const settings = req.body;
-
-    // 验证必填字段
-    if (!settings.title || !settings.description) {
-      return res.status(400).json({
-        code: 400,
-        message: '网站标题和描述不能为空'
-      });
-    }
-
-    // 这里应该将设置保存到数据库或配置文件
-    // 暂时只记录日志
-    logger.info(`管理员 ${req.user.username} 更新了网站设置:`, JSON.stringify(settings, null, 2));
-
-    res.json({
-      code: 200,
-      message: '网站设置更新成功',
-      data: settings
-    });
-
-  } catch (error) {
-    logger.error('更新网站设置失败:', error);
-    next(error);
-  }
-});
 
 // 创建用户
 router.post('/users', async (req, res, next) => {
@@ -1214,6 +1105,523 @@ router.delete('/activity-log/test-data', async (req, res, next) => {
 
   } catch (error) {
     logger.error('清理测试数据失败:', error);
+    next(error);
+  }
+});
+
+// 设置用户角色
+router.put('/users/:id/role', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    // 验证参数
+    const validRoles = ['user', 'blogger', 'moderator', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        code: 400,
+        message: '无效的角色类型'
+      });
+    }
+
+    // 查找用户
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        code: 404,
+        message: '用户不存在'
+      });
+    }
+
+    const oldRole = user.role || (user.isAdmin ? 'admin' : 'user');
+
+    // 防止管理员取消自己的管理员权限
+    if (req.user._id.toString() === id && user.isAdmin && role !== 'admin') {
+      return res.status(400).json({
+        code: 400,
+        message: '不能取消自己的管理员权限'
+      });
+    }
+
+    // 设置新角色和权限
+    user.setRole(role);
+
+    // 如果设置为admin角色，同时设置isAdmin为true
+    if (role === 'admin') {
+      user.isAdmin = true;
+    } else if (oldRole === 'admin') {
+      user.isAdmin = false;
+    }
+
+    await user.save();
+
+    // 记录管理员操作
+    await ActivityLogger.logAdminAction(
+      req.user._id,
+      'change_user_role',
+      `将用户 ${user.username} 的角色从 ${oldRole} 更改为 ${role}`,
+      req,
+      user._id,
+      'User'
+    );
+
+    res.json({
+      code: 200,
+      message: `用户角色已更新为 ${role}`,
+      data: {
+        userId: user._id,
+        username: user.username,
+        role: user.role,
+        permissions: user.permissions,
+        canPublishBlog: user.canPublishBlog
+      }
+    });
+
+  } catch (error) {
+    logger.error('设置用户角色失败:', error);
+    next(error);
+  }
+});
+
+// 设置用户权限
+router.put('/users/:id/permissions', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { permissions } = req.body;
+
+    // 验证参数
+    const validPermissions = [
+      'blog:create', 'blog:edit', 'blog:delete', 'blog:publish',
+      'comment:create', 'comment:edit', 'comment:delete',
+      'profile:edit', 'file:upload'
+    ];
+
+    if (!Array.isArray(permissions) ||
+        !permissions.every(p => validPermissions.includes(p))) {
+      return res.status(400).json({
+        code: 400,
+        message: '无效的权限列表'
+      });
+    }
+
+    // 查找用户
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        code: 404,
+        message: '用户不存在'
+      });
+    }
+
+    const oldPermissions = [...user.permissions];
+    user.permissions = permissions;
+    await user.save();
+
+    // 记录管理员操作
+    await ActivityLogger.logAdminAction(
+      req.user._id,
+      'update_user_permissions',
+      `更新了用户 ${user.username} 的权限`,
+      req,
+      user._id,
+      'User'
+    );
+
+    res.json({
+      code: 200,
+      message: '用户权限已更新',
+      data: {
+        userId: user._id,
+        username: user.username,
+        oldPermissions,
+        newPermissions: user.permissions,
+        canPublishBlog: user.canPublishBlog
+      }
+    });
+
+  } catch (error) {
+    logger.error('设置用户权限失败:', error);
+    next(error);
+  }
+});
+
+// 获取已删除的文章列表
+router.get('/articles/deleted', async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    const articles = await Article.findDeleted()
+      .sort({ deletedAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .populate('author', 'username avatar')
+      .populate('deletedBy', 'username');
+
+    const total = await Article.countDocuments({ isDeleted: true });
+
+    res.json({
+      code: 200,
+      message: '获取已删除文章列表成功',
+      data: {
+        articles,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          pages: Math.ceil(total / limitNum)
+        }
+      }
+    });
+
+  } catch (error) {
+    logger.error('获取已删除文章列表失败:', error);
+    next(error);
+  }
+});
+
+// 恢复已删除的文章
+router.put('/articles/:id/restore', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const article = await Article.findById(id);
+    if (!article) {
+      return res.status(404).json({
+        code: 404,
+        message: '文章不存在'
+      });
+    }
+
+    if (!article.isDeleted) {
+      return res.status(400).json({
+        code: 400,
+        message: '文章未被删除'
+      });
+    }
+
+    await article.restore();
+
+    // 记录管理员操作
+    await ActivityLogger.logAdminAction(
+      req.user._id,
+      'restore_article',
+      `恢复了文章 "${article.title}"`,
+      req,
+      article._id,
+      'Article'
+    );
+
+    res.json({
+      code: 200,
+      message: '文章恢复成功',
+      data: article
+    });
+
+  } catch (error) {
+    logger.error('恢复文章失败:', error);
+    next(error);
+  }
+});
+
+// 管理员获取所有文章列表
+router.get('/articles', async (req, res, next) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      authorId,
+      search,
+      startDate,
+      endDate,
+      timeType = 'created'
+    } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    let query = {};
+
+    // 状态筛选
+    if (status === 'deleted') {
+      // 只查看已删除的文章
+      query.isDeleted = true;
+    } else if (status && ['draft', 'published', 'archived'].includes(status)) {
+      // 查看特定状态的未删除文章
+      query.status = status;
+      query.isDeleted = { $ne: true };
+    } else {
+      // 默认排除已删除的文章（查看全部时）
+      query.isDeleted = { $ne: true };
+    }
+
+    // 作者筛选
+    if (authorId) {
+      query.authorId = authorId;
+    }
+
+    // 搜索
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { excerpt: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // 时间筛选
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      // 设置结束时间为当天的23:59:59
+      end.setHours(23, 59, 59, 999);
+
+      const timeField = timeType === 'created' ? 'createdAt' : 'updatedAt';
+      query[timeField] = {
+        $gte: start,
+        $lte: end
+      };
+    }
+
+    // 根据时间筛选类型决定排序字段
+    const sortField = timeType === 'created' ? 'createdAt' : 'updatedAt';
+    const sortOrder = {};
+    sortOrder[sortField] = -1;
+
+    const articles = await Article.find(query)
+      .sort(sortOrder)
+      .skip(skip)
+      .limit(limitNum)
+      .populate('author', 'username avatar');
+
+    const total = await Article.countDocuments(query);
+
+    res.json({
+      code: 200,
+      message: '获取文章列表成功',
+      data: articles,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum)
+      }
+    });
+
+  } catch (error) {
+    logger.error('获取文章列表失败:', error);
+    next(error);
+  }
+});
+
+// 永久删除文章
+router.delete('/articles/:id/permanent', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const article = await Article.findById(id);
+    if (!article) {
+      return res.status(404).json({
+        code: 404,
+        message: '文章不存在'
+      });
+    }
+
+    // 记录管理员操作
+    await ActivityLogger.logAdminAction(
+      req.user._id,
+      'permanent_delete_article',
+      `永久删除了文章 "${article.title}"`,
+      req,
+      article._id,
+      'Article'
+    );
+
+    // 永久删除文章
+    await Article.findByIdAndDelete(id);
+
+    res.json({
+      code: 200,
+      message: '文章永久删除成功'
+    });
+
+  } catch (error) {
+    logger.error('永久删除文章失败:', error);
+    next(error);
+  }
+});
+
+// ==================== 系统设置相关 API ====================
+
+// 设置数据验证函数
+function validateSettingsData(type, data) {
+  switch (type) {
+    case 'site':
+      // 网站设置验证 - 移除必填验证，允许空值
+      if (data.name !== undefined && typeof data.name !== 'string') {
+        return '网站名称必须是字符串';
+      }
+      if (data.description !== undefined && typeof data.description !== 'string') {
+        return '网站描述必须是字符串';
+      }
+      if (data.email !== undefined && data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        return '邮箱格式不正确';
+      }
+      break;
+
+    case 'personal':
+      // 个人信息验证
+      if (data.bio !== undefined && typeof data.bio !== 'string') {
+        return '个人简介必须是字符串';
+      }
+      if (data.email !== undefined && data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        return '邮箱格式不正确';
+      }
+      break;
+
+    case 'blog':
+      // 博客设置验证
+      if (data.pageSize !== undefined && (!Number.isInteger(data.pageSize) || data.pageSize < 1 || data.pageSize > 100)) {
+        return '每页文章数必须是1-100之间的整数';
+      }
+      break;
+  }
+
+  return null; // 验证通过
+}
+
+// 获取所有设置
+router.get('/settings', async (req, res, next) => {
+  try {
+    const settings = await Settings.getAllSettings();
+
+    res.json({
+      code: 200,
+      message: '获取设置成功',
+      data: settings
+    });
+
+  } catch (error) {
+    logger.error('获取设置失败:', error);
+    next(error);
+  }
+});
+
+// 获取特定类型的设置
+router.get('/settings/:type', async (req, res, next) => {
+  try {
+    const { type } = req.params;
+
+    if (!['site', 'personal', 'blog'].includes(type)) {
+      return res.status(400).json({
+        code: 400,
+        message: '无效的设置类型'
+      });
+    }
+
+    const data = await Settings.getSetting(type);
+
+    res.json({
+      code: 200,
+      message: '获取设置成功',
+      data
+    });
+
+  } catch (error) {
+    logger.error('获取设置失败:', error);
+    next(error);
+  }
+});
+
+// 更新设置
+router.put('/settings/:type', async (req, res, next) => {
+  try {
+    const { type } = req.params;
+    const data = req.body;
+
+    if (!['site', 'personal', 'blog'].includes(type)) {
+      return res.status(400).json({
+        code: 400,
+        message: '无效的设置类型'
+      });
+    }
+
+    // 验证设置数据
+    const validationError = validateSettingsData(type, data);
+    if (validationError) {
+      return res.status(400).json({
+        code: 400,
+        message: validationError
+      });
+    }
+
+    // 记录管理员操作
+    await ActivityLogger.logAdminAction(
+      req.user._id,
+      'update_settings',
+      `更新了${type}设置`,
+      req,
+      null,
+      'Settings'
+    );
+
+    const setting = await Settings.updateSetting(type, data, req.user._id);
+
+    res.json({
+      code: 200,
+      message: '设置更新成功',
+      data: setting.data
+    });
+
+  } catch (error) {
+    logger.error('更新设置失败:', error);
+    next(error);
+  }
+});
+
+// 批量更新设置
+router.put('/settings', async (req, res, next) => {
+  try {
+    const updates = req.body;
+    const results = {};
+
+    // 验证所有类型
+    for (const type in updates) {
+      if (!['site', 'personal', 'blog'].includes(type)) {
+        return res.status(400).json({
+          code: 400,
+          message: `无效的设置类型: ${type}`
+        });
+      }
+    }
+
+    // 批量更新
+    for (const type in updates) {
+      const setting = await Settings.updateSetting(type, updates[type], req.user._id);
+      results[type] = setting.data;
+    }
+
+    // 记录管理员操作
+    await ActivityLogger.logAdminAction(
+      req.user._id,
+      'batch_update_settings',
+      `批量更新了系统设置`,
+      req,
+      null,
+      'Settings'
+    );
+
+    res.json({
+      code: 200,
+      message: '设置批量更新成功',
+      data: results
+    });
+
+  } catch (error) {
+    logger.error('批量更新设置失败:', error);
     next(error);
   }
 });

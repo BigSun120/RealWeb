@@ -48,11 +48,22 @@
         />
       </el-form-item>
 
-      <el-form-item label="用户角色" prop="isAdmin">
-        <el-radio-group v-model="formData.isAdmin">
-          <el-radio :label="false">普通用户</el-radio>
-          <el-radio :label="true">管理员</el-radio>
-        </el-radio-group>
+      <el-form-item label="用户角色" prop="role">
+        <el-select v-model="formData.role" placeholder="请选择角色" style="width: 100%">
+          <el-option
+            v-for="role in roleOptions"
+            :key="role.value"
+            :label="role.label"
+            :value="role.value"
+          >
+            <div>
+              <span>{{ role.label }}</span>
+              <div style="font-size: 12px; color: #999; margin-top: 2px;">
+                {{ role.description }}
+              </div>
+            </div>
+          </el-option>
+        </el-select>
       </el-form-item>
 
       <el-form-item label="用户状态" prop="isActive">
@@ -98,13 +109,37 @@ export default {
     const formRef = ref();
     const isEdit = ref(false);
 
+    // 角色选项
+    const roleOptions = [
+      {
+        value: 'user',
+        label: '普通用户',
+        description: '基础权限：评论、编辑个人资料'
+      },
+      {
+        value: 'blogger',
+        label: '博主',
+        description: '可以创建、编辑、发布博客'
+      },
+      {
+        value: 'moderator',
+        label: '版主',
+        description: '可以管理评论和博客内容'
+      },
+      {
+        value: 'admin',
+        label: '管理员',
+        description: '拥有所有权限'
+      }
+    ];
+
     // 表单数据
     const formData = reactive({
       username: '',
       email: '',
       password: '',
       bio: '',
-      isAdmin: false,
+      role: 'user',
       isActive: true
     });
 
@@ -125,6 +160,9 @@ export default {
       ],
       bio: [
         { max: 200, message: '个人简介不能超过200个字符', trigger: 'blur' }
+      ],
+      role: [
+        { required: true, message: '请选择用户角色', trigger: 'change' }
       ]
     };
 
@@ -151,7 +189,7 @@ export default {
           username: props.userData.username || '',
           email: props.userData.email || '',
           bio: props.userData.bio || '',
-          isAdmin: props.userData.isAdmin || false,
+          role: props.userData.role || (props.userData.isAdmin ? 'admin' : 'user'),
           isActive: props.userData.isActive !== false
         });
       } else {
@@ -161,7 +199,7 @@ export default {
           email: '',
           password: '',
           bio: '',
-          isAdmin: false,
+          role: 'user',
           isActive: true
         });
       }
@@ -234,6 +272,7 @@ export default {
       isEdit,
       formData,
       formRules,
+      roleOptions,
       handleSubmit,
       handleClose
     };

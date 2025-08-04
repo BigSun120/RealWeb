@@ -1,11 +1,12 @@
 <template>
-  <header class="app-header">
+  <header class="app-header" data-aos="fade-down" data-aos-duration="1000">
     <div class="container">
       <div class="header-content">
         <!-- Logo -->
         <div class="logo">
           <router-link to="/" class="logo-link">
-            <h1>个人网站</h1>
+            <img v-if="settingsStore.siteLogo" :src="settingsStore.siteLogo" :alt="settingsStore.siteTitle" class="logo-image" />
+            <h1 v-else>{{ settingsStore.siteTitle }}</h1>
           </router-link>
         </div>
 
@@ -21,10 +22,9 @@
           >
             <el-menu-item index="/">首页</el-menu-item>
             <el-menu-item index="/blog">博客</el-menu-item>
-            <el-menu-item index="/games">小游戏</el-menu-item>
             <el-menu-item index="/about">关于</el-menu-item>
             <el-menu-item
-              v-if="userStore.isAdmin"
+              v-if="userStore.isAdmin || userStore.user?.canPublishBlog"
               index="/articles/new"
               class="write-article-menu"
             >
@@ -93,9 +93,10 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
+import { useSettingsStore } from '@/stores/settings';
 import { ElMessage } from 'element-plus';
 import { EditPen } from '@element-plus/icons-vue';
 
@@ -108,7 +109,15 @@ export default {
     const route = useRoute();
     const router = useRouter();
     const userStore = useUserStore();
+    const settingsStore = useSettingsStore();
     const showMobileMenu = ref(false);
+
+    // 组件挂载时加载设置
+    onMounted(() => {
+      if (!settingsStore.isLoaded) {
+        settingsStore.loadSettings();
+      }
+    });
 
     const activeIndex = computed(() => route.path);
 
@@ -155,6 +164,7 @@ export default {
 
     return {
       userStore,
+      settingsStore,
       activeIndex,
       avatarUrl,
       showMobileMenu,
@@ -168,11 +178,14 @@ export default {
 
 <style lang="scss" scoped>
 .app-header {
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   position: sticky;
   top: 0;
   z-index: 1000;
+  transition: all 0.3s ease;
 
   .header-content {
     display: flex;
@@ -185,11 +198,21 @@ export default {
     .logo-link {
       color: #333;
       text-decoration: none;
+      display: flex;
+      align-items: center;
+
+      .logo-image {
+        height: 40px;
+        max-width: 200px;
+        object-fit: contain;
+        margin-right: 8px;
+      }
 
       h1 {
         font-size: 24px;
         font-weight: bold;
         color: #409eff;
+        margin: 0;
       }
     }
   }
@@ -200,6 +223,27 @@ export default {
 
     :deep(.el-menu) {
       border-bottom: none;
+      background: transparent;
+
+      .el-menu-item {
+        border-radius: 8px;
+        margin: 0 4px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+
+        &:hover {
+          background: rgba(64, 158, 255, 0.1);
+          color: #409eff;
+          transform: translateY(-1px);
+        }
+
+        &.is-active {
+          background: linear-gradient(45deg, #409eff, #667eea);
+          color: white !important;
+          box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4);
+          font-weight: 600;
+        }
+      }
     }
   }
 

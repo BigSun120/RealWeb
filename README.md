@@ -276,8 +276,8 @@ npm run format
 
 ## 📞 联系方式
 
-- 邮箱：your.email@example.com
-- GitHub：[@yourusername](https://github.com/yourusername)
+- 邮箱：1461020599@qq.com
+
 
 ## 🙏 致谢
 

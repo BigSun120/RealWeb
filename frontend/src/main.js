@@ -9,7 +9,20 @@ import router from './router';
 
 import './styles/main.scss';
 
+// 引入动画库
+import 'animate.css';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+
 const app = createApp(App);
+
+// 初始化AOS动画库
+AOS.init({
+  duration: 800,
+  easing: 'ease-in-out',
+  once: true,
+  offset: 100
+});
 
 // 注册Element Plus图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {

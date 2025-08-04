@@ -57,6 +57,31 @@ const articleSchema = new mongoose.Schema({
   },
   publishedAt: {
     type: Date
+  },
+
+  // 软删除标记
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+
+  // 删除时间
+  deletedAt: {
+    type: Date,
+    default: null
+  },
+
+  // 删除者ID
+  deletedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+
+  // 删除原因
+  deleteReason: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true,
@@ -88,6 +113,35 @@ articleSchema.index({ title: 'text', content: 'text' }); // 全文搜索索引
 articleSchema.index({ viewCount: -1 });
 articleSchema.index({ likeCount: -1 });
 articleSchema.index({ isTop: -1, publishedAt: -1 });
+articleSchema.index({ isDeleted: 1, deletedAt: -1 });
+
+// 实例方法：软删除
+articleSchema.methods.softDelete = function(deletedBy, reason = null) {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  this.deletedBy = deletedBy;
+  this.deleteReason = reason;
+  return this.save();
+};
+
+// 实例方法：恢复删除
+articleSchema.methods.restore = function() {
+  this.isDeleted = false;
+  this.deletedAt = null;
+  this.deletedBy = null;
+  this.deleteReason = null;
+  return this.save();
+};
+
+// 静态方法：查找未删除的文章
+articleSchema.statics.findNotDeleted = function(filter = {}) {
+  return this.find({ ...filter, isDeleted: { $ne: true } });
+};
+
+// 静态方法：查找已删除的文章
+articleSchema.statics.findDeleted = function(filter = {}) {
+  return this.find({ ...filter, isDeleted: true });
+};
 
 // 中间件：发布时设置发布时间和验证
 articleSchema.pre('save', function(next) {

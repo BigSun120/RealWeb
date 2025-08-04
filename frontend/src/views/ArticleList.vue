@@ -2,7 +2,7 @@
   <div class="article-list">
     <div class="list-header">
       <div class="header-left">
-        <h1>我的文章</h1>
+        <h1>{{ pageTitle }}</h1>
         <div class="filter-tabs">
           <el-button-group>
             <el-button
@@ -130,7 +130,7 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   EditPen, Calendar, Document, Collection
@@ -144,9 +144,18 @@ export default {
   },
   setup() {
     const router = useRouter();
+    const route = useRoute();
     const loading = ref(true);
     const activeTab = ref('all');
     const articles = ref([]);
+
+    // 根据URL参数设置初始标签
+    if (route.query.status) {
+      const status = route.query.status;
+      if (['all', 'published', 'draft'].includes(status)) {
+        activeTab.value = status;
+      }
+    }
 
     const categories = {
       tech: '技术分享',
@@ -155,6 +164,11 @@ export default {
       project: '项目经验',
       other: '其他'
     };
+
+    // 页面标题 - 这个页面始终是"我的文章"
+    const pageTitle = computed(() => {
+      return '我的文章';
+    });
 
     // 统计信息
     const stats = computed(() => {
@@ -240,11 +254,13 @@ export default {
       }
     };
 
-    // 加载文章列表
+    // 加载文章列表 - 这个页面始终只显示当前用户的文章
     const loadArticles = async () => {
       loading.value = true;
       try {
+        // 所有用户（包括管理员）都只查看自己的文章
         const response = await api.get('/articles/my');
+
         const data = response.data.data || [];
         // 转换数据格式
         articles.value = data.map(article => ({
@@ -275,6 +291,7 @@ export default {
       articles,
       stats,
       filteredArticles,
+      pageTitle,
       getCategoryName,
       getContentPreview,
       getWordCount,
@@ -389,6 +406,11 @@ export default {
   gap: 4px;
   font-size: 12px;
   color: #95a5a6;
+}
+
+.author-info {
+  color: #409eff !important;
+  font-weight: 500;
 }
 
 .article-tags {

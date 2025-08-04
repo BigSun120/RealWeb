@@ -7,6 +7,7 @@
       </div>
       <div class="header-right">
         <el-button @click="saveDraft" :loading="saving">保存草稿</el-button>
+        <el-button @click="goToDrafts" icon="Folder">草稿箱</el-button>
         <el-button type="primary" @click="publishArticle" :loading="publishing">
           {{ isEdit ? '更新文章' : '发布文章' }}
         </el-button>
@@ -92,7 +93,8 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { ArrowLeft } from '@element-plus/icons-vue';
+import { ArrowLeft, Folder } from '@element-plus/icons-vue';
+import { useUserStore } from '@/stores/user';
 import MarkdownEditor from '@/components/MarkdownEditor.vue';
 import api from '@/api';
 
@@ -100,11 +102,13 @@ export default {
   name: 'ArticleEdit',
   components: {
     MarkdownEditor,
-    ArrowLeft
+    ArrowLeft,
+    Folder
   },
   setup() {
     const route = useRoute();
     const router = useRouter();
+    const userStore = useUserStore();
     const saving = ref(false);
     const publishing = ref(false);
     const isEdit = ref(false);
@@ -113,7 +117,7 @@ export default {
       title: '',
       summary: '',
       content: '',
-      category: '',
+      category: 'other', // 设置默认分类
       tags: [],
       status: 'draft'
     });
@@ -156,6 +160,11 @@ export default {
     // 检查是否有未保存的更改
     const hasUnsavedChanges = () => {
       return article.value.title || article.value.content || article.value.summary;
+    };
+
+    // 跳转到草稿箱 - 所有用户都跳转到自己的草稿箱
+    const goToDrafts = () => {
+      router.push('/articles?status=draft');
     };
 
     // 保存草稿
@@ -258,6 +267,7 @@ export default {
       publishing,
       isEdit,
       goBack,
+      goToDrafts,
       saveDraft,
       publishArticle
     };

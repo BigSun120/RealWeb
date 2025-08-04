@@ -134,7 +134,19 @@
           </el-breadcrumb>
         </div>
 
-
+        <div class="header-right">
+          <el-tooltip content="返回主站 (Ctrl+H)" placement="bottom">
+            <el-button
+              type="primary"
+              plain
+              @click="goToMainSite"
+              class="back-to-site-btn"
+            >
+              <el-icon><House /></el-icon>
+              <span class="btn-text">返回主站</span>
+            </el-button>
+          </el-tooltip>
+        </div>
       </el-header>
 
       <!-- 页面内容 -->
@@ -146,7 +158,7 @@
 </template>
 
 <script>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -157,7 +169,8 @@ import {
   Document,
   Setting,
   Monitor,
-  ArrowDown
+  ArrowDown,
+  House
 } from '@element-plus/icons-vue';
 
 export default {
@@ -169,7 +182,8 @@ export default {
     Document,
     Setting,
     Monitor,
-    ArrowDown
+    ArrowDown,
+    House
   },
   setup() {
     const route = useRoute();
@@ -246,6 +260,32 @@ export default {
       }
     };
 
+    // 返回主站
+    const goToMainSite = () => {
+      // 获取主站URL（去掉/admin路径）
+      const mainSiteUrl = window.location.origin;
+
+      // 在新标签页打开主站
+      window.open(mainSiteUrl, '_blank');
+    };
+
+    // 添加快捷键支持
+    const handleKeydown = (e) => {
+      if (e.ctrlKey && e.key === 'h') {
+        e.preventDefault();
+        goToMainSite();
+      }
+    };
+
+    // 组件挂载时添加快捷键监听
+    onMounted(() => {
+      document.addEventListener('keydown', handleKeydown);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener('keydown', handleKeydown);
+    });
+
     return {
       isCollapsed,
       sidebarWidth,
@@ -253,7 +293,8 @@ export default {
       breadcrumbs,
       userStore,
       toggleSidebar,
-      handleUserCommand
+      handleUserCommand,
+      goToMainSite
     };
   }
 };
@@ -481,7 +522,26 @@ export default {
   flex: 1;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+}
 
+.back-to-site-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.back-to-site-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(64, 158, 255, 0.2);
+}
+
+.btn-text {
+  font-weight: 500;
+}
 
 .admin-content {
   padding: 24px;

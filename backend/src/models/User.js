@@ -53,7 +53,32 @@ const userSchema = new mongoose.Schema({
   loginCount: {
     type: Number,
     default: 0
-  }
+  },
+
+  // 用户权限数组 - 更灵活的权限系统
+  permissions: [{
+    type: String,
+    enum: [
+      'blog:create',      // 创建博客
+      'blog:edit',        // 编辑博客
+      'blog:delete',      // 删除博客
+      'blog:publish',     // 发布博客
+      'comment:create',   // 发表评论
+      'comment:edit',     // 编辑评论
+      'comment:delete',   // 删除评论
+      'profile:edit',     // 编辑个人资料
+      'file:upload'       // 上传文件
+    ]
+  }],
+
+  // 用户角色
+  role: {
+    type: String,
+    enum: ['user', 'blogger', 'moderator', 'admin'],
+    default: 'user'
+  },
+
+
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -67,6 +92,10 @@ userSchema.virtual('articleCount', {
   foreignField: 'authorId',
   count: true
 });
+
+
+
+
 
 // 索引
 userSchema.index({ email: 1 });
@@ -129,12 +158,69 @@ userSchema.methods.updateLoginInfo = async function() {
   await this.save();
 };
 
+// 实例方法：检查权限
+userSchema.methods.hasPermission = function(permission) {
+  // 管理员拥有所有权限
+  if (this.isAdmin) {
+    return true;
+  }
+
+  // 检查用户是否有特定权限
+  return this.permissions && this.permissions.includes(permission);
+};
+
+// 实例方法：添加权限
+userSchema.methods.addPermission = function(permission) {
+  if (!this.permissions.includes(permission)) {
+    this.permissions.push(permission);
+  }
+  return this;
+};
+
+// 实例方法：移除权限
+userSchema.methods.removePermission = function(permission) {
+  this.permissions = this.permissions.filter(p => p !== permission);
+  return this;
+};
+
+// 实例方法：设置角色并自动分配权限
+userSchema.methods.setRole = function(role) {
+  this.role = role;
+
+  // 根据角色自动分配权限
+  const rolePermissions = {
+    user: ['comment:create', 'profile:edit'],
+    blogger: [
+      'comment:create', 'profile:edit', 'file:upload',
+      'blog:create', 'blog:edit', 'blog:delete', 'blog:publish'
+    ],
+    moderator: [
+      'comment:create', 'comment:edit', 'comment:delete',
+      'profile:edit', 'file:upload',
+      'blog:create', 'blog:edit', 'blog:delete', 'blog:publish'
+    ],
+    admin: [] // 管理员通过isAdmin字段拥有所有权限
+  };
+
+  this.permissions = rolePermissions[role] || [];
+  return this;
+};
+
 // 实例方法：获取公开信息
 userSchema.methods.getPublicProfile = function() {
   const userObject = this.toObject();
   delete userObject.password;
   delete userObject.email;
   return userObject;
+};
+
+// 自定义toJSON方法
+userSchema.methods.toJSON = function() {
+  const user = this.toObject();
+  delete user.password;
+  // 添加向后兼容的canPublishBlog字段
+  user.canPublishBlog = this.isAdmin || this.hasPermission('blog:create');
+  return user;
 };
 
 // 静态方法：根据邮箱或用户名查找用户
