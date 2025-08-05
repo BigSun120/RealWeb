@@ -3,6 +3,7 @@ const path = require('path');
 const { auth } = require('../middleware/auth');
 const { uploadAvatar, handleUploadError, deleteFile } = require('../middleware/upload');
 const SecurityConfig = require('../models/SecurityConfig');
+const User = require('../models/User');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -83,6 +84,38 @@ function containsPersonalInfo(password, user) {
     info.length >= 3 && lowerPassword.includes(info)
   );
 }
+
+// 搜索用户（用于@功能）
+router.get('/search', auth, async (req, res) => {
+  try {
+    const { q = '', limit = 10 } = req.query;
+    const searchTerm = q.trim();
+
+    let query = { isActive: true };
+
+    // 如果有搜索词，则按用户名搜索；否则返回所有活跃用户
+    if (searchTerm) {
+      query.username = { $regex: searchTerm, $options: 'i' };
+    }
+
+    // 搜索用户名匹配的用户
+    const users = await User.find(query)
+      .select('username avatar bio')
+      .limit(parseInt(limit))
+      .sort({ username: 1 });
+
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    console.error('搜索用户失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '搜索用户失败'
+    });
+  }
+});
 
 // 获取用户资料
 router.get('/profile', auth, async (req, res, next) => {

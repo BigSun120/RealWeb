@@ -30,7 +30,7 @@ api.interceptors.response.use(
   },
   (error) => {
     const { response } = error;
-    
+
     if (response) {
       switch (response.status) {
         case 401:
@@ -54,7 +54,7 @@ api.interceptors.response.use(
     } else {
       ElMessage.error('网络错误，请检查网络连接');
     }
-    
+
     return Promise.reject(error);
   }
 );

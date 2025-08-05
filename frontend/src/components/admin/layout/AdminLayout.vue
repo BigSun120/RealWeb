@@ -50,6 +50,12 @@
             <el-menu-item index="/admin/articles" class="sub-menu-item">
               <span class="sub-menu-title">文章管理</span>
             </el-menu-item>
+            <el-menu-item index="/admin/categories" class="sub-menu-item">
+              <span class="sub-menu-title">分类管理</span>
+            </el-menu-item>
+            <el-menu-item index="/admin/tags" class="sub-menu-item">
+              <span class="sub-menu-title">标签管理</span>
+            </el-menu-item>
             <el-menu-item index="/admin/games" class="sub-menu-item">
               <span class="sub-menu-title">游戏管理</span>
             </el-menu-item>

@@ -1,26 +1,31 @@
-# 个人博客与小游戏平台
+# 🌟 个人博客与小游戏平台
 
-一个基于 Vue3 + Node.js + MongoDB 的个人网站项目，包含博客系统和小游戏功能。
+一个现代化的全栈个人网站项目，集成博客系统、小游戏平台和完整的用户管理功能。
+
+## ✨ 项目特色
+
+- 🎨 **现代化UI设计** - 基于Element Plus的精美界面，支持响应式布局
+- 📝 **完整博客系统** - 支持Markdown编辑、语法高亮、文章管理
+- 🎮 **小游戏平台** - 游戏展示和管理功能
+- 👥 **用户权限系统** - 完整的注册登录、权限控制和用户管理
+- 📊 **管理后台** - 功能完善的管理员面板
+- 🛡️ **安全防护** - JWT认证、密码加密、API限流等安全措施
 
 ## 🚀 技术栈
 
 ### 前端
-- **Vue 3** - 渐进式JavaScript框架
-- **Vite** - 现代化构建工具
+- **Vue 3** + **Vite** - 现代化前端开发
 - **Element Plus** - Vue 3 UI组件库
-- **Pinia** - Vue 3状态管理
+- **Pinia** - 状态管理
 - **Vue Router 4** - 路由管理
-- **Axios** - HTTP客户端
-- **SCSS** - CSS预处理器
+- **AOS/Animate.css/GSAP** - 动画效果
 
 ### 后端
-- **Node.js** - JavaScript运行环境
-- **Express.js** - Web应用框架
-- **MongoDB** - NoSQL数据库
-- **Mongoose** - MongoDB对象建模
+- **Node.js** + **Express.js** - 后端服务
+- **MongoDB** + **Mongoose** - 数据库
 - **JWT** - 身份认证
-- **node-cache** - 内存缓存
 - **Winston** - 日志管理
+- **node-cache** - 内存缓存
 
 ## 📁 项目结构
 
@@ -28,12 +33,11 @@
 personal-website/
 ├── frontend/                 # Vue3前端项目
 │   ├── src/
-│   │   ├── components/       # 公共组件
+│   │   ├── components/      # 公共组件
 │   │   ├── views/           # 页面组件
 │   │   ├── stores/          # Pinia状态管理
 │   │   ├── router/          # 路由配置
-│   │   ├── api/             # API请求封装
-│   │   └── styles/          # 样式文件
+│   │   └── api/             # API请求封装
 │   └── package.json
 ├── backend/                  # Node.js后端项目
 │   ├── src/
@@ -41,12 +45,9 @@ personal-website/
 │   │   ├── models/          # 数据模型
 │   │   ├── routes/          # 路由定义
 │   │   ├── middleware/      # 中间件
-│   │   ├── config/          # 配置文件
-│   │   └── utils/           # 工具函数
+│   │   └── config/          # 配置文件
 │   ├── uploads/             # 文件上传目录
-│   ├── logs/                # 日志目录
 │   └── package.json
-├── .augment/                # 配置文件和规范
 ├── .env.example             # 环境变量示例
 ├── deploy.sh                # 部署脚本
 └── README.md
@@ -73,41 +74,19 @@ cp .env.example .env
 # 编辑 .env 文件，配置数据库连接等参数
 ```
 
-3. **一键部署**
+3. **安装依赖并启动**
 ```bash
-chmod +x deploy.sh
-./deploy.sh
-```
+# 一键安装所有依赖
+npm run setup
 
-### 手动安装
-
-1. **安装依赖**
-```bash
-# 安装根目录依赖
-npm install
-
-# 安装前端依赖
-cd frontend && npm install && cd ..
-
-# 安装后端依赖
-cd backend && npm install && cd ..
-```
-
-2. **启动开发环境**
-```bash
-# 同时启动前后端开发服务器
+# 启动开发环境
 npm run dev
-
-# 或分别启动
-npm run dev:frontend  # 前端开发服务器 (http://localhost:3000)
-npm run dev:backend   # 后端API服务器 (http://localhost:8000)
 ```
 
-3. **构建生产版本**
-```bash
-npm run build
-npm start
-```
+### 访问地址
+- 前端应用: http://localhost:3000
+- 后端API: http://localhost:8000
+- 管理后台: http://localhost:3000/admin
 
 ## 🔧 环境配置
 
@@ -115,8 +94,8 @@ npm start
 
 ```bash
 # 应用配置
-NODE_ENV=development          # 运行环境
-PORT=8000                    # 后端端口
+NODE_ENV=development
+PORT=8000
 
 # 数据库配置
 MONGODB_URI=mongodb://localhost:27017/personal_website_dev
@@ -131,71 +110,32 @@ UPLOAD_PATH=./uploads
 FRONTEND_URL=http://localhost:3000
 ```
 
-### MongoDB 配置
+## 📝 主要功能
 
-1. **本地安装MongoDB**
-```bash
-# Ubuntu/Debian
-sudo apt-get install mongodb
+### 博客系统
+- ✅ Markdown编辑器，支持实时预览
+- ✅ 文章管理（创建、编辑、删除）
+- ✅ 文章搜索和分类
+- ✅ 阅读量统计
 
-# macOS
-brew install mongodb-community
+### 用户系统
+- ✅ 用户注册/登录
+- ✅ 个人资料管理
+- ✅ 权限控制
 
-# Windows
-# 下载并安装 MongoDB Community Server
-```
+### 管理后台
+- ✅ 用户管理
+- ✅ 文章管理
+- ✅ 系统设置
+- ✅ 活动日志
 
-2. **或使用MongoDB Atlas云服务**
-- 注册 [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-- 创建集群并获取连接字符串
-- 更新 `.env` 文件中的 `MONGODB_URI`
-
-## 📝 API文档
-
-### 认证接口
-- `POST /api/auth/register` - 用户注册
-- `POST /api/auth/login` - 用户登录
-- `GET /api/auth/me` - 获取当前用户信息
-
-### 用户接口
-- `GET /api/users/profile` - 获取用户资料
-- `PUT /api/users/profile` - 更新用户资料
-
-### 文章接口
-- `GET /api/articles` - 获取文章列表
-- `GET /api/articles/:id` - 获取文章详情
-- `POST /api/articles` - 创建文章
-
-### 游戏接口
-- `GET /api/games` - 获取游戏列表
-- `GET /api/games/:id` - 获取游戏详情
+### 小游戏
+- ✅ 游戏列表展示
+- ✅ 游戏管理
 
 ## 🚀 部署
 
-### 使用PM2部署（推荐）
-
-```bash
-# 安装PM2
-npm install -g pm2
-
-# 构建项目
-npm run build
-
-# 启动服务
-pm2 start backend/app.js --name website
-
-# 设置开机自启
-pm2 startup
-pm2 save
-
-# 管理服务
-pm2 status          # 查看状态
-pm2 logs website    # 查看日志
-pm2 restart website # 重启服务
-pm2 stop website    # 停止服务
-```
-
-### 直接部署
+### 生产环境部署
 
 ```bash
 # 构建项目
@@ -203,86 +143,129 @@ npm run build
 
 # 启动服务
 npm start
+
+# 或使用PM2（推荐）
+npm install -g pm2
+npm run deploy:pm2
 ```
 
 ## 🧪 测试
 
 ```bash
-# 运行后端测试
-npm run test
+# 运行测试
+npm test
 
-# 前端代码检查
+# 代码检查
 npm run lint
 
 # 代码格式化
 npm run format
 ```
 
-## 📊 功能特性
-
-### 博客系统
-- ✅ 文章发布与管理
-- ✅ 分类和标签
-- ✅ 文章搜索
-- ✅ 评论系统（开发中）
-- ✅ 点赞功能（开发中）
-
-### 用户系统
-- ✅ 用户注册/登录
-- ✅ 个人资料管理
-- ✅ JWT身份认证
-- ✅ 权限控制
-
-### 小游戏
-- ✅ 游戏列表展示
-- ⏳ 游戏嵌入播放
-- ⏳ 游戏分数记录
-
-### 系统功能
-- ✅ 响应式设计
-- ✅ 文件上传
-- ✅ 日志记录
-- ✅ 错误处理
-- ✅ API限流
-
-## 🔒 安全特性
-
-- JWT身份认证
-- 密码bcrypt加密
-- API请求限流
-- 输入验证和过滤
-- CORS跨域配置
-- 安全头设置
-
-## 📈 性能优化
-
-- 前端代码分割
-- 图片懒加载
-- API响应缓存
-- 数据库索引优化
-- Gzip压缩
-
-## 🤝 贡献指南
-
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开 Pull Request
-
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+本项目采用 MIT 许可证
 
 ## 📞 联系方式
 
 - 邮箱：1461020599@qq.com
 
+## 🙏 致谢
+
+感谢以下开源项目：
+- Vue.js
+- Node.js
+- MongoDB
+- Element Plus
+
+## � 项目截图
+
+### 🏠 首页展示
+- 现代化的首页设计，展示最新文章和项目亮点
+- 响应式布局，完美适配各种设备
+
+### 📝 博客系统
+- Markdown编辑器，支持实时预览
+- 文章列表页面，支持搜索和筛选
+- 文章详情页面，支持语法高亮
+
+### 👑 管理后台
+- 功能完善的管理员仪表板
+- 用户管理、文章管理、系统设置
+- 数据统计和活动监控
+
+## �️ 项目规范
+
+### 📋 代码规范
+- **ESLint** - JavaScript/Vue代码检查
+- **Prettier** - 代码格式化
+- **Git Hooks** - 提交前自动检查
+- **命名规范** - 统一的文件和变量命名
+
+### 📁 目录规范
+- **组件化开发** - 可复用的Vue组件
+- **模块化设计** - 清晰的代码结构
+- **API分层** - 控制器、服务、模型分离
+
+## 🤝 贡献指南
+
+### 🔧 开发流程
+1. **Fork项目** - 点击右上角Fork按钮
+2. **克隆代码** - `git clone your-fork-url`
+3. **创建分支** - `git checkout -b feature/your-feature`
+4. **开发功能** - 编写代码并测试
+5. **提交代码** - `git commit -m "feat: add your feature"`
+6. **推送分支** - `git push origin feature/your-feature`
+7. **创建PR** - 在GitHub上创建Pull Request
+
+### � 提交规范
+```bash
+feat: 新功能
+fix: 修复bug
+docs: 文档更新
+style: 代码格式调整
+refactor: 代码重构
+test: 测试相关
+chore: 构建过程或辅助工具的变动
+```
+
+### 🐛 问题反馈
+- 使用GitHub Issues报告bug
+- 详细描述问题复现步骤
+- 提供错误日志和环境信息
+
+## �📄 许可证
+
+本项目采用 **MIT许可证** - 查看 [LICENSE](LICENSE) 文件了解详情
+
+## 📞 联系方式
+
+- 📧 **邮箱**: 1461020599@qq.com
+- 🐙 **GitHub**: [项目地址](https://github.com/yourusername/personal-website)
+- 📝 **博客**: [个人博客](https://yourdomain.com)
 
 ## 🙏 致谢
 
-感谢所有开源项目的贡献者，特别是：
-- Vue.js 团队
-- Express.js 团队
-- MongoDB 团队
-- Element Plus 团队
+感谢以下开源项目和社区的支持：
+
+### 🎯 核心技术
+- **Vue.js** - 渐进式JavaScript框架
+- **Node.js** - JavaScript运行环境
+- **MongoDB** - 文档型数据库
+- **Express.js** - Web应用框架
+
+### 🎨 UI与动画
+- **Element Plus** - Vue 3组件库
+- **AOS** - 滚动动画库
+- **GSAP** - 高性能动画库
+- **Animate.css** - CSS动画库
+
+### 🛠️ 开发工具
+- **Vite** - 现代化构建工具
+- **Pinia** - Vue状态管理
+- **Axios** - HTTP客户端
+- **Winston** - 日志管理
+
+---
+
+⭐ 如果这个项目对你有帮助，请给个Star支持一下！

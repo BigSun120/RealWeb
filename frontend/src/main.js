@@ -7,6 +7,10 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 import App from './App.vue';
 import router from './router';
 
+// 全局样式 - 按顺序引入
+import './styles/variables.css';
+import './styles/base.css';
+import './styles/components.css';
 import './styles/main.scss';
 
 // 引入动画库

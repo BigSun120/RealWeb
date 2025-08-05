@@ -1,12 +1,19 @@
 <template>
   <div class="home">
+    <!-- 全页面背景 -->
+    <div class="page-background">
+      <MillipedeBackground
+        :enabled="!prefersReducedMotion"
+        :count="millipedeCount"
+        :opacity="0.15"
+        :interaction="true"
+        :show-controls="isDev"
+      />
+      <div class="page-gradient"></div>
+    </div>
+
     <!-- 英雄区域 - 突破容器限制实现全屏 -->
     <section class="hero fullscreen-hero">
-      <div class="hero-background">
-        <div class="hero-particles"></div>
-        <div class="hero-gradient"></div>
-      </div>
-
       <div class="hero-content">
         <div class="hero-avatar">
           <img v-if="settingsStore.siteLogo" :src="settingsStore.siteLogo" :alt="settingsStore.siteTitle" class="animate__animated animate__bounceIn" />
@@ -38,14 +45,14 @@
         </div>
 
         <div class="hero-actions">
-          <el-button type="primary" size="large" class="primary-btn animate__animated animate__heartBeat" @click="$router.push('/blog')">
+          <button class="btn btn-primary btn-lg animate__animated animate__heartBeat" @click="$router.push('/blog')">
             <i class="btn-icon">📚</i>
             浏览博客
-          </el-button>
-          <el-button size="large" class="secondary-btn" @click="scrollToContact">
+          </button>
+          <button class="btn btn-secondary btn-lg" @click="scrollToContact">
             <i class="btn-icon">💬</i>
             联系我
-          </el-button>
+          </button>
         </div>
 
         <div class="hero-social">
@@ -70,7 +77,7 @@
       <div class="articles-container">
         <div class="articles-header">
           <h2 class="articles-title">最新文章</h2>
-          <router-link to="/blog" class="view-more-btn">
+          <router-link to="/blog" class="btn btn-ghost">
             查看更多 →
           </router-link>
         </div>
@@ -88,11 +95,11 @@
         </div>
 
         <!-- 文章列表 -->
-        <div v-else class="articles-list">
+        <div v-else class="articles-list grid grid-cols-3">
           <article
             v-for="article in latestArticles"
             :key="article._id"
-            class="article-item"
+            class="article-item card"
             @click="$router.push(`/blog/${article._id}`)"
           >
             <!-- 文章封面 -->
@@ -107,18 +114,23 @@
             </div>
 
             <!-- 文章内容 -->
-            <div class="article-info">
+            <div class="card-body">
               <h3 class="article-title">{{ article.title }}</h3>
               <p class="article-summary">{{ article.excerpt || getExcerpt(article.content) }}</p>
+            </div>
 
-              <div class="article-footer">
-                <div class="article-author">
+            <div class="card-footer">
+              <div class="article-author">
+                <div class="avatar avatar-sm">
+                  {{ (article.author?.username || '匿名').charAt(0) }}
+                </div>
+                <div class="author-info">
                   <span class="author-name">{{ article.author?.username || '匿名' }}</span>
                   <span class="publish-date">{{ formatDate(article.createdAt) }}</span>
                 </div>
-                <div class="article-stats">
-                  <span class="view-count">{{ article.viewCount || 0 }} 阅读</span>
-                </div>
+              </div>
+              <div class="article-stats">
+                <span class="badge badge-gray">{{ article.viewCount || 0 }} 阅读</span>
               </div>
             </div>
           </article>
@@ -134,15 +146,51 @@
 import { ref, onMounted } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
 import api from '@/api';
+import MillipedeBackground from '@/components/MillipedeBackground.vue';
 
 export default {
   name: 'Home',
+  components: {
+    MillipedeBackground
+  },
   setup() {
     const settingsStore = useSettingsStore();
     const latestArticles = ref([]);
     const articlesLoading = ref(false);
     const articleCount = ref(0);
     const totalViews = ref(0);
+
+    // 千足虫背景相关
+    const prefersReducedMotion = ref(false);
+    const millipedeCount = ref(3);
+    const isDev = process.env.NODE_ENV === 'development';
+
+    // 检测用户动画偏好
+    const checkMotionPreference = () => {
+      if (window.matchMedia) {
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        prefersReducedMotion.value = mediaQuery.matches;
+
+        mediaQuery.addEventListener('change', (e) => {
+          prefersReducedMotion.value = e.matches;
+        });
+      }
+    };
+
+    // 根据设备性能调整千足虫数量
+    const adjustMillipedeCount = () => {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const area = window.innerWidth * window.innerHeight;
+
+      if (isMobile) {
+        millipedeCount.value = Math.min(2, Math.floor(area / 300000));
+      } else {
+        millipedeCount.value = Math.min(4, Math.floor(area / 200000));
+      }
+
+      // 至少保证有1个
+      millipedeCount.value = Math.max(1, millipedeCount.value);
+    };
 
     const fetchLatestArticles = async () => {
       articlesLoading.value = true;
@@ -186,6 +234,9 @@ export default {
       if (!settingsStore.loaded) {
         settingsStore.loadSettings();
       }
+      // 初始化千足虫背景
+      checkMotionPreference();
+      adjustMillipedeCount();
     });
 
     return {
@@ -196,7 +247,11 @@ export default {
       totalViews,
       getExcerpt,
       formatDate,
-      scrollToContact
+      scrollToContact,
+      // 千足虫背景相关
+      prefersReducedMotion,
+      millipedeCount,
+      isDev
     };
   }
 };
@@ -204,65 +259,54 @@ export default {
 
 <style lang="scss" scoped>
 .home {
+  // 首页移除body的padding-top，实现真正的全屏
+  margin-top: -70px;
+  position: relative;
+  min-height: 100vh;
+
+  // 全页面背景
+  .page-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0; /* 修改为0，确保在页面内容下方但可见 */
+    width: 100vw;
+    height: 100vh;
+
+    .page-gradient {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        linear-gradient(135deg,
+          rgba(15, 23, 42, 0.85) 0%,
+          rgba(30, 41, 59, 0.75) 30%,
+          rgba(51, 65, 85, 0.65) 60%,
+          rgba(71, 85, 105, 0.55) 100%);
+      z-index: 10; /* 确保渐变在背景Canvas之上 */
+    }
+  }
+
   // 全屏Hero区域
   .fullscreen-hero {
     position: relative;
     width: 100vw;
     height: 100vh;
     margin-left: calc(-50vw + 50%);
-    margin-top: -20px;
+    margin-top: 0;
     margin-bottom: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
 
-    .hero-background {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 1;
-
-      .hero-particles {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background:
-          radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.4) 0%, transparent 60%),
-          radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.4) 0%, transparent 60%),
-          radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.4) 0%, transparent 60%),
-          radial-gradient(circle at 60% 70%, rgba(255, 206, 84, 0.3) 0%, transparent 50%),
-          radial-gradient(circle at 90% 90%, rgba(139, 69, 19, 0.2) 0%, transparent 40%);
-        animation: float 8s ease-in-out infinite, pulse 4s ease-in-out infinite alternate;
-      }
-
-      .hero-gradient {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background:
-          linear-gradient(135deg,
-            rgba(102, 126, 234, 0.95) 0%,
-            rgba(118, 75, 162, 0.9) 30%,
-            rgba(64, 158, 255, 0.9) 60%,
-            rgba(159, 122, 234, 0.95) 100%),
-          linear-gradient(45deg,
-            rgba(255, 119, 198, 0.1) 0%,
-            transparent 50%,
-            rgba(120, 219, 255, 0.1) 100%);
-        animation: gradientShift 10s ease-in-out infinite;
-      }
-    }
-
     .hero-content {
       position: relative;
-      z-index: 2;
+      z-index: 20; /* 确保内容在所有背景之上 */
       max-width: 900px;
       margin: 0 auto;
       padding: 0 20px;
@@ -523,8 +567,9 @@ export default {
     width: 100vw;
     margin-left: calc(-50vw + 50%);
     padding: 80px 0;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: transparent; // 移除背景，让银河背景透过
     position: relative;
+    overflow: hidden; // 防止子元素溢出导致滚动条
 
     .articles-container {
       max-width: 1200px;
@@ -541,7 +586,7 @@ export default {
       .articles-title {
         font-size: 36px;
         font-weight: 800;
-        color: #1a202c;
+        color: #6579e1;
         margin: 0;
         position: relative;
 
@@ -619,25 +664,38 @@ export default {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 24px;
+      contain: layout; // 防止子元素影响外部布局
 
       .article-item {
-        background: #ffffff;
+        background: rgba(255, 255, 255, 0.1); // 半透明背景，让银河背景透过
+        backdrop-filter: blur(10px); // 毛玻璃效果
         border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        overflow: hidden; // 确保所有内容都被裁剪在卡片内
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
         cursor: pointer;
-        transition: all 0.3s ease;
-        border: 1px solid #e2e8f0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         display: flex;
         flex-direction: column;
         height: fit-content;
+        will-change: transform;
+        contain: layout style paint; // 严格的CSS containment
+        isolation: isolate; // 创建新的堆叠上下文
 
         &:hover {
-          transform: translateY(-4px);
+          transform: translateY(-4px) translateZ(0);
           box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
 
-          .article-image img {
-            transform: scale(1.03);
+          .article-image {
+            // 确保图片容器在hover时也不会溢出
+            overflow: hidden;
+
+            img {
+              transform: scale(1.03) translateZ(0);
+              // 确保缩放不会影响文档流
+              position: relative;
+              z-index: 1;
+            }
           }
 
           .article-title {
@@ -647,15 +705,20 @@ export default {
 
         .article-image {
           height: 160px;
-          overflow: hidden;
+          overflow: hidden; // 关键：确保缩放的图片不会溢出容器
           background: #f7fafc;
           flex-shrink: 0;
+          position: relative;
+          contain: layout style paint; // CSS containment 优化性能和防止布局影响
 
           img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+            backface-visibility: hidden;
+            transform-origin: center center; // 确保从中心缩放
           }
         }
 
@@ -697,7 +760,7 @@ export default {
           .article-title {
             font-size: 18px;
             font-weight: 700;
-            color: #1a202c;
+            color: #ffffff; // 改为白色，在透明背景上可见
             margin-bottom: 10px;
             line-height: 1.4;
             transition: color 0.3s ease;
@@ -706,10 +769,12 @@ export default {
             -webkit-box-orient: vertical;
             overflow: hidden;
             min-height: 50px;
+            word-wrap: break-word;
+            word-break: break-word;
           }
 
           .article-summary {
-            color: #4a5568;
+            color: rgba(255, 255, 255, 0.8); // 半透明白色
             line-height: 1.5;
             margin-bottom: 16px;
             font-size: 14px;
@@ -763,35 +828,6 @@ export default {
 }
 
 // 动画效果
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg) scale(1);
-  }
-  33% {
-    transform: translateY(-15px) rotate(1deg) scale(1.02);
-  }
-  66% {
-    transform: translateY(8px) rotate(-1deg) scale(0.98);
-  }
-}
-
-@keyframes pulse {
-  0% {
-    opacity: 0.8;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes gradientShift {
-  0%, 100% {
-    filter: hue-rotate(0deg);
-  }
-  50% {
-    filter: hue-rotate(20deg);
-  }
-}
 
 @keyframes fadeInUp {
   from {
@@ -878,6 +914,15 @@ export default {
 
     .articles-grid {
       grid-template-columns: 1fr;
+    }
+
+    .article-item {
+      .article-title {
+        font-size: 16px;
+        line-height: 1.4;
+        min-height: 44px;
+        -webkit-line-clamp: 3;
+      }
     }
   }
 }

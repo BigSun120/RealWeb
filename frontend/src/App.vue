@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div id="app" class="page-container">
     <!-- 管理员页面使用独立布局 -->
     <template v-if="isAdminRoute">
       <router-view />
@@ -8,7 +8,7 @@
     <!-- 普通页面使用默认布局 -->
     <template v-else>
       <AppHeader />
-      <main class="main-content">
+      <main class="main-content content-wrapper">
         <router-view />
       </main>
       <AppFooter />
@@ -52,16 +52,6 @@ export default {
 
 .main-content {
   flex: 1;
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
-  box-sizing: border-box;
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    padding: 10px;
-  }
 }
 </style>

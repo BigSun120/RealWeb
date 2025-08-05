@@ -10,16 +10,22 @@ const logger = require('./src/utils/logger');
 const { initDefaultAdmin } = require('./src/utils/initAdmin');
 const ActivityLogger = require('./src/middleware/activityLogger');
 const { initActivityData } = require('./src/utils/initActivityData');
+const { initAllData } = require('./src/utils/initData');
 const errorHandler = require('./src/middleware/errorHandler');
 
 // 路由导入
 const authRoutes = require('./src/routes/auth');
 const userRoutes = require('./src/routes/users');
 const articleRoutes = require('./src/routes/articles');
+const commentRoutes = require('./src/routes/comments');
+const moderationRoutes = require('./src/routes/moderation');
+const notificationRoutes = require('./src/routes/notifications');
 const gameRoutes = require('./src/routes/games');
 const securityRoutes = require('./src/routes/security');
 const adminRoutes = require('./src/routes/admin');
 const settingsRoutes = require('./src/routes/settings');
+const categoryRoutes = require('./src/routes/categories');
+const tagRoutes = require('./src/routes/tags');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -36,6 +42,9 @@ connectDB().then(async () => {
 
   // 初始化活动日志测试数据
   await initActivityData();
+
+  // 初始化分类和标签数据
+  await initAllData();
 
   // 记录系统启动事件
   await ActivityLogger.logSystemEvent(
@@ -121,10 +130,15 @@ if (process.env.NODE_ENV === 'production') {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/articles', articleRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/moderation', moderationRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/tags', tagRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

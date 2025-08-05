@@ -58,6 +58,12 @@ const routes = [
     meta: { requiresAuth: true, requiresBlogPermission: true }
   },
   {
+    path: '/test-notifications',
+    name: 'TestNotifications',
+    component: () => import('@/views/TestNotifications.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/articles/:id/edit',
     name: 'ArticleEdit',
     component: () => import('@/views/ArticleEdit.vue'),
@@ -108,6 +114,18 @@ const routes = [
         name: 'AdminArticleManagement',
         component: () => import('@/views/admin/ArticleManagement.vue'),
         meta: { title: '文章管理', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'categories',
+        name: 'AdminCategories',
+        component: () => import('@/views/admin/CategoryManagement.vue'),
+        meta: { title: '分类管理', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'tags',
+        name: 'AdminTags',
+        component: () => import('@/views/admin/TagManagement.vue'),
+        meta: { title: '标签管理', requiresAuth: true, requiresAdmin: true }
       }
     ]
   },

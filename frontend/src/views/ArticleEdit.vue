@@ -48,13 +48,16 @@
                 v-model="article.category"
                 placeholder="选择分类"
                 style="width: 200px"
+                :loading="loading"
               >
                 <el-option
                   v-for="category in categories"
                   :key="category.value"
                   :label="category.label"
                   :value="category.value"
-                />
+                >
+                  <span>{{ category.label }}</span>
+                </el-option>
               </el-select>
             </el-form-item>
 
@@ -66,6 +69,8 @@
                 allow-create
                 placeholder="选择或创建标签"
                 style="width: 300px"
+                :loading="loading"
+                @change="handleTagChange"
               >
                 <el-option
                   v-for="tag in availableTags"
@@ -74,6 +79,9 @@
                   :value="tag"
                 />
               </el-select>
+              <div class="form-tip">
+                可以输入新标签名称并按回车创建
+              </div>
             </el-form-item>
           </div>
         </el-form>
@@ -94,7 +102,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft, Folder } from '@element-plus/icons-vue';
-import { useUserStore } from '@/stores/user';
+
 import MarkdownEditor from '@/components/MarkdownEditor.vue';
 import api from '@/api';
 
@@ -108,7 +116,6 @@ export default {
   setup() {
     const route = useRoute();
     const router = useRouter();
-    const userStore = useUserStore();
     const saving = ref(false);
     const publishing = ref(false);
     const isEdit = ref(false);
@@ -117,25 +124,14 @@ export default {
       title: '',
       summary: '',
       content: '',
-      category: 'other', // 设置默认分类
+      category: '', // 初始为空，等待分类数据加载后设置默认值
       tags: [],
       status: 'draft'
     });
 
-    const categories = ref([
-      { label: '技术分享', value: 'tech' },
-      { label: '生活随笔', value: 'life' },
-      { label: '学习笔记', value: 'study' },
-      { label: '项目经验', value: 'project' },
-      { label: '其他', value: 'other' }
-    ]);
-
-    const availableTags = ref([
-      'JavaScript', 'Vue.js', 'React', 'Node.js', 'Python',
-      'Java', 'Go', 'Docker', 'Kubernetes', 'MongoDB',
-      'MySQL', 'Redis', 'Nginx', 'Linux', 'Git',
-      '前端', '后端', '全栈', '算法', '数据结构'
-    ]);
+    const categories = ref([]);
+    const availableTags = ref([]);
+    const loading = ref(false);
 
     // 返回上一页
     const goBack = async () => {
@@ -232,6 +228,68 @@ export default {
       }
     };
 
+    // 处理标签变化，自动创建新标签
+    const handleTagChange = async (newTags) => {
+      // 找出新添加的标签（不在availableTags中的）
+      const newTagsToCreate = newTags.filter(tag => !availableTags.value.includes(tag));
+
+      // 自动创建新标签
+      for (const tagName of newTagsToCreate) {
+        try {
+          await api.post('/tags', {
+            name: tagName,
+            description: `自动创建的标签：${tagName}`,
+            color: '#6B7280',
+            sort: 999,
+            isHot: false
+          });
+
+          // 添加到可用标签列表
+          availableTags.value.push(tagName);
+        } catch (error) {
+          console.error('创建标签失败:', error);
+          // 即使创建失败，也允许使用该标签
+        }
+      }
+    };
+
+    // 获取分类和标签数据
+    const fetchCategoriesAndTags = async () => {
+      loading.value = true;
+      try {
+        // 获取分类
+        const categoriesResponse = await api.get('/categories');
+        if (categoriesResponse.data.code === 200) {
+          categories.value = categoriesResponse.data.data
+            .filter(cat => cat.isActive)
+            .map(cat => ({
+              label: cat.name,
+              value: cat.name
+            }));
+
+          // 如果是新建文章且没有设置分类，设置默认分类
+          if (!isEdit.value && !article.value.category && categories.value.length > 0) {
+            // 优先选择"其他"分类，如果没有则选择第一个
+            const defaultCategory = categories.value.find(cat => cat.value === '其他') || categories.value[0];
+            article.value.category = defaultCategory.value;
+          }
+        }
+
+        // 获取标签
+        const tagsResponse = await api.get('/tags');
+        if (tagsResponse.data.code === 200) {
+          availableTags.value = tagsResponse.data.data
+            .filter(tag => tag.isActive)
+            .map(tag => tag.name);
+        }
+      } catch (error) {
+        console.error('获取分类和标签失败:', error);
+        ElMessage.error('获取分类和标签失败');
+      } finally {
+        loading.value = false;
+      }
+    };
+
     // 加载文章数据（编辑模式）
     const loadArticle = async () => {
       if (route.params.id) {
@@ -255,21 +313,24 @@ export default {
       }
     };
 
-    onMounted(() => {
-      loadArticle();
+    onMounted(async () => {
+      await fetchCategoriesAndTags();
+      await loadArticle();
     });
 
     return {
       article,
       categories,
       availableTags,
+      loading,
       saving,
       publishing,
       isEdit,
       goBack,
       goToDrafts,
       saveDraft,
-      publishArticle
+      publishArticle,
+      handleTagChange
     };
   }
 };
@@ -347,6 +408,12 @@ export default {
 
 .tags-item {
   flex: 1;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
 }
 
 .editor-section {

@@ -26,8 +26,9 @@ const articleSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['tech', 'life', 'study', 'project', 'other'],
-    default: 'other'
+    trim: true,
+    maxlength: [50, '分类名称最多50个字符'],
+    default: '其他'
   },
   tags: [{
     type: String,
@@ -196,8 +197,26 @@ articleSchema.methods.decrementLikeCount = async function() {
 // 实例方法：更新评论数量
 articleSchema.methods.updateCommentCount = async function() {
   const Comment = mongoose.model('Comment');
-  this.commentCount = await Comment.countDocuments({ articleId: this._id });
+  this.commentCount = await Comment.countDocuments({
+    articleId: this._id,
+    status: 'published',
+    isDeleted: false
+  });
   await this.save();
+};
+
+// 实例方法：增加评论数量
+articleSchema.methods.incrementCommentCount = async function() {
+  this.commentCount += 1;
+  await this.save();
+};
+
+// 实例方法：减少评论数量
+articleSchema.methods.decrementCommentCount = async function() {
+  if (this.commentCount > 0) {
+    this.commentCount -= 1;
+    await this.save();
+  }
 };
 
 // 静态方法：获取热门文章

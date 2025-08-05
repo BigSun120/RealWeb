@@ -115,7 +115,7 @@ export default {
 <style lang="scss" scoped>
 .app-footer {
   position: relative;
-  background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
+  // background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
   color: #e2e8f0;
   margin-top: auto;
   overflow: hidden;
@@ -134,10 +134,10 @@ export default {
       left: 0;
       right: 0;
       bottom: 0;
-      background:
-        radial-gradient(circle at 20% 20%, rgba(64, 158, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(102, 126, 234, 0.1) 0%, transparent 50%);
-      animation: footerFloat 8s ease-in-out infinite;
+      // background:
+      //   radial-gradient(circle at 20% 20%, rgba(64, 158, 255, 0.1) 0%, transparent 50%),
+      //   radial-gradient(circle at 80% 80%, rgba(102, 126, 234, 0.1) 0%, transparent 50%);
+      // animation: footerFloat 8s ease-in-out infinite;
     }
 
     .footer-gradient {
@@ -146,10 +146,10 @@ export default {
       left: 0;
       right: 0;
       bottom: 0;
-      background: linear-gradient(180deg,
-        rgba(64, 158, 255, 0.05) 0%,
-        transparent 50%,
-        rgba(102, 126, 234, 0.05) 100%);
+      // background: linear-gradient(180deg,
+      //   rgba(64, 158, 255, 0.05) 0%,
+      //   transparent 50%,
+      //   rgba(102, 126, 234, 0.05) 0%);
     }
   }
 
@@ -161,7 +161,7 @@ export default {
     display: flex;
     justify-content: space-between;
     padding: 60px 20px 40px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    // border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
     .footer-info {
       flex: 1;

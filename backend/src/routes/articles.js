@@ -6,10 +6,56 @@ const logger = require('../utils/logger');
 
 const router = express.Router();
 
+// 提取文章内容中的第一张图片
+const extractFirstImage = (content) => {
+  if (!content) return null;
+
+  // 匹配Markdown图片语法 ![alt](url) 和 HTML img标签
+  const markdownImageRegex = /!\[.*?\]\((.*?)\)/;
+  const htmlImageRegex = /<img[^>]+src\s*=\s*['"](.*?)['"][^>]*>/i;
+
+  let match = content.match(markdownImageRegex);
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  match = content.match(htmlImageRegex);
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  return null;
+};
+
+// 处理文章数据，添加自动封面
+const processArticleData = (article) => {
+  const articleObj = article.toObject ? article.toObject() : article;
+
+  // 如果没有设置封面图，尝试从内容中提取
+  if (!articleObj.coverImage && articleObj.content) {
+    articleObj.coverImage = extractFirstImage(articleObj.content);
+  }
+
+  return articleObj;
+};
+
 // 获取文章列表
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, category, search } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      category,
+      search,
+      tag,
+      author,
+      sortBy = 'publishedAt',
+      sortOrder = 'desc',
+      dateFrom,
+      dateTo,
+      hasImage
+    } = req.query;
+
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
@@ -18,25 +64,68 @@ router.get('/', optionalAuth, async (req, res, next) => {
       status: 'published',
       isDeleted: { $ne: true }  // 排除已删除的文章
     };
-    let sort = { isTop: -1, publishedAt: -1 };
+
+    // 构建排序对象
+    let sort = { isTop: -1 }; // 置顶文章优先
 
     // 分类筛选
-    if (category) {
+    if (category && category !== '全部') {
       query.category = category;
+    }
+
+    // 标签筛选
+    if (tag && tag !== '全部') {
+      query.tags = { $in: [tag] };
+    }
+
+    // 作者筛选
+    if (author) {
+      query['author.username'] = new RegExp(author, 'i');
+    }
+
+    // 日期范围筛选
+    if (dateFrom || dateTo) {
+      query.publishedAt = {};
+      if (dateFrom) {
+        query.publishedAt.$gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        query.publishedAt.$lte = new Date(dateTo);
+      }
     }
 
     // 搜索
     if (search) {
-      query.$text = { $search: search };
-      sort = { score: { $meta: 'textScore' } };
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } },
+        { excerpt: { $regex: search, $options: 'i' } },
+        { tags: { $in: [new RegExp(search, 'i')] } }
+      ];
+    }
+
+    // 排序
+    if (sortBy === 'publishedAt') {
+      sort.publishedAt = sortOrder === 'asc' ? 1 : -1;
+    } else if (sortBy === 'viewCount') {
+      sort.viewCount = sortOrder === 'asc' ? 1 : -1;
+    } else if (sortBy === 'title') {
+      sort.title = sortOrder === 'asc' ? 1 : -1;
     }
 
     const articles = await Article.find(query)
       .sort(sort)
       .skip(skip)
       .limit(limitNum)
-      .populate('author', 'username avatar')
-      .select('-content');
+      .populate('author', 'username avatar');
+
+    // 处理文章数据，提取封面图片
+    const processedArticles = articles.map(article => {
+      const processed = processArticleData(article);
+      // 移除content字段以减少数据传输
+      delete processed.content;
+      return processed;
+    });
 
     const total = await Article.countDocuments(query);
 
@@ -44,7 +133,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
       code: 200,
       message: '获取文章列表成功',
       data: {
-        articles,
+        articles: processedArticles,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -55,6 +144,59 @@ router.get('/', optionalAuth, async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+});
+
+// 获取筛选选项数据
+router.get('/filter-options', async (req, res) => {
+  try {
+    const Category = require('../models/Category');
+    const Tag = require('../models/Tag');
+
+    // 获取活跃的分类
+    const categories = await Category.find({ isActive: true })
+      .sort({ sort: 1, name: 1 })
+      .select('name articleCount');
+
+    // 获取活跃的标签
+    const tags = await Tag.find({ isActive: true })
+      .sort({ isHot: -1, articleCount: -1, sort: 1, name: 1 })
+      .select('name articleCount isHot');
+
+    // 获取作者列表
+    const articles = await Article.find({
+      status: 'published',
+      isDeleted: { $ne: true }
+    }).populate('author', 'username').select('author');
+
+    const authors = [...new Set(articles.map(a => a.author?.username).filter(Boolean))];
+
+    // 统计数据
+    const stats = {
+      totalArticles: articles.length,
+      categoriesCount: categories.length,
+      tagsCount: tags.length,
+      authorsCount: authors.length
+    };
+
+    res.json({
+      code: 200,
+      message: '获取筛选选项成功',
+      data: {
+        categories: ['全部', ...categories.map(c => c.name)],
+        tags: ['全部', ...tags.map(t => t.name)],
+        authors,
+        stats,
+        categoryDetails: categories,
+        tagDetails: tags
+      }
+    });
+  } catch (error) {
+    logger.error('获取筛选选项失败:', error);
+    res.status(500).json({
+      code: 500,
+      message: '获取筛选选项失败'
+    });
   }
 });
 
@@ -143,7 +285,7 @@ router.post('/', auth, async (req, res, next) => {
       title,
       content,
       excerpt: summary, // 使用summary作为excerpt
-      category: category || 'other', // 确保category有值
+      category: category || '其他', // 确保category有值
       tags,
       coverImage,
       status,

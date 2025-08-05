@@ -1,131 +1,161 @@
-// 全局样式重置
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+// 项目特定样式 - 使用CSS变量系统
+// 基础样式已在base.css中定义，这里只添加项目特定的样式
 
 html, body {
   height: 100%;
-  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
-               'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #333;
-  background-color: #f5f5f5;
   overflow-x: hidden; // 防止水平滚动
 }
 
-// 链接样式
-a {
-  color: #409eff;
-  text-decoration: none;
-  transition: color 0.3s;
+// 项目特定的组件样式扩展
+// 基础组件样式已在components.css中定义
 
-  &:hover {
-    color: #66b1ff;
-  }
+// 项目特定的工具类
+.page-container {
+  min-height: 100vh;
+  background-color: var(--color-bg-secondary);
 }
 
-// 按钮样式
-.btn {
-  display: inline-block;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
-
-  &.btn-primary {
-    background-color: #409eff;
-    color: white;
-
-    &:hover {
-      background-color: #66b1ff;
-    }
-  }
-
-  &.btn-secondary {
-    background-color: #909399;
-    color: white;
-
-    &:hover {
-      background-color: #a6a9ad;
-    }
-  }
-}
-
-// 卡片样式
-.card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  margin-bottom: 20px;
-  transition: box-shadow 0.3s;
-
-  &:hover {
-    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.15);
-  }
-}
-
-// 容器样式
-.container {
+.content-wrapper {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: var(--spacing-6) var(--spacing-4);
 }
 
-// 响应式网格
-.row {
+// 博客特定样式
+.blog-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--spacing-8);
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-6);
+  }
+}
+
+.main-content {
+  min-width: 0; // 防止内容溢出
+}
+
+.sidebar {
+  @media (max-width: 1024px) {
+    order: -1; // 在移动端将侧边栏移到顶部
+  }
+}
+
+// 首页特定样式
+.articles-header {
   display: flex;
-  flex-wrap: wrap;
-  margin: 0 -10px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-8);
 }
 
-.col {
-  padding: 0 10px;
-
-  &.col-1 { flex: 0 0 8.333333%; }
-  &.col-2 { flex: 0 0 16.666667%; }
-  &.col-3 { flex: 0 0 25%; }
-  &.col-4 { flex: 0 0 33.333333%; }
-  &.col-6 { flex: 0 0 50%; }
-  &.col-8 { flex: 0 0 66.666667%; }
-  &.col-9 { flex: 0 0 75%; }
-  &.col-12 { flex: 0 0 100%; }
+.articles-title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
 }
 
-// 工具类
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
+.article-title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-3);
+  line-height: var(--line-height-tight);
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
 
-.mt-10 { margin-top: 10px; }
-.mt-20 { margin-top: 20px; }
-.mb-10 { margin-bottom: 10px; }
-.mb-20 { margin-bottom: 20px; }
+.article-summary {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-4);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
-.p-10 { padding: 10px; }
-.p-20 { padding: 20px; }
+.article-author {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.author-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.author-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.publish-date {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.article-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-base);
+  }
+}
+
+.article-image-placeholder {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary-lighter));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+
+  .placeholder-content {
+    text-align: center;
+    color: var(--color-primary-dark);
+
+    .placeholder-icon {
+      font-size: var(--font-size-4xl);
+      display: block;
+      margin-bottom: var(--spacing-2);
+    }
+
+    .placeholder-text {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+    }
+  }
+}
+
+.article-item:hover .article-image img {
+  transform: scale(1.05);
+}
 
 // 响应式设计
 @media (max-width: 768px) {
-  .container {
-    padding: 0 10px;
+  .content-wrapper {
+    padding: var(--spacing-4) var(--spacing-3);
   }
 
-  .col {
-    &.col-sm-12 { flex: 0 0 100%; }
-    &.col-sm-6 { flex: 0 0 50%; }
-  }
-
-  .row {
-    margin: 0 -5px;
-  }
-
-  .col {
-    padding: 0 5px;
+  .articles-header {
+    flex-direction: column;
+    gap: var(--spacing-4);
+    align-items: flex-start;
   }
 }
 
@@ -152,4 +182,45 @@ a {
 
 .slide-in-up {
   animation: slideInUp 0.3s ease-out;
+}
+
+/* 文本溢出处理工具类 */
+.text-break {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.text-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.text-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.text-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.title-break {
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
