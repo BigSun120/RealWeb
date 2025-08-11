@@ -9,9 +9,7 @@
             <div class="card-body">
               <!-- 返回按钮 -->
               <div class="breadcrumb">
-                <button class="btn btn-ghost btn-sm" @click="$router.go(-1)">
-                  ← 返回
-                </button>
+                <button class="btn btn-ghost btn-sm" @click="$router.go(-1)">← 返回</button>
               </div>
 
               <!-- 文章标题 -->
@@ -20,13 +18,17 @@
               <!-- 文章元信息 -->
               <div class="article-meta">
                 <div class="author-section">
-                  <div class="avatar avatar-base">
-                    {{ (article.author?.username || '匿名').charAt(0) }}
+                  <div class="author-avatar" :style="getAuthorAvatarStyle(article.author?.avatar)">
+                    <span class="avatar-fallback">
+                      {{ (article.author?.username || '匿名').charAt(0) }}
+                    </span>
                   </div>
                   <div class="author-details">
                     <span class="author-name">{{ article.author?.username || '匿名' }}</span>
                     <div class="meta-info">
-                      <span class="publish-date">{{ formatDate(article.publishedAt || article.createdAt) }}</span>
+                      <span class="publish-date">{{
+                        formatDate(article.publishedAt || article.createdAt)
+                      }}</span>
                       <span class="divider"></span>
                       <span class="read-time">约 {{ readTime }} 分钟阅读</span>
                     </div>
@@ -47,11 +49,7 @@
 
               <!-- 文章标签 -->
               <div v-if="article.tags && article.tags.length > 0" class="article-tags">
-                <span
-                  v-for="tag in article.tags"
-                  :key="tag"
-                  class="badge badge-primary"
-                >
+                <span v-for="tag in article.tags" :key="tag" class="badge badge-primary">
                   {{ tag }}
                 </span>
               </div>
@@ -154,7 +152,7 @@ export default {
 
     // 配置marked
     marked.setOptions({
-      highlight: function(code, lang) {
+      highlight: function (code, lang) {
         if (lang && hljs.getLanguage(lang)) {
           try {
             return hljs.highlight(code, { language: lang }).value;
@@ -210,7 +208,7 @@ export default {
     });
 
     // 滚动到指定标题
-    const scrollToHeading = (id) => {
+    const scrollToHeading = id => {
       const element = document.getElementById(id);
       if (element) {
         // 计算导航栏高度，确保标题不被遮挡
@@ -237,12 +235,19 @@ export default {
       }
     };
 
-    const formatDate = (date) => {
+    const getAuthorAvatarStyle = avatarUrl => {
+      if (avatarUrl) {
+        return { backgroundImage: `url(${avatarUrl})` };
+      }
+      return {};
+    };
+
+    const formatDate = date => {
       return new Date(date).toLocaleDateString('zh-CN');
     };
 
     // 滚动到指定评论
-    const scrollToComment = async (commentId) => {
+    const scrollToComment = async commentId => {
       await nextTick();
 
       // 重试机制，最多尝试5次
@@ -281,42 +286,60 @@ export default {
     };
 
     // 监听路由查询参数变化
-    watch(() => route.query, (newQuery, oldQuery) => {
-      const newHighlight = newQuery.highlight;
-      const newPage = parseInt(newQuery.page) || 1;
-      const timestamp = newQuery.t;
+    watch(
+      () => route.query,
+      (newQuery, oldQuery) => {
+        const newHighlight = newQuery.highlight;
+        const newPage = parseInt(newQuery.page) || 1;
+        const timestamp = newQuery.t;
 
-      // 重置状态
-      if (timestamp && timestamp !== oldQuery?.t) {
-        pendingHighlight.value = null;
-        highlightCommentId.value = null;
-        targetPage.value = 1;
-      }
-
-      // 处理目标页面
-      if (newPage !== (oldQuery?.page ? parseInt(oldQuery.page) : 1)) {
-        targetPage.value = newPage;
-      }
-
-      // 处理高亮评论
-      if (newHighlight && newHighlight !== oldQuery?.highlight) {
-        highlightCommentId.value = newHighlight;
-        pendingHighlight.value = newHighlight;
-
-        setTimeout(() => {
-          scrollToComment(newHighlight);
-        }, 100);
-
-        // 3秒后清除高亮
-        setTimeout(() => {
+        // 重置状态
+        if (timestamp && timestamp !== oldQuery?.t) {
+          pendingHighlight.value = null;
           highlightCommentId.value = null;
-        }, 3000);
-      }
-    }, { immediate: true, deep: true });
+          targetPage.value = 1;
+        }
+
+        // 处理目标页面
+        if (newPage !== (oldQuery?.page ? parseInt(oldQuery.page) : 1)) {
+          targetPage.value = newPage;
+        }
+
+        // 处理高亮评论
+        if (newHighlight && newHighlight !== oldQuery?.highlight) {
+          highlightCommentId.value = newHighlight;
+          pendingHighlight.value = newHighlight;
+
+          setTimeout(() => {
+            scrollToComment(newHighlight);
+          }, 100);
+
+          // 3秒后清除高亮
+          setTimeout(() => {
+            highlightCommentId.value = null;
+          }, 3000);
+        }
+      },
+      { immediate: true, deep: true }
+    );
 
     onMounted(() => {
       fetchArticle();
+      nextTick(() => {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      });
     });
+
+    // 当路由文章ID变化时，重新获取并滚动到顶部
+    watch(
+      () => route.params.id,
+      async () => {
+        await fetchArticle();
+        nextTick(() => {
+          window.scrollTo({ top: 0, behavior: 'auto' });
+        });
+      }
+    );
 
     return {
       article,
@@ -329,7 +352,8 @@ export default {
       renderedContent,
       formatDate,
       handleCommentsLoaded,
-      scrollToHeading
+      scrollToHeading,
+      getAuthorAvatarStyle
     };
   }
 };
@@ -401,6 +425,25 @@ export default {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
+}
+
+.author-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.avatar-fallback {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
 }
 
 .author-details {
@@ -501,10 +544,18 @@ export default {
   color: var(--color-text-primary);
 }
 
-.toc-level-1 { padding-left: var(--spacing-3); }
-.toc-level-2 { padding-left: var(--spacing-5); }
-.toc-level-3 { padding-left: var(--spacing-6); }
-.toc-level-4 { padding-left: var(--spacing-8); }
+.toc-level-1 {
+  padding-left: var(--spacing-3);
+}
+.toc-level-2 {
+  padding-left: var(--spacing-5);
+}
+.toc-level-3 {
+  padding-left: var(--spacing-6);
+}
+.toc-level-4 {
+  padding-left: var(--spacing-8);
+}
 
 /* 相关文章 */
 .related-articles {
@@ -601,10 +652,18 @@ export default {
   line-height: var(--line-height-tight);
 }
 
-.markdown-content h1 { font-size: var(--font-size-3xl); }
-.markdown-content h2 { font-size: var(--font-size-2xl); }
-.markdown-content h3 { font-size: var(--font-size-xl); }
-.markdown-content h4 { font-size: var(--font-size-lg); }
+.markdown-content h1 {
+  font-size: var(--font-size-3xl);
+}
+.markdown-content h2 {
+  font-size: var(--font-size-2xl);
+}
+.markdown-content h3 {
+  font-size: var(--font-size-xl);
+}
+.markdown-content h4 {
+  font-size: var(--font-size-lg);
+}
 
 .markdown-content p {
   margin-bottom: var(--spacing-4);
@@ -695,7 +754,6 @@ export default {
 .markdown-content a:hover {
   border-bottom-color: var(--color-primary);
 }
-
 
 .content {
   line-height: 1.8;

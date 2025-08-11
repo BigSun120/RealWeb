@@ -11,6 +11,8 @@ const { initDefaultAdmin } = require('./src/utils/initAdmin');
 const ActivityLogger = require('./src/middleware/activityLogger');
 const { initActivityData } = require('./src/utils/initActivityData');
 const { initAllData } = require('./src/utils/initData');
+const { initToolsData } = require('./src/utils/initTools');
+const analyticsScheduler = require('./src/utils/analyticsScheduler');
 const errorHandler = require('./src/middleware/errorHandler');
 
 // 路由导入
@@ -26,6 +28,10 @@ const adminRoutes = require('./src/routes/admin');
 const settingsRoutes = require('./src/routes/settings');
 const categoryRoutes = require('./src/routes/categories');
 const tagRoutes = require('./src/routes/tags');
+const toolsRoutes = require('./src/routes/tools');
+const adminToolsRoutes = require('./src/routes/admin/tools');
+const adminCategoriesRoutes = require('./src/routes/admin/categories');
+const adminConfigsRoutes = require('./src/routes/admin/configs');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -45,6 +51,12 @@ connectDB().then(async () => {
 
   // 初始化分类和标签数据
   await initAllData();
+
+  // 初始化工具箱数据
+  await initToolsData();
+
+  // 启动工具箱分析调度器
+  analyticsScheduler.start();
 
   // 记录系统启动事件
   await ActivityLogger.logSystemEvent(
@@ -139,6 +151,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/tags', tagRoutes);
+app.use('/api/tools', toolsRoutes);
+app.use('/api/admin/tools', adminToolsRoutes);
+app.use('/api/admin/categories', adminCategoriesRoutes);
+app.use('/api/admin/configs', adminConfigsRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

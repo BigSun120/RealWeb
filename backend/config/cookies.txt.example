@@ -1,0 +1,25 @@
+# Netscape HTTP Cookie File
+# This is a generated file! Do not edit.
+# 
+# 这是一个示例cookies文件
+# 请将您从浏览器提取的真实cookies替换此文件内容
+#
+# 格式说明：
+# domain	flag	path	secure	expiration	name	value
+#
+# 重要的YouTube cookies包括：
+# - VISITOR_INFO1_LIVE
+# - YSC
+# - PREF
+# - CONSENT
+# - SOCS
+# - __Secure-3PSID
+# - __Secure-3PAPISID
+# - __Secure-3PSIDCC
+# - HSID, SSID, APISID, SAPISID, SID, SIDCC
+# - LOGIN_INFO
+
+# 示例格式（请替换为真实值）：
+# .youtube.com	TRUE	/	TRUE	1735689600	VISITOR_INFO1_LIVE	your_visitor_info_here
+# .youtube.com	TRUE	/	TRUE	1735689600	YSC	your_ysc_here
+# .google.com	TRUE	/	TRUE	1735689600	CONSENT	your_consent_here

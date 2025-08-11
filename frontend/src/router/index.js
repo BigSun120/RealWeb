@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '@/stores/user';
+import toolsRoutes from './tools.js';
 
 const routes = [
   {
@@ -33,6 +34,8 @@ const routes = [
     component: () => import('@/views/games/GameDetail.vue'),
     meta: { title: '游戏详情' }
   },
+  // 工具箱路由
+  toolsRoutes,
   {
     path: '/auth/login',
     name: 'Login',
@@ -126,6 +129,69 @@ const routes = [
         name: 'AdminTags',
         component: () => import('@/views/admin/TagManagement.vue'),
         meta: { title: '标签管理', requiresAuth: true, requiresAdmin: true }
+      },
+      // 工具箱管理路由
+      {
+        path: 'tools',
+        name: 'AdminToolsRoot',
+        meta: {
+          title: '工具箱管理',
+          requiresAuth: true,
+          requiresAdmin: true,
+          icon: 'Tools'
+        },
+        children: [
+          {
+            path: '',
+            name: 'AdminToolsOverview',
+            component: () => import('@/views/admin/tools/ToolsOverview.vue'),
+            meta: {
+              title: '工具概览',
+              requiresAuth: true,
+              requiresAdmin: true
+            }
+          },
+          {
+            path: 'management',
+            name: 'AdminToolsManagement',
+            component: () => import('@/views/admin/tools/ToolsManagement.vue'),
+            meta: {
+              title: '工具管理',
+              requiresAuth: true,
+              requiresAdmin: true
+            }
+          },
+          {
+            path: 'categories',
+            name: 'AdminCategoriesManagement',
+            component: () => import('@/views/admin/tools/CategoriesManagement.vue'),
+            meta: {
+              title: '分类管理',
+              requiresAuth: true,
+              requiresAdmin: true
+            }
+          },
+          {
+            path: 'analytics',
+            name: 'AdminToolsAnalytics',
+            component: () => import('@/views/admin/tools/ToolsAnalytics.vue'),
+            meta: {
+              title: '使用分析',
+              requiresAuth: true,
+              requiresAdmin: true
+            }
+          },
+          {
+            path: 'settings',
+            name: 'AdminToolsSettings',
+            component: () => import('@/views/admin/tools/ToolsSettings.vue'),
+            meta: {
+              title: '工具箱设置',
+              requiresAuth: true,
+              requiresAdmin: true
+            }
+          }
+        ]
       }
     ]
   },
@@ -174,7 +240,11 @@ router.beforeEach(async (to, from, next) => {
   } else if (to.meta.requiresAdmin && !userStore.isAdmin) {
     ElMessage.error('需要管理员权限才能访问此页面');
     next({ name: 'Home' });
-  } else if (to.meta.requiresBlogPermission && !userStore.isAdmin && !userStore.user?.canPublishBlog) {
+  } else if (
+    to.meta.requiresBlogPermission &&
+    !userStore.isAdmin &&
+    !userStore.user?.canPublishBlog
+  ) {
     ElMessage.error('您没有发布博客的权限，请联系管理员');
     next({ name: 'Home' });
   } else if (to.meta.guest && userStore.isLoggedIn) {

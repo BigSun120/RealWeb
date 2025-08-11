@@ -61,6 +61,28 @@
             </el-menu-item>
           </el-sub-menu>
 
+          <el-sub-menu index="tools" class="sub-menu">
+            <template #title>
+              <el-icon class="menu-icon"><Tools /></el-icon>
+              <span class="menu-title">工具箱管理</span>
+            </template>
+            <el-menu-item index="/admin/tools" class="sub-menu-item">
+              <span class="sub-menu-title">工具概览</span>
+            </el-menu-item>
+            <el-menu-item index="/admin/tools/management" class="sub-menu-item">
+              <span class="sub-menu-title">工具管理</span>
+            </el-menu-item>
+            <el-menu-item index="/admin/tools/categories" class="sub-menu-item">
+              <span class="sub-menu-title">分类管理</span>
+            </el-menu-item>
+            <el-menu-item index="/admin/tools/analytics" class="sub-menu-item">
+              <span class="sub-menu-title">使用分析</span>
+            </el-menu-item>
+            <el-menu-item index="/admin/tools/settings" class="sub-menu-item">
+              <span class="sub-menu-title">工具箱设置</span>
+            </el-menu-item>
+          </el-sub-menu>
+
           <el-menu-item index="/admin/activity" class="menu-item">
             <el-icon class="menu-icon"><Document /></el-icon>
             <template #title>
@@ -164,7 +186,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -176,7 +198,8 @@ import {
   Setting,
   Monitor,
   ArrowDown,
-  House
+  House,
+  Tools
 } from '@element-plus/icons-vue';
 
 export default {
@@ -189,7 +212,8 @@ export default {
     Setting,
     Monitor,
     ArrowDown,
-    House
+    House,
+    Tools
   },
   setup() {
     const route = useRoute();
@@ -308,18 +332,31 @@ export default {
 
 <style scoped>
 .admin-layout {
-  height: 100vh;
-  display: flex;
+  height: 100vh !important;
+  display: flex !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 1000 !important;
+  background: #f0f2f5 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .admin-sidebar {
-  background: #001529;
-  border-right: none;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  transition: width 0.3s;
+  background: #001529 !important;
+  border-right: none !important;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  transition: width 0.3s !important;
+  width: 250px !important;
+  position: relative !important;
+  overflow-y: auto !important;
 }
 
 .sidebar-header {
@@ -513,15 +550,23 @@ export default {
 .admin-main {
   flex: 1;
   background: #f0f2f5;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-header {
-  background: #fff;
-  border-bottom: 1px solid #e8eaec;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
+  background: #fff !important;
+  border-bottom: 1px solid #e8eaec !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 24px !important;
+  height: 64px !important;
+  margin: 0 !important;
+  position: relative !important;
+  z-index: 100 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 .header-left {
@@ -552,6 +597,8 @@ export default {
 .admin-content {
   padding: 24px;
   overflow-y: auto;
+  flex: 1;
+  height: 0; /* 强制flex子元素计算高度 */
 }
 
 @media (max-width: 768px) {

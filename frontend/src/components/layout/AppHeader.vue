@@ -1,12 +1,22 @@
 <template>
-  <header class="app-header" :class="{ 'header-hidden': isAtTop && isHomePage, 'header-visible': !isAtTop || !isHomePage }" data-aos="fade-down" data-aos-duration="1000">
+  <header
+    class="app-header"
+    :class="{ 'header-hidden': isAtTop && isHomePage, 'header-visible': !isAtTop || !isHomePage }"
+    data-aos="fade-down"
+    data-aos-duration="1000"
+  >
     <div class="container">
       <div class="header-content">
         <!-- Logo -->
         <div class="logo">
           <router-link to="/" class="logo-link">
-            <img v-if="settingsStore.siteLogo" :src="settingsStore.siteLogo" :alt="settingsStore.siteTitle" class="logo-image" />
-            <h1 v-else>{{ settingsStore.siteTitle }}</h1>
+            <img
+              v-if="settingsStore.siteLogo"
+              :src="settingsStore.siteLogo"
+              :alt="settingsStore.siteTitle || '网站'"
+              class="logo-image"
+            />
+            <h1 v-else>{{ settingsStore.siteTitle || '网站' }}</h1>
           </router-link>
         </div>
 
@@ -22,6 +32,10 @@
           >
             <el-menu-item index="/">首页</el-menu-item>
             <el-menu-item index="/blog">博客</el-menu-item>
+            <el-menu-item index="/tools">
+              <el-icon><Tools /></el-icon>
+              工具箱
+            </el-menu-item>
             <el-menu-item index="/about">关于</el-menu-item>
             <el-menu-item
               v-if="userStore.isAdmin || userStore.user?.canPublishBlog"
@@ -43,17 +57,23 @@
             <el-dropdown @command="handleCommand">
               <span class="user-info">
                 <el-avatar :src="avatarUrl" :size="32">
-                  {{ userStore.user?.username?.charAt(0) }}
+                  {{ userStore.user?.username?.charAt(0) || 'U' }}
                 </el-avatar>
-                <span class="username">{{ userStore.user?.username }}</span>
+                <span class="username">{{ userStore.user?.username || '用户' }}</span>
                 <el-icon><ArrowDown /></el-icon>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="profile">个人中心</el-dropdown-item>
-                  <el-dropdown-item v-if="userStore.isAdmin" command="admin">管理后台</el-dropdown-item>
-                  <el-dropdown-item v-if="userStore.isAdmin" command="articles">我的文章</el-dropdown-item>
-                  <el-dropdown-item v-if="userStore.isAdmin" command="settings">网站设置</el-dropdown-item>
+                  <el-dropdown-item v-if="userStore.isAdmin" command="admin"
+                    >管理后台</el-dropdown-item
+                  >
+                  <el-dropdown-item v-if="userStore.isAdmin" command="articles"
+                    >我的文章</el-dropdown-item
+                  >
+                  <el-dropdown-item v-if="userStore.isAdmin" command="settings"
+                    >网站设置</el-dropdown-item
+                  >
                   <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -77,6 +97,7 @@
       <div class="mobile-menu-items">
         <router-link to="/" @click="showMobileMenu = false">首页</router-link>
         <router-link to="/blog" @click="showMobileMenu = false">博客</router-link>
+        <router-link to="/tools" @click="showMobileMenu = false">工具箱</router-link>
         <router-link to="/games" @click="showMobileMenu = false">小游戏</router-link>
         <router-link to="/about" @click="showMobileMenu = false">关于</router-link>
         <div class="mobile-user-actions">
@@ -101,13 +122,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useSettingsStore } from '@/stores/settings';
 import { ElMessage } from 'element-plus';
-import { EditPen } from '@element-plus/icons-vue';
+import { EditPen, Tools } from '@element-plus/icons-vue';
 import NotificationDropdown from '@/components/NotificationDropdown.vue';
 
 export default {
   name: 'AppHeader',
   components: {
     EditPen,
+    Tools,
     NotificationDropdown
   },
   setup() {
@@ -166,9 +188,13 @@ export default {
       if (document.readyState === 'complete') {
         setTimeout(initialCheck, 100);
       } else {
-        window.addEventListener('load', () => {
-          setTimeout(initialCheck, 100);
-        }, { once: true });
+        window.addEventListener(
+          'load',
+          () => {
+            setTimeout(initialCheck, 100);
+          },
+          { once: true }
+        );
       }
     });
 
@@ -177,40 +203,44 @@ export default {
     });
 
     // 监听路由变化，确保状态正确
-    watch(() => route.path, (newPath) => {
-      // 路由变化时立即检查
-      const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
-      const shouldHide = newPath === '/' && scrollY < 50;
-      isAtTop.value = shouldHide;
+    watch(
+      () => route.path,
+      newPath => {
+        // 路由变化时立即检查
+        const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+        const shouldHide = newPath === '/' && scrollY < 50;
+        isAtTop.value = shouldHide;
 
-      // 开发环境下的调试信息
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Route change header check:', {
-          newPath,
-          scrollY,
-          isAtTop: isAtTop.value,
-          shouldHide
-        });
-      }
-    }, { immediate: true });
+        // 开发环境下的调试信息
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Route change header check:', {
+            newPath,
+            scrollY,
+            isAtTop: isAtTop.value,
+            shouldHide
+          });
+        }
+      },
+      { immediate: true }
+    );
 
-    const activeIndex = computed(() => route.path);
+    const activeIndex = computed(() => route.path || '/');
 
     const avatarUrl = computed(() => {
       const avatar = userStore.user?.avatar;
       if (avatar && avatar.startsWith('/uploads/')) {
         return `http://localhost:8000${avatar}`;
       }
-      return avatar;
+      return avatar || '';
     });
 
-    const handleSelect = (key) => {
+    const handleSelect = key => {
       if (key && key !== route.path) {
         router.push(key);
       }
     };
 
-    const handleCommand = (command) => {
+    const handleCommand = command => {
       switch (command) {
         case 'profile':
           router.push('/profile');
@@ -290,205 +320,206 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(59, 130, 246, 0.1) 0%,
     rgba(147, 51, 234, 0.1) 50%,
-    rgba(236, 72, 153, 0.1) 100%);
+    rgba(236, 72, 153, 0.1) 100%
+  );
   pointer-events: none;
 }
 
-  .header-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 70px;
-    padding: 0 30px;
-    position: relative;
-    z-index: 1;
-  }
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+  padding: 0 30px;
+  position: relative;
+  z-index: 1;
+}
 
 .app-header .logo {
-    .logo-link {
-      color: white;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      padding: 8px 16px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      transition: all 0.3s ease;
-
-      &:hover {
-        color: #60a5fa;
-        background: rgba(255, 255, 255, 0.15);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-      }
-
-      .logo-image {
-        height: 36px;
-        width: 36px;
-        object-fit: cover;
-        margin-right: 12px;
-        border-radius: 8px;
-      }
-
-      h1 {
-        font-size: 20px;
-        font-weight: 700;
-        margin: 0;
-        background: linear-gradient(135deg, #60a5fa, #a78bfa);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-    }
-  }
-
-.app-header .nav-menu {
-    flex: 1;
-    margin: 0 40px;
-
-    :deep(.el-menu) {
-      border-bottom: none;
-      background: transparent;
-
-      .el-menu-item {
-        border-radius: 8px;
-        margin: 0 4px;
-        transition: all 0.3s ease;
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.9);
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #60a5fa;
-          transform: translateY(-1px);
-        }
-
-        &.is-active {
-          background: linear-gradient(45deg, #60a5fa, #a78bfa);
-          color: white !important;
-          box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4);
-          font-weight: 600;
-        }
-      }
-    }
-  }
-
-.app-header .user-actions {
+  .logo-link {
+    color: white;
+    text-decoration: none;
     display: flex;
     align-items: center;
-    gap: 12px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
 
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      padding: 10px 16px;
-      border-radius: 12px;
+    &:hover {
+      color: #60a5fa;
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .logo-image {
+      height: 36px;
+      width: 36px;
+      object-fit: cover;
+      margin-right: 12px;
+      border-radius: 8px;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  }
+}
+
+.app-header .nav-menu {
+  flex: 1;
+  margin: 0 40px;
+
+  :deep(.el-menu) {
+    border-bottom: none;
+    background: transparent;
+
+    .el-menu-item {
+      border-radius: 8px;
+      margin: 0 4px;
       transition: all 0.3s ease;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
 
       &:hover {
-        background: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.1);
+        color: #60a5fa;
         transform: translateY(-1px);
       }
 
-      .username {
-        font-size: 14px;
-        color: white;
-        font-weight: 500;
-      }
-    }
-
-    .write-btn {
-      background: linear-gradient(45deg, #60a5fa, #a78bfa);
-      border: none;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 25px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
-      backdrop-filter: blur(10px);
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(96, 165, 250, 0.4);
-        background: linear-gradient(45deg, #3b82f6, #8b5cf6);
-      }
-
-      .btn-icon {
-        margin-right: 6px;
+      &.is-active {
+        background: linear-gradient(45deg, #60a5fa, #a78bfa);
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4);
+        font-weight: 600;
       }
     }
   }
+}
 
-.app-header .mobile-menu-btn {
-    display: none;
+.app-header .user-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
-    padding: 10px;
-    border-radius: 8px;
+    padding: 10px 16px;
+    border-radius: 12px;
     transition: all 0.3s ease;
     background: rgba(255, 255, 255, 0.1);
-    color: white;
+    backdrop-filter: blur(10px);
 
     &:hover {
       background: rgba(255, 255, 255, 0.15);
-      transform: scale(1.05);
+      transform: translateY(-1px);
+    }
+
+    .username {
+      font-size: 14px;
+      color: white;
+      font-weight: 500;
     }
   }
 
-.app-header .mobile-menu {
-    display: none;
-    background: rgba(15, 23, 42, 0.98);
-    backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 20px;
+  .write-btn {
+    background: linear-gradient(45deg, #60a5fa, #a78bfa);
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
+    backdrop-filter: blur(10px);
 
-    .mobile-menu-items {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(96, 165, 250, 0.4);
+      background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+    }
+
+    .btn-icon {
+      margin-right: 6px;
+    }
+  }
+}
+
+.app-header .mobile-menu-btn {
+  display: none;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+  }
+}
+
+.app-header .mobile-menu {
+  display: none;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px;
+
+  .mobile-menu-items {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    a {
+      color: rgba(255, 255, 255, 0.9);
+      text-decoration: none;
+      padding: 12px 16px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.05);
+
+      &:hover {
+        color: #60a5fa;
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(4px);
+      }
+    }
+
+    .mobile-user-actions {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
 
       a {
         color: rgba(255, 255, 255, 0.9);
         text-decoration: none;
-        padding: 12px 16px;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        background: rgba(255, 255, 255, 0.05);
+        padding: 8px 0;
+        display: block;
 
         &:hover {
           color: #60a5fa;
-          background: rgba(255, 255, 255, 0.1);
-          transform: translateX(4px);
-        }
-      }
-
-      .mobile-user-actions {
-        margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-
-        a {
-          color: rgba(255, 255, 255, 0.9);
-          text-decoration: none;
-          padding: 8px 0;
-          display: block;
-
-          &:hover {
-            color: #60a5fa;
-          }
         }
       }
     }
   }
-
+}
 
 @media (max-width: 768px) {
   .app-header {

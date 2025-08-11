@@ -217,12 +217,12 @@ class ActivityLogger {
    */
   static getClientIP(req) {
     return req.ip ||
-           req.connection.remoteAddress ||
-           req.socket.remoteAddress ||
-           (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
-           req.headers['x-forwarded-for']?.split(',')[0] ||
-           req.headers['x-real-ip'] ||
-           'unknown';
+      req.headers['x-forwarded-for']?.split(',')[0] ||
+      req.headers['x-real-ip'] ||
+      req.socket?.remoteAddress ||
+      req.connection?.remoteAddress ||
+      (req.connection?.socket ? req.connection.socket.remoteAddress : null) ||
+      'unknown';
   }
 
   /**

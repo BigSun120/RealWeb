@@ -1,0 +1,21 @@
+{
+  "name": "@develon/youtube-dl-rest",
+  "version": "1.0.0",
+  "description": "Website for downloading Youtube & BiliBili videos",
+  "scripts": {
+    "start:dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/develon2015/Youtube-dl-REST",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/develon2015/Youtube-dl-REST.git"
+  }
+}

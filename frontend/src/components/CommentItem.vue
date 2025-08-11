@@ -8,10 +8,10 @@
     <div class="comment-avatar">
       <el-avatar
         :size="isReply ? 32 : 40"
-        :src="comment.author.avatar"
-        :alt="comment.author.username"
+        :src="comment.author?.avatar || ''"
+        :alt="comment.author?.username || '用户'"
       >
-        {{ comment.author.username.charAt(0).toUpperCase() }}
+        {{ (comment.author?.username || 'U').charAt(0).toUpperCase() }}
       </el-avatar>
     </div>
 
@@ -81,23 +81,13 @@
             <span v-if="comment.likeCount > 0">{{ comment.likeCount }}</span>
           </el-button>
 
-          <el-button
-            type="text"
-            size="small"
-            @click="toggleReplies"
-            v-if="comment.replyCount > 0"
-          >
+          <el-button type="text" size="small" @click="toggleReplies" v-if="comment.replyCount > 0">
             💬 {{ comment.replyCount }} 条回复
           </el-button>
         </div>
 
         <div class="quick-actions">
-          <el-button
-            type="text"
-            size="small"
-            @click="handleReply"
-            v-if="canReply && !isReply"
-          >
+          <el-button type="text" size="small" @click="handleReply" v-if="canReply && !isReply">
             回复
           </el-button>
         </div>
@@ -133,12 +123,7 @@
 
         <!-- 加载更多回复 -->
         <div v-if="hasMoreReplies" class="load-more-replies">
-          <el-button
-            type="text"
-            size="small"
-            @click="loadMoreReplies"
-            :loading="loadingReplies"
-          >
+          <el-button type="text" size="small" @click="loadMoreReplies" :loading="loadingReplies">
             查看更多回复
           </el-button>
         </div>
@@ -197,27 +182,27 @@ export default {
 
     // 计算属性
     const showActions = computed(() => userStore.isLoggedIn);
-    const canReply = computed(() =>
-      userStore.isLoggedIn &&
-      props.comment.level < props.maxLevel &&
-      (userStore.isAdmin || (userStore.user?.permissions && userStore.user.permissions.includes('comment:create')))
+    const canReply = computed(
+      () =>
+        userStore.isLoggedIn &&
+        props.comment.level < props.maxLevel &&
+        (userStore.isAdmin ||
+          (userStore.user?.permissions && userStore.user.permissions.includes('comment:create')))
     );
-    const canEdit = computed(() =>
-      userStore.isLoggedIn &&
-      userStore.user?._id === props.comment.authorId &&
-      canEditComment(props.comment)
+    const canEdit = computed(
+      () =>
+        userStore.isLoggedIn &&
+        userStore.user?._id === props.comment.authorId &&
+        canEditComment(props.comment)
     );
-    const canDelete = computed(() =>
-      userStore.isLoggedIn &&
-      (userStore.user?._id === props.comment.authorId || userStore.isAdmin)
+    const canDelete = computed(
+      () =>
+        userStore.isLoggedIn &&
+        (userStore.user?._id === props.comment.authorId || userStore.isAdmin)
     );
 
     // 是否高亮显示
-    const isHighlighted = computed(() =>
-      props.highlightCommentId === props.comment._id
-    );
-
-
+    const isHighlighted = computed(() => props.highlightCommentId === props.comment._id);
 
     // 渲染评论内容
     const renderedContent = computed(() => {
@@ -239,31 +224,33 @@ export default {
     });
 
     // 检查评论是否可以编辑（30分钟内）
-    const canEditComment = (comment) => {
+    const canEditComment = comment => {
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
       return new Date(comment.createdAt) > thirtyMinutesAgo;
     };
 
     // 格式化时间
-    const formatTime = (time) => {
+    const formatTime = time => {
       const date = new Date(time);
       const now = new Date();
       const diff = now - date;
 
-      if (diff < 60000) { // 1分钟内
+      if (diff < 60000) {
+        // 1分钟内
         return '刚刚';
-      } else if (diff < 3600000) { // 1小时内
+      } else if (diff < 3600000) {
+        // 1小时内
         return `${Math.floor(diff / 60000)}分钟前`;
-      } else if (diff < 86400000) { // 1天内
+      } else if (diff < 86400000) {
+        // 1天内
         return `${Math.floor(diff / 3600000)}小时前`;
-      } else if (diff < 2592000000) { // 30天内
+      } else if (diff < 2592000000) {
+        // 30天内
         return `${Math.floor(diff / 86400000)}天前`;
       } else {
         return date.toLocaleDateString();
       }
     };
-
-
 
     // 处理点赞
     const handleLike = async () => {
@@ -299,7 +286,7 @@ export default {
     };
 
     // 处理回复提交
-    const handleReplySubmit = async (data) => {
+    const handleReplySubmit = async data => {
       try {
         // 发送回复请求
         const response = await commentApi.createComment(data.data);
@@ -312,8 +299,12 @@ export default {
 
         // 调试信息
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[CommentItem] 新回复提交 - 父评论ID: ${props.comment._id}, 新回复ID: ${newReply._id}`);
-          console.log(`[CommentItem] 当前回复列表状态 - 展开: ${showReplies.value}, 数量: ${replies.value.length}`);
+          console.log(
+            `[CommentItem] 新回复提交 - 父评论ID: ${props.comment._id}, 新回复ID: ${newReply._id}`
+          );
+          console.log(
+            `[CommentItem] 当前回复列表状态 - 展开: ${showReplies.value}, 数量: ${replies.value.length}`
+          );
         }
 
         // 立即更新本地回复列表
@@ -381,7 +372,7 @@ export default {
     };
 
     // 处理编辑提交
-    const handleEditSubmit = (data) => {
+    const handleEditSubmit = data => {
       emit('edit', data);
       isEditing.value = false;
     };
@@ -389,16 +380,12 @@ export default {
     // 处理删除
     const handleDelete = async () => {
       try {
-        await ElMessageBox.confirm(
-          '确定要删除这条评论吗？删除后无法恢复。',
-          '确认删除',
-          {
-            confirmButtonText: '删除',
-            cancelButtonText: '取消',
-            type: 'warning',
-            customClass: 'comment-delete-confirm'
-          }
-        );
+        await ElMessageBox.confirm('确定要删除这条评论吗？删除后无法恢复。', '确认删除', {
+          confirmButtonText: '删除',
+          cancelButtonText: '取消',
+          type: 'warning',
+          customClass: 'comment-delete-confirm'
+        });
 
         emit('delete', { commentId: props.comment._id });
       } catch (error) {
@@ -425,13 +412,15 @@ export default {
           sortOrder: -1 // 倒序，最新回复在前
         });
         // 确保回复数据的唯一性
-        const uniqueReplies = response.data.data.filter((newReply, index, arr) =>
-          arr.findIndex(r => r._id === newReply._id) === index
+        const uniqueReplies = response.data.data.filter(
+          (newReply, index, arr) => arr.findIndex(r => r._id === newReply._id) === index
         );
 
         // 调试信息
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[CommentItem] 加载回复 - 评论ID: ${props.comment._id}, 回复数量: ${uniqueReplies.length}`);
+          console.log(
+            `[CommentItem] 加载回复 - 评论ID: ${props.comment._id}, 回复数量: ${uniqueReplies.length}`
+          );
         }
 
         replies.value = uniqueReplies;
@@ -452,8 +441,6 @@ export default {
         if (autoShow) {
           showReplies.value = true;
         }
-
-
       } catch (error) {
         console.error('加载回复失败:', error);
       } finally {
@@ -471,8 +458,8 @@ export default {
         });
 
         // 过滤掉已存在的回复，避免重复
-        const newReplies = response.data.data.filter(newReply =>
-          !replies.value.some(existingReply => existingReply._id === newReply._id)
+        const newReplies = response.data.data.filter(
+          newReply => !replies.value.some(existingReply => existingReply._id === newReply._id)
         );
 
         replies.value.push(...newReplies);
@@ -486,7 +473,7 @@ export default {
     };
 
     // 处理回复的点赞
-    const handleReplyLike = (data) => {
+    const handleReplyLike = data => {
       // 更新回复列表中的点赞状态
       const reply = replies.value.find(r => r._id === data.commentId);
       if (reply) {
@@ -533,7 +520,7 @@ export default {
   display: flex;
   gap: 12px;
   padding: 16px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #eef2f7;
 }
 
 .comment-item.is-reply {
@@ -597,18 +584,18 @@ export default {
 }
 
 .author-name {
-  font-weight: 500;
-  color: #303133;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 .comment-time {
   font-size: 12px;
-  color: #909399;
+  color: #6b7280;
 }
 
 .edited-mark {
   font-size: 12px;
-  color: #909399;
+  color: #9ca3af;
   font-style: italic;
 }
 
@@ -617,8 +604,8 @@ export default {
 }
 
 .comment-text {
-  line-height: 1.6;
-  color: #606266;
+  line-height: 1.7;
+  color: #374151;
   word-break: break-word;
 }
 
@@ -631,25 +618,25 @@ export default {
 }
 
 .comment-text :deep(code) {
-  background: #f1f3f4;
-  padding: 2px 4px;
-  border-radius: 3px;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-size: 0.9em;
 }
 
 .comment-text :deep(.mention-user) {
-  color: #409eff;
-  background: #ecf5ff;
-  padding: 2px 4px;
-  border-radius: 3px;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .comment-text :deep(.mention-user:hover) {
-  background: #d9ecff;
-  color: #337ecc;
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .comment-footer {
@@ -673,7 +660,7 @@ export default {
 
 .replies-list {
   margin-top: 12px;
-  border-left: 2px solid #f0f0f0;
+  border-left: 2px solid #eef2f7;
   padding-left: 16px;
 }
 
@@ -684,9 +671,9 @@ export default {
 
 /* 高亮评论样式 */
 .comment-highlighted {
-  background: linear-gradient(90deg, #fff3cd 0%, #ffffff 100%);
-  border-left: 4px solid #ffc107;
-  border-radius: 8px;
+  background: linear-gradient(90deg, #fffaf0 0%, #ffffff 100%);
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
   padding: 16px;
   margin: 8px 0;
   animation: highlight-fade 3s ease-out;
@@ -694,11 +681,11 @@ export default {
 
 @keyframes highlight-fade {
   0% {
-    background: linear-gradient(90deg, #fff3cd 0%, #ffffff 50%);
-    box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
+    background: linear-gradient(90deg, #fff7ed 0%, #ffffff 50%);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
   }
   100% {
-    background: linear-gradient(90deg, #fff3cd 0%, #ffffff 100%);
+    background: linear-gradient(90deg, #fffaf0 0%, #ffffff 100%);
     box-shadow: none;
   }
 }

@@ -46,16 +46,9 @@
 
     <!-- 登录提示 -->
     <div class="login-prompt" v-else>
-      <el-alert
-        title="请登录后发表评论"
-        type="info"
-        show-icon
-        :closable="false"
-      >
+      <el-alert title="请登录后发表评论" type="info" show-icon :closable="false">
         <template #default>
-          <el-button type="primary" size="small" @click="goToLogin">
-            立即登录
-          </el-button>
+          <el-button type="primary" size="small" @click="goToLogin"> 立即登录 </el-button>
         </template>
       </el-alert>
     </div>
@@ -82,12 +75,7 @@
 
       <!-- 加载更多 -->
       <div class="load-more" v-if="hasMore && comments.length > 0">
-        <el-button
-          @click="loadMore"
-          :loading="loadingMore"
-          type="primary"
-          plain
-        >
+        <el-button @click="loadMore" :loading="loadingMore" type="primary" plain>
           加载更多评论
         </el-button>
       </div>
@@ -130,8 +118,6 @@ export default {
     const router = useRouter();
     const userStore = useUserStore();
 
-
-
     // 响应式数据
     const comments = ref([]);
     const loading = ref(false);
@@ -142,9 +128,11 @@ export default {
     const hasMore = ref(false);
 
     // 计算属性
-    const showEditor = computed(() =>
-      userStore.isLoggedIn &&
-      (userStore.isAdmin || (userStore.user?.permissions && userStore.user.permissions.includes('comment:create')))
+    const showEditor = computed(
+      () =>
+        userStore.isLoggedIn &&
+        (userStore.isAdmin ||
+          (userStore.user?.permissions && userStore.user.permissions.includes('comment:create')))
     );
 
     // 加载评论列表
@@ -206,7 +194,7 @@ export default {
     };
 
     // 处理排序变化
-    const handleSortChange = (newSortBy) => {
+    const handleSortChange = newSortBy => {
       if (newSortBy && newSortBy !== sortBy.value) {
         sortBy.value = newSortBy;
         loadComments(true);
@@ -214,7 +202,7 @@ export default {
     };
 
     // 处理评论提交
-    const handleCommentSubmit = async (data) => {
+    const handleCommentSubmit = async data => {
       try {
         const response = await commentApi.createComment(data.data);
 
@@ -245,7 +233,7 @@ export default {
     };
 
     // 处理评论点赞
-    const handleCommentLike = (data) => {
+    const handleCommentLike = data => {
       const comment = findCommentById(data.commentId);
       if (comment) {
         comment.likeCount = data.likeCount;
@@ -261,7 +249,7 @@ export default {
     };
 
     // 处理评论编辑
-    const handleCommentEdit = async (data) => {
+    const handleCommentEdit = async data => {
       try {
         const response = await commentApi.updateComment(data.commentId, data.data);
         const updatedComment = response.data.data;
@@ -282,7 +270,7 @@ export default {
     };
 
     // 处理评论删除
-    const handleCommentDelete = async (data) => {
+    const handleCommentDelete = async data => {
       try {
         await commentApi.deleteComment(data.commentId);
 
@@ -301,11 +289,9 @@ export default {
     };
 
     // 查找评论
-    const findCommentById = (commentId) => {
+    const findCommentById = commentId => {
       return comments.value.find(c => c._id === commentId);
     };
-
-
 
     // 跳转到登录页
     const goToLogin = () => {
@@ -313,25 +299,33 @@ export default {
     };
 
     // 监听文章ID变化
-    watch(() => props.articleId, () => {
-      if (props.articleId) {
-        loadComments(true);
-      }
-    }, { immediate: true });
+    watch(
+      () => props.articleId,
+      () => {
+        if (props.articleId) {
+          loadComments(true);
+        }
+      },
+      { immediate: true }
+    );
 
     // 监听目标页面变化
-    watch(() => props.targetPage, (newPage, oldPage) => {
-      if (newPage && newPage > 1 && newPage !== oldPage && props.articleId) {
-        console.log('需要加载到页面:', newPage, '当前页面:', currentPage.value);
-        // 只有当目标页面大于当前页面时才需要加载更多
-        if (newPage > currentPage.value) {
-          loadCommentsToPage(newPage);
+    watch(
+      () => props.targetPage,
+      (newPage, oldPage) => {
+        if (newPage && newPage > 1 && newPage !== oldPage && props.articleId) {
+          console.log('需要加载到页面:', newPage, '当前页面:', currentPage.value);
+          // 只有当目标页面大于当前页面时才需要加载更多
+          if (newPage > currentPage.value) {
+            loadCommentsToPage(newPage);
+          }
         }
-      }
-    }, { immediate: true });
+      },
+      { immediate: true }
+    );
 
     // 加载评论到指定页面
-    const loadCommentsToPage = async (targetPage) => {
+    const loadCommentsToPage = async targetPage => {
       if (loading.value || loadingMore.value) {
         console.log('正在加载中，跳过重复请求');
         return;
@@ -387,8 +381,6 @@ export default {
       }
     };
 
-
-
     // 组件挂载时加载评论
     onMounted(() => {
       if (props.articleId) {
@@ -427,21 +419,23 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #f7f9fc;
+  border: 1px solid #eef2f7;
 }
 
 .comment-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #303133;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
 }
 
 .comment-count {
-  color: #909399;
-  font-weight: normal;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .comment-controls {
@@ -456,14 +450,14 @@ export default {
 }
 
 .sort-buttons .el-button-group {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
   overflow: hidden;
 }
 
 .sort-buttons .el-button {
   border: none;
-  padding: 8px 16px;
+  padding: 8px 14px;
   font-size: 13px;
   transition: all 0.2s ease;
 }
@@ -474,7 +468,11 @@ export default {
 }
 
 .comment-editor-wrapper {
-  margin-bottom: 24px;
+  margin: 16px 0 24px 0;
+  background: #fafbff;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 12px;
 }
 
 .login-prompt {
@@ -491,12 +489,14 @@ export default {
 
 .comments-list {
   background: #fff;
-  border-radius: 8px;
-  padding: 0 24px;
+  border-radius: 14px;
+  padding: 8px 20px;
+  border: 1px solid #eef2f7;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
 
 .load-more {
   text-align: center;
-  padding: 24px 0;
+  padding: 20px 0;
 }
 </style>

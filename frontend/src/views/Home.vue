@@ -16,7 +16,12 @@
     <section class="hero fullscreen-hero">
       <div class="hero-content">
         <div class="hero-avatar">
-          <img v-if="settingsStore.siteLogo" :src="settingsStore.siteLogo" :alt="settingsStore.siteTitle" class="animate__animated animate__bounceIn" />
+          <img
+            v-if="settingsStore.siteLogo"
+            :src="settingsStore.siteLogo"
+            :alt="settingsStore.siteTitle"
+            class="animate__animated animate__bounceIn"
+          />
           <div v-else class="avatar-placeholder animate__animated animate__bounceIn">
             <i class="avatar-icon">👨‍💻</i>
           </div>
@@ -27,7 +32,9 @@
           <span class="title-accent">Developer & Creator</span>
         </h1>
 
-        <p class="hero-subtitle">{{ settingsStore.siteDescription || '分享技术文章，记录编程之路' }}</p>
+        <p class="hero-subtitle">
+          {{ settingsStore.siteDescription || '分享技术文章，记录编程之路' }}
+        </p>
 
         <div class="hero-stats">
           <div class="stat-item">
@@ -45,26 +52,50 @@
         </div>
 
         <div class="hero-actions">
-          <button class="btn btn-primary btn-lg animate__animated animate__heartBeat" @click="$router.push('/blog')">
+          <button
+            class="btn btn-primary btn-lg animate__animated animate__heartBeat"
+            @click="$router.push('/blog')"
+          >
             <i class="btn-icon">📚</i>
             浏览博客
           </button>
-          <button class="btn btn-secondary btn-lg" @click="scrollToContact">
-            <i class="btn-icon">💬</i>
+          <button class="btn btn-secondary btn-lg" @click="$router.push('/about')">
+            <i class="btn-icon">��</i>
             联系我
+          </button>
+          <button
+            class="btn btn-primary btn-lg animate__animated animate__heartBeat"
+            @click="$router.push('/tools')"
+          >
+            <i class="btn-icon">🧰</i>
+            前往工具箱
           </button>
         </div>
 
         <div class="hero-social">
-          <a v-if="settingsStore.socialLinks?.github" :href="settingsStore.socialLinks.github" target="_blank" class="social-link">
+          <a
+            v-if="settingsStore.socialLinks?.github"
+            :href="settingsStore.socialLinks.github"
+            target="_blank"
+            class="social-link"
+          >
             <i class="social-icon">🐙</i>
             <span>GitHub</span>
           </a>
-          <a v-if="settingsStore.contactEmail" :href="`mailto:${settingsStore.contactEmail}`" class="social-link">
+          <a
+            v-if="settingsStore.contactEmail"
+            :href="`mailto:${settingsStore.contactEmail}`"
+            class="social-link"
+          >
             <i class="social-icon">📧</i>
             <span>Email</span>
           </a>
-          <a v-if="settingsStore.socialLinks?.weibo" :href="settingsStore.socialLinks.weibo" target="_blank" class="social-link">
+          <a
+            v-if="settingsStore.socialLinks?.weibo"
+            :href="settingsStore.socialLinks.weibo"
+            target="_blank"
+            class="social-link"
+          >
             <i class="social-icon">🐦</i>
             <span>微博</span>
           </a>
@@ -77,9 +108,7 @@
       <div class="articles-container">
         <div class="articles-header">
           <h2 class="articles-title">最新文章</h2>
-          <router-link to="/blog" class="btn btn-ghost">
-            查看更多 →
-          </router-link>
+          <router-link to="/blog" class="btn btn-ghost"> 查看更多 → </router-link>
         </div>
 
         <!-- 加载状态 -->
@@ -121,8 +150,10 @@
 
             <div class="card-footer">
               <div class="article-author">
-                <div class="avatar avatar-sm">
-                  {{ (article.author?.username || '匿名').charAt(0) }}
+                <div class="author-avatar" :style="getAuthorAvatarStyle(article.author?.avatar)">
+                  <span class="avatar-fallback">{{
+                    (article.author?.username || '匿名').charAt(0)
+                  }}</span>
                 </div>
                 <div class="author-info">
                   <span class="author-name">{{ article.author?.username || '匿名' }}</span>
@@ -137,13 +168,11 @@
         </div>
       </div>
     </section>
-
-
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
 import api from '@/api';
 import MillipedeBackground from '@/components/MillipedeBackground.vue';
@@ -171,7 +200,7 @@ export default {
         const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
         prefersReducedMotion.value = mediaQuery.matches;
 
-        mediaQuery.addEventListener('change', (e) => {
+        mediaQuery.addEventListener('change', e => {
           prefersReducedMotion.value = e.matches;
         });
       }
@@ -179,7 +208,9 @@ export default {
 
     // 根据设备性能调整千足虫数量
     const adjustMillipedeCount = () => {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
       const area = window.innerWidth * window.innerHeight;
 
       if (isMobile) {
@@ -195,12 +226,22 @@ export default {
     const fetchLatestArticles = async () => {
       articlesLoading.value = true;
       try {
-        const response = await api.get('/articles?limit=6');
+        const response = await api.get('/articles', {
+          params: {
+            limit: 6,
+            sortBy: 'publishedAt',
+            sortOrder: 'desc',
+            _: Date.now() // 防缓存
+          }
+        });
         latestArticles.value = response.data.data.articles;
 
         // 获取统计数据
         articleCount.value = response.data.data.total || latestArticles.value.length;
-        totalViews.value = latestArticles.value.reduce((sum, article) => sum + (article.viewCount || 0), 0);
+        totalViews.value = latestArticles.value.reduce(
+          (sum, article) => sum + (article.viewCount || 0),
+          0
+        );
       } catch (error) {
         console.error('获取最新文章失败:', error);
       } finally {
@@ -208,15 +249,13 @@ export default {
       }
     };
 
-
-
-    const getExcerpt = (content) => {
+    const getExcerpt = content => {
       if (!content) return '';
       const text = content.replace(/[#*`]/g, '').substring(0, 100);
       return text.length > 100 ? text + '...' : text;
     };
 
-    const formatDate = (date) => {
+    const formatDate = date => {
       return new Date(date).toLocaleDateString('zh-CN');
     };
 
@@ -228,6 +267,16 @@ export default {
       });
     };
 
+    // 根据作者头像URL生成背景图样式，加载失败时显示首字母
+    const getAuthorAvatarStyle = avatarUrl => {
+      if (avatarUrl) {
+        return {
+          backgroundImage: `url(${avatarUrl})`
+        };
+      }
+      return {};
+    };
+
     onMounted(() => {
       fetchLatestArticles();
       // 加载设置
@@ -237,6 +286,12 @@ export default {
       // 初始化千足虫背景
       checkMotionPreference();
       adjustMillipedeCount();
+      // 窗口聚焦时刷新最新文章
+      window.addEventListener('focus', fetchLatestArticles);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('focus', fetchLatestArticles);
     });
 
     return {
@@ -248,6 +303,7 @@ export default {
       getExcerpt,
       formatDate,
       scrollToContact,
+      getAuthorAvatarStyle,
       // 千足虫背景相关
       prefersReducedMotion,
       millipedeCount,
@@ -281,12 +337,13 @@ export default {
       left: 0;
       right: 0;
       bottom: 0;
-      background:
-        linear-gradient(135deg,
-          rgba(15, 23, 42, 0.85) 0%,
-          rgba(30, 41, 59, 0.75) 30%,
-          rgba(51, 65, 85, 0.65) 60%,
-          rgba(71, 85, 105, 0.55) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(15, 23, 42, 0.85) 0%,
+        rgba(30, 41, 59, 0.75) 30%,
+        rgba(51, 65, 85, 0.65) 60%,
+        rgba(71, 85, 105, 0.55) 100%
+      );
       z-index: 10; /* 确保渐变在背景Canvas之上 */
     }
   }
@@ -667,14 +724,14 @@ export default {
       contain: layout; // 防止子元素影响外部布局
 
       .article-item {
-        background: rgba(255, 255, 255, 0.1); // 半透明背景，让银河背景透过
-        backdrop-filter: blur(10px); // 毛玻璃效果
-        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08); // 更柔和的半透明背景
+        backdrop-filter: blur(12px); // 稍强的毛玻璃效果
+        border-radius: 16px;
         overflow: hidden; // 确保所有内容都被裁剪在卡片内
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.18);
         display: flex;
         flex-direction: column;
         height: fit-content;
@@ -683,8 +740,8 @@ export default {
         isolation: isolate; // 创建新的堆叠上下文
 
         &:hover {
-          transform: translateY(-4px) translateZ(0);
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+          transform: translateY(-6px) translateZ(0);
+          box-shadow: 0 18px 48px rgba(0, 0, 0, 0.26);
 
           .article-image {
             // 确保图片容器在hover时也不会溢出
@@ -696,10 +753,13 @@ export default {
               position: relative;
               z-index: 1;
             }
+            &::after {
+              opacity: 0.9;
+            }
           }
 
           .article-title {
-            color: #409eff;
+            color: #8ec8ff;
           }
         }
 
@@ -710,6 +770,25 @@ export default {
           flex-shrink: 0;
           position: relative;
           contain: layout style paint; // CSS containment 优化性能和防止布局影响
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+          &::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 70px;
+            background: linear-gradient(
+              180deg,
+              rgba(0, 0, 0, 0) 0%,
+              rgba(2, 6, 23, 0.28) 60%,
+              rgba(2, 6, 23, 0.42) 100%
+            );
+            transition: opacity 0.3s ease;
+            opacity: 0.75;
+            z-index: 1;
+          }
 
           img {
             width: 100%;
@@ -730,6 +809,7 @@ export default {
           justify-content: center;
           flex-shrink: 0;
           position: relative;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
           .placeholder-content {
             display: flex;
@@ -751,80 +831,100 @@ export default {
           }
         }
 
-        .article-info {
-          padding: 20px;
+        /* 适配模板结构：card-body / card-footer */
+        .card-body {
+          padding: 18px 18px 6px 18px;
+        }
+
+        .article-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: #ffffff; // 改为白色，在透明背景上可见
+          margin: 0 0 8px 0;
+          line-height: 1.4;
+          transition: color 0.3s ease;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          min-height: 48px;
+          word-wrap: break-word;
+          word-break: break-word;
+        }
+
+        .article-summary {
+          color: rgba(255, 255, 255, 0.82); // 半透明白色
+          line-height: 1.6;
+          margin: 0 0 12px 0;
+          font-size: 14px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          min-height: 42px;
+        }
+
+        .card-footer {
           display: flex;
-          flex-direction: column;
-          flex: 1;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 18px 16px 18px;
+          border-top: 1px solid rgba(255, 255, 255, 0.12);
 
-          .article-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #ffffff; // 改为白色，在透明背景上可见
-            margin-bottom: 10px;
-            line-height: 1.4;
-            transition: color 0.3s ease;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            min-height: 50px;
-            word-wrap: break-word;
-            word-break: break-word;
-          }
-
-          .article-summary {
-            color: rgba(255, 255, 255, 0.8); // 半透明白色
-            line-height: 1.5;
-            margin-bottom: 16px;
-            font-size: 14px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            min-height: 42px;
-          }
-
-          .article-footer {
+          .article-author {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding-top: 12px;
-            border-top: 1px solid #f1f5f9;
+            gap: 10px;
+            .author-avatar {
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              background-color: rgba(255, 255, 255, 0.16);
+              background-size: cover;
+              background-position: center;
+              border: 1px solid rgba(255, 255, 255, 0.22);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              overflow: hidden;
+            }
+            .avatar-fallback {
+              color: #fff;
+              font-weight: 700;
+            }
 
-            .article-author {
+            .author-info {
               display: flex;
               flex-direction: column;
-              gap: 2px;
+              line-height: 1.2;
 
               .author-name {
                 font-size: 12px;
                 font-weight: 500;
-                color: #2d3748;
+                color: hotpink; // 提高对比度
               }
 
               .publish-date {
                 font-size: 11px;
-                color: #718096;
+                color: #1a1a1a;
               }
             }
+          }
 
-            .article-stats {
-              .view-count {
-                font-size: 11px;
-                color: #409eff;
-                font-weight: 500;
-                background: #f0f8ff;
-                padding: 2px 8px;
-                border-radius: 12px;
-              }
+          .article-stats {
+            .badge {
+              border-radius: 999px;
+              padding: 4px 10px;
+              font-size: 12px;
+              background: rgba(64, 158, 255, 0.15);
+              color: #8ec8ff;
+              border: 1px solid rgba(64, 158, 255, 0.25);
             }
           }
         }
       }
     }
   }
-
 }
 
 // 动画效果
@@ -852,7 +952,8 @@ export default {
         .hero-avatar {
           margin-bottom: 20px;
 
-          img, .avatar-placeholder {
+          img,
+          .avatar-placeholder {
             width: 80px;
             height: 80px;
           }
@@ -894,7 +995,8 @@ export default {
           gap: 15px;
           margin-bottom: 30px;
 
-          .primary-btn, .secondary-btn {
+          .primary-btn,
+          .secondary-btn {
             width: 200px;
             padding: 12px 24px;
             font-size: 14px;

@@ -50,7 +50,7 @@ const activityLogSchema = new mongoose.Schema({
   // 目标对象类型
   targetType: {
     type: String,
-    enum: ['User', 'Article', 'Comment', 'System'],
+    enum: ['User', 'Article', 'Comment', 'System', 'tool', 'category', 'config'],
     required: false
   },
 
@@ -96,7 +96,7 @@ activityLogSchema.index({ createdAt: -1 });
 activityLogSchema.index({ type: 1, userId: 1, createdAt: -1 });
 
 // 静态方法：记录活动
-activityLogSchema.statics.logActivity = async function(activityData) {
+activityLogSchema.statics.logActivity = async function (activityData) {
   try {
     const activity = new this(activityData);
     await activity.save();
@@ -109,7 +109,7 @@ activityLogSchema.statics.logActivity = async function(activityData) {
 };
 
 // 静态方法：获取统计数据
-activityLogSchema.statics.getStats = async function() {
+activityLogSchema.statics.getStats = async function () {
   try {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -143,7 +143,6 @@ activityLogSchema.statics.getStats = async function() {
       activeUsers
     };
   } catch (error) {
-    console.error('获取活动统计失败:', error);
     return {
       todayCount: 0,
       weekCount: 0,
@@ -154,16 +153,14 @@ activityLogSchema.statics.getStats = async function() {
 };
 
 // 静态方法：清理旧日志
-activityLogSchema.statics.cleanOldLogs = async function(daysToKeep = 90) {
+activityLogSchema.statics.cleanOldLogs = async function (daysToKeep = 90) {
   try {
     const cutoffDate = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000);
     const result = await this.deleteMany({
       createdAt: { $lt: cutoffDate }
     });
-    console.log(`清理了 ${result.deletedCount} 条旧活动日志`);
     return result.deletedCount;
   } catch (error) {
-    console.error('清理旧活动日志失败:', error);
     return 0;
   }
 };
