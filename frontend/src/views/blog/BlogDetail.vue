@@ -18,13 +18,13 @@
               <!-- 文章元信息 -->
               <div class="article-meta">
                 <div class="author-section">
-                  <div class="author-avatar" :style="getAuthorAvatarStyle(article.author?.avatar)">
+                  <div class="author-avatar" :style="getAuthorAvatarStyle(article.author && article.author.avatar)">
                     <span class="avatar-fallback">
-                      {{ (article.author?.username || '匿名').charAt(0) }}
+                      {{ (article.author && article.author.username || '匿名').charAt(0) }}
                     </span>
                   </div>
                   <div class="author-details">
-                    <span class="author-name">{{ article.author?.username || '匿名' }}</span>
+                    <span class="author-name">{{ article.author && article.author.username || '匿名' }}</span>
                     <div class="meta-info">
                       <span class="publish-date">{{
                         formatDate(article.publishedAt || article.createdAt)

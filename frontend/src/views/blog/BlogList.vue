@@ -179,10 +179,10 @@
           <div class="card-footer">
             <div class="article-author">
               <div class="avatar avatar-sm">
-                {{ (article.author?.username || '匿名').charAt(0) }}
+                {{ (article.author.username || '匿名').charAt(0) }}
               </div>
               <div class="author-info">
-                <span class="author-name">{{ article.author?.username || '匿名' }}</span>
+                <span class="author-name">{{ article.author.username || '匿名' }}</span>
                 <span class="publish-date">{{ formatDate(article.createdAt) }}</span>
               </div>
             </div>

@@ -5,19 +5,19 @@
       <div class="header-content">
         <div class="user-avatar">
           <AvatarUpload
-            :avatar="userStore.user?.avatar || ''"
+            :avatar="userStore.user && userStore.user.avatar || ''"
             :size="80"
             @upload-success="handleAvatarUpload"
             @delete-success="handleAvatarDelete"
           />
         </div>
         <div class="user-details">
-          <h1 class="username">{{ userStore.user?.username }}</h1>
-          <p class="user-bio">{{ userStore.user?.bio || '这个人很懒，什么都没写...' }}</p>
+          <h1 class="username">{{ userStore.user && userStore.user.username || '用户' }}</h1>
+          <p class="user-bio">{{ userStore.user && userStore.user.bio || '这个人很懒，什么都没写...' }}</p>
           <div class="user-meta">
             <span class="join-date">
               <el-icon><Calendar /></el-icon>
-              加入时间：{{ formatDate(userStore.user?.createdAt) }}
+              加入时间：{{ formatDate(userStore.user && userStore.user.createdAt) }}
             </span>
           </div>
         </div>

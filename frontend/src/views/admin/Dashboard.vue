@@ -3,7 +3,7 @@
     <!-- 页面标题 -->
     <div class="dashboard-header">
       <h1>仪表板</h1>
-      <p>欢迎回来，{{ userStore.user?.username }}！这里是您的管理概览。</p>
+      <p>欢迎回来，{{ userStore.user && userStore.user.username || '管理员' }}！这里是您的管理概览。</p>
     </div>
 
     <!-- 统计卡片 -->
@@ -13,8 +13,8 @@
         :value="stats.totalUsers"
         icon="User"
         type="primary"
-        :trend="stats.trends?.userGrowth"
-        :description="getTrendDescription(stats.trends?.userGrowth, '用户增长')"
+        :trend="stats.trends && stats.trends.userGrowth"
+        :description="getTrendDescription(stats.trends && stats.trends.userGrowth, '用户增长')"
         :loading="statsLoading"
       />
 
@@ -23,8 +23,8 @@
         :value="stats.totalArticles"
         icon="Document"
         type="success"
-        :trend="stats.trends?.articleGrowth"
-        :description="getTrendDescription(stats.trends?.articleGrowth, '文章增长')"
+        :trend="stats.trends && stats.trends.articleGrowth"
+        :description="getTrendDescription(stats.trends && stats.trends.articleGrowth, '文章增长')"
         :loading="statsLoading"
       />
 
@@ -33,8 +33,8 @@
         :value="stats.totalViews"
         icon="View"
         type="warning"
-        :trend="stats.trends?.viewGrowth"
-        :description="getTrendDescription(stats.trends?.viewGrowth, '浏览量增长')"
+        :trend="stats.trends && stats.trends.viewGrowth"
+        :description="getTrendDescription(stats.trends && stats.trends.viewGrowth, '浏览量增长')"
         :loading="statsLoading"
       />
 
@@ -43,8 +43,8 @@
         :value="stats.activeUsers"
         icon="UserFilled"
         type="info"
-        :trend="stats.trends?.activeUserGrowth"
-        :description="getTrendDescription(stats.trends?.activeUserGrowth, '活跃用户')"
+        :trend="stats.trends && stats.trends.activeUserGrowth"
+        :description="getTrendDescription(stats.trends && stats.trends.activeUserGrowth, '活跃用户')"
         :loading="statsLoading"
       />
     </div>
@@ -117,7 +117,10 @@ import {
   EditPen,
   User,
   Setting,
-  Monitor
+  Monitor,
+  Document,
+  View as ViewIcon,
+  UserFilled
 } from '@element-plus/icons-vue';
 
 // 导入组件
@@ -137,7 +140,10 @@ export default {
     EditPen,
     User,
     Setting,
-    Monitor
+    Monitor,
+    Document,
+    ViewIcon,
+    UserFilled
   },
   setup() {
     const userStore = useUserStore();

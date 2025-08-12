@@ -119,7 +119,7 @@
                 <div
                   v-for="video in videoInfo.available.videos"
                   :key="video.id"
-                  :class="['table-row', { selected: selectedVideo?.id === video.id }]"
+                  :class="['table-row', { selected: selectedVideo && selectedVideo.id === video.id }]"
                   @click="selectVideo(video)"
                 >
                   <span>
@@ -150,7 +150,7 @@
                 <div
                   v-for="audio in videoInfo.available.audios"
                   :key="audio.id"
-                  :class="['table-row', { selected: selectedAudio?.id === audio.id }]"
+                  :class="['table-row', { selected: selectedAudio && selectedAudio.id === audio.id }]"
                   @click="selectAudio(audio)"
                 >
                   <span>
@@ -307,7 +307,7 @@
                   :key="rec.id"
                   :class="[
                     'recommended-item',
-                    { selected: selectedYouTubeRecommended?.id === rec.id }
+                    { selected: selectedYouTubeRecommended && selectedYouTubeRecommended.id === rec.id }
                   ]"
                   @click="selectYouTubeRecommended(rec)"
                 >
@@ -337,7 +337,7 @@
                 <div
                   v-for="video in youtubeVideoInfo.available.progressive"
                   :key="video.itag"
-                  :class="['format-item', { selected: selectedYouTubeVideo?.itag === video.itag }]"
+                  :class="['format-item', { selected: selectedYouTubeVideo && selectedYouTubeVideo.itag === video.itag }]"
                   @click="selectYouTubeVideo(video)"
                 >
                   <el-radio
@@ -348,7 +348,7 @@
                   <div class="format-info">
                     <div class="format-quality">{{ video.resolution || 'Unknown' }}</div>
                     <div class="format-details">
-                      <span>{{ video.subtype?.toUpperCase() }}</span>
+                      <span>{{ video.subtype && video.subtype.toUpperCase() || 'UNKNOWN' }}</span>
                       <span v-if="video.filesize_mb">{{ video.filesize_mb }}MB</span>
                     </div>
                   </div>
@@ -369,7 +369,7 @@
                 <div
                   v-for="audio in youtubeVideoInfo.available.audio_only"
                   :key="audio.itag"
-                  :class="['format-item', { selected: selectedYouTubeAudio?.itag === audio.itag }]"
+                  :class="['format-item', { selected: selectedYouTubeAudio && selectedYouTubeAudio.itag === audio.itag }]"
                   @click="selectYouTubeAudio(audio)"
                 >
                   <el-radio
@@ -380,7 +380,7 @@
                   <div class="format-info">
                     <div class="format-quality">{{ audio.abr || 'Unknown' }}</div>
                     <div class="format-details">
-                      <span>{{ audio.subtype?.toUpperCase() }}</span>
+                      <span>{{ audio.subtype && audio.subtype.toUpperCase() || 'UNKNOWN' }}</span>
                       <span v-if="audio.filesize_mb">{{ audio.filesize_mb }}MB</span>
                     </div>
                   </div>

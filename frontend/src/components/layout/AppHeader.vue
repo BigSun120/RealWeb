@@ -38,7 +38,7 @@
             </el-menu-item>
             <el-menu-item index="/about">关于</el-menu-item>
             <el-menu-item
-              v-if="userStore.isAdmin || userStore.user?.canPublishBlog"
+              v-if="userStore.isAdmin || (userStore.user && userStore.user.canPublishBlog)"
               index="/articles/new"
               class="write-article-menu"
             >
@@ -57,9 +57,9 @@
             <el-dropdown @command="handleCommand">
               <span class="user-info">
                 <el-avatar :src="avatarUrl" :size="32">
-                  {{ userStore.user?.username?.charAt(0) || 'U' }}
+                  {{ userStore.user && userStore.user.username && userStore.user.username.charAt(0) || 'U' }}
                 </el-avatar>
-                <span class="username">{{ userStore.user?.username || '用户' }}</span>
+                <span class="username">{{ userStore.user && userStore.user.username || '用户' }}</span>
                 <el-icon><ArrowDown /></el-icon>
               </span>
               <template #dropdown>

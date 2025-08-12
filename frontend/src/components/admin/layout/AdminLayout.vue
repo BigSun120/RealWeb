@@ -109,11 +109,11 @@
       <!-- 侧边栏底部用户信息 -->
       <div class="sidebar-footer">
         <div v-if="!isCollapsed" class="user-info">
-          <el-avatar :src="userStore.user?.avatar" :size="32" class="user-avatar">
-            {{ userStore.user?.username?.charAt(0) }}
+          <el-avatar :src="userStore.user && userStore.user.avatar" :size="32" class="user-avatar">
+            {{ userStore.user && userStore.user.username && userStore.user.username.charAt(0) || 'U' }}
           </el-avatar>
           <div class="user-details">
-            <div class="username">{{ userStore.user?.username }}</div>
+            <div class="username">{{ userStore.user && userStore.user.username || '用户' }}</div>
             <div class="user-role">管理员</div>
           </div>
           <el-dropdown @command="handleUserCommand" class="user-dropdown">
@@ -131,8 +131,8 @@
         <div v-else class="collapsed-user">
           <el-tooltip content="用户菜单" placement="right">
             <el-dropdown @command="handleUserCommand">
-              <el-avatar :src="userStore.user?.avatar" :size="28" class="collapsed-avatar">
-                {{ userStore.user?.username?.charAt(0) }}
+              <el-avatar :src="userStore.user && userStore.user.avatar" :size="28" class="collapsed-avatar">
+                {{ userStore.user && userStore.user.username && userStore.user.username.charAt(0) || 'U' }}
               </el-avatar>
               <template #dropdown>
                 <el-dropdown-menu>

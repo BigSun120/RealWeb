@@ -120,7 +120,7 @@
             >
               <div class="author-option">
                 <el-avatar :src="author.avatar" :size="20">
-                  {{ author.username?.charAt(0) }}
+                  {{ author.username.charAt(0) }}
                 </el-avatar>
                 <span style="margin-left: 8px">{{ author.username }}</span>
               </div>
@@ -257,10 +257,10 @@
           <el-table-column prop="author" label="作者" width="120">
             <template #default="{ row }">
               <div class="author-cell">
-                <el-avatar :src="row.author?.avatar" :size="24">
-                  {{ row.author?.username?.charAt(0) }}
+                <el-avatar :src="row.author && row.author.avatar" :size="24">
+                  {{ row.author && row.author.username && row.author.username.charAt(0) || 'A' }}
                 </el-avatar>
-                <span style="margin-left: 8px">{{ row.author?.username }}</span>
+                <span style="margin-left: 8px">{{ row.author && row.author.username || '匿名' }}</span>
               </div>
             </template>
           </el-table-column>

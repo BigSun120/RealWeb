@@ -10,7 +10,7 @@
         <!-- 用户基本信息 -->
         <div class="user-header">
           <el-avatar :src="userDetail.avatar" :size="80">
-            {{ userDetail.username?.charAt(0) }}
+            {{ userDetail.username && userDetail.username.charAt(0) || 'U' }}
           </el-avatar>
           <div class="user-info">
             <h3>{{ userDetail.username }}</h3>

@@ -74,7 +74,7 @@
 
         <div class="hero-social">
           <a
-            v-if="settingsStore.socialLinks?.github"
+            v-if="settingsStore.socialLinks && settingsStore.socialLinks.github"
             :href="settingsStore.socialLinks.github"
             target="_blank"
             class="social-link"
@@ -91,7 +91,7 @@
             <span>Email</span>
           </a>
           <a
-            v-if="settingsStore.socialLinks?.weibo"
+            v-if="settingsStore.socialLinks && settingsStore.socialLinks.weibo"
             :href="settingsStore.socialLinks.weibo"
             target="_blank"
             class="social-link"
@@ -150,13 +150,13 @@
 
             <div class="card-footer">
               <div class="article-author">
-                <div class="author-avatar" :style="getAuthorAvatarStyle(article.author?.avatar)">
+                <div class="author-avatar" :style="getAuthorAvatarStyle(article.author && article.author.avatar)">
                   <span class="avatar-fallback">{{
-                    (article.author?.username || '匿名').charAt(0)
+                    (article.author && article.author.username || '匿名').charAt(0)
                   }}</span>
                 </div>
                 <div class="author-info">
-                  <span class="author-name">{{ article.author?.username || '匿名' }}</span>
+                  <span class="author-name">{{ article.author && article.author.username || '匿名' }}</span>
                   <span class="publish-date">{{ formatDate(article.createdAt) }}</span>
                 </div>
               </div>
@@ -316,7 +316,7 @@ export default {
 <style lang="scss" scoped>
 .home {
   // 首页移除body的padding-top，实现真正的全屏
-  margin-top: -70px;
+  // 修复：不要使用负margin-top，这会导致内容覆盖header
   position: relative;
   min-height: 100vh;
 
@@ -354,21 +354,25 @@ export default {
     width: 100vw;
     height: 100vh;
     margin-left: calc(-50vw + 50%);
-    margin-top: 0;
+    margin-top: -70px; // 向上移动70px以实现全屏背景效果
     margin-bottom: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    // 关键修复：确保hero容器不会阻挡header交互
+    pointer-events: none;
 
     .hero-content {
       position: relative;
       z-index: 20; /* 确保内容在所有背景之上 */
       max-width: 900px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 70px 20px 0 20px; // 添加顶部padding避免被header遮挡
       text-align: center;
       color: white;
+      // 重新启用交互，因为父容器禁用了pointer-events
+      pointer-events: auto;
 
       .hero-avatar {
         margin-bottom: 30px;
@@ -942,12 +946,15 @@ export default {
 
 @media (max-width: 768px) {
   .home {
-    .hero {
+    .fullscreen-hero {
       min-height: 80vh;
-      margin: -10px -10px 30px -10px;
+      margin-left: calc(-50vw + 50%);
+      margin-top: -70px;
+      pointer-events: none;
 
       .hero-content {
-        padding: 0 15px;
+        padding: 70px 15px 0 15px; // 添加顶部padding避免被header遮挡
+        pointer-events: auto; // 重新启用交互
 
         .hero-avatar {
           margin-bottom: 20px;

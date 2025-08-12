@@ -22,7 +22,7 @@
             <el-tag :color="row.color" style="color: white;">
               {{ row.name }}
             </el-tag>
-          </template>
+          </template> 
         </el-table-column>
         <el-table-column prop="description" label="描述" />
         <el-table-column prop="articleCount" label="文章数" width="100" />
@@ -125,7 +125,7 @@
     <!-- 查看标签文章对话框 -->
     <el-dialog
       v-model="showArticlesDialog"
-      :title="`标签「${currentTag?.name}」的文章列表`"
+      :title="`标签「${currentTag && currentTag.name || '未知'}」的文章列表`"
       width="800px"
     >
       <el-table v-loading="articlesLoading" :data="tagArticles" style="width: 100%">

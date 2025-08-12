@@ -293,7 +293,7 @@
           <template #default="{ row }">
             <div class="user-info">
               <el-avatar :src="row.avatar" :size="40">
-                {{ row.username?.charAt(0) }}
+                {{ row.username.charAt(0) }}
               </el-avatar>
               <div class="user-details">
                 <div class="username">{{ row.username }}</div>
@@ -391,7 +391,7 @@
                 <el-dropdown-menu>
                   <el-dropdown-item
                     :command="`role:${row._id}`"
-                    :disabled="row._id === userStore.user?._id"
+                    :disabled="row._id === userStore.user._id"
                   >
                     设置角色
                   </el-dropdown-item>
@@ -403,7 +403,7 @@
                   </el-dropdown-item>
                   <el-dropdown-item
                     :command="`delete:${row._id}`"
-                    :disabled="row._id === userStore.user?._id"
+                    :disabled="row._id === userStore.user._id"
                     divided
                   >
                     删除用户
@@ -432,7 +432,7 @@
     <!-- 用户详情对话框 -->
     <UserDetailDialog
       v-model="showDetailDialog"
-      :user-id="currentUser?._id"
+      :user-id="currentUser._id"
       @edit="handleEditUser"
     />
 
@@ -459,7 +459,7 @@
       <div v-if="currentEditUser" class="role-dialog-content">
         <div class="user-info">
           <el-avatar :src="currentEditUser.avatar" :size="40">
-            {{ currentEditUser.username?.charAt(0) }}
+            {{ currentEditUser.username.charAt(0) }}
           </el-avatar>
           <div class="user-details">
             <div class="username">{{ currentEditUser.username }}</div>
@@ -487,7 +487,7 @@
               :key="role.value"
               :label="role.label"
               :value="role.value"
-              :disabled="currentEditUser._id === userStore.user?._id && role.value !== 'admin'"
+              :disabled="currentEditUser._id === userStore.user._id && role.value !== 'admin'"
             >
               <div class="role-option">
                 <div class="role-header">
@@ -523,7 +523,7 @@
           <el-button
             type="primary"
             :loading="roleDialogLoading"
-            :disabled="!selectedRole || selectedRole === currentEditUser?.role"
+            :disabled="!selectedRole || selectedRole === currentEditUser.role"
             @click="confirmRoleChange"
           >
             确定

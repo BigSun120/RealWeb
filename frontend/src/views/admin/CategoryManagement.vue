@@ -94,13 +94,13 @@
     <!-- 查看分类文章对话框 -->
     <el-dialog
       v-model="showArticlesDialog"
-      :title="`分类「${currentCategory?.name}」的文章列表`"
+      :title="`分类「${currentCategory && currentCategory.name || '未知'}」的文章列表`"
       width="800px"
     >
       <el-table v-loading="articlesLoading" :data="categoryArticles" style="width: 100%">
         <el-table-column prop="title" label="文章标题" />
         <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
+          <template #default="{ row }"> 
             <el-tag :type="row.status === 'published' ? 'success' : 'warning'">
               {{ row.status === 'published' ? '已发布' : '草稿' }}
             </el-tag>

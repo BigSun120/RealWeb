@@ -42,7 +42,7 @@
 
           <div v-if="activity.user" class="activity-user">
             <el-avatar :src="activity.user.avatar" :size="32">
-              {{ activity.user.username?.charAt(0) }}
+              {{ activity.user.username && activity.user.username.charAt(0) || 'U' }}
             </el-avatar>
           </div>
         </div>

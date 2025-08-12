@@ -41,7 +41,9 @@ import {
   TrendCharts,
   ArrowUp,
   ArrowDown,
-  Minus
+  Minus,
+  UserFilled,
+  DataBoard
 } from '@element-plus/icons-vue';
 
 export default {
@@ -54,7 +56,9 @@ export default {
     TrendCharts,
     ArrowUp,
     ArrowDown,
-    Minus
+    Minus,
+    UserFilled,
+    DataBoard
   },
   props: {
     // 卡片标题

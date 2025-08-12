@@ -2,7 +2,7 @@
   <div class="tool-placeholder">
     <div class="placeholder-content">
       <div class="placeholder-icon">
-        <span v-if="toolInfo?.icon" class="tool-icon">{{ toolInfo.icon }}</span>
+        <span v-if="toolInfo && toolInfo.icon" class="tool-icon">{{ toolInfo.icon }}</span>
         <el-icon v-else size="64"><Tools /></el-icon>
       </div>
       <h2 class="placeholder-title">{{ toolName }}</h2>

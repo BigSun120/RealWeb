@@ -41,7 +41,7 @@
           @click="selectSuggestion(suggestion)"
         >
           <el-avatar :src="suggestion.avatar" :size="24">
-            {{ suggestion.username?.charAt(0) }}
+            {{ suggestion.username && suggestion.username.charAt(0) || 'U' }}
           </el-avatar>
           <div class="suggestion-info">
             <div class="suggestion-name">{{ suggestion.username }}</div>

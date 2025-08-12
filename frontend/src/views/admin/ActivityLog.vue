@@ -142,10 +142,10 @@
           <el-table-column label="用户" width="150">
             <template #default="{ row }">
               <div class="user-info">
-                <el-avatar :src="row.user?.avatar" :size="24">
-                  {{ row.user?.username?.charAt(0) }}
+                <el-avatar :src="row.user && row.user.avatar" :size="24">
+                  {{ row.user && row.user.username && row.user.username.charAt(0) || 'S' }}
                 </el-avatar>
-                <span class="username">{{ row.user?.username || '系统' }}</span>
+                <span class="username">{{ row.user && row.user.username || '系统' }}</span>
               </div>
             </template>
           </el-table-column>
@@ -205,10 +205,10 @@
                   </el-tag>
                 </div>
                 <div class="activity-user">
-                  <el-avatar :src="activity.user?.avatar" :size="20">
-                    {{ activity.user?.username?.charAt(0) }}
+                  <el-avatar :src="activity.user && activity.user.avatar" :size="20">
+                    {{ activity.user && activity.user.username && activity.user.username.charAt(0) || 'S' }}
                   </el-avatar>
-                  <span>{{ activity.user?.username || '系统' }}</span>
+                  <span>{{ activity.user && activity.user.username || '系统' }}</span>
                 </div>
               </div>
               <div class="activity-content">
@@ -249,7 +249,7 @@
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="用户">
-            {{ selectedActivity.user?.username || '系统' }}
+            {{ selectedActivity.user && selectedActivity.user.username || '系统' }}
           </el-descriptions-item>
           <el-descriptions-item label="IP地址">
             {{ selectedActivity.ipAddress || '--' }}
