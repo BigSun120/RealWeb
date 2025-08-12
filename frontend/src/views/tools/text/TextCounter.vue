@@ -31,7 +31,7 @@
           <span>输入文本</span>
         </div>
       </template>
-      
+
       <el-input
         v-model="inputText"
         type="textarea"
@@ -115,14 +115,15 @@
 
 <script>
 import { ref, reactive, computed } from 'vue';
-import { 
-  DataAnalysis, 
-  Delete, 
-  CopyDocument, 
-  EditPen, 
-  PieChart 
+import {
+  DataAnalysis,
+  Delete,
+  CopyDocument,
+  EditPen,
+  PieChart
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
+import { useToolAnalytics } from '@/composables/useToolAnalytics';
 
 export default {
   name: 'TextCounter',
@@ -135,7 +136,7 @@ export default {
   },
   setup() {
     const inputText = ref('');
-    
+
     const stats = reactive({
       characters: 0,
       charactersNoSpaces: 0,
@@ -145,27 +146,40 @@ export default {
       sentences: 0
     });
 
+    // 使用工具统计
+    const { recordUsage } = useToolAnalytics('text-counter');
+
     // 计算统计信息
     const updateStats = () => {
       const text = inputText.value;
-      
+
       // 字符数
       stats.characters = text.length;
-      
+
       // 字符数（不含空格）
       stats.charactersNoSpaces = text.replace(/\s/g, '').length;
-      
+
       // 行数
       stats.lines = text ? text.split('\n').length : 0;
-      
+
       // 段落数（以空行分隔）
       stats.paragraphs = text ? text.split(/\n\s*\n/).filter(p => p.trim()).length : 0;
-      
+
       // 单词数
       stats.words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      
+
       // 句子数（以句号、问号、感叹号结尾）
       stats.sentences = text ? (text.match(/[.!?]+/g) || []).length : 0;
+
+      // 当有文本内容时记录使用统计（避免频繁记录）
+      if (text.length > 0 && text.length % 100 === 0) {
+        recordUsage('use', {
+          action: 'text_analysis',
+          textLength: stats.characters,
+          wordCount: stats.words,
+          lineCount: stats.lines
+        });
+      }
     };
 
     // 计算属性
@@ -204,6 +218,12 @@ export default {
       inputText.value = '';
       updateStats();
       ElMessage.success('文本已清空');
+
+      // 记录清空操作
+      recordUsage('use', {
+        action: 'clear_text',
+        previousTextLength: stats.characters
+      });
     };
 
     const copyStats = async () => {
@@ -219,6 +239,13 @@ export default {
       try {
         await navigator.clipboard.writeText(statsText);
         ElMessage.success('统计结果已复制到剪贴板');
+
+        // 记录复制统计操作
+        recordUsage('use', {
+          action: 'copy_stats',
+          textLength: stats.characters,
+          wordCount: stats.words
+        });
       } catch (error) {
         ElMessage.error('复制失败，请手动复制');
       }

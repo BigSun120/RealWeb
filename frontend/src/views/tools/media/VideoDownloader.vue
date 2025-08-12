@@ -804,9 +804,14 @@ import { ref, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 
+import { useToolAnalytics } from '@/composables/useToolAnalytics';
+
 export default {
   name: 'VideoDownloader',
   setup() {
+    // 使用工具统计
+    const { recordUsage, recordDownload } = useToolAnalytics('video-downloader');
+
     // Tab状态
     const activeTab = ref('bilibili');
 
@@ -976,6 +981,14 @@ export default {
           }
 
           ElMessage.success('视频解析成功');
+
+          // 记录解析成功
+          recordUsage('use', {
+            action: 'parse_video',
+            platform: result.platform,
+            videoTitle: result.title,
+            videoDuration: result.duration
+          });
         } else {
           ElMessage.error(response.data.error || '解析失败');
           videoInfo.value = null;
@@ -1022,6 +1035,9 @@ export default {
           const result = response.data.result;
 
           ElMessage.success('下载完成！');
+
+          // 记录下载成功
+          recordDownload(result.fileName, result.fileSize);
 
           // 自动触发浏览器下载
           setTimeout(() => {
@@ -1074,6 +1090,14 @@ export default {
             selectedYouTubeRecommended.value = data.result.available.recommended[0];
             youtubeDownloadType.value = 'recommended';
           }
+
+          // 记录YouTube解析成功
+          recordUsage('use', {
+            action: 'parse_youtube_video',
+            platform: 'youtube',
+            videoTitle: data.result.title,
+            videoDuration: data.result.duration
+          });
         } else {
           ElMessage.error(data.error || 'YouTube视频解析失败');
         }

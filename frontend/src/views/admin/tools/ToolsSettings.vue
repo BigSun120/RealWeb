@@ -10,6 +10,21 @@
         <p class="page-description">配置工具箱的全局设置和参数</p>
       </div>
       <div class="header-actions">
+        <el-upload
+          :show-file-list="false"
+          :before-upload="importSettings"
+          accept=".json"
+          style="display: inline-block; margin-right: 10px;"
+        >
+          <el-button>
+            <el-icon><Upload /></el-icon>
+            导入设置
+          </el-button>
+        </el-upload>
+        <el-button @click="exportSettings" style="margin-right: 10px;">
+          <el-icon><Download /></el-icon>
+          导出设置
+        </el-button>
         <el-button @click="resetToDefaults">
           <el-icon><RefreshLeft /></el-icon>
           恢复默认
@@ -33,7 +48,7 @@
                 <span>基本设置</span>
               </div>
             </template>
-            
+
             <el-form :model="settings.general" label-width="120px">
               <el-form-item label="启用工具箱">
                 <el-switch
@@ -85,7 +100,7 @@
                 <span>统计设置</span>
               </div>
             </template>
-            
+
             <el-form :model="settings.analytics" label-width="120px">
               <el-form-item label="启用统计">
                 <el-switch
@@ -129,7 +144,7 @@
                 <span>缓存设置</span>
               </div>
             </template>
-            
+
             <el-form :model="settings.cache" label-width="120px">
               <el-form-item label="启用缓存">
                 <el-switch
@@ -162,7 +177,7 @@
                 <span>安全设置</span>
               </div>
             </template>
-            
+
             <el-form :model="settings.security" label-width="120px">
               <el-form-item label="频率限制">
                 <el-switch
@@ -207,7 +222,7 @@
                 <span>文件上传设置</span>
               </div>
             </template>
-            
+
             <el-form :model="settings.upload" label-width="120px">
               <el-form-item label="最大文件大小">
                 <el-input-number
@@ -249,7 +264,7 @@
                 <span>通知设置</span>
               </div>
             </template>
-            
+
             <el-form :model="settings.notifications" label-width="120px">
               <el-form-item label="启用通知">
                 <el-switch
@@ -278,15 +293,16 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue'
-import { 
-  Setting, RefreshLeft, Check, Tools, DataAnalysis, Cpu, Lock, Upload, Bell
+import {
+  Setting, RefreshLeft, Check, Tools, DataAnalysis, Cpu, Lock, Upload, Bell, Download
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getToolsSettings, saveToolsSettings, resetConfig, exportConfigs, importConfigs } from '@/api/admin/configs'
 
 export default {
   name: 'ToolsSettings',
   components: {
-    Setting, RefreshLeft, Check, Tools, DataAnalysis, Cpu, Lock, Upload, Bell
+    Setting, RefreshLeft, Check, Tools, DataAnalysis, Cpu, Lock, Upload, Bell, Download
   },
   setup() {
     const saving = ref(false)
@@ -326,10 +342,20 @@ export default {
     // 加载设置
     const loadSettings = async () => {
       try {
-        // TODO: 调用API获取设置
+        const response = await getToolsSettings()
+
+        // 更新设置数据
+        Object.assign(settings.general, response.data.general || {})
+        Object.assign(settings.analytics, response.data.analytics || {})
+        Object.assign(settings.cache, response.data.cache || {})
+        Object.assign(settings.security, response.data.security || {})
+        Object.assign(settings.upload, response.data.upload || {})
+        Object.assign(settings.notifications, response.data.notifications || {})
+
         ElMessage.success('设置加载完成')
       } catch (error) {
-        ElMessage.error('加载设置失败')
+        console.error('加载设置失败:', error)
+        ElMessage.error('加载设置失败: ' + (error.response?.data?.message || error.message))
       }
     }
 
@@ -337,13 +363,14 @@ export default {
     const saveSettings = async () => {
       try {
         saving.value = true
-        
-        // TODO: 调用API保存设置
-        await new Promise(resolve => setTimeout(resolve, 1000)) // 模拟API调用
-        
+
+        // 调用API保存设置
+        await saveToolsSettings(settings)
+
         ElMessage.success('设置保存成功')
       } catch (error) {
-        ElMessage.error('保存设置失败')
+        console.error('保存设置失败:', error)
+        ElMessage.error('保存设置失败: ' + (error.response?.data?.message || error.message))
       } finally {
         saving.value = false
       }
@@ -362,45 +389,94 @@ export default {
           }
         )
 
-        // 恢复默认值
-        Object.assign(settings.general, {
-          enabled: true,
-          requireAuth: false,
-          maxUsagePerDay: 1000,
-          maxUsagePerUser: 100
-        })
+        // 重置各个配置项
+        const configKeys = [
+          'tools.enabled',
+          'tools.requireAuth',
+          'tools.maxUsagePerDay',
+          'tools.maxUsagePerUser',
+          'analytics.enabled',
+          'analytics.retentionDays',
+          'analytics.trackAnonymous',
+          'cache.enabled',
+          'cache.ttl',
+          'security.rateLimitEnabled',
+          'security.rateLimitWindow',
+          'security.rateLimitMax'
+        ]
 
-        Object.assign(settings.analytics, {
-          enabled: true,
-          retentionDays: 90,
-          trackAnonymous: true
-        })
+        // 批量重置配置
+        for (const key of configKeys) {
+          try {
+            await resetConfig(key)
+          } catch (error) {
+            console.warn(`重置配置 ${key} 失败:`, error)
+          }
+        }
 
-        Object.assign(settings.cache, {
-          enabled: true,
-          ttl: 3600
-        })
-
-        Object.assign(settings.security, {
-          rateLimitEnabled: true,
-          rateLimitWindow: 900,
-          rateLimitMax: 100
-        })
-
-        Object.assign(settings.upload, {
-          maxFileSize: 10,
-          allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'text/plain', 'application/json']
-        })
-
-        Object.assign(settings.notifications, {
-          enabled: true,
-          emailEnabled: false
-        })
+        // 重新加载设置
+        await loadSettings()
 
         ElMessage.success('已恢复默认设置')
       } catch (error) {
         if (error !== 'cancel') {
-          ElMessage.error('恢复默认设置失败')
+          console.error('恢复默认设置失败:', error)
+          ElMessage.error('恢复默认设置失败: ' + (error.response?.data?.message || error.message))
+        }
+      }
+    }
+
+    // 导出设置
+    const exportSettings = async () => {
+      try {
+        const response = await exportConfigs({ includeSystem: false, includeSensitive: false })
+        const data = JSON.stringify(response.data, null, 2)
+        const blob = new Blob([data], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `tools-settings-${new Date().toISOString().split('T')[0]}.json`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+
+        ElMessage.success('设置导出成功')
+      } catch (error) {
+        console.error('导出设置失败:', error)
+        ElMessage.error('导出设置失败: ' + (error.response?.data?.message || error.message))
+      }
+    }
+
+    // 导入设置
+    const importSettings = async (file) => {
+      try {
+        const text = await file.text()
+        const data = JSON.parse(text)
+
+        if (!data.configs || !Array.isArray(data.configs)) {
+          throw new Error('无效的配置文件格式')
+        }
+
+        await ElMessageBox.confirm(
+          `确定要导入 ${data.configs.length} 个配置项吗？这将覆盖现有设置。`,
+          '确认导入',
+          {
+            confirmButtonText: '导入',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        )
+
+        await importConfigs({ configs: data.configs, overwrite: true })
+        await loadSettings()
+
+        ElMessage.success('设置导入成功')
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('导入设置失败:', error)
+          ElMessage.error('导入设置失败: ' + (error.response?.data?.message || error.message))
         }
       }
     }
@@ -413,7 +489,9 @@ export default {
       saving,
       settings,
       saveSettings,
-      resetToDefaults
+      resetToDefaults,
+      exportSettings,
+      importSettings
     }
   }
 }
