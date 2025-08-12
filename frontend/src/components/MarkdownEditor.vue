@@ -48,13 +48,9 @@
         </el-button>
         <el-upload
           ref="uploadRef"
-          :action="uploadUrl"
-          :headers="uploadHeaders"
+          :auto-upload="false"
           :show-file-list="false"
-          :before-upload="beforeUpload"
-          :on-success="handleUploadSuccess"
-          :on-error="handleUploadError"
-          name="image"
+          :on-change="handleFileSelect"
           accept="image/*"
           style="display: inline-block;"
         >
@@ -145,7 +141,7 @@ import { marked } from 'marked';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import { ElMessage } from 'element-plus';
-import { useUserStore } from '@/stores/user';
+import { uploadArticleImage } from '@/api/articles';
 import {
   Edit, View, Grid, ChatLineSquare, Link, Picture
 } from '@element-plus/icons-vue';
@@ -174,7 +170,6 @@ export default {
     const content = ref(props.modelValue);
     const uploading = ref(false);
     const showImageHelper = ref(false);
-    const userStore = useUserStore();
 
     // 配置marked
     onMounted(() => {
@@ -247,11 +242,7 @@ export default {
       }
     };
 
-    // 图片上传配置
-    const uploadUrl = '/api/articles/upload-image';
-    const uploadHeaders = computed(() => ({
-      'Authorization': `Bearer ${userStore.token}`
-    }));
+    // 图片上传配置已移除，统一使用API函数
 
     // 上传前验证
     const beforeUpload = (file) => {
@@ -271,38 +262,46 @@ export default {
       return true;
     };
 
-    // 上传成功
-    const handleUploadSuccess = (response) => {
-      uploading.value = false;
-      if (response.code === 200) {
-        const imageUrl = response.data.url;
-        const imageMarkdown = `![图片描述](${imageUrl})`;
-
-        // 插入图片Markdown语法
-        const textarea = textareaRef.value;
-        if (textarea) {
-          const start = textarea.selectionStart;
-          const end = textarea.selectionEnd;
-          content.value = content.value.substring(0, start) + imageMarkdown + content.value.substring(end);
-
-          nextTick(() => {
-            textarea.focus();
-            const newPosition = start + imageMarkdown.length;
-            textarea.setSelectionRange(newPosition, newPosition);
-          });
-        }
-
-        ElMessage.success('图片上传成功');
-      } else {
-        ElMessage.error('图片上传失败：' + response.message);
+    // 处理文件选择（el-upload组件）
+    const handleFileSelect = async (file) => {
+      if (!beforeUpload(file.raw)) {
+        return;
       }
-    };
 
-    // 上传失败
-    const handleUploadError = (error) => {
-      uploading.value = false;
-      console.error('图片上传失败:', error);
-      ElMessage.error('图片上传失败，请重试');
+      try {
+        const response = await uploadArticleImage(file.raw);
+
+        if (response.data.code === 200) {
+          const imageUrl = response.data.data.url;
+          const imageMarkdown = `![图片描述](${imageUrl})`;
+
+          // 插入图片Markdown语法
+          const textarea = textareaRef.value;
+          if (textarea) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            content.value = content.value.substring(0, start) + imageMarkdown + content.value.substring(end);
+
+            // 通知父组件内容已更新
+            emit('update:modelValue', content.value);
+
+            nextTick(() => {
+              textarea.focus();
+              const newPosition = start + imageMarkdown.length;
+              textarea.setSelectionRange(newPosition, newPosition);
+            });
+          }
+
+          ElMessage.success('图片上传成功');
+        } else {
+          ElMessage.error('图片上传失败：' + response.data.message);
+        }
+      } catch (error) {
+        console.error('图片上传失败:', error);
+        ElMessage.error('图片上传失败：' + (error.response?.data?.message || error.message));
+      } finally {
+        uploading.value = false;
+      }
     };
 
     // 处理拖拽上传
@@ -323,19 +322,10 @@ export default {
         }
 
         try {
-          const formData = new FormData();
-          formData.append('image', file);
+          const response = await uploadArticleImage(file);
 
-          const response = await fetch('/api/articles/upload-image', {
-            method: 'POST',
-            headers: uploadHeaders.value,
-            body: formData
-          });
-
-          const result = await response.json();
-
-          if (result.code === 200) {
-            const imageUrl = result.data.url;
+          if (response.data.code === 200) {
+            const imageUrl = response.data.data.url;
             const imageMarkdown = `![${file.name}](${imageUrl})\n`;
 
             // 在当前光标位置插入图片
@@ -345,6 +335,9 @@ export default {
               const end = textarea.selectionEnd;
               content.value = content.value.substring(0, start) + imageMarkdown + content.value.substring(end);
 
+              // 通知父组件内容已更新
+              emit('update:modelValue', content.value);
+
               nextTick(() => {
                 textarea.focus();
                 const newPosition = start + imageMarkdown.length;
@@ -352,11 +345,11 @@ export default {
               });
             }
           } else {
-            ElMessage.error(`${file.name} 上传失败：${result.message}`);
+            ElMessage.error(`${file.name} 上传失败：${response.data.message}`);
           }
         } catch (error) {
           console.error('拖拽上传失败:', error);
-          ElMessage.error(`${file.name} 上传失败`);
+          ElMessage.error(`${file.name} 上传失败：${error.response?.data?.message || error.message}`);
         }
       }
 
@@ -376,8 +369,6 @@ export default {
       content,
       uploading,
       showImageHelper,
-      uploadUrl,
-      uploadHeaders,
       htmlContent,
       lineCount,
       wordCount,
@@ -385,8 +376,7 @@ export default {
       handleInput,
       syncScroll,
       beforeUpload,
-      handleUploadSuccess,
-      handleUploadError,
+      handleFileSelect,
       handleDrop
     };
   }

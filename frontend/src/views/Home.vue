@@ -133,7 +133,11 @@
           >
             <!-- 文章封面 -->
             <div class="article-image" v-if="article.coverImage">
-              <img :src="article.coverImage" :alt="article.title" />
+              <img
+                :src="getFullImageUrl(article.coverImage)"
+                :alt="article.title"
+                @error="handleImageError"
+              />
             </div>
             <div class="article-image-placeholder" v-else>
               <div class="placeholder-content">
@@ -175,6 +179,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
 import api from '@/api';
+import { getAvatarStyle } from '@/utils/avatar';
 import MillipedeBackground from '@/components/MillipedeBackground.vue';
 
 export default {
@@ -269,12 +274,33 @@ export default {
 
     // 根据作者头像URL生成背景图样式，加载失败时显示首字母
     const getAuthorAvatarStyle = avatarUrl => {
-      if (avatarUrl) {
-        return {
-          backgroundImage: `url(${avatarUrl})`
-        };
+      return getAvatarStyle(avatarUrl);
+    };
+
+    // 获取完整的图片URL
+    const getFullImageUrl = (imageUrl) => {
+      if (!imageUrl) return '';
+
+      // 如果已经是完整的URL，直接返回
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        return imageUrl;
       }
-      return {};
+
+      // 如果是相对路径，添加基础URL
+      return `${window.location.origin}${imageUrl}`;
+    };
+
+    // 处理图片加载错误
+    const handleImageError = (event) => {
+      // 隐藏图片，显示占位符
+      const imgElement = event.target;
+      const imageDiv = imgElement.closest('.article-image');
+      const placeholderDiv = imageDiv.nextElementSibling;
+
+      if (imageDiv && placeholderDiv) {
+        imageDiv.style.display = 'none';
+        placeholderDiv.style.display = 'block';
+      }
     };
 
     onMounted(() => {
@@ -304,6 +330,8 @@ export default {
       formatDate,
       scrollToContact,
       getAuthorAvatarStyle,
+      getFullImageUrl,
+      handleImageError,
       // 千足虫背景相关
       prefersReducedMotion,
       millipedeCount,

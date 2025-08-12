@@ -146,9 +146,10 @@
           <div class="article-cover">
             <img
               v-if="article.coverImage"
-              :src="article.coverImage"
+              :src="getFullImageUrl(article.coverImage)"
               :alt="article.title"
               class="cover-image"
+              @error="handleImageError"
             />
             <div v-else class="cover-placeholder">
               <div class="placeholder-content">
@@ -178,11 +179,16 @@
           <!-- 文章底部信息 -->
           <div class="card-footer">
             <div class="article-author">
-              <div class="avatar avatar-sm">
-                {{ (article.author.username || '匿名').charAt(0) }}
+              <div
+                class="avatar avatar-sm"
+                :style="getAuthorAvatarStyle(article.author && article.author.avatar)"
+              >
+                <span v-if="!article.author || !article.author.avatar" class="avatar-text">
+                  {{ (article.author && article.author.username || '匿名').charAt(0) }}
+                </span>
               </div>
               <div class="author-info">
-                <span class="author-name">{{ article.author.username || '匿名' }}</span>
+                <span class="author-name">{{ article.author && article.author.username || '匿名' }}</span>
                 <span class="publish-date">{{ formatDate(article.createdAt) }}</span>
               </div>
             </div>
@@ -409,6 +415,50 @@ export default {
       }
     };
 
+    // 获取完整的图片URL
+    const getFullImageUrl = (imageUrl) => {
+      if (!imageUrl) return '';
+
+      // 如果已经是完整的URL，直接返回
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        return imageUrl;
+      }
+
+      // 如果是相对路径，添加基础URL
+      return `${window.location.origin}${imageUrl}`;
+    };
+
+    // 获取作者头像样式
+    const getAuthorAvatarStyle = (avatarUrl) => {
+      if (!avatarUrl) return {};
+
+      // 处理相对路径
+      let fullUrl = avatarUrl;
+      if (!avatarUrl.startsWith('http://') && !avatarUrl.startsWith('https://')) {
+        fullUrl = `${window.location.origin}${avatarUrl}`;
+      }
+
+      return {
+        backgroundImage: `url(${fullUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      };
+    };
+
+    // 处理图片加载错误
+    const handleImageError = (event) => {
+      // 隐藏图片，显示占位符
+      const imgElement = event.target;
+      const coverDiv = imgElement.closest('.article-cover');
+      const placeholderDiv = coverDiv.querySelector('.cover-placeholder');
+
+      if (imgElement && placeholderDiv) {
+        imgElement.style.display = 'none';
+        placeholderDiv.style.display = 'flex';
+      }
+    };
+
     onMounted(() => {
       fetchFilterOptions();
       fetchArticles();
@@ -438,7 +488,10 @@ export default {
       toggleSortOrder,
       clearSearch,
       clearAllFilters,
-      changePage
+      changePage,
+      getFullImageUrl,
+      getAuthorAvatarStyle,
+      handleImageError
     };
   }
 };
@@ -727,6 +780,30 @@ export default {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
+}
+
+/* 头像样式 */
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  position: relative;
+}
+
+.avatar-sm {
+  width: 32px;
+  height: 32px;
+  font-size: var(--font-size-sm);
+}
+
+.avatar-text {
+  position: relative;
+  z-index: 1;
 }
 
 .author-info {

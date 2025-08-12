@@ -105,6 +105,7 @@ import { ArrowLeft, Folder } from '@element-plus/icons-vue';
 
 import MarkdownEditor from '@/components/MarkdownEditor.vue';
 import api from '@/api';
+import { createArticle, updateArticle, getArticle } from '@/api/articles';
 
 export default {
   name: 'ArticleEdit',
@@ -177,12 +178,17 @@ export default {
           status: 'draft'
         };
 
+        // 调试：打印发送的数据
+        console.log('保存草稿数据:', data);
+        console.log('文章内容长度:', data.content?.length);
+        console.log('文章内容预览:', data.content?.substring(0, 200));
+
         if (isEdit.value) {
-          await api.put(`/articles/${route.params.id}`, data);
+          const response = await updateArticle(route.params.id, data);
           ElMessage.success('草稿保存成功');
         } else {
-          const response = await api.post('/articles', data);
-          article.value.id = response.data.data.id;
+          const response = await createArticle(data);
+          article.value.id = response.data.data._id || response.data.data.id;
           isEdit.value = true;
           ElMessage.success('草稿保存成功');
         }
@@ -212,15 +218,23 @@ export default {
           status: 'published'
         };
 
+        // 调试：打印发送的数据
+        console.log('发布文章数据:', data);
+        console.log('文章内容长度:', data.content?.length);
+        console.log('文章内容预览:', data.content?.substring(0, 200));
+
         if (isEdit.value) {
-          await api.put(`/articles/${route.params.id}`, data);
+          await updateArticle(route.params.id, data);
           ElMessage.success('文章更新成功');
         } else {
-          await api.post('/articles', data);
+          await createArticle(data);
           ElMessage.success('文章发布成功');
         }
 
-        router.push('/articles');
+        // 延迟跳转，确保所有操作完成
+        setTimeout(() => {
+          router.push('/articles');
+        }, 500);
       } catch (error) {
         ElMessage.error('发布失败：' + (error.response?.data?.message || error.message));
       } finally {
@@ -295,6 +309,7 @@ export default {
       if (route.params.id) {
         isEdit.value = true;
         try {
+          // 使用编辑专用的API端点
           const response = await api.get(`/articles/${route.params.id}/edit`);
           const data = response.data.data;
           article.value = {

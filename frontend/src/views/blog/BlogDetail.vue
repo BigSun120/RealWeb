@@ -91,7 +91,7 @@
                   v-for="heading in tableOfContents"
                   :key="heading.id"
                   :href="`#${heading.id}`"
-                  :class="['toc-link', `toc-level-${heading.level}`]"
+                  :class="['toc-link', `toc-level-${heading.level}`, { 'active': activeHeadingId === heading.id }]"
                   @click.prevent="scrollToHeading(heading.id)"
                 >
                   {{ heading.text }}
@@ -127,13 +127,14 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import api from '@/api';
 import CommentList from '@/components/CommentList.vue';
+import { getAvatarStyle } from '@/utils/avatar';
 
 export default {
   name: 'BlogDetail',
@@ -151,7 +152,38 @@ export default {
     const relatedArticles = ref([]);
 
     // 配置marked
+    const renderer = new marked.Renderer();
+
+    // 自定义图片渲染，处理相对路径
+    renderer.image = function(href, title, text) {
+      // 处理新版marked.js可能传递token对象的情况
+      let actualHref = href;
+      let actualTitle = title;
+      let actualText = text;
+
+      // 如果href是对象（token），提取实际的href值
+      if (typeof href === 'object' && href !== null) {
+        actualHref = href.href || href.src || '';
+        actualTitle = href.title || title || '';
+        actualText = href.text || href.alt || text || '';
+      }
+
+      // 确保actualHref是字符串
+      actualHref = String(actualHref || '');
+      actualTitle = String(actualTitle || '');
+      actualText = String(actualText || '');
+
+      let fullHref = actualHref;
+      if (actualHref && !actualHref.startsWith('http://') && !actualHref.startsWith('https://')) {
+        fullHref = `${window.location.origin}${actualHref}`;
+      }
+
+      const titleAttr = actualTitle ? ` title="${actualTitle}"` : '';
+      return `<img src="${fullHref}" alt="${actualText}"${titleAttr} style="max-width: 100%; height: auto;" />`;
+    };
+
     marked.setOptions({
+      renderer: renderer,
       highlight: function (code, lang) {
         if (lang && hljs.getLanguage(lang)) {
           try {
@@ -207,19 +239,61 @@ export default {
       }
     });
 
+    // 当前激活的目录项
+    const activeHeadingId = ref('');
+
     // 滚动到指定标题
     const scrollToHeading = id => {
-      const element = document.getElementById(id);
-      if (element) {
-        // 计算导航栏高度，确保标题不被遮挡
-        const headerHeight = 60; // 导航栏高度（与CSS变量保持一致）
-        const offset = headerHeight + 20; // 额外间距
-        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset - offset;
+      // 使用nextTick确保DOM已更新
+      nextTick(() => {
+        const element = document.getElementById(id);
 
-        window.scrollTo({
-          top: elementPosition,
-          behavior: 'smooth'
-        });
+        if (element) {
+          const headerHeight = 70;
+          const extraOffset = 20; // 额外间距，确保标题不被遮挡
+
+          // 先滚动到元素位置
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+            inline: 'nearest'
+          });
+
+          // 然后调整位置以避免被header遮挡
+          setTimeout(() => {
+            const currentElementTop = element.getBoundingClientRect().top;
+            const adjustmentNeeded = currentElementTop - (headerHeight + extraOffset);
+
+            if (Math.abs(adjustmentNeeded) > 5) {
+              const newScrollTop = Math.max(0, window.pageYOffset + adjustmentNeeded);
+              window.scrollTo({
+                top: newScrollTop,
+                behavior: 'smooth'
+              });
+            }
+          }, 100);
+
+          // 更新激活状态
+          activeHeadingId.value = id;
+        }
+      });
+    };
+
+    // 监听滚动，更新激活的目录项
+    const updateActiveHeading = () => {
+      const headings = document.querySelectorAll('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]');
+
+      const headerHeight = 70;
+      const offset = headerHeight + 50;
+
+      for (let i = headings.length - 1; i >= 0; i--) {
+        const heading = headings[i];
+        const rect = heading.getBoundingClientRect();
+
+        if (rect.top <= offset) {
+          activeHeadingId.value = heading.id;
+          break;
+        }
       }
     };
 
@@ -236,10 +310,7 @@ export default {
     };
 
     const getAuthorAvatarStyle = avatarUrl => {
-      if (avatarUrl) {
-        return { backgroundImage: `url(${avatarUrl})` };
-      }
-      return {};
+      return getAvatarStyle(avatarUrl);
     };
 
     const formatDate = date => {
@@ -328,6 +399,16 @@ export default {
       nextTick(() => {
         window.scrollTo({ top: 0, behavior: 'auto' });
       });
+
+      // 添加滚动监听器
+      window.addEventListener('scroll', updateActiveHeading);
+      // 初始化激活状态
+      updateActiveHeading();
+    });
+
+    onUnmounted(() => {
+      // 清理滚动监听器
+      window.removeEventListener('scroll', updateActiveHeading);
     });
 
     // 当路由文章ID变化时，重新获取并滚动到顶部
@@ -353,7 +434,8 @@ export default {
       formatDate,
       handleCommentsLoaded,
       scrollToHeading,
-      getAuthorAvatarStyle
+      getAuthorAvatarStyle,
+      activeHeadingId
     };
   }
 };
@@ -542,6 +624,12 @@ export default {
 .toc-link:hover {
   background-color: var(--color-bg-tertiary);
   color: var(--color-text-primary);
+}
+
+.toc-link.active {
+  background-color: var(--color-primary);
+  color: white;
+  font-weight: var(--font-weight-medium);
 }
 
 .toc-level-1 {

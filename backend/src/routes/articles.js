@@ -1,6 +1,6 @@
 const express = require('express');
 const Article = require('../models/Article');
-const { auth, optionalAuth } = require('../middleware/auth');
+const { auth, optionalAuth, adminAuth } = require('../middleware/auth');
 const { uploadArticleImage, handleUploadError } = require('../middleware/upload');
 const logger = require('../utils/logger');
 
@@ -451,6 +451,183 @@ router.post('/upload-image', auth, (req, res, next) => {
       }
     });
   });
+});
+
+// 批量操作文章 (管理员权限)
+router.post('/batch', adminAuth, async (req, res, next) => {
+  try {
+    const { articleIds, action, data = {} } = req.body;
+
+    if (!articleIds || !Array.isArray(articleIds) || articleIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '请选择要操作的文章'
+      });
+    }
+
+    if (!action) {
+      return res.status(400).json({
+        success: false,
+        message: '请指定操作类型'
+      });
+    }
+
+    let result;
+    let message;
+
+    switch (action) {
+      case 'delete':
+        // 批量软删除（移动到回收站）
+        result = await Article.updateMany(
+          { _id: { $in: articleIds } },
+          {
+            isDeleted: true,
+            deletedAt: new Date(),
+            deletedBy: req.user._id
+          }
+        );
+        message = `成功删除 ${result.modifiedCount} 篇文章，已移动到回收站`;
+        break;
+
+      case 'publish':
+        // 批量发布
+        result = await Article.updateMany(
+          { _id: { $in: articleIds } },
+          {
+            status: 'published',
+            publishedAt: new Date()
+          }
+        );
+        message = `成功发布 ${result.modifiedCount} 篇文章`;
+        break;
+
+      case 'unpublish':
+        // 批量取消发布
+        result = await Article.updateMany(
+          { _id: { $in: articleIds } },
+          {
+            status: 'draft',
+            publishedAt: null
+          }
+        );
+        message = `成功取消发布 ${result.modifiedCount} 篇文章`;
+        break;
+
+      case 'updateCategory':
+        // 批量更新分类
+        if (!data.categoryId) {
+          return res.status(400).json({
+            success: false,
+            message: '请指定分类'
+          });
+        }
+        result = await Article.updateMany(
+          { _id: { $in: articleIds } },
+          { category: data.categoryId }
+        );
+        message = `成功更新 ${result.modifiedCount} 篇文章的分类`;
+        break;
+
+      case 'updateTags':
+        // 批量更新标签
+        if (!data.tags || !Array.isArray(data.tags)) {
+          return res.status(400).json({
+            success: false,
+            message: '请指定标签'
+          });
+        }
+        result = await Article.updateMany(
+          { _id: { $in: articleIds } },
+          { tags: data.tags }
+        );
+        message = `成功更新 ${result.modifiedCount} 篇文章的标签`;
+        break;
+
+      case 'addTags':
+        // 批量添加标签
+        if (!data.tags || !Array.isArray(data.tags)) {
+          return res.status(400).json({
+            success: false,
+            message: '请指定要添加的标签'
+          });
+        }
+        result = await Article.updateMany(
+          { _id: { $in: articleIds } },
+          { $addToSet: { tags: { $each: data.tags } } }
+        );
+        message = `成功为 ${result.modifiedCount} 篇文章添加标签`;
+        break;
+
+      case 'removeTags':
+        // 批量移除标签
+        if (!data.tags || !Array.isArray(data.tags)) {
+          return res.status(400).json({
+            success: false,
+            message: '请指定要移除的标签'
+          });
+        }
+        result = await Article.updateMany(
+          { _id: { $in: articleIds } },
+          { $pullAll: { tags: data.tags } }
+        );
+        message = `成功为 ${result.modifiedCount} 篇文章移除标签`;
+        break;
+
+      case 'permanentDelete':
+        // 批量永久删除（仅限回收站中的文章）
+        result = await Article.deleteMany({
+          _id: { $in: articleIds },
+          isDeleted: true // 只能永久删除已在回收站的文章
+        });
+        message = `成功永久删除 ${result.deletedCount} 篇文章`;
+        break;
+
+      case 'restore':
+        // 批量恢复（从回收站恢复）
+        result = await Article.updateMany(
+          {
+            _id: { $in: articleIds },
+            isDeleted: true // 只能恢复回收站中的文章
+          },
+          {
+            isDeleted: false,
+            deletedAt: null,
+            deletedBy: null,
+            deleteReason: null
+          }
+        );
+        message = `成功恢复 ${result.modifiedCount} 篇文章`;
+        break;
+
+      default:
+        return res.status(400).json({
+          success: false,
+          message: '不支持的操作类型'
+        });
+    }
+
+    // 记录操作日志
+    logger.info(`Admin ${req.user.username} performed batch ${action} on ${articleIds.length} articles`, {
+      userId: req.user._id,
+      action,
+      articleIds,
+      data,
+      result
+    });
+
+    res.json({
+      success: true,
+      message,
+      data: {
+        affectedCount: result.modifiedCount || result.deletedCount,
+        operation: action
+      }
+    });
+
+  } catch (error) {
+    logger.error('Batch article operation failed:', error);
+    next(error);
+  }
 });
 
 module.exports = router;

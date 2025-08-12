@@ -117,7 +117,7 @@
             <el-button
               size="small"
               type="danger"
-              @click="deleteArticle(article)"
+              @click="deleteArticleHandler(article)"
             >
               删除
             </el-button>
@@ -135,7 +135,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   EditPen, Calendar, Document, Collection
 } from '@element-plus/icons-vue';
-import api from '@/api';
+import { deleteArticle, getMyArticles, updateArticle } from '@/api/articles';
 
 export default {
   name: 'ArticleList',
@@ -220,7 +220,7 @@ export default {
     // 发布文章
     const publishArticle = async (article) => {
       try {
-        await api.put(`/articles/${article.id}`, {
+        await updateArticle(article.id, {
           ...article,
           status: 'published'
         });
@@ -232,10 +232,10 @@ export default {
     };
 
     // 删除文章
-    const deleteArticle = async (article) => {
+    const deleteArticleHandler = async (article) => {
       try {
         await ElMessageBox.confirm(
-          `确定要删除文章"${article.title || '无标题'}"吗？`,
+          `确定要删除文章"${article.title || '无标题'}"吗？删除后可在回收站中恢复。`,
           '确认删除',
           {
             confirmButtonText: '确定',
@@ -244,9 +244,9 @@ export default {
           }
         );
 
-        await api.delete(`/articles/${article.id}`);
+        await deleteArticle(article.id);
         articles.value = articles.value.filter(a => a.id !== article.id);
-        ElMessage.success('文章删除成功');
+        ElMessage.success('文章已移动到回收站');
       } catch (error) {
         if (error !== 'cancel') {
           ElMessage.error('删除失败：' + (error.response?.data?.message || error.message));
@@ -259,7 +259,7 @@ export default {
       loading.value = true;
       try {
         // 所有用户（包括管理员）都只查看自己的文章
-        const response = await api.get('/articles/my');
+        const response = await getMyArticles();
 
         const data = response.data.data || [];
         // 转换数据格式
@@ -298,7 +298,7 @@ export default {
       formatDate,
       editArticle,
       publishArticle,
-      deleteArticle
+      deleteArticleHandler
     };
   }
 };

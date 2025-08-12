@@ -216,23 +216,69 @@
 
       <div v-else class="articles-table">
         <!-- 批量操作栏 -->
-        <div v-if="activeTab === 'deleted' && selectedArticles.length > 0" class="batch-actions">
-          <span class="selected-count">已选择 {{ selectedArticles.length }} 篇文章</span>
-          <el-button type="success" @click="batchRestore">
-            批量恢复
-          </el-button>
-          <el-button type="danger" @click="batchPermanentDelete">
-            批量永久删除
-          </el-button>
+        <div v-if="selectedArticles.length > 0" class="batch-actions">
+          <div class="batch-actions-left">
+            <span class="selected-count">已选择 {{ selectedArticles.length }} 篇文章</span>
+          </div>
+
+          <div class="batch-actions-right">
+            <!-- 删除状态的文章操作 -->
+            <template v-if="activeTab === 'deleted'">
+              <el-button type="success" @click="batchRestore">
+                批量恢复
+              </el-button>
+              <el-button type="danger" @click="batchPermanentDelete">
+                批量永久删除
+              </el-button>
+            </template>
+
+            <!-- 正常状态的文章操作 -->
+            <template v-else>
+              <el-dropdown @command="handleBatchCommand" class="batch-dropdown">
+                <el-button type="primary">
+                  批量操作
+                  <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="publish" :disabled="!canBatchPublish">
+                      <el-icon><Check /></el-icon>
+                      批量发布
+                    </el-dropdown-item>
+                    <el-dropdown-item command="unpublish" :disabled="!canBatchUnpublish">
+                      <el-icon><Close /></el-icon>
+                      批量取消发布
+                    </el-dropdown-item>
+                    <el-dropdown-item command="updateCategory" divided>
+                      <el-icon><Folder /></el-icon>
+                      批量修改分类
+                    </el-dropdown-item>
+                    <el-dropdown-item command="updateTags">
+                      <el-icon><PriceTag /></el-icon>
+                      批量修改标签
+                    </el-dropdown-item>
+                    <el-dropdown-item command="delete" divided>
+                      <el-icon><Delete /></el-icon>
+                      批量删除
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+
+              <el-button @click="clearSelection">
+                取消选择
+              </el-button>
+            </template>
+          </div>
         </div>
 
         <el-table
           :data="filteredArticles"
           style="width: 100%"
           @selection-change="handleSelectionChange"
+          ref="articleTable"
         >
           <el-table-column
-            v-if="activeTab === 'deleted'"
             type="selection"
             width="55"
           />
@@ -356,6 +402,43 @@
         </div>
       </div>
     </el-card>
+
+    <!-- 批量操作对话框 -->
+    <el-dialog
+      v-model="batchDialogVisible"
+      :title="getBatchDialogTitle()"
+      width="500px"
+      @close="resetBatchDialog"
+    >
+      <div v-if="batchAction === 'updateCategory'" class="batch-dialog-content">
+        <p>选择新的分类：</p>
+        <el-select v-model="batchData.categoryId" placeholder="请选择分类" style="width: 100%">
+          <el-option
+            v-for="category in categoriesList"
+            :key="category._id"
+            :label="category.name"
+            :value="category._id"
+          />
+        </el-select>
+      </div>
+
+      <div v-if="batchAction === 'updateTags'" class="batch-dialog-content">
+        <p>输入新的标签（多个标签用逗号分隔）：</p>
+        <el-input
+          v-model="batchData.tagsInput"
+          type="textarea"
+          :rows="3"
+          placeholder="例如：前端,Vue,JavaScript"
+        />
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="batchDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmBatchOperation">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -364,9 +447,17 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
-  EditPen, Search, Refresh, ArrowUp, ArrowDown
+  EditPen, Search, Refresh, ArrowUp, ArrowDown, Check, Close,
+  Folder, PriceTag, Delete
 } from '@element-plus/icons-vue';
 import api from '@/api';
+import {
+  batchArticleOperation,
+  batchRestoreArticles,
+  batchPermanentDeleteArticles,
+  getCategories,
+  getTags
+} from '@/api/articles';
 
 // 防抖函数
 function debounce(func, wait) {
@@ -384,7 +475,8 @@ function debounce(func, wait) {
 export default {
   name: 'ArticleManagement',
   components: {
-    EditPen, Search, Refresh, ArrowUp, ArrowDown
+    EditPen, Search, Refresh, ArrowUp, ArrowDown, Check, Close,
+    Folder, PriceTag, Delete
   },
   setup() {
     const router = useRouter();
@@ -398,6 +490,11 @@ export default {
     const showAdvancedSearch = ref(false);
     const quickTimeFilter = ref('');
     const selectedArticles = ref([]);
+    const categoriesList = ref([]);
+    const tagsList = ref([]);
+    const batchDialogVisible = ref(false);
+    const batchAction = ref('');
+    const batchData = ref({});
 
     const statsData = ref({
       total: 0,
@@ -432,6 +529,15 @@ export default {
     // 过滤文章 - 直接使用后端返回的数据，不需要前端再次过滤
     const filteredArticles = computed(() => {
       return articles.value;
+    });
+
+    // 批量操作相关计算属性
+    const canBatchPublish = computed(() => {
+      return selectedArticles.value.some(article => article.status !== 'published');
+    });
+
+    const canBatchUnpublish = computed(() => {
+      return selectedArticles.value.some(article => article.status === 'published');
     });
 
     // 获取分类名称
@@ -613,17 +719,16 @@ export default {
           }
         );
 
-        // 并行恢复所有选中的文章
-        const promises = selectedArticles.value.map(article =>
-          api.put(`/admin/articles/${article.id}/restore`)
-        );
+        // 使用批量恢复API
+        const articleIds = selectedArticles.value.map(article => article._id || article.id);
+        const response = await batchRestoreArticles(articleIds);
 
-        await Promise.all(promises);
-
-        selectedArticles.value = [];
-        await loadArticles();
-        await loadStats();
-        ElMessage.success(`成功恢复 ${promises.length} 篇文章`);
+        if (response.data.success) {
+          selectedArticles.value = [];
+          await loadArticles();
+          await loadStats();
+          ElMessage.success(response.data.message);
+        }
       } catch (error) {
         if (error !== 'cancel') {
           ElMessage.error('批量恢复失败：' + (error.response?.data?.message || error.message));
@@ -650,21 +755,223 @@ export default {
           }
         );
 
-        // 并行删除所有选中的文章
-        const promises = selectedArticles.value.map(article =>
-          api.delete(`/admin/articles/${article.id}/permanent`)
-        );
+        // 使用批量永久删除API
+        const articleIds = selectedArticles.value.map(article => article._id || article.id);
+        const response = await batchPermanentDeleteArticles(articleIds);
 
-        await Promise.all(promises);
-
-        selectedArticles.value = [];
-        await loadArticles();
-        await loadStats();
-        ElMessage.success(`成功永久删除 ${promises.length} 篇文章`);
+        if (response.data.success) {
+          selectedArticles.value = [];
+          await loadArticles();
+          await loadStats();
+          ElMessage.success(response.data.message);
+        }
       } catch (error) {
         if (error !== 'cancel') {
           ElMessage.error('批量永久删除失败：' + (error.response?.data?.message || error.message));
         }
+      }
+    };
+
+    // 批量操作命令处理
+    const handleBatchCommand = async (command) => {
+      if (selectedArticles.value.length === 0) {
+        ElMessage.warning('请选择要操作的文章');
+        return;
+      }
+
+      const articleIds = selectedArticles.value.map(article => article._id || article.id);
+
+      try {
+        switch (command) {
+          case 'publish':
+            await handleBatchPublish(articleIds);
+            break;
+          case 'unpublish':
+            await handleBatchUnpublish(articleIds);
+            break;
+          case 'updateCategory':
+            await showBatchCategoryDialog();
+            break;
+          case 'updateTags':
+            await showBatchTagsDialog();
+            break;
+          case 'delete':
+            await handleBatchDelete(articleIds);
+            break;
+        }
+      } catch (error) {
+        console.error('批量操作失败:', error);
+      }
+    };
+
+    // 批量发布
+    const handleBatchPublish = async (articleIds) => {
+      try {
+        await ElMessageBox.confirm(
+          `确定要发布选中的 ${articleIds.length} 篇文章吗？`,
+          '批量发布确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'success'
+          }
+        );
+
+        const response = await batchArticleOperation(articleIds, 'publish');
+
+        if (response.data.success) {
+          ElMessage.success(response.data.message);
+          clearSelection();
+          await loadArticles();
+          await loadStats();
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          ElMessage.error('批量发布失败：' + (error.response?.data?.message || error.message));
+        }
+      }
+    };
+
+    // 批量取消发布
+    const handleBatchUnpublish = async (articleIds) => {
+      try {
+        await ElMessageBox.confirm(
+          `确定要取消发布选中的 ${articleIds.length} 篇文章吗？`,
+          '批量取消发布确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        );
+
+        const response = await batchArticleOperation(articleIds, 'unpublish');
+
+        if (response.data.success) {
+          ElMessage.success(response.data.message);
+          clearSelection();
+          await loadArticles();
+          await loadStats();
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          ElMessage.error('批量取消发布失败：' + (error.response?.data?.message || error.message));
+        }
+      }
+    };
+
+    // 批量删除
+    const handleBatchDelete = async (articleIds) => {
+      try {
+        await ElMessageBox.confirm(
+          `确定要删除选中的 ${articleIds.length} 篇文章吗？删除后可在回收站中恢复。`,
+          '批量删除确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        );
+
+        const response = await batchArticleOperation(articleIds, 'delete');
+
+        if (response.data.success) {
+          ElMessage.success(response.data.message);
+          clearSelection();
+          await loadArticles();
+          await loadStats();
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          ElMessage.error('批量删除失败：' + (error.response?.data?.message || error.message));
+        }
+      }
+    };
+
+    // 显示批量修改分类对话框
+    const showBatchCategoryDialog = async () => {
+      // 加载分类列表
+      if (categoriesList.value.length === 0) {
+        try {
+          const response = await getCategories();
+          categoriesList.value = response.data.data || [];
+        } catch (error) {
+          ElMessage.error('加载分类列表失败');
+          return;
+        }
+      }
+
+      batchAction.value = 'updateCategory';
+      batchData.value = { categoryId: '' };
+      batchDialogVisible.value = true;
+    };
+
+    // 显示批量修改标签对话框
+    const showBatchTagsDialog = async () => {
+      batchAction.value = 'updateTags';
+      batchData.value = { tagsInput: '' };
+      batchDialogVisible.value = true;
+    };
+
+    // 清除选择
+    const clearSelection = () => {
+      selectedArticles.value = [];
+      // 清除表格选择
+      if (document.querySelector('.el-table')) {
+        const table = document.querySelector('.el-table').__vue__;
+        if (table && table.clearSelection) {
+          table.clearSelection();
+        }
+      }
+    };
+
+    // 获取批量操作对话框标题
+    const getBatchDialogTitle = () => {
+      const actionMap = {
+        'updateCategory': '批量修改分类',
+        'updateTags': '批量修改标签'
+      };
+      return actionMap[batchAction.value] || '批量操作';
+    };
+
+    // 重置批量操作对话框
+    const resetBatchDialog = () => {
+      batchAction.value = '';
+      batchData.value = {};
+    };
+
+    // 确认批量操作
+    const confirmBatchOperation = async () => {
+      const articleIds = selectedArticles.value.map(article => article._id || article.id);
+
+      try {
+        let response;
+
+        if (batchAction.value === 'updateCategory') {
+          if (!batchData.value.categoryId) {
+            ElMessage.warning('请选择分类');
+            return;
+          }
+          response = await batchArticleOperation(articleIds, 'updateCategory', {
+            categoryId: batchData.value.categoryId
+          });
+        } else if (batchAction.value === 'updateTags') {
+          if (!batchData.value.tagsInput) {
+            ElMessage.warning('请输入标签');
+            return;
+          }
+          const tags = batchData.value.tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+          response = await batchArticleOperation(articleIds, 'updateTags', { tags });
+        }
+
+        if (response && response.data.success) {
+          ElMessage.success(response.data.message);
+          batchDialogVisible.value = false;
+          clearSelection();
+          await loadArticles();
+        }
+      } catch (error) {
+        ElMessage.error('操作失败：' + (error.response?.data?.message || error.message));
       }
     };
 
@@ -899,6 +1206,17 @@ export default {
       handleSelectionChange,
       batchRestore,
       batchPermanentDelete,
+      handleBatchCommand,
+      clearSelection,
+      canBatchPublish,
+      canBatchUnpublish,
+      batchDialogVisible,
+      batchAction,
+      batchData,
+      categoriesList,
+      getBatchDialogTitle,
+      resetBatchDialog,
+      confirmBatchOperation,
       toggleAdvancedSearch,
       handleSearch,
       handleReset,
@@ -1056,14 +1374,29 @@ export default {
   margin-bottom: 16px;
 }
 
+.batch-actions-left {
+  display: flex;
+  align-items: center;
+}
+
+.batch-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .selected-count {
   font-size: 14px;
   color: #606266;
   font-weight: 500;
 }
 
+.batch-dropdown {
+  margin-right: 8px;
+}
+
 .batch-actions .el-button {
-  margin-left: 12px;
+  margin-left: 0;
 }
 
 .article-title-cell {
@@ -1150,5 +1483,22 @@ export default {
   .articles-table {
     overflow-x: auto;
   }
+}
+
+/* 批量操作对话框样式 */
+.batch-dialog-content {
+  padding: 16px 0;
+}
+
+.batch-dialog-content p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #606266;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 </style>
