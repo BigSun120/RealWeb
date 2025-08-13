@@ -453,7 +453,8 @@ const deleteMessage = async (message) => {
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除邮件失败:', error)
-      ElMessage.error('删除邮件失败')
+      const errorMessage = error.response?.data?.message || error.message || '删除邮件失败'
+      ElMessage.error('删除邮件失败: ' + errorMessage)
     }
   }
 }

@@ -298,13 +298,18 @@ const clearMailbox = async (email) => {
       '确认清空',
       { type: 'warning' }
     )
-    
-    // 这里需要实现批量删除API
-    ElMessage.success('邮箱清空成功')
-    loadData()
+
+    const response = await request.delete(`/temp-email/${email}/clear`)
+    if (response.data.success) {
+      ElMessage.success(response.data.message || '邮箱清空成功')
+      loadData()
+    } else {
+      ElMessage.error(response.data.message || '清空邮箱失败')
+    }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('清空邮箱失败')
+      console.error('清空邮箱失败:', error)
+      ElMessage.error('清空邮箱失败: ' + (error.response?.data?.message || error.message))
     }
   }
 }
@@ -317,13 +322,18 @@ const clearAllEmails = async () => {
       '确认清空',
       { type: 'warning' }
     )
-    
-    // 这里需要实现清空所有邮件的API
-    ElMessage.success('所有邮件清空成功')
-    loadData()
+
+    const response = await request.delete('/temp-email/clear-all')
+    if (response.data.success) {
+      ElMessage.success(response.data.message || '所有邮件清空成功')
+      loadData()
+    } else {
+      ElMessage.error(response.data.message || '清空失败')
+    }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('清空失败')
+      console.error('清空所有邮件失败:', error)
+      ElMessage.error('清空失败: ' + (error.response?.data?.message || error.message))
     }
   }
 }
