@@ -32,6 +32,8 @@ const toolsRoutes = require('./src/routes/tools');
 const adminToolsRoutes = require('./src/routes/admin/tools');
 const adminCategoriesRoutes = require('./src/routes/admin/categories');
 const adminConfigsRoutes = require('./src/routes/admin/configs');
+const adminEmailDomainsRoutes = require('./src/routes/admin/emailDomains');
+const tempEmailRoutes = require('./src/routes/tempEmail');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -155,6 +157,8 @@ app.use('/api/tools', toolsRoutes);
 app.use('/api/admin/tools', adminToolsRoutes);
 app.use('/api/admin/categories', adminCategoriesRoutes);
 app.use('/api/admin/configs', adminConfigsRoutes);
+app.use('/api/admin/email-domains', adminEmailDomainsRoutes);
+app.use('/api/temp-email', tempEmailRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

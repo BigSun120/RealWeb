@@ -9,6 +9,7 @@
 - 🎮 **小游戏平台** - 游戏展示和管理功能
 - 👥 **用户权限系统** - 完整的注册登录、权限控制和用户管理
 - 📊 **管理后台** - 功能完善的管理员面板
+- 📧 **临时邮箱服务** - 集成Inbucket，支持多域名临时邮箱
 - 🛡️ **安全防护** - JWT认证、密码加密、API限流等安全措施
 
 ## 🚀 技术栈
@@ -59,6 +60,7 @@ personal-website/
 - Node.js 16+
 - MongoDB 4.4+
 - npm 8+
+- Docker (用于邮箱服务)
 
 ### 安装步骤
 
@@ -79,14 +81,29 @@ cp .env.example .env
 # 一键安装所有依赖
 npm run setup
 
-# 启动开发环境
+# 启动开发环境（前端+后端+邮箱服务）
 npm run dev
+
+# 或者分步启动
+npm run email:setup    # 首次运行：设置邮箱服务
+npm run dev           # 启动所有服务
 ```
 
 ### 访问地址
 - 前端应用: http://localhost:3000
 - 后端API: http://localhost:8000
 - 管理后台: http://localhost:3000/admin
+- 邮箱服务: http://localhost:9000
+
+### 邮箱服务管理
+```bash
+# 邮箱服务相关命令
+npm run email:start    # 启动邮箱服务
+npm run email:stop     # 停止邮箱服务
+npm run email:logs     # 查看邮箱服务日志
+npm run email:status   # 查看邮箱服务状态
+npm run email:clean    # 清理邮箱服务容器
+```
 
 ## 🔧 环境配置
 

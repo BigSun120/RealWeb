@@ -84,6 +84,12 @@ const routes = [
     component: () => import('@/views/ArticleList.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/temp-email',
+    name: 'TempEmail',
+    component: () => import('@/views/TempEmail.vue'),
+    meta: { title: '临时邮箱', requiresAuth: false }
+  },
   // 管理员路由组
   {
     path: '/admin',
@@ -198,6 +204,18 @@ const routes = [
             }
           }
         ]
+      },
+      {
+        path: 'email-domains',
+        name: 'AdminEmailDomains',
+        component: () => import('@/views/admin/EmailDomains.vue'),
+        meta: { title: '邮箱域名管理', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'email-management',
+        name: 'AdminEmailManagement',
+        component: () => import('@/views/admin/EmailManagement.vue'),
+        meta: { title: '邮件管理', requiresAuth: true, requiresAdmin: true }
       }
     ]
   },

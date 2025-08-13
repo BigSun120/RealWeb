@@ -36,6 +36,10 @@
               <el-icon><Tools /></el-icon>
               工具箱
             </el-menu-item>
+            <el-menu-item v-if="userStore.isLoggedIn" index="/temp-email">
+              <el-icon><Message /></el-icon>
+              临时邮箱
+            </el-menu-item>
             <el-menu-item index="/about">关于</el-menu-item>
             <el-menu-item
               v-if="userStore.isAdmin || (userStore.user && userStore.user.canPublishBlog)"
@@ -98,6 +102,7 @@
         <router-link to="/" @click="showMobileMenu = false">首页</router-link>
         <router-link to="/blog" @click="showMobileMenu = false">博客</router-link>
         <router-link to="/tools" @click="showMobileMenu = false">工具箱</router-link>
+        <router-link v-if="userStore.isLoggedIn" to="/temp-email" @click="showMobileMenu = false">临时邮箱</router-link>
         <router-link to="/games" @click="showMobileMenu = false">小游戏</router-link>
         <router-link to="/about" @click="showMobileMenu = false">关于</router-link>
         <div class="mobile-user-actions">
@@ -122,7 +127,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useSettingsStore } from '@/stores/settings';
 import { ElMessage } from 'element-plus';
-import { EditPen, Tools } from '@element-plus/icons-vue';
+import { EditPen, Tools, Message } from '@element-plus/icons-vue';
 import NotificationDropdown from '@/components/NotificationDropdown.vue';
 
 export default {
@@ -130,6 +135,7 @@ export default {
   components: {
     EditPen,
     Tools,
+    Message,
     NotificationDropdown
   },
   setup() {

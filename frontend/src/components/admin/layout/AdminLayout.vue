@@ -90,6 +90,19 @@
             </template>
           </el-menu-item>
 
+          <el-sub-menu index="email" class="sub-menu">
+            <template #title>
+              <el-icon class="menu-icon"><Message /></el-icon>
+              <span class="menu-title">邮箱管理</span>
+            </template>
+            <el-menu-item index="/admin/email-domains" class="sub-menu-item">
+              <span class="sub-menu-title">域名管理</span>
+            </el-menu-item>
+            <el-menu-item index="/admin/email-management" class="sub-menu-item">
+              <span class="sub-menu-title">邮件管理</span>
+            </el-menu-item>
+          </el-sub-menu>
+
           <el-menu-item index="/admin/settings" class="menu-item">
             <el-icon class="menu-icon"><Setting /></el-icon>
             <template #title>
@@ -199,7 +212,8 @@ import {
   Monitor,
   ArrowDown,
   House,
-  Tools
+  Tools,
+  Message
 } from '@element-plus/icons-vue';
 
 export default {
@@ -213,7 +227,8 @@ export default {
     Monitor,
     ArrowDown,
     House,
-    Tools
+    Tools,
+    Message
   },
   setup() {
     const route = useRoute();
