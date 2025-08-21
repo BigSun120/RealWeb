@@ -39,17 +39,17 @@ services:
 
   # 邮件服务
   inbucket:
-    image: inbucket/inbucket:latest
+    image: docker.m.daocloud.io/inbucket/inbucket:latest
     ports:
       - "9000:9000"  # Web界面
       - "2500:2500"  # SMTP
       - "1100:1100"  # POP3
     environment:
-      - INBUCKET_SMTP_DOMAIN=godaug.fun,localhost,test.local
+      - INBUCKET_SMTP_DOMAIN=your-domain.com,localhost,test.local
       - INBUCKET_SMTP_ADDR=0.0.0.0:2500
       - INBUCKET_WEB_ADDR=0.0.0.0:9000
       - INBUCKET_POP3_ADDR=0.0.0.0:1100
-      - INBUCKET_WEB_CORSORIGIN=https://godaug.fun,http://localhost:3000
+      - INBUCKET_WEB_CORSORIGIN=https://your-domain.com,http://localhost:3000
       - INBUCKET_STORAGE_TYPE=file
       - INBUCKET_STORAGE_PARAMS=/data
     volumes:
@@ -58,9 +58,9 @@ services:
     networks:
       - app-network
 
-  # Redis缓存（可选）
+  # Redis缓存
   redis:
-    image: redis:7-alpine
+    image: docker.m.daocloud.io/library/redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
@@ -69,14 +69,6 @@ services:
     networks:
       - app-network
     command: redis-server --appendonly yes
-
-  # 监控服务（可选）
-  watchtower:
-    image: containrrr/watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 30 --cleanup
-    restart: unless-stopped
 
 volumes:
   inbucket-data:
