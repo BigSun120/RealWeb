@@ -112,3 +112,25 @@ profile/
 .sass-cache/
 connect.lock
 typings/
+
+# 项目特定文件
+temp/
+ops/
+test-*.js
+debug-*.js
+*-test.js
+email-config.env
+
+# PM2 相关
+.pm2/
+ecosystem.config.js
+
+# SSL 证书
+*.pem
+*.key
+*.crt
+*.csr
+
+# MCP 相关文件
+mcp-config-*.json
+start-mcp-*.bat

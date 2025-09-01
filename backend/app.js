@@ -74,12 +74,17 @@ connectDB().then(async () => {
   logger.error('数据库连接或初始化失败:', error);
 });
 
-// 基础中间件
-app.use(helmet());
+// 信任代理设置（用于nginx反向代理）
+app.set('trust proxy', 1);
+
+// 基础中间件 - 最小化安全头
+// app.use(helmet()); // 暂时完全禁用 helmet
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:3000',
-    'http://localhost:3001' // 支持Vite的备用端口
+    'http://localhost:3001', // 支持Vite的备用端口
+    'http://38.146.29.35',   // 生产环境IP
+    'http://localhost'       // 本地访问
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -135,10 +140,10 @@ app.use('/uploads', (req, res, next) => {
   next();
 }, express.static(path.join(__dirname, 'uploads')));
 
-// 前端静态文件服务（生产环境）
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
-}
+// 前端静态文件服务（生产环境）- 已由 nginx 处理，禁用以避免路由冲突
+// if (process.env.NODE_ENV === 'production') {
+//   app.use(express.static(path.join(__dirname, '../frontend/dist')));
+// }
 
 // API路由
 app.use('/api/auth', authRoutes);
@@ -171,12 +176,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-// 前端路由处理（生产环境）
-if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-  });
-}
+// 前端路由处理（生产环境）- 已由 nginx 处理，禁用以避免 API 路由冲突
+// if (process.env.NODE_ENV === 'production') {
+//   app.get('*', (req, res) => {
+//     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+//   });
+// }
 
 // 404处理
 app.use('*', (req, res) => {
