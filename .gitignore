@@ -15,9 +15,13 @@ build/
 # 环境变量文件
 .env
 .env.local
+.env.development
+.env.production
 .env.development.local
 .env.test.local
 .env.production.local
+.env.backup*
+*.backup
 
 # 日志文件
 logs/

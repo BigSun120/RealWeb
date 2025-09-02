@@ -7,8 +7,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./frontend/nginx.conf:/etc/nginx/nginx.conf
       - ./ssl:/etc/nginx/ssl
@@ -20,7 +20,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       - NODE_ENV=production
       - PORT=8000
@@ -37,9 +37,9 @@ services:
   inbucket:
     image: inbucket/inbucket:latest
     ports:
-      - "9000:9000" # Web界面
-      - "2500:2500" # SMTP
-      - "1100:1100" # POP3
+      - '9000:9000' # Web界面
+      - '2500:2500' # SMTP
+      - '1100:1100' # POP3
     environment:
       - INBUCKET_SMTP_DOMAIN=your-domain.com,localhost,test.local
       - INBUCKET_SMTP_ADDR=0.0.0.0:2500
@@ -58,10 +58,10 @@ services:
   mongodb:
     image: mongo:5-focal
     ports:
-      - "27017:27017"
+      - '27017:27017'
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password123
+      - MONGO_INITDB_ROOT_PASSWORD=LRxQcGllvNjkGbry0yAncBsT
       - MONGO_INITDB_DATABASE=personal_website_prod
     volumes:
       - mongodb-data:/data/db
@@ -73,7 +73,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis-data:/data
     restart: unless-stopped
@@ -85,7 +85,6 @@ volumes:
   inbucket-data:
   redis-data:
   mongodb-data:
-
 
 networks:
   app-network:
