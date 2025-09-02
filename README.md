@@ -4,24 +4,26 @@
 
 ## ✨ 项目特色
 
-- 🎨 **现代化UI设计** - 基于Element Plus的精美界面，支持响应式布局
-- 📝 **完整博客系统** - 支持Markdown编辑、语法高亮、文章管理
+- 🎨 **现代化 UI 设计** - 基于 Element Plus 的精美界面，支持响应式布局
+- 📝 **完整博客系统** - 支持 Markdown 编辑、语法高亮、文章管理
 - 🎮 **小游戏平台** - 游戏展示和管理功能
 - 👥 **用户权限系统** - 完整的注册登录、权限控制和用户管理
 - 📊 **管理后台** - 功能完善的管理员面板
-- 📧 **临时邮箱服务** - 集成Inbucket，支持多域名临时邮箱
-- 🛡️ **安全防护** - JWT认证、密码加密、API限流等安全措施
+- 📧 **临时邮箱服务** - 集成 Inbucket，支持多域名临时邮箱
+- 🛡️ **安全防护** - JWT 认证、密码加密、API 限流等安全措施
 
 ## 🚀 技术栈
 
 ### 前端
+
 - **Vue 3** + **Vite** - 现代化前端开发
-- **Element Plus** - Vue 3 UI组件库
+- **Element Plus** - Vue 3 UI 组件库
 - **Pinia** - 状态管理
 - **Vue Router 4** - 路由管理
 - **AOS/Animate.css/GSAP** - 动画效果
 
 ### 后端
+
 - **Node.js** + **Express.js** - 后端服务
 - **MongoDB** + **Mongoose** - 数据库
 - **JWT** - 身份认证
@@ -57,6 +59,7 @@ personal-website/
 ## 🛠️ 快速开始
 
 ### 环境要求
+
 - Node.js 16+
 - MongoDB 4.4+
 - npm 8+
@@ -65,18 +68,21 @@ personal-website/
 ### 安装步骤
 
 1. **克隆项目**
+
 ```bash
 git clone <your-repository-url>
 cd personal-website
 ```
 
 2. **配置环境变量**
+
 ```bash
 cp .env.example .env
 # 编辑 .env 文件，配置数据库连接等参数
 ```
 
 3. **安装依赖并启动**
+
 ```bash
 # 一键安装所有依赖
 npm run setup
@@ -90,12 +96,14 @@ npm run dev           # 启动所有服务
 ```
 
 ### 访问地址
+
 - 前端应用: http://localhost:3000
-- 后端API: http://localhost:8000
+- 后端 API: http://localhost:8000
 - 管理后台: http://localhost:3000/admin
 - 邮箱服务: http://localhost:9000
 
 ### 邮箱服务管理
+
 ```bash
 # 邮箱服务相关命令
 npm run email:start    # 启动邮箱服务
@@ -103,6 +111,16 @@ npm run email:stop     # 停止邮箱服务
 npm run email:logs     # 查看邮箱服务日志
 npm run email:status   # 查看邮箱服务状态
 npm run email:clean    # 清理邮箱服务容器
+```
+
+### 部署
+
+```bash
+# 完整部署（推荐）
+npm run deploy
+
+# 仅部署后端（快速）
+npm run deploy:backend
 ```
 
 ## 🔧 环境配置
@@ -130,23 +148,27 @@ FRONTEND_URL=http://localhost:3000
 ## 📝 主要功能
 
 ### 博客系统
-- ✅ Markdown编辑器，支持实时预览
+
+- ✅ Markdown 编辑器，支持实时预览
 - ✅ 文章管理（创建、编辑、删除）
 - ✅ 文章搜索和分类
 - ✅ 阅读量统计
 
 ### 用户系统
+
 - ✅ 用户注册/登录
 - ✅ 个人资料管理
 - ✅ 权限控制
 
 ### 管理后台
+
 - ✅ 用户管理
 - ✅ 文章管理
 - ✅ 系统设置
 - ✅ 活动日志
 
 ### 小游戏
+
 - ✅ 游戏列表展示
 - ✅ 游戏管理
 
@@ -190,6 +212,7 @@ npm run format
 ## 🙏 致谢
 
 感谢以下开源项目：
+
 - Vue.js
 - Node.js
 - MongoDB
@@ -198,15 +221,18 @@ npm run format
 ## � 项目截图
 
 ### 🏠 首页展示
+
 - 现代化的首页设计，展示最新文章和项目亮点
 - 响应式布局，完美适配各种设备
 
 ### 📝 博客系统
-- Markdown编辑器，支持实时预览
+
+- Markdown 编辑器，支持实时预览
 - 文章列表页面，支持搜索和筛选
 - 文章详情页面，支持语法高亮
 
 ### 👑 管理后台
+
 - 功能完善的管理员仪表板
 - 用户管理、文章管理、系统设置
 - 数据统计和活动监控
@@ -214,28 +240,32 @@ npm run format
 ## �️ 项目规范
 
 ### 📋 代码规范
-- **ESLint** - JavaScript/Vue代码检查
+
+- **ESLint** - JavaScript/Vue 代码检查
 - **Prettier** - 代码格式化
 - **Git Hooks** - 提交前自动检查
 - **命名规范** - 统一的文件和变量命名
 
 ### 📁 目录规范
-- **组件化开发** - 可复用的Vue组件
+
+- **组件化开发** - 可复用的 Vue 组件
 - **模块化设计** - 清晰的代码结构
-- **API分层** - 控制器、服务、模型分离
+- **API 分层** - 控制器、服务、模型分离
 
 ## 🤝 贡献指南
 
 ### 🔧 开发流程
-1. **Fork项目** - 点击右上角Fork按钮
+
+1. **Fork 项目** - 点击右上角 Fork 按钮
 2. **克隆代码** - `git clone your-fork-url`
 3. **创建分支** - `git checkout -b feature/your-feature`
 4. **开发功能** - 编写代码并测试
 5. **提交代码** - `git commit -m "feat: add your feature"`
 6. **推送分支** - `git push origin feature/your-feature`
-7. **创建PR** - 在GitHub上创建Pull Request
+7. **创建 PR** - 在 GitHub 上创建 Pull Request
 
 ### � 提交规范
+
 ```bash
 feat: 新功能
 fix: 修复bug
@@ -247,13 +277,14 @@ chore: 构建过程或辅助工具的变动
 ```
 
 ### 🐛 问题反馈
-- 使用GitHub Issues报告bug
+
+- 使用 GitHub Issues 报告 bug
 - 详细描述问题复现步骤
 - 提供错误日志和环境信息
 
 ## �📄 许可证
 
-本项目采用 **MIT许可证** - 查看 [LICENSE](LICENSE) 文件了解详情
+本项目采用 **MIT 许可证** - 查看 [LICENSE](LICENSE) 文件了解详情
 
 ## 📞 联系方式
 
@@ -266,23 +297,26 @@ chore: 构建过程或辅助工具的变动
 感谢以下开源项目和社区的支持：
 
 ### 🎯 核心技术
-- **Vue.js** - 渐进式JavaScript框架
-- **Node.js** - JavaScript运行环境
-- **MongoDB** - 文档型数据库
-- **Express.js** - Web应用框架
 
-### 🎨 UI与动画
-- **Element Plus** - Vue 3组件库
+- **Vue.js** - 渐进式 JavaScript 框架
+- **Node.js** - JavaScript 运行环境
+- **MongoDB** - 文档型数据库
+- **Express.js** - Web 应用框架
+
+### 🎨 UI 与动画
+
+- **Element Plus** - Vue 3 组件库
 - **AOS** - 滚动动画库
 - **GSAP** - 高性能动画库
-- **Animate.css** - CSS动画库
+- **Animate.css** - CSS 动画库
 
 ### 🛠️ 开发工具
+
 - **Vite** - 现代化构建工具
-- **Pinia** - Vue状态管理
-- **Axios** - HTTP客户端
+- **Pinia** - Vue 状态管理
+- **Axios** - HTTP 客户端
 - **Winston** - 日志管理
 
 ---
 
-⭐ 如果这个项目对你有帮助，请给个Star支持一下！
+⭐ 如果这个项目对你有帮助，请给个 Star 支持一下！

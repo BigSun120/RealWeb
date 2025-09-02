@@ -1,22 +1,24 @@
-# 🚀 快速部署参考卡片
+# 🚀 Git 部署参考卡片
 
 ## 📝 常用部署命令
 
-### 🎯 一键部署（推荐）
+### 🎯 Git 部署（推荐）
+
 ```bash
 # 完整部署（前端 + 后端）
-./deploy-full.sh
+./deploy-git.sh
 
-# 仅部署前端
-./deploy-frontend.sh
+# 仅部署后端（快速）
+./deploy-backend-only.sh
 
-# 仅部署后端
-./deploy-backend.sh
+# 手动Git部署
+ssh root@38.146.29.35 "cd ~/temp-email-system && git pull && npm run build && pm2 restart website-backend"
 ```
 
 ### 🔧 手动部署命令
 
 #### 前端部署
+
 ```bash
 # 1. 构建前端
 cd frontend && npm run build
@@ -29,6 +31,7 @@ curl -I https://godaug.fun
 ```
 
 #### 后端部署
+
 ```bash
 # 1. 上传文件
 scp backend/app.js root@38.146.29.35:~/temp-email-system/backend/
@@ -44,6 +47,7 @@ ssh root@38.146.29.35 "curl -s http://localhost:3001/health"
 ## 🔍 常用检查命令
 
 ### 服务状态检查
+
 ```bash
 # PM2 进程状态
 ssh root@38.146.29.35 "pm2 status"
@@ -59,6 +63,7 @@ ssh root@38.146.29.35 "docker ps | grep mongodb"
 ```
 
 ### API 测试
+
 ```bash
 # 健康检查
 curl https://godaug.fun/api/health
@@ -73,6 +78,7 @@ curl https://godaug.fun/api/tools?limit=1
 ## 🚨 故障排除
 
 ### 前端问题
+
 ```bash
 # 检查文件上传
 ssh root@38.146.29.35 "ls -la /var/www/html/"
@@ -85,6 +91,7 @@ ssh root@38.146.29.35 "tail -f /var/log/nginx/error.log"
 ```
 
 ### 后端问题
+
 ```bash
 # 重启后端
 ssh root@38.146.29.35 "pm2 restart website-backend"
@@ -97,6 +104,7 @@ ssh root@38.146.29.35 "ss -tlnp | grep :3001"
 ```
 
 ### 数据库问题
+
 ```bash
 # 重启 MongoDB
 ssh root@38.146.29.35 "docker restart mongodb"
@@ -108,11 +116,13 @@ ssh root@38.146.29.35 "docker exec mongodb mongosh --eval 'db.runCommand({ping:1
 ## 📋 部署检查清单
 
 ### 部署前 ✅
+
 - [ ] 代码已保存并测试
 - [ ] 确认要部署的功能
 - [ ] 备份重要数据（如需要）
 
 ### 部署后 ✅
+
 - [ ] 前端页面正常加载
 - [ ] 用户登录功能正常
 - [ ] API 接口响应正常
@@ -122,6 +132,7 @@ ssh root@38.146.29.35 "docker exec mongodb mongosh --eval 'db.runCommand({ping:1
 ## 🔄 回滚操作
 
 ### 快速回滚后端
+
 ```bash
 # 恢复备份文件
 ssh root@38.146.29.35 "cd ~/temp-email-system/backend && cp app.js.backup.* app.js"
@@ -129,6 +140,7 @@ ssh root@38.146.29.35 "pm2 restart website-backend"
 ```
 
 ### 快速回滚前端
+
 ```bash
 # 重新部署之前的版本（需要本地有备份）
 rsync -avz --delete frontend/dist.backup/ root@38.146.29.35:/var/www/html/
