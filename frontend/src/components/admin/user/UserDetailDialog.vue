@@ -31,7 +31,7 @@
         </div>
 
         <!-- 详细信息 -->
-        <el-descriptions :column="2" border class="detail-descriptions">
+        <el-descriptions :column="2" border class="detail-descriptions" v-if="userDetail">
           <el-descriptions-item label="用户ID">
             {{ userDetail._id }}
           </el-descriptions-item>

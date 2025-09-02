@@ -227,14 +227,16 @@ export default {
         }
 
         // 调用API
-        if (isEdit.value) {
+        if (isEdit.value && props.userData?._id) {
           // 调用更新用户API
           await updateUser(props.userData._id, submitData);
           ElMessage.success('用户更新成功');
-        } else {
+        } else if (!isEdit.value) {
           // 调用创建用户API
           await createUser(submitData);
           ElMessage.success('用户创建成功');
+        } else {
+          throw new Error('用户数据无效');
         }
 
         emit('success');

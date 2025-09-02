@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const mongoose = require('mongoose');
 require('dotenv').config({ path: '../.env' });
 
 const connectDB = require('./src/config/database');
@@ -39,57 +40,70 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // 连接数据库并初始化配置
-connectDB().then(async () => {
-  // 初始化安全配置
-  const SecurityConfig = require('./src/models/SecurityConfig');
-  await SecurityConfig.initializeDefaults();
-  logger.info('安全配置初始化完成');
+const initializeDatabase = async () => {
+  try {
+    await connectDB();
 
-  // 初始化默认管理员
-  await initDefaultAdmin();
+    // 检查数据库连接状态
+    if (mongoose.connection.readyState === 1) {
+      // 初始化安全配置
+      const SecurityConfig = require('./src/models/SecurityConfig');
+      await SecurityConfig.initializeDefaults();
+      logger.info('安全配置初始化完成');
 
-  // 初始化活动日志测试数据
-  await initActivityData();
+      // 初始化默认管理员
+      await initDefaultAdmin();
 
-  // 初始化分类和标签数据
-  await initAllData();
+      // 初始化活动日志测试数据
+      await initActivityData();
 
-  // 初始化工具箱数据
-  await initToolsData();
+      // 初始化分类和标签数据
+      await initAllData();
 
-  // 启动工具箱分析调度器
-  analyticsScheduler.start();
+      // 初始化工具箱数据
+      await initToolsData();
 
-  // 记录系统启动事件
-  await ActivityLogger.logSystemEvent(
-    '系统启动',
-    '个人网站系统成功启动',
-    {
-      environment: process.env.NODE_ENV || 'development',
-      port: PORT,
-      startTime: new Date()
+      // 启动工具箱分析调度器
+      analyticsScheduler.start();
+
+      // 记录系统启动事件
+      await ActivityLogger.logSystemEvent('系统启动', '个人网站系统成功启动', {
+        environment: process.env.NODE_ENV || 'development',
+        port: PORT,
+        startTime: new Date()
+      });
+
+      logger.info('数据库初始化完成');
+    } else {
+      logger.warn('数据库未连接，跳过数据初始化');
     }
-  );
-}).catch(error => {
-  logger.error('数据库连接或初始化失败:', error);
-});
+  } catch (error) {
+    logger.error('数据库连接或初始化失败:', error);
+    logger.info('继续启动服务器，部分功能可能不可用');
+  }
+};
+
+// 异步初始化数据库，不阻塞服务器启动
+initializeDatabase();
 
 // 信任代理设置（用于nginx反向代理）
 app.set('trust proxy', 1);
 
 // 基础中间件 - 最小化安全头
 // app.use(helmet()); // 暂时完全禁用 helmet
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    'http://localhost:3001', // 支持Vite的备用端口
-    'http://38.146.29.35',   // 生产环境IP
-    'http://localhost'       // 本地访问
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:3000',
+      'http://localhost:3001', // 支持Vite的备用端口
+      'http://38.146.29.35', // 生产环境IP
+      'http://localhost' // 本地访问
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
 
 // 限流中间件 - 仅在生产环境启用
 if (process.env.NODE_ENV === 'production') {
@@ -125,20 +139,24 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 静态文件服务 - 添加CORS头
-app.use('/uploads', (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
-  // 处理预检请求
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+    // 处理预检请求
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
 
-  next();
-}, express.static(path.join(__dirname, 'uploads')));
+    next();
+  },
+  express.static(path.join(__dirname, 'uploads'))
+);
 
 // 前端静态文件服务（生产环境）- 已由 nginx 处理，禁用以避免路由冲突
 // if (process.env.NODE_ENV === 'production') {

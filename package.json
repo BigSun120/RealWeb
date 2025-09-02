@@ -18,6 +18,8 @@
     "lint:backend": "cd backend && npm run lint",
     "lint:fix": "npm run lint:frontend -- --fix && npm run lint:backend -- --fix",
     "format": "prettier --write \"**/*.{js,vue,ts,json,md}\"",
+    "env:dev": "node scripts/setup-env.js development",
+    "env:prod": "node scripts/setup-env.js production",
     "type-check": "cd frontend && npm run type-check",
     "setup": "npm run setup:frontend && npm run setup:backend",
     "setup:frontend": "cd frontend && npm install",
@@ -50,15 +52,7 @@
     "email:send-test": "node scripts/send-external-test.js",
     "dns:check": "node scripts/test-dns-config.js"
   },
-  "keywords": [
-    "blog",
-    "games",
-    "vue",
-    "node",
-    "mongodb",
-    "express",
-    "personal-website"
-  ],
+  "keywords": ["blog", "games", "vue", "node", "mongodb", "express", "personal-website"],
   "author": "Your Name <your.email@example.com>",
   "license": "MIT",
   "repository": {
