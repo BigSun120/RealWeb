@@ -155,7 +155,7 @@ app.use(
 
     next();
   },
-  express.static(path.join(__dirname, 'uploads'))
+  express.static(path.resolve(process.env.UPLOAD_PATH || path.join(__dirname, 'uploads')))
 );
 
 // 前端静态文件服务（生产环境）- 已由 nginx 处理，禁用以避免路由冲突

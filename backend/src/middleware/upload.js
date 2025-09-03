@@ -3,23 +3,25 @@ const path = require('path');
 const fs = require('fs');
 const logger = require('../utils/logger');
 
+// 基础上传目录：优先使用环境变量 UPLOAD_PATH，否则回退到 backend/uploads
+const baseUploadDir = path.resolve(
+  process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads')
+);
+const avatarDir = path.join(baseUploadDir, 'avatars');
+const articlesDir = path.join(baseUploadDir, 'articles');
+
 // 确保上传目录存在
-const uploadDir = path.join(__dirname, '../../uploads');
-const avatarDir = path.join(uploadDir, 'avatars');
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-if (!fs.existsSync(avatarDir)) {
-  fs.mkdirSync(avatarDir, { recursive: true });
-}
+[baseUploadDir, avatarDir, articlesDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
 // 配置存储
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     // 根据文件类型选择不同的目录
-    let uploadPath = uploadDir;
+    let uploadPath = baseUploadDir;
 
     if (file.fieldname === 'avatar') {
       uploadPath = avatarDir;
@@ -29,7 +31,7 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     // 生成唯一文件名：时间戳 + 随机数 + 原扩展名
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
     cb(null, file.fieldname + '-' + uniqueSuffix + ext);
   }
@@ -102,7 +104,7 @@ const handleUploadError = (error, req, res, next) => {
 };
 
 // 删除文件的工具函数
-const deleteFile = (filePath) => {
+const deleteFile = filePath => {
   try {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -117,14 +119,14 @@ const deleteFile = (filePath) => {
 const uploadArticleImage = multer({
   storage: multer.diskStorage({
     destination: function (req, file, cb) {
-      const uploadPath = path.join(__dirname, '../../uploads/articles');
+      const uploadPath = articlesDir;
       if (!fs.existsSync(uploadPath)) {
         fs.mkdirSync(uploadPath, { recursive: true });
       }
       cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
       const ext = path.extname(file.originalname);
       cb(null, 'article-' + uniqueSuffix + ext);
     }

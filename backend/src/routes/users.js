@@ -1,5 +1,8 @@
 const express = require('express');
 const path = require('path');
+const baseUploadDir = path.resolve(
+  process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads')
+);
 const { auth } = require('../middleware/auth');
 const { uploadAvatar, handleUploadError, deleteFile } = require('../middleware/upload');
 const SecurityConfig = require('../models/SecurityConfig');
@@ -7,8 +10,6 @@ const User = require('../models/User');
 const logger = require('../utils/logger');
 
 const router = express.Router();
-
-
 
 // 密码验证函数
 function validatePasswordByConfig(password, rules, user = null) {
@@ -59,11 +60,32 @@ function validatePasswordByConfig(password, rules, user = null) {
 // 检查是否为常见密码
 function isCommonPassword(password) {
   const commonPasswords = [
-    '123456', 'password', '123456789', '12345678', '12345',
-    '1234567', '1234567890', 'qwerty', 'abc123', 'password123',
-    'admin', 'root', '000000', '111111', '888888', '666666',
-    '123123', 'aaaaaa', 'qwerty123', 'welcome', 'login',
-    'master', 'hello', 'freedom', 'whatever', 'qazwsx'
+    '123456',
+    'password',
+    '123456789',
+    '12345678',
+    '12345',
+    '1234567',
+    '1234567890',
+    'qwerty',
+    'abc123',
+    'password123',
+    'admin',
+    'root',
+    '000000',
+    '111111',
+    '888888',
+    '666666',
+    '123123',
+    'aaaaaa',
+    'qwerty123',
+    'welcome',
+    'login',
+    'master',
+    'hello',
+    'freedom',
+    'whatever',
+    'qazwsx'
   ];
 
   return commonPasswords.includes(password.toLowerCase());
@@ -80,9 +102,7 @@ function containsPersonalInfo(password, user) {
 
   const lowerPassword = password.toLowerCase();
 
-  return personalInfo.some(info =>
-    info.length >= 3 && lowerPassword.includes(info)
-  );
+  return personalInfo.some(info => info.length >= 3 && lowerPassword.includes(info));
 }
 
 // 搜索用户（用于@功能）
@@ -165,7 +185,7 @@ router.put('/profile', auth, async (req, res, next) => {
 
 // 上传头像
 router.post('/avatar', auth, (req, res, next) => {
-  uploadAvatar(req, res, async (err) => {
+  uploadAvatar(req, res, async err => {
     if (err) {
       return handleUploadError(err, req, res, next);
     }
@@ -190,7 +210,7 @@ router.post('/avatar', auth, (req, res, next) => {
 
       // 删除旧头像文件（如果存在且不是默认头像）
       if (oldAvatar && oldAvatar.startsWith('/uploads/')) {
-        const oldAvatarPath = path.join(__dirname, '../../', oldAvatar);
+        const oldAvatarPath = path.join(baseUploadDir, oldAvatar.replace(/^\/uploads\//, ''));
         deleteFile(oldAvatarPath);
       }
 
@@ -204,7 +224,6 @@ router.post('/avatar', auth, (req, res, next) => {
           user: user.getPublicProfile()
         }
       });
-
     } catch (error) {
       // 如果保存失败，删除已上传的文件
       if (req.file) {
@@ -240,7 +259,6 @@ router.delete('/avatar', auth, async (req, res, next) => {
         user: user.getPublicProfile()
       }
     });
-
   } catch (error) {
     next(error);
   }
@@ -331,7 +349,6 @@ router.put('/password', auth, async (req, res, next) => {
         user: user.getPublicProfile()
       }
     });
-
   } catch (error) {
     logger.error('密码修改失败:', error);
     next(error);

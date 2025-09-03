@@ -1,230 +1,204 @@
-# 🚀 代码更新部署指南
+# ✅ 标准部署（Git 最通用做法）
 
-本文档详细说明如何将本地修改的前后端代码部署到生产服务器。
+下述流程采用“本地提交并推送到 GitHub，服务器通过 Git 拉取”的方式，是最通用、最正规、可追踪回滚的部署方式。每一步都标明“在本地执行/在服务器执行”。
 
-## 📋 前置条件
+- 服务器地址: 38.146.29.35
+- 项目目录: /root/temp-email-system
+- 仓库地址: git@github.com:BigSun120/RealWeb.git 或 https://github.com/BigSun120/RealWeb.git
+- 主分支: master
+- 后端进程: PM2 进程名 website-backend（端口 8000 由 Nginx 反代）
+- 前端静态资源目录: /var/www/html/
 
-- 确保本地开发环境正常
-- 确保有服务器 SSH 访问权限
-- 确保服务器上的服务正常运行
+## 1) 在本地执行：提交并推送
 
-## 🔄 完整部署流程
-
-### 1. 前端代码更新部署
-
-#### 1.1 本地构建前端
 ```bash
-# 进入前端目录
-cd frontend
+# 在本地项目根目录（D:\cc\web）
 
-# 安装依赖（如果是首次部署或依赖有变化）
+# 1. 拉取最新代码（避免冲突）
+git pull origin master
+
+# 2. 提交本地更改
+git add .
+git commit -m "feat/fix: 描述本次变更"
+
+# 3. 推送到远程
+git push origin master
+```
+
+## 2) 在服务器执行：拉取并部署
+
+```bash
+# 1. SSH 登录服务器（在本地终端执行）
+ssh root@38.146.29.35
+
+# 2. 切到项目目录（在服务器执行）
+cd ~/temp-email-system
+
+# 3. 拉取最新代码（在服务器执行）
+# 常用且安全：
+git pull origin master
+# 若服务器上曾经手动改过文件导致冲突，可以使用：
+# git fetch origin && git reset --hard origin/master
+
+# 4. 安装后端依赖（前端不在服务器构建）
+cd backend && npm install && cd ..
+
+# 5. 重启后端服务（在服务器执行）
+pm2 restart website-backend
+
+# 提示：前端请按下文“5) 本地构建并上传部署（通用且稳定）”在本地构建后，用 scp/rsync 上传至 /var/www/html
+```
+
+## 3) 部署后验证（在服务器或本地皆可）
+
+```bash
+# 直接访问后端（服务器本机执行）
+curl -s http://localhost:8000/health
+
+# 经由 Nginx 的公网 API（本地或服务器均可）
+curl -s https://godaug.fun/api/health
+
+# 前端首页（本地浏览器）
+open https://godaug.fun  # Windows 请手动在浏览器打开
+```
+
+## 4) 环境变量与进程（推荐一次性配置，非每次必做）
+
+- 后端依赖的环境变量（如 PORT、MONGODB_URI、FRONTEND_URL、UPLOAD_PATH、JWT_SECRET）建议通过 PM2 生态文件统一管理，避免重启丢失。
+- 示例（仅说明，实际文件名：ecosystem.config.js）：
+
+```js
+module.exports = {
+  apps: [
+    {
+      name: 'website-backend',
+      script: 'backend/app.js',
+      instances: 1,
+      exec_mode: 'fork',
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 8000,
+        MONGODB_URI: 'mongodb://127.0.0.1:27017/personal_website_prod',
+        FRONTEND_URL: 'https://godaug.fun',
+        UPLOAD_PATH: '/root/temp-email-system/backend/uploads'
+        // JWT_SECRET: "请使用安全的随机密钥"
+      }
+    }
+  ]
+};
+```
+
+应用方式（在服务器执行）：
+
+```bash
+cd ~/temp-email-system
+pm2 delete website-backend || true
+pm2 start ecosystem.config.js --env production
+pm2 save
+pm2 startup  # 按提示执行一条命令以开机自启
+```
+
+---
+
+## 5) 本地构建并上传部署（通用且稳定）
+
+当服务器构建环境不稳定或 SSH 容易断线时，推荐在本地构建后仅上传 dist 产物。
+
+### A. 在本地执行（D:\cc\web）
+
+```bash
+cd frontend
 npm install
-
-# 构建生产版本
 npm run build
 ```
 
-#### 1.2 部署到服务器
+### B. 在本地上传到服务器
+
+- 使用 scp（Windows 自带 OpenSSH 或 Git Bash）：
+
 ```bash
-# 上传构建文件到服务器
 scp -r dist/* root@38.146.29.35:/var/www/html/
+```
 
-# 或者使用 rsync（推荐，更高效）
+- 或使用 rsync（如已安装）：
+
+```bash
 rsync -avz --delete dist/ root@38.146.29.35:/var/www/html/
 ```
 
-#### 1.3 验证前端部署
+### C. 验证（本地或服务器）
+
 ```bash
-# 测试前端是否正常访问
 curl -I https://godaug.fun
-
-# 检查静态资源
-curl -I https://godaug.fun/assets/index-*.js
 ```
 
-### 2. 后端代码更新部署
+## 6) 服务器服务重启与排障速查
 
-#### 2.1 上传后端文件
+### 后端（PM2 管理的 Node 服务）
+
 ```bash
-# 上传主要应用文件
-scp backend/app.js root@38.146.29.35:~/temp-email-system/backend/
-
-# 上传路由文件（如果有修改）
-scp backend/src/routes/*.js root@38.146.29.35:~/temp-email-system/backend/src/routes/
-
-# 上传模型文件（如果有修改）
-scp backend/src/models/*.js root@38.146.29.35:~/temp-email-system/backend/src/models/
-
-# 上传中间件文件（如果有修改）
-scp backend/src/middleware/*.js root@38.146.29.35:~/temp-email-system/backend/src/middleware/
-
-# 上传控制器文件（如果有修改）
-scp backend/src/controllers/*.js root@38.146.29.35:~/temp-email-system/backend/src/controllers/
-
-# 上传配置文件（如果有修改）
-scp backend/src/config/*.js root@38.146.29.35:~/temp-email-system/backend/src/config/
-
-# 上传工具文件（如果有修改）
-scp backend/src/utils/*.js root@38.146.29.35:~/temp-email-system/backend/src/utils/
-```
-
-#### 2.2 更新依赖（如果 package.json 有变化）
-```bash
-# 上传 package.json
-scp backend/package.json root@38.146.29.35:~/temp-email-system/backend/
-
-# SSH 到服务器安装依赖
-ssh root@38.146.29.35 "cd ~/temp-email-system/backend && npm install"
-```
-
-#### 2.3 重启后端服务
-```bash
-# SSH 到服务器重启 PM2 进程
-ssh root@38.146.29.35 "pm2 restart website-backend"
-
-# 检查服务状态
-ssh root@38.146.29.35 "pm2 status"
-
-# 查看日志确认启动正常
-ssh root@38.146.29.35 "pm2 logs website-backend --lines 20"
-```
-
-#### 2.4 验证后端部署
-```bash
-# 测试后端健康检查
-ssh root@38.146.29.35 "curl -s http://localhost:3001/health"
-
-# 测试 API 接口
-ssh root@38.146.29.35 "curl -s https://godaug.fun/api/health"
-```
-
-## 🎯 快速部署脚本
-
-### 前端快速部署
-创建 `deploy-frontend.sh` 脚本：
-```bash
-#!/bin/bash
-echo "🚀 开始部署前端..."
-
-# 构建前端
-cd frontend
-npm run build
-
-# 部署到服务器
-echo "📤 上传文件到服务器..."
-rsync -avz --delete dist/ root@38.146.29.35:/var/www/html/
-
-# 验证部署
-echo "✅ 验证部署..."
-curl -I https://godaug.fun
-
-echo "🎉 前端部署完成！"
-```
-
-### 后端快速部署
-创建 `deploy-backend.sh` 脚本：
-```bash
-#!/bin/bash
-echo "🚀 开始部署后端..."
-
-# 上传核心文件
-echo "📤 上传后端文件..."
-scp backend/app.js root@38.146.29.35:~/temp-email-system/backend/
-scp -r backend/src/ root@38.146.29.35:~/temp-email-system/backend/
-
-# 重启服务
-echo "🔄 重启后端服务..."
-ssh root@38.146.29.35 "pm2 restart website-backend"
-
-# 等待服务启动
-sleep 5
-
-# 验证部署
-echo "✅ 验证部署..."
-ssh root@38.146.29.35 "curl -s http://localhost:3001/health"
-
-echo "🎉 后端部署完成！"
-```
-
-## 🔧 常见问题处理
-
-### 1. 前端部署后页面空白
-```bash
-# 检查文件是否正确上传
-ssh root@38.146.29.35 "ls -la /var/www/html/"
-
-# 检查 nginx 配置
-ssh root@38.146.29.35 "nginx -t"
-
-# 重启 nginx
-ssh root@38.146.29.35 "systemctl reload nginx"
-```
-
-### 2. 后端 API 404 错误
-```bash
-# 检查后端进程状态
-ssh root@38.146.29.35 "pm2 status"
-
-# 查看后端日志
-ssh root@38.146.29.35 "pm2 logs website-backend"
-
 # 重启后端
-ssh root@38.146.29.35 "pm2 restart website-backend"
+pm2 restart website-backend
+
+# 查看状态与最近日志
+pm2 status
+pm2 logs website-backend --lines 100
+
+# 使用 PM2 生态文件重新拉起（如修改了 ecosystem.config.js 或环境变量）
+cd ~/temp-email-system
+pm2 delete website-backend || true
+pm2 start ecosystem.config.js --env production
+pm2 save
 ```
 
-### 3. 数据库连接问题
+### 前端（Nginx 提供静态文件）
+
+- 仅替换 /var/www/html 下的文件时，无需重启任何服务
+- 仅在 Nginx 配置变更时 reload（不是 restart）
+
 ```bash
-# 检查 MongoDB 状态
-ssh root@38.146.29.35 "docker ps | grep mongodb"
+# 语法检查 & 热重载
+nginx -t && systemctl reload nginx
+
+# 如需完整重启（一般不需要）
+systemctl restart nginx
+
+# 查看 Nginx 日志（排查 404/配置问题）
+tail -n 100 /var/log/nginx/error.log
+```
+
+### 数据库（MongoDB 容器）
+
+```bash
+# 查看容器与端口
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 # 重启 MongoDB 容器
-ssh root@38.146.29.35 "docker restart mongodb"
+docker restart mongodb
+
+# 查看 MongoDB 日志
+docker logs --tail 200 mongodb
 ```
 
-## 📝 部署检查清单
+### 临时邮箱服务（Inbucket 容器）
 
-### 部署前检查
-- [ ] 本地代码已提交到 Git
-- [ ] 前端构建无错误
-- [ ] 后端测试通过
-- [ ] 环境变量配置正确
-
-### 部署后验证
-- [ ] 前端页面正常访问
-- [ ] API 接口正常响应
-- [ ] 用户登录功能正常
-- [ ] 数据库连接正常
-- [ ] 文件上传功能正常
-
-## 🚨 回滚操作
-
-如果部署出现问题，可以快速回滚：
-
-### 前端回滚
 ```bash
-# 恢复之前的前端文件（需要提前备份）
-ssh root@38.146.29.35 "cp -r /var/www/html.backup/* /var/www/html/"
+# 重启 Inbucket
+docker restart inbucket
+
+# 查看日志
+docker logs --tail 200 inbucket
 ```
 
-### 后端回滚
+### 一次性健康验证
+
 ```bash
-# 恢复之前的后端文件
-ssh root@38.146.29.35 "cp ~/temp-email-system/backend/app.js.backup ~/temp-email-system/backend/app.js"
-ssh root@38.146.29.35 "pm2 restart website-backend"
+# 在服务器本机验证后端健康
+curl -s http://localhost:8000/health
+
+# 经 Nginx 公网验证 API 健康
+curl -s https://godaug.fun/api/health
+
+# 验证静态头像（替换为实际存在的文件名）
+curl -I https://godaug.fun/uploads/avatars/<an-existing-avatar-file>.png
 ```
-
-## 💡 最佳实践
-
-1. **备份重要文件**：部署前备份关键配置文件
-2. **分步部署**：先部署后端，再部署前端
-3. **监控日志**：部署后及时查看日志
-4. **测试验证**：每次部署后进行功能测试
-5. **版本标记**：使用 Git 标签标记部署版本
-
-## 📞 紧急联系
-
-如果部署过程中遇到严重问题：
-1. 立即停止部署操作
-2. 查看错误日志
-3. 执行回滚操作
-4. 记录问题详情以便后续分析
