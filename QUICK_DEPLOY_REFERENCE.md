@@ -17,31 +17,36 @@ ssh root@38.146.29.35 "cd ~/temp-email-system && git pull && npm run build && pm
 
 ### 🔧 手动部署命令
 
-#### 前端部署
+#### 标准 Git 部署流程
 
 ```bash
-# 1. 构建前端
-cd frontend && npm run build
+# 1. 本地提交代码
+git add .
+git commit -m "描述更改"
+git push origin master
 
-# 2. 上传到服务器
-rsync -avz --delete dist/ root@38.146.29.35:/var/www/html/
+# 2. 服务器同步代码
+ssh root@38.146.29.35 "cd ~/temp-email-system && git pull origin master"
 
-# 3. 验证
-curl -I https://godaug.fun
-```
-
-#### 后端部署
-
-```bash
-# 1. 上传文件
-scp backend/app.js root@38.146.29.35:~/temp-email-system/backend/
-scp -r backend/src/ root@38.146.29.35:~/temp-email-system/backend/
-
-# 2. 重启服务
+# 3. 重启服务
 ssh root@38.146.29.35 "pm2 restart website-backend"
 
-# 3. 验证
+# 4. 验证部署
 ssh root@38.146.29.35 "curl -s http://localhost:3001/health"
+```
+
+#### 包含依赖更新的部署
+
+```bash
+# 额外执行依赖安装
+ssh root@38.146.29.35 "cd ~/temp-email-system/backend && npm install"
+```
+
+#### 包含前端更新的部署
+
+```bash
+# 额外执行前端构建
+ssh root@38.146.29.35 "cd ~/temp-email-system/frontend && npm run build && rsync -av dist/ /var/www/html/"
 ```
 
 ## 🔍 常用检查命令

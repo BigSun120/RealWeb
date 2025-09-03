@@ -102,7 +102,10 @@
               <div class="social-item">
                 <el-icon><Link /></el-icon>
                 <span class="social-label">个人邮箱:</span>
-                <el-input v-model="personalInfo.email" placeholder="personal@email.com（可选，如与联系邮箱不同）" />
+                <el-input
+                  v-model="personalInfo.email"
+                  placeholder="personal@email.com（可选，如与联系邮箱不同）"
+                />
               </div>
             </div>
           </el-form-item>
@@ -171,8 +174,6 @@
           </el-form-item>
         </el-form>
       </el-card>
-
-
     </div>
   </div>
 </template>
@@ -180,16 +181,18 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import {
-  Setting, User, Document, Plus, Link
-} from '@element-plus/icons-vue';
+import { Setting, User, Document, Plus, Link } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import api from '@/api';
 
 export default {
   name: 'AdminSettings',
   components: {
-    Setting, User, Document, Plus, Link
+    Setting,
+    User,
+    Document,
+    Plus,
+    Link
   },
   setup() {
     const userStore = useUserStore();
@@ -220,15 +223,13 @@ export default {
       enableShare: true
     });
 
-
-
     // 上传配置
     const uploadUrl = computed(() => {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
       return `${baseUrl}/articles/upload-image`;
     });
     const uploadHeaders = computed(() => ({
-      'Authorization': `Bearer ${userStore.token}`
+      Authorization: `Bearer ${userStore.token}`
     }));
 
     // 保存网站信息
@@ -299,7 +300,7 @@ export default {
     };
 
     // Logo上传成功
-    const handleLogoSuccess = (response) => {
+    const handleLogoSuccess = response => {
       if (response.code === 200) {
         siteInfo.value.logo = response.data.url;
         ElMessage.success('Logo上传成功');
@@ -309,7 +310,7 @@ export default {
     };
 
     // Logo上传前验证
-    const beforeLogoUpload = (file) => {
+    const beforeLogoUpload = file => {
       const isImage = file.type.startsWith('image/');
       const isLt2M = file.size / 1024 / 1024 < 2;
 
@@ -325,12 +326,10 @@ export default {
     };
 
     // 格式化日期
-    const formatDate = (dateString) => {
+    const formatDate = dateString => {
       if (!dateString) return '';
       return new Date(dateString).toLocaleDateString('zh-CN');
     };
-
-
 
     // 加载所有设置
     const loadAllSettings = async () => {

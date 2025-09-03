@@ -61,9 +61,16 @@
             <el-dropdown @command="handleCommand">
               <span class="user-info">
                 <el-avatar :src="avatarUrl" :size="32">
-                  {{ userStore.user && userStore.user.username && userStore.user.username.charAt(0) || 'U' }}
+                  {{
+                    (userStore.user &&
+                      userStore.user.username &&
+                      userStore.user.username.charAt(0)) ||
+                    'U'
+                  }}
                 </el-avatar>
-                <span class="username">{{ userStore.user && userStore.user.username || '用户' }}</span>
+                <span class="username">{{
+                  (userStore.user && userStore.user.username) || '用户'
+                }}</span>
                 <el-icon><ArrowDown /></el-icon>
               </span>
               <template #dropdown>
@@ -102,7 +109,9 @@
         <router-link to="/" @click="showMobileMenu = false">首页</router-link>
         <router-link to="/blog" @click="showMobileMenu = false">博客</router-link>
         <router-link to="/tools" @click="showMobileMenu = false">工具箱</router-link>
-        <router-link v-if="userStore.isLoggedIn" to="/temp-email" @click="showMobileMenu = false">临时邮箱</router-link>
+        <router-link v-if="userStore.isLoggedIn" to="/temp-email" @click="showMobileMenu = false"
+          >临时邮箱</router-link
+        >
         <router-link to="/games" @click="showMobileMenu = false">小游戏</router-link>
         <router-link to="/about" @click="showMobileMenu = false">关于</router-link>
         <div class="mobile-user-actions">
@@ -235,7 +244,8 @@ export default {
     const avatarUrl = computed(() => {
       const avatar = userStore.user?.avatar;
       if (avatar && avatar.startsWith('/uploads/')) {
-        return `http://localhost:8000${avatar}`;
+        // 使用当前域名构建完整URL
+        return `${window.location.origin}${avatar}`;
       }
       return avatar || '';
     });

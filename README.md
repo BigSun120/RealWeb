@@ -123,6 +123,9 @@ npm run deploy
 npm run deploy:backend
 ```
 
+📖 **详细部署指南**: 查看 [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+⚡ **快速参考**: 查看 [QUICK_DEPLOY_REFERENCE.md](./QUICK_DEPLOY_REFERENCE.md)
+
 ## 🔧 环境配置
 
 ### 环境变量说明

@@ -1,12 +1,7 @@
 <template>
   <div class="avatar-upload">
     <div class="avatar-container">
-      <el-avatar
-        :size="size"
-        :src="currentAvatar"
-        class="avatar"
-        @error="handleAvatarError"
-      >
+      <el-avatar :size="size" :src="currentAvatar" class="avatar" @error="handleAvatarError">
         <el-icon><User /></el-icon>
       </el-avatar>
 
@@ -27,12 +22,7 @@
 
     <!-- 操作按钮 -->
     <div class="actions" v-if="showActions">
-      <el-button
-        type="primary"
-        size="small"
-        @click="triggerUpload"
-        :loading="uploading"
-      >
+      <el-button type="primary" size="small" @click="triggerUpload" :loading="uploading">
         <el-icon><Upload /></el-icon>
         上传头像
       </el-button>
@@ -78,13 +68,7 @@
 
       <template #footer>
         <el-button @click="previewVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          @click="confirmUpload"
-          :loading="uploading"
-        >
-          确认上传
-        </el-button>
+        <el-button type="primary" @click="confirmUpload" :loading="uploading"> 确认上传 </el-button>
       </template>
     </el-dialog>
   </div>
@@ -130,8 +114,8 @@ export default {
 
     const currentAvatar = computed(() => {
       if (props.avatar && props.avatar.startsWith('/uploads/')) {
-        // 使用相对路径，让浏览器自动处理协议和域名
-        return `http://localhost:8000${props.avatar}`;
+        // 使用当前域名构建完整URL
+        return `${window.location.origin}${props.avatar}`;
       }
       return props.avatar;
     });
@@ -140,7 +124,7 @@ export default {
       fileInput.value?.click();
     };
 
-    const handleFileSelect = (event) => {
+    const handleFileSelect = event => {
       const file = event.target.files[0];
       if (!file) return;
 
@@ -160,7 +144,7 @@ export default {
 
       // 创建预览URL
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = e => {
         previewUrl.value = e.target.result;
         previewVisible.value = true;
       };
@@ -193,7 +177,6 @@ export default {
         if (fileInput.value) {
           fileInput.value.value = '';
         }
-
       } catch (error) {
         console.error('头像上传失败:', error);
         ElMessage.error(error.response?.data?.message || '头像上传失败');
@@ -215,7 +198,6 @@ export default {
         ElMessage.success('头像删除成功');
         emit('update:avatar', '');
         emit('delete-success', response.data.data);
-
       } catch (error) {
         if (error !== 'cancel') {
           console.error('头像删除失败:', error);
