@@ -7,7 +7,7 @@ const logger = require('../utils/logger');
 const router = express.Router();
 
 // 提取文章内容中的第一张图片
-const extractFirstImage = (content) => {
+const extractFirstImage = content => {
   if (!content) return null;
 
   // 匹配Markdown图片语法 ![alt](url) 和 HTML img标签
@@ -28,7 +28,7 @@ const extractFirstImage = (content) => {
 };
 
 // 处理文章数据，添加自动封面
-const processArticleData = (article) => {
+const processArticleData = article => {
   const articleObj = article.toObject ? article.toObject() : article;
 
   // 如果没有设置封面图，尝试从内容中提取
@@ -62,7 +62,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
 
     let query = {
       status: 'published',
-      isDeleted: { $ne: true }  // 排除已删除的文章
+      isDeleted: { $ne: true } // 排除已删除的文章
     };
 
     // 构建排序对象
@@ -117,7 +117,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
       .sort(sort)
       .skip(skip)
       .limit(limitNum)
-      .populate('author', 'username avatar');
+      .populate('author', 'displayName username avatar');
 
     // 处理文章数据，提取封面图片
     const processedArticles = articles.map(article => {
@@ -167,7 +167,9 @@ router.get('/filter-options', async (req, res) => {
     const articles = await Article.find({
       status: 'published',
       isDeleted: { $ne: true }
-    }).populate('author', 'username').select('author');
+    })
+      .populate('author', 'displayName username')
+      .select('author');
 
     const authors = [...new Set(articles.map(a => a.author?.username).filter(Boolean))];
 
@@ -210,7 +212,7 @@ router.get('/my', auth, async (req, res, next) => {
 
     let query = {
       authorId: req.user._id,
-      isDeleted: { $ne: true }  // 排除已删除的文章
+      isDeleted: { $ne: true } // 排除已删除的文章
     };
 
     // 状态筛选
@@ -245,8 +247,10 @@ router.get('/my', auth, async (req, res, next) => {
 // 获取文章详情
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
-    const article = await Article.findById(req.params.id)
-      .populate('author', 'username avatar bio');
+    const article = await Article.findById(req.params.id).populate(
+      'author',
+      'displayName username avatar bio'
+    );
 
     if (!article || article.status !== 'published' || article.isDeleted) {
       return res.status(404).json({
@@ -389,13 +393,13 @@ router.delete('/:id', auth, async (req, res, next) => {
   }
 });
 
-
-
 // 获取文章详情（包括草稿，仅作者可见）
 router.get('/:id/edit', auth, async (req, res, next) => {
   try {
-    const article = await Article.findById(req.params.id)
-      .populate('author', 'username avatar bio');
+    const article = await Article.findById(req.params.id).populate(
+      'author',
+      'displayName username avatar bio'
+    );
 
     if (!article) {
       return res.status(404).json({
@@ -424,7 +428,7 @@ router.get('/:id/edit', auth, async (req, res, next) => {
 
 // 上传文章图片
 router.post('/upload-image', auth, (req, res, next) => {
-  uploadArticleImage(req, res, (err) => {
+  uploadArticleImage(req, res, err => {
     if (err) {
       return handleUploadError(err, req, res, next);
     }
@@ -536,10 +540,7 @@ router.post('/batch', adminAuth, async (req, res, next) => {
             message: '请指定标签'
           });
         }
-        result = await Article.updateMany(
-          { _id: { $in: articleIds } },
-          { tags: data.tags }
-        );
+        result = await Article.updateMany({ _id: { $in: articleIds } }, { tags: data.tags });
         message = `成功更新 ${result.modifiedCount} 篇文章的标签`;
         break;
 
@@ -607,13 +608,16 @@ router.post('/batch', adminAuth, async (req, res, next) => {
     }
 
     // 记录操作日志
-    logger.info(`Admin ${req.user.username} performed batch ${action} on ${articleIds.length} articles`, {
-      userId: req.user._id,
-      action,
-      articleIds,
-      data,
-      result
-    });
+    logger.info(
+      `Admin ${req.user.username} performed batch ${action} on ${articleIds.length} articles`,
+      {
+        userId: req.user._id,
+        action,
+        articleIds,
+        data,
+        result
+      }
+    );
 
     res.json({
       success: true,
@@ -623,7 +627,6 @@ router.post('/batch', adminAuth, async (req, res, next) => {
         operation: action
       }
     });
-
   } catch (error) {
     logger.error('Batch article operation failed:', error);
     next(error);

@@ -23,12 +23,19 @@
                     :style="getAuthorAvatarStyle(article.author && article.author.avatar)"
                   >
                     <span class="avatar-fallback">
-                      {{ ((article.author && article.author.username) || '匿名').charAt(0) }}
+                      {{
+                        (
+                          (article.author &&
+                            (article.author.displayName || article.author.username)) ||
+                          '匿名'
+                        ).charAt(0)
+                      }}
                     </span>
                   </div>
                   <div class="author-details">
                     <span class="author-name">{{
-                      (article.author && article.author.username) || '匿名'
+                      (article.author && (article.author.displayName || article.author.username)) ||
+                      '匿名'
                     }}</span>
                     <div class="meta-info">
                       <span class="publish-date">{{
@@ -70,7 +77,7 @@
 
           <!-- 评论区域 -->
           <section
-            v-if="settingsStore.blogConfig?.enableComments !== false"
+            v-if="settingsStore?.blogConfig?.enableComments !== false"
             class="comments-section card"
           >
             <div class="card-header">

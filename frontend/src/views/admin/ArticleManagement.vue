@@ -10,7 +10,11 @@
     <div class="stats-cards">
       <el-row :gutter="16">
         <el-col :span="5">
-          <el-card class="stat-card" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">
+          <el-card
+            class="stat-card"
+            :class="{ active: activeTab === 'all' }"
+            @click="activeTab = 'all'"
+          >
             <div class="stat-content">
               <div class="stat-number">{{ stats.total }}</div>
               <div class="stat-label">全部文章</div>
@@ -18,7 +22,11 @@
           </el-card>
         </el-col>
         <el-col :span="5">
-          <el-card class="stat-card" :class="{ active: activeTab === 'published' }" @click="activeTab = 'published'">
+          <el-card
+            class="stat-card"
+            :class="{ active: activeTab === 'published' }"
+            @click="activeTab = 'published'"
+          >
             <div class="stat-content">
               <div class="stat-number">{{ stats.published }}</div>
               <div class="stat-label">已发布</div>
@@ -26,7 +34,11 @@
           </el-card>
         </el-col>
         <el-col :span="5">
-          <el-card class="stat-card" :class="{ active: activeTab === 'draft' }" @click="activeTab = 'draft'">
+          <el-card
+            class="stat-card"
+            :class="{ active: activeTab === 'draft' }"
+            @click="activeTab = 'draft'"
+          >
             <div class="stat-content">
               <div class="stat-number">{{ stats.draft }}</div>
               <div class="stat-label">草稿</div>
@@ -34,7 +46,11 @@
           </el-card>
         </el-col>
         <el-col :span="5">
-          <el-card class="stat-card" :class="{ active: activeTab === 'archived' }" @click="activeTab = 'archived'">
+          <el-card
+            class="stat-card"
+            :class="{ active: activeTab === 'archived' }"
+            @click="activeTab = 'archived'"
+          >
             <div class="stat-content">
               <div class="stat-number">{{ stats.archived }}</div>
               <div class="stat-label">已下架</div>
@@ -42,7 +58,11 @@
           </el-card>
         </el-col>
         <el-col :span="4">
-          <el-card class="stat-card deleted-card" :class="{ active: activeTab === 'deleted' }" @click="activeTab = 'deleted'">
+          <el-card
+            class="stat-card deleted-card"
+            :class="{ active: activeTab === 'deleted' }"
+            @click="activeTab = 'deleted'"
+          >
             <div class="stat-content">
               <div class="stat-number">{{ stats.deleted }}</div>
               <div class="stat-label">已删除</div>
@@ -57,11 +77,7 @@
       <div class="search-header">
         <span class="search-title">文章搜索</span>
         <div class="header-actions">
-          <el-button
-            text
-            type="primary"
-            @click="toggleAdvancedSearch"
-          >
+          <el-button text type="primary" @click="toggleAdvancedSearch">
             {{ showAdvancedSearch ? '收起高级搜索' : '展开高级搜索' }}
             <el-icon>
               <component :is="showAdvancedSearch ? 'ArrowUp' : 'ArrowDown'" />
@@ -115,7 +131,7 @@
             <el-option
               v-for="author in authorList"
               :key="author.id"
-              :label="author.username"
+              :label="author.displayName || author.username"
               :value="author.id"
             >
               <div class="author-option">
@@ -224,12 +240,8 @@
           <div class="batch-actions-right">
             <!-- 删除状态的文章操作 -->
             <template v-if="activeTab === 'deleted'">
-              <el-button type="success" @click="batchRestore">
-                批量恢复
-              </el-button>
-              <el-button type="danger" @click="batchPermanentDelete">
-                批量永久删除
-              </el-button>
+              <el-button type="success" @click="batchRestore"> 批量恢复 </el-button>
+              <el-button type="danger" @click="batchPermanentDelete"> 批量永久删除 </el-button>
             </template>
 
             <!-- 正常状态的文章操作 -->
@@ -265,9 +277,7 @@
                 </template>
               </el-dropdown>
 
-              <el-button @click="clearSelection">
-                取消选择
-              </el-button>
+              <el-button @click="clearSelection"> 取消选择 </el-button>
             </template>
           </div>
         </div>
@@ -278,10 +288,7 @@
           @selection-change="handleSelectionChange"
           ref="articleTable"
         >
-          <el-table-column
-            type="selection"
-            width="55"
-          />
+          <el-table-column type="selection" width="55" />
 
           <el-table-column prop="title" label="标题" min-width="200">
             <template #default="{ row }">
@@ -289,11 +296,7 @@
                 <span class="title-text" @click="editArticle(row)">
                   {{ row.title || '无标题' }}
                 </span>
-                <el-tag
-                  :type="getStatusTagType(row.status)"
-                  size="small"
-                  style="margin-left: 8px"
-                >
+                <el-tag :type="getStatusTagType(row.status)" size="small" style="margin-left: 8px">
                   {{ getStatusText(row.status) }}
                 </el-tag>
               </div>
@@ -304,9 +307,16 @@
             <template #default="{ row }">
               <div class="author-cell">
                 <el-avatar :src="row.author && row.author.avatar" :size="24">
-                  {{ row.author && row.author.username && row.author.username.charAt(0) || 'A' }}
+                  {{
+                    (row.author &&
+                      (row.author.displayName || row.author.username) &&
+                      (row.author.displayName || row.author.username).charAt(0)) ||
+                    'A'
+                  }}
                 </el-avatar>
-                <span style="margin-left: 8px">{{ row.author && row.author.username || '匿名' }}</span>
+                <span style="margin-left: 8px">{{
+                  (row.author && (row.author.displayName || row.author.username)) || '匿名'
+                }}</span>
               </div>
             </template>
           </el-table-column>
@@ -327,27 +337,17 @@
             <template #default="{ row }">
               <!-- 已删除文章的操作 -->
               <template v-if="activeTab === 'deleted'">
-                <el-button
-                  size="small"
-                  type="success"
-                  @click="restoreArticle(row)"
-                >
+                <el-button size="small" type="success" @click="restoreArticle(row)">
                   恢复
                 </el-button>
-                <el-button
-                  size="small"
-                  type="danger"
-                  @click="permanentDeleteArticle(row)"
-                >
+                <el-button size="small" type="danger" @click="permanentDeleteArticle(row)">
                   永久删除
                 </el-button>
               </template>
 
               <!-- 正常文章的操作 -->
               <template v-else>
-                <el-button size="small" @click="editArticle(row)">
-                  编辑
-                </el-button>
+                <el-button size="small" @click="editArticle(row)"> 编辑 </el-button>
 
                 <el-button
                   v-if="row.status === 'draft'"
@@ -376,13 +376,7 @@
                   重新发布
                 </el-button>
 
-                <el-button
-                  size="small"
-                  type="danger"
-                  @click="deleteArticle(row)"
-                >
-                  删除
-                </el-button>
+                <el-button size="small" type="danger" @click="deleteArticle(row)"> 删除 </el-button>
               </template>
             </template>
           </el-table-column>
@@ -447,8 +441,16 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
-  EditPen, Search, Refresh, ArrowUp, ArrowDown, Check, Close,
-  Folder, PriceTag, Delete
+  EditPen,
+  Search,
+  Refresh,
+  ArrowUp,
+  ArrowDown,
+  Check,
+  Close,
+  Folder,
+  PriceTag,
+  Delete
 } from '@element-plus/icons-vue';
 import api from '@/api';
 import {
@@ -475,8 +477,16 @@ function debounce(func, wait) {
 export default {
   name: 'ArticleManagement',
   components: {
-    EditPen, Search, Refresh, ArrowUp, ArrowDown, Check, Close,
-    Folder, PriceTag, Delete
+    EditPen,
+    Search,
+    Refresh,
+    ArrowUp,
+    ArrowDown,
+    Check,
+    Close,
+    Folder,
+    PriceTag,
+    Delete
   },
   setup() {
     const router = useRouter();
@@ -541,32 +551,32 @@ export default {
     });
 
     // 获取分类名称
-    const getCategoryName = (category) => {
+    const getCategoryName = category => {
       return categories[category] || category || '未分类';
     };
 
     // 获取状态文本
-    const getStatusText = (status) => {
+    const getStatusText = status => {
       const statusMap = {
-        'draft': '草稿',
-        'published': '已发布',
-        'archived': '已下架'
+        draft: '草稿',
+        published: '已发布',
+        archived: '已下架'
       };
       return statusMap[status] || status;
     };
 
     // 获取状态标签类型
-    const getStatusTagType = (status) => {
+    const getStatusTagType = status => {
       const typeMap = {
-        'draft': 'info',
-        'published': 'success',
-        'archived': 'warning'
+        draft: 'info',
+        published: 'success',
+        archived: 'warning'
       };
       return typeMap[status] || 'info';
     };
 
     // 格式化日期
-    const formatDate = (dateString) => {
+    const formatDate = dateString => {
       if (!dateString) return '';
       const date = new Date(dateString);
       return date.toLocaleDateString('zh-CN', {
@@ -577,12 +587,12 @@ export default {
     };
 
     // 编辑文章
-    const editArticle = (article) => {
+    const editArticle = article => {
       router.push(`/articles/${article.id}/edit`);
     };
 
     // 发布文章
-    const publishArticle = async (article) => {
+    const publishArticle = async article => {
       try {
         await api.put(`/articles/${article.id}`, {
           ...article,
@@ -597,7 +607,7 @@ export default {
     };
 
     // 下架文章
-    const archiveArticle = async (article) => {
+    const archiveArticle = async article => {
       try {
         await ElMessageBox.confirm(
           `确定要下架文章"${article.title || '无标题'}"吗？下架后用户将无法访问此文章。`,
@@ -624,7 +634,7 @@ export default {
     };
 
     // 删除文章（软删除）
-    const deleteArticle = async (article) => {
+    const deleteArticle = async article => {
       try {
         await ElMessageBox.confirm(
           `确定要删除文章"${article.title || '无标题'}"吗？删除后可在已删除列表中恢复。`,
@@ -648,17 +658,13 @@ export default {
     };
 
     // 恢复文章
-    const restoreArticle = async (article) => {
+    const restoreArticle = async article => {
       try {
-        await ElMessageBox.confirm(
-          `确定要恢复文章"${article.title || '无标题'}"吗？`,
-          '确认恢复',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'success'
-          }
-        );
+        await ElMessageBox.confirm(`确定要恢复文章"${article.title || '无标题'}"吗？`, '确认恢复', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'success'
+        });
 
         await api.put(`/admin/articles/${article.id}/restore`);
         await loadArticles();
@@ -672,7 +678,7 @@ export default {
     };
 
     // 永久删除文章
-    const permanentDeleteArticle = async (article) => {
+    const permanentDeleteArticle = async article => {
       try {
         await ElMessageBox.confirm(
           `确定要永久删除文章"${article.title || '无标题'}"吗？此操作不可恢复！`,
@@ -697,7 +703,7 @@ export default {
     };
 
     // 选择变化处理
-    const handleSelectionChange = (selection) => {
+    const handleSelectionChange = selection => {
       selectedArticles.value = selection;
     };
 
@@ -773,7 +779,7 @@ export default {
     };
 
     // 批量操作命令处理
-    const handleBatchCommand = async (command) => {
+    const handleBatchCommand = async command => {
       if (selectedArticles.value.length === 0) {
         ElMessage.warning('请选择要操作的文章');
         return;
@@ -805,7 +811,7 @@ export default {
     };
 
     // 批量发布
-    const handleBatchPublish = async (articleIds) => {
+    const handleBatchPublish = async articleIds => {
       try {
         await ElMessageBox.confirm(
           `确定要发布选中的 ${articleIds.length} 篇文章吗？`,
@@ -833,7 +839,7 @@ export default {
     };
 
     // 批量取消发布
-    const handleBatchUnpublish = async (articleIds) => {
+    const handleBatchUnpublish = async articleIds => {
       try {
         await ElMessageBox.confirm(
           `确定要取消发布选中的 ${articleIds.length} 篇文章吗？`,
@@ -861,7 +867,7 @@ export default {
     };
 
     // 批量删除
-    const handleBatchDelete = async (articleIds) => {
+    const handleBatchDelete = async articleIds => {
       try {
         await ElMessageBox.confirm(
           `确定要删除选中的 ${articleIds.length} 篇文章吗？删除后可在回收站中恢复。`,
@@ -928,8 +934,8 @@ export default {
     // 获取批量操作对话框标题
     const getBatchDialogTitle = () => {
       const actionMap = {
-        'updateCategory': '批量修改分类',
-        'updateTags': '批量修改标签'
+        updateCategory: '批量修改分类',
+        updateTags: '批量修改标签'
       };
       return actionMap[batchAction.value] || '批量操作';
     };
@@ -960,7 +966,10 @@ export default {
             ElMessage.warning('请输入标签');
             return;
           }
-          const tags = batchData.value.tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+          const tags = batchData.value.tagsInput
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag);
           response = await batchArticleOperation(articleIds, 'updateTags', { tags });
         }
 
@@ -1001,9 +1010,9 @@ export default {
     };
 
     // 快捷时间筛选处理
-    const handleQuickTimeFilter = (command) => {
+    const handleQuickTimeFilter = command => {
       const today = new Date();
-      const formatDate = (date) => {
+      const formatDate = date => {
         return date.toISOString().split('T')[0];
       };
 
@@ -1054,13 +1063,13 @@ export default {
     };
 
     // 分页处理
-    const handleSizeChange = (newSize) => {
+    const handleSizeChange = newSize => {
       pageSize.value = newSize;
       currentPage.value = 1;
       loadArticles();
     };
 
-    const handleCurrentChange = (newPage) => {
+    const handleCurrentChange = newPage => {
       currentPage.value = newPage;
       loadArticles();
     };
@@ -1069,13 +1078,14 @@ export default {
     const loadStats = async () => {
       try {
         // 并行获取各状态的文章数量
-        const [allResponse, publishedResponse, draftResponse, archivedResponse, deletedResponse] = await Promise.all([
-          api.get('/admin/articles', { params: { limit: 1 } }),
-          api.get('/admin/articles', { params: { status: 'published', limit: 1 } }),
-          api.get('/admin/articles', { params: { status: 'draft', limit: 1 } }),
-          api.get('/admin/articles', { params: { status: 'archived', limit: 1 } }),
-          api.get('/admin/articles', { params: { status: 'deleted', limit: 1 } })
-        ]);
+        const [allResponse, publishedResponse, draftResponse, archivedResponse, deletedResponse] =
+          await Promise.all([
+            api.get('/admin/articles', { params: { limit: 1 } }),
+            api.get('/admin/articles', { params: { status: 'published', limit: 1 } }),
+            api.get('/admin/articles', { params: { status: 'draft', limit: 1 } }),
+            api.get('/admin/articles', { params: { status: 'archived', limit: 1 } }),
+            api.get('/admin/articles', { params: { status: 'deleted', limit: 1 } })
+          ]);
 
         statsData.value = {
           total: allResponse.data.pagination?.total || 0,
@@ -1150,11 +1160,13 @@ export default {
           category: article.category,
           tags: article.tags || [],
           status: article.status,
-          author: article.author ? {
-            id: article.author._id,
-            username: article.author.username,
-            avatar: article.author.avatar
-          } : null,
+          author: article.author
+            ? {
+                id: article.author._id,
+                username: article.author.username,
+                avatar: article.author.avatar
+              }
+            : null,
           createdAt: article.createdAt,
           updatedAt: article.updatedAt
         }));

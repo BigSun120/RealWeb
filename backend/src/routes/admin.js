@@ -803,7 +803,7 @@ router.post('/users', async (req, res, next) => {
 router.put('/users/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { username, email, bio, isAdmin, isActive } = req.body;
+    const { username, email, bio, isAdmin, isActive, displayName } = req.body;
 
     // 防止管理员修改自己的管理员权限
     if (req.user._id.toString() === id && req.user.isAdmin && isAdmin === false) {
@@ -833,6 +833,15 @@ router.put('/users/:id', async (req, res, next) => {
     if (username !== undefined) updateData.username = username;
     if (email !== undefined) updateData.email = email;
     if (bio !== undefined) updateData.bio = bio;
+    if (displayName !== undefined) {
+      if (displayName) {
+        const exists = await User.findOne({ displayName, _id: { $ne: id } });
+        if (exists) {
+          return res.status(400).json({ code: 400, message: '展示名已被使用' });
+        }
+      }
+      updateData.displayName = displayName;
+    }
     if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
     if (isActive !== undefined) updateData.isActive = isActive;
 

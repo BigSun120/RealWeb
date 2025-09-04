@@ -9,20 +9,20 @@
  */
 export function parseMentions(text) {
   if (!text) return [];
-  
+
   // 匹配@用户名的正则表达式
   // 用户名只能包含字母、数字和下划线，长度3-15位
   const mentionRegex = /@([a-zA-Z0-9_]{3,15})\b/g;
   const mentions = [];
   let match;
-  
+
   while ((match = mentionRegex.exec(text)) !== null) {
     const username = match[1];
     if (!mentions.includes(username)) {
       mentions.push(username);
     }
   }
-  
+
   return mentions;
 }
 
@@ -34,18 +34,19 @@ export function parseMentions(text) {
  */
 export function renderMentions(text, mentionedUsers = []) {
   if (!text) return '';
-  
+
   // 创建用户名到用户信息的映射
   const userMap = {};
   mentionedUsers.forEach(user => {
-    if (user && user.username) {
-      userMap[user.username] = user;
+    if (user) {
+      const key = user.username || user.displayName;
+      if (key) userMap[key] = user;
     }
   });
-  
+
   // 替换@用户名为链接
   const mentionRegex = /@([a-zA-Z0-9_]{3,15})\b/g;
-  
+
   return text.replace(mentionRegex, (match, username) => {
     const user = userMap[username];
     if (user) {
@@ -62,9 +63,9 @@ export function renderMentions(text, mentionedUsers = []) {
  */
 export function highlightMentions(text) {
   if (!text) return '';
-  
+
   const mentionRegex = /@([a-zA-Z0-9_]{3,15})\b/g;
-  
+
   return text.replace(mentionRegex, '<span class="mention-highlight">$&</span>');
 }
 
@@ -75,7 +76,7 @@ export function highlightMentions(text) {
  */
 export function extractTextFromMentions(html) {
   if (!html) return '';
-  
+
   // 移除mention相关的HTML标签，保留@用户名
   return html
     .replace(/<span[^>]*class="mention-user"[^>]*>(@[^<]+)<\/span>/g, '$1')
@@ -90,7 +91,7 @@ export function extractTextFromMentions(html) {
  */
 export function isValidUsername(username) {
   if (!username) return false;
-  
+
   // 用户名只能包含字母、数字和下划线，长度3-15位
   const usernameRegex = /^[a-zA-Z0-9_]{3,15}$/;
   return usernameRegex.test(username);
@@ -105,7 +106,7 @@ export function isValidUsername(username) {
 export function getMentionNotificationMessage(comment, article) {
   const authorName = comment.author?.username || '某用户';
   const articleTitle = article?.title || '某篇文章';
-  
+
   return `${authorName} 在文章《${articleTitle}》中提到了你`;
 }
 
@@ -116,7 +117,7 @@ export function getMentionNotificationMessage(comment, article) {
  */
 export function hasMentions(text) {
   if (!text) return false;
-  
+
   const mentionRegex = /@([a-zA-Z0-9_]{3,15})\b/;
   return mentionRegex.test(text);
 }
@@ -128,11 +129,11 @@ export function hasMentions(text) {
  */
 export function getMentionPositions(text) {
   if (!text) return [];
-  
+
   const mentionRegex = /@([a-zA-Z0-9_]{3,15})\b/g;
   const positions = [];
   let match;
-  
+
   while ((match = mentionRegex.exec(text)) !== null) {
     positions.push({
       username: match[1],
@@ -141,6 +142,6 @@ export function getMentionPositions(text) {
       text: match[0]
     });
   }
-  
+
   return positions;
 }

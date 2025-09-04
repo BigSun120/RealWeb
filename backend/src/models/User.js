@@ -34,6 +34,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: [30, '展示名最多30个字符'],
+      unique: true,
+      sparse: true,
       default: ''
     },
     bio: {

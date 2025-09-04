@@ -7,7 +7,7 @@
           <el-icon><Upload /></el-icon>
           批量导入
         </el-button>
-        <el-button type="primary" @click="showCreateDialog = true">
+        <el-button type="primary" @click="openCreateDialog">
           <el-icon><Plus /></el-icon>
           新建标签
         </el-button>
@@ -19,10 +19,10 @@
       <el-table v-loading="loading" :data="tags" style="width: 100%">
         <el-table-column prop="name" label="标签名称" width="150">
           <template #default="{ row }">
-            <el-tag :color="row.color" style="color: white;">
+            <el-tag :color="row.color" style="color: white">
               {{ row.name }}
             </el-tag>
-          </template> 
+          </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" />
         <el-table-column prop="articleCount" label="文章数" width="100" />
@@ -93,7 +93,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button @click="handleCreateDialogClose">取消</el-button>
         <el-button type="primary" @click="saveTag">保存</el-button>
       </template>
     </el-dialog>
@@ -125,7 +125,7 @@
     <!-- 查看标签文章对话框 -->
     <el-dialog
       v-model="showArticlesDialog"
-      :title="`标签「${currentTag && currentTag.name || '未知'}」的文章列表`"
+      :title="`标签「${(currentTag && currentTag.name) || '未知'}」的文章列表`"
       width="800px"
     >
       <el-table v-loading="articlesLoading" :data="tagArticles" style="width: 100%">
@@ -225,13 +225,43 @@ export default {
     };
 
     // 编辑标签
-    const editTag = (tag) => {
+    const editTag = tag => {
       editingTag.value = tag;
       tagForm.value = { ...tag };
       showCreateDialog.value = true;
     };
 
     // 保存标签
+    const openCreateDialog = () => {
+      editingTag.value = null;
+      tagForm.value = {
+        name: '',
+        description: '',
+        color: '#6B7280',
+        sort: 0,
+        isHot: false,
+        isActive: true
+      };
+      showCreateDialog.value = true;
+    };
+
+    const handleCreateDialogClose = () => {
+      showCreateDialog.value = false;
+      editingTag.value = null;
+      tagForm.value = {
+        name: '',
+        description: '',
+        color: '#6B7280',
+        sort: 0,
+        isHot: false,
+        isActive: true
+      };
+      // 清除验证
+      if (tagFormRef.value) {
+        tagFormRef.value.clearValidate();
+      }
+    };
+
     const saveTag = async () => {
       try {
         await tagFormRef.value.validate();
@@ -261,18 +291,16 @@ export default {
     };
 
     // 删除标签
-    const deleteTag = async (tag) => {
+    const deleteTag = async tag => {
       if (tag.articleCount > 0) {
         ElMessage.warning(`无法删除标签，还有 ${tag.articleCount} 篇文章正在使用此标签`);
         return;
       }
 
       try {
-        await ElMessageBox.confirm(
-          `确定要删除标签"${tag.name}"吗？`,
-          '确认删除',
-          { type: 'warning' }
-        );
+        await ElMessageBox.confirm(`确定要删除标签"${tag.name}"吗？`, '确认删除', {
+          type: 'warning'
+        });
 
         await api.delete(`/tags/${tag._id}`);
         ElMessage.success('删除成功');
@@ -286,7 +314,7 @@ export default {
     };
 
     // 查看标签文章
-    const viewTagArticles = async (tag) => {
+    const viewTagArticles = async tag => {
       currentTag.value = tag;
       articlesLoading.value = true;
       showArticlesDialog.value = true;
@@ -303,18 +331,16 @@ export default {
     };
 
     // 编辑文章
-    const editArticle = (article) => {
+    const editArticle = article => {
       window.open(`/admin/articles/edit/${article._id}`, '_blank');
     };
 
     // 下架文章
-    const unpublishArticle = async (article) => {
+    const unpublishArticle = async article => {
       try {
-        await ElMessageBox.confirm(
-          `确定要下架文章"${article.title}"吗？`,
-          '确认下架',
-          { type: 'warning' }
-        );
+        await ElMessageBox.confirm(`确定要下架文章"${article.title}"吗？`, '确认下架', {
+          type: 'warning'
+        });
 
         await api.put(`/articles/${article._id}`, { status: 'draft' });
         ElMessage.success('文章已下架');
@@ -329,7 +355,7 @@ export default {
     };
 
     // 删除文章
-    const deleteArticle = async (article) => {
+    const deleteArticle = async article => {
       try {
         await ElMessageBox.confirm(
           `确定要删除文章"${article.title}"吗？此操作不可恢复！`,
@@ -382,7 +408,7 @@ export default {
     };
 
     // 更新文章数量
-    const updateCount = async (tag) => {
+    const updateCount = async tag => {
       try {
         await api.post(`/tags/${tag._id}/update-count`);
         ElMessage.success('更新成功');
@@ -427,8 +453,6 @@ export default {
       }
     };
 
-
-
     onMounted(() => {
       fetchTags();
     });
@@ -456,7 +480,9 @@ export default {
       editArticle,
       unpublishArticle,
       deleteArticle,
-      batchUnpublishArticles
+      batchUnpublishArticles,
+      openCreateDialog,
+      handleCreateDialogClose
     };
   }
 };

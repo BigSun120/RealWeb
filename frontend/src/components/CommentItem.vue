@@ -9,7 +9,7 @@
       <el-avatar
         :size="isReply ? 32 : 40"
         :src="comment.author?.avatar || ''"
-        :alt="comment.author?.username || '用户'"
+        :alt="comment.author?.displayName || comment.author?.username || '用户'"
       >
         {{ (comment.author?.username || 'U').charAt(0).toUpperCase() }}
       </el-avatar>
@@ -18,7 +18,9 @@
     <div class="comment-content">
       <div class="comment-header">
         <div class="author-info">
-          <span class="author-name">{{ comment.author.username }}</span>
+          <span class="author-name">{{
+            comment.author.displayName || comment.author.username
+          }}</span>
           <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
           <el-tag v-if="comment.isTop" size="small" type="warning">置顶</el-tag>
           <span v-if="comment.editedAt" class="edited-mark">(已编辑)</span>
@@ -71,7 +73,7 @@
       <div class="comment-footer">
         <div class="comment-stats">
           <el-button
-            v-if="settingsStore.blogConfig?.enableLikes !== false"
+            v-if="settingsStore?.blogConfig?.enableLikes !== false"
             type="text"
             size="small"
             :class="{ 'is-liked': comment.isLiked }"
@@ -488,6 +490,7 @@ export default {
     };
 
     return {
+      settingsStore,
       isEditing,
       showReplyEditor,
       showReplies,

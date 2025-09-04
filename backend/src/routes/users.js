@@ -169,7 +169,17 @@ router.put('/profile', auth, async (req, res, next) => {
       user.username = username;
     }
 
-    if (displayName !== undefined) user.displayName = displayName;
+    if (displayName !== undefined) {
+      // 检查展示名唯一性（允许空字符串）
+      if (displayName) {
+        const User = require('../models/User');
+        const exists = await User.findOne({ displayName, _id: { $ne: user._id } });
+        if (exists) {
+          return res.status(400).json({ code: 400, message: '展示名已被使用' });
+        }
+      }
+      user.displayName = displayName;
+    }
     if (bio !== undefined) user.bio = bio;
     if (avatar !== undefined) user.avatar = avatar;
 

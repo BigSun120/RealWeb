@@ -159,12 +159,16 @@
                   :style="getAuthorAvatarStyle(article.author && article.author.avatar)"
                 >
                   <span class="avatar-fallback">{{
-                    ((article.author && article.author.username) || '匿名').charAt(0)
+                    (
+                      (article.author && (article.author.displayName || article.author.username)) ||
+                      '匿名'
+                    ).charAt(0)
                   }}</span>
                 </div>
                 <div class="author-info">
                   <span class="author-name">{{
-                    (article.author && article.author.username) || '匿名'
+                    (article.author && (article.author.displayName || article.author.username)) ||
+                    '匿名'
                   }}</span>
                   <span class="publish-date">{{ formatDate(article.createdAt) }}</span>
                 </div>

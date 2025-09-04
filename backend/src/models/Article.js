@@ -1,94 +1,99 @@
 const mongoose = require('mongoose');
 
-const articleSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    trim: true,
-    maxlength: [100, '标题最多100个字符'],
-    default: ''
-  },
-  content: {
-    type: String,
-    default: ''
-  },
-  excerpt: {
-    type: String,
-    maxlength: [300, '摘要最多300个字符']
-  },
-  coverImage: {
-    type: String,
-    default: ''
-  },
-  authorId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  category: {
-    type: String,
-    trim: true,
-    maxlength: [50, '分类名称最多50个字符'],
-    default: '其他'
-  },
-  tags: [{
-    type: String,
-    trim: true,
-    maxlength: [20, '标签最多20个字符']
-  }],
-  status: {
-    type: String,
-    enum: ['draft', 'published', 'archived'],
-    default: 'draft'
-  },
-  viewCount: {
-    type: Number,
-    default: 0
-  },
-  likeCount: {
-    type: Number,
-    default: 0
-  },
-  commentCount: {
-    type: Number,
-    default: 0
-  },
-  isTop: {
-    type: Boolean,
-    default: false
-  },
-  publishedAt: {
-    type: Date
-  },
+const articleSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      trim: true,
+      maxlength: [100, '标题最多100个字符'],
+      default: ''
+    },
+    content: {
+      type: String,
+      default: ''
+    },
+    excerpt: {
+      type: String,
+      maxlength: [300, '摘要最多300个字符']
+    },
+    coverImage: {
+      type: String,
+      default: ''
+    },
+    authorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    category: {
+      type: String,
+      trim: true,
+      maxlength: [50, '分类名称最多50个字符'],
+      default: '其他'
+    },
+    tags: [
+      {
+        type: String,
+        trim: true,
+        maxlength: [20, '标签最多20个字符']
+      }
+    ],
+    status: {
+      type: String,
+      enum: ['draft', 'published', 'archived'],
+      default: 'draft'
+    },
+    viewCount: {
+      type: Number,
+      default: 0
+    },
+    likeCount: {
+      type: Number,
+      default: 0
+    },
+    commentCount: {
+      type: Number,
+      default: 0
+    },
+    isTop: {
+      type: Boolean,
+      default: false
+    },
+    publishedAt: {
+      type: Date
+    },
 
-  // 软删除标记
-  isDeleted: {
-    type: Boolean,
-    default: false
-  },
+    // 软删除标记
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
 
-  // 删除时间
-  deletedAt: {
-    type: Date,
-    default: null
-  },
+    // 删除时间
+    deletedAt: {
+      type: Date,
+      default: null
+    },
 
-  // 删除者ID
-  deletedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
+    // 删除者ID
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
 
-  // 删除原因
-  deleteReason: {
-    type: String,
-    default: null
+    // 删除原因
+    deleteReason: {
+      type: String,
+      default: null
+    }
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
   }
-}, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
-});
+);
 
 // 虚拟字段：作者信息
 articleSchema.virtual('author', {
@@ -117,7 +122,7 @@ articleSchema.index({ isTop: -1, publishedAt: -1 });
 articleSchema.index({ isDeleted: 1, deletedAt: -1 });
 
 // 实例方法：软删除
-articleSchema.methods.softDelete = function(deletedBy, reason = null) {
+articleSchema.methods.softDelete = function (deletedBy, reason = null) {
   this.isDeleted = true;
   this.deletedAt = new Date();
   this.deletedBy = deletedBy;
@@ -126,7 +131,7 @@ articleSchema.methods.softDelete = function(deletedBy, reason = null) {
 };
 
 // 实例方法：恢复删除
-articleSchema.methods.restore = function() {
+articleSchema.methods.restore = function () {
   this.isDeleted = false;
   this.deletedAt = null;
   this.deletedBy = null;
@@ -135,17 +140,17 @@ articleSchema.methods.restore = function() {
 };
 
 // 静态方法：查找未删除的文章
-articleSchema.statics.findNotDeleted = function(filter = {}) {
+articleSchema.statics.findNotDeleted = function (filter = {}) {
   return this.find({ ...filter, isDeleted: { $ne: true } });
 };
 
 // 静态方法：查找已删除的文章
-articleSchema.statics.findDeleted = function(filter = {}) {
+articleSchema.statics.findDeleted = function (filter = {}) {
   return this.find({ ...filter, isDeleted: true });
 };
 
 // 中间件：发布时设置发布时间和验证
-articleSchema.pre('save', function(next) {
+articleSchema.pre('save', function (next) {
   // 发布时设置发布时间
   if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
     this.publishedAt = new Date();
@@ -165,7 +170,7 @@ articleSchema.pre('save', function(next) {
 });
 
 // 中间件：生成摘要
-articleSchema.pre('save', function(next) {
+articleSchema.pre('save', function (next) {
   if (this.isModified('content') && !this.excerpt) {
     // 从内容中提取前200个字符作为摘要
     const plainText = this.content.replace(/[#*`]/g, '').trim();
@@ -175,19 +180,19 @@ articleSchema.pre('save', function(next) {
 });
 
 // 实例方法：增加浏览量
-articleSchema.methods.incrementViewCount = async function() {
+articleSchema.methods.incrementViewCount = async function () {
   this.viewCount += 1;
   await this.save();
 };
 
 // 实例方法：增加点赞数
-articleSchema.methods.incrementLikeCount = async function() {
+articleSchema.methods.incrementLikeCount = async function () {
   this.likeCount += 1;
   await this.save();
 };
 
 // 实例方法：减少点赞数
-articleSchema.methods.decrementLikeCount = async function() {
+articleSchema.methods.decrementLikeCount = async function () {
   if (this.likeCount > 0) {
     this.likeCount -= 1;
     await this.save();
@@ -195,7 +200,7 @@ articleSchema.methods.decrementLikeCount = async function() {
 };
 
 // 实例方法：更新评论数量
-articleSchema.methods.updateCommentCount = async function() {
+articleSchema.methods.updateCommentCount = async function () {
   const Comment = mongoose.model('Comment');
   this.commentCount = await Comment.countDocuments({
     articleId: this._id,
@@ -206,13 +211,13 @@ articleSchema.methods.updateCommentCount = async function() {
 };
 
 // 实例方法：增加评论数量
-articleSchema.methods.incrementCommentCount = async function() {
+articleSchema.methods.incrementCommentCount = async function () {
   this.commentCount += 1;
   await this.save();
 };
 
 // 实例方法：减少评论数量
-articleSchema.methods.decrementCommentCount = async function() {
+articleSchema.methods.decrementCommentCount = async function () {
   if (this.commentCount > 0) {
     this.commentCount -= 1;
     await this.save();
@@ -220,36 +225,36 @@ articleSchema.methods.decrementCommentCount = async function() {
 };
 
 // 静态方法：获取热门文章
-articleSchema.statics.getPopularArticles = function(limit = 10) {
+articleSchema.statics.getPopularArticles = function (limit = 10) {
   return this.find({ status: 'published' })
     .sort({ viewCount: -1, likeCount: -1 })
     .limit(limit)
-    .populate('author', 'username avatar')
+    .populate('author', 'displayName username avatar')
     .select('-content');
 };
 
 // 静态方法：获取最新文章
-articleSchema.statics.getLatestArticles = function(limit = 10) {
+articleSchema.statics.getLatestArticles = function (limit = 10) {
   return this.find({ status: 'published' })
     .sort({ isTop: -1, publishedAt: -1 })
     .limit(limit)
-    .populate('author', 'username avatar')
+    .populate('author', 'displayName username avatar')
     .select('-content');
 };
 
 // 静态方法：按分类获取文章
-articleSchema.statics.getArticlesByCategory = function(category, page = 1, limit = 10) {
+articleSchema.statics.getArticlesByCategory = function (category, page = 1, limit = 10) {
   const skip = (page - 1) * limit;
   return this.find({ status: 'published', category })
     .sort({ isTop: -1, publishedAt: -1 })
     .skip(skip)
     .limit(limit)
-    .populate('author', 'username avatar')
+    .populate('author', 'displayName username avatar')
     .select('-content');
 };
 
 // 静态方法：搜索文章
-articleSchema.statics.searchArticles = function(keyword, page = 1, limit = 10) {
+articleSchema.statics.searchArticles = function (keyword, page = 1, limit = 10) {
   const skip = (page - 1) * limit;
   return this.find({
     status: 'published',
@@ -258,7 +263,7 @@ articleSchema.statics.searchArticles = function(keyword, page = 1, limit = 10) {
     .sort({ score: { $meta: 'textScore' } })
     .skip(skip)
     .limit(limit)
-    .populate('author', 'username avatar')
+    .populate('author', 'displayName username avatar')
     .select('-content');
 };
 
