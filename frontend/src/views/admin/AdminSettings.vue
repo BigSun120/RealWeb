@@ -276,7 +276,12 @@ export default {
     // 上传配置
     const uploadUrl = computed(() => {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
-      return `${baseUrl}/articles/upload-image`;
+      // 如果baseUrl已经包含完整URL，直接使用；否则拼接
+      if (baseUrl.startsWith('http')) {
+        return `${baseUrl}/articles/upload-image`;
+      } else {
+        return `${baseUrl}/articles/upload-image`;
+      }
     });
     const uploadHeaders = computed(() => ({
       Authorization: `Bearer ${userStore.token}`

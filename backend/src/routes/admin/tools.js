@@ -1,9 +1,9 @@
 const express = require('express');
 const { auth } = require('../../middleware/auth');
 const Tool = require('../../models/Tool');
-const ToolCategory = require('../../models/ToolCategory');
+// const ToolCategory = require('../../models/ToolCategory');
 const ToolUsage = require('../../models/ToolUsage');
-const ToolConfig = require('../../models/ToolConfig');
+// const ToolConfig = require('../../models/ToolConfig');
 const ActivityLogger = require('../../middleware/activityLogger');
 const ToolsPermission = require('../../middleware/toolsPermission');
 const logger = require('../../utils/logger');
@@ -18,14 +18,7 @@ router.use(ToolsPermission.checkToolManagePermission);
 // 获取工具管理列表
 router.get('/', async (req, res) => {
   try {
-    const {
-      category,
-      status,
-      search,
-      page = 1,
-      limit = 20,
-      sort = 'createdAt'
-    } = req.query;
+    const { category, status, search, page = 1, limit = 20, sort = 'createdAt' } = req.query;
 
     // 构建查询条件
     const query = {};
@@ -161,7 +154,7 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    const oldData = tool.toObject();
+    // const oldData = tool.toObject();
     Object.assign(tool, req.body);
     tool.updatedBy = req.user._id;
 
@@ -239,7 +232,7 @@ router.post('/batch-delete', async (req, res) => {
       });
     }
 
-    const tools = await Tool.find({ _id: { $in: ids } });
+    // const tools = await Tool.find({ _id: { $in: ids } });
     const deletedCount = await Tool.deleteMany({ _id: { $in: ids } });
 
     // 记录活动日志
@@ -317,6 +310,9 @@ router.get('/analytics/overview', async (req, res) => {
     const comingSoonTools = await Tool.countDocuments({ status: 'coming-soon' });
     const maintenanceTools = await Tool.countDocuments({ status: 'maintenance' });
 
+    // 累计总使用次数
+    const totalUsage = await ToolUsage.countDocuments();
+
     // 获取今日使用统计
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -345,6 +341,7 @@ router.get('/analytics/overview', async (req, res) => {
         activeTools,
         comingSoonTools,
         maintenanceTools,
+        totalUsage,
         todayUsage,
         weekUsage,
         activeUsers: activeUsers.length
@@ -400,14 +397,42 @@ router.get('/analytics/usage', async (req, res) => {
         }
       });
     } else {
-      // 热门工具排行
-      const popularTools = await ToolUsage.getPopularTools(10, parseInt(period));
+      // 热门工具排行 + 全站趋势
+      const days = parseInt(period);
+      const popularTools = await ToolUsage.getPopularTools(10, days);
+
+      // 全站每日聚合趋势
+      const overallTrend = await ToolUsage.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startDate, $lte: endDate }
+          }
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            count: { $sum: 1 },
+            uniqueUsers: { $addToSet: '$userId' }
+          }
+        },
+        {
+          $project: {
+            date: '$_id',
+            count: 1,
+
+            uniqueUsers: { $size: '$uniqueUsers' },
+            _id: 0
+          }
+        },
+        { $sort: { date: 1 } }
+      ]);
 
       res.json({
         code: 200,
         message: 'success',
         data: {
-          popularTools
+          popularTools,
+          overallTrend
         }
       });
     }
@@ -492,3 +517,65 @@ router.get('/analytics/behavior', async (req, res) => {
 });
 
 module.exports = router;
+
+// 全站分析（按时间段）
+router.get('/analytics/overall', async (req, res) => {
+  try {
+    const { period = '7d' } = req.query;
+    const days = parseInt(period) || 7;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const stats = await ToolUsage.aggregate([
+      { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+      {
+        $group: {
+          _id: null,
+          totalUsage: { $sum: 1 },
+          uniqueUsers: { $addToSet: '$userId' },
+          avgResponseTime: { $avg: '$responseTime' },
+          successRate: { $avg: { $cond: ['$success', 1, 0] } }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalUsage: 1,
+          uniqueUsers: { $size: '$uniqueUsers' },
+          avgResponseTime: { $round: ['$avgResponseTime', 2] },
+          successRate: { $round: [{ $multiply: ['$successRate', 100] }, 2] }
+        }
+      }
+    ]);
+
+    // 设备类型分析
+    const deviceStats = await ToolUsage.aggregate([
+      { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+      { $group: { _id: '$device.type', count: { $sum: 1 } } },
+      { $project: { type: '$_id', count: 1, _id: 0 } },
+      { $sort: { count: -1 } }
+    ]);
+
+    // 用户行为项（示例：按 action 统计）
+    const behaviorStats = await ToolUsage.aggregate([
+      { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+      { $group: { _id: '$action', count: { $sum: 1 } } },
+      { $project: { action: '$_id', count: 1, _id: 0 } },
+      { $sort: { count: -1 } }
+    ]);
+
+    res.json({
+      code: 200,
+      message: 'success',
+      data: {
+        stats: stats[0] || { totalUsage: 0, uniqueUsers: 0, avgResponseTime: 0, successRate: 0 },
+        deviceStats,
+        behaviorStats
+      }
+    });
+  } catch (error) {
+    logger.error('获取全站分析失败:', error);
+    res.status(500).json({ code: 500, message: '获取全站分析失败' });
+  }
+});

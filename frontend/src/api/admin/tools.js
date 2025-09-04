@@ -1,7 +1,7 @@
 /**
  * 后台工具管理API
  */
-import request from '@/utils/request'
+import request from '@/utils/request';
 
 // 工具管理API
 export const toolsAPI = {
@@ -18,7 +18,7 @@ export const toolsAPI = {
         keyword: '',
         ...params
       }
-    })
+    });
   },
 
   // 获取单个工具详情
@@ -26,7 +26,7 @@ export const toolsAPI = {
     return request({
       url: `/admin/tools/${id}`,
       method: 'get'
-    })
+    });
   },
 
   // 创建工具
@@ -35,7 +35,7 @@ export const toolsAPI = {
       url: '/admin/tools',
       method: 'post',
       data
-    })
+    });
   },
 
   // 更新工具
@@ -44,7 +44,7 @@ export const toolsAPI = {
       url: `/admin/tools/${id}`,
       method: 'put',
       data
-    })
+    });
   },
 
   // 删除工具
@@ -52,7 +52,7 @@ export const toolsAPI = {
     return request({
       url: `/admin/tools/${id}`,
       method: 'delete'
-    })
+    });
   },
 
   // 批量删除工具
@@ -61,7 +61,7 @@ export const toolsAPI = {
       url: '/admin/tools/batch-delete',
       method: 'post',
       data: { ids }
-    })
+    });
   },
 
   // 切换工具状态
@@ -70,7 +70,7 @@ export const toolsAPI = {
       url: `/admin/tools/${id}/status`,
       method: 'patch',
       data: { status }
-    })
+    });
   },
 
   // 批量更新工具状态
@@ -79,7 +79,7 @@ export const toolsAPI = {
       url: '/admin/tools/batch-status',
       method: 'patch',
       data: { ids, status }
-    })
+    });
   },
 
   // 更新工具排序
@@ -88,18 +88,19 @@ export const toolsAPI = {
       url: '/admin/tools/sort',
       method: 'patch',
       data
-    })
+    });
   }
-}
+};
 
 // 工具分类管理API
 export const categoriesAPI = {
   // 获取分类列表
-  getCategories() {
+  getCategories(params = {}) {
     return request({
       url: '/admin/categories',
-      method: 'get'
-    })
+      method: 'get',
+      params
+    });
   },
 
   // 创建分类
@@ -108,7 +109,7 @@ export const categoriesAPI = {
       url: '/admin/categories',
       method: 'post',
       data
-    })
+    });
   },
 
   // 更新分类
@@ -117,7 +118,7 @@ export const categoriesAPI = {
       url: `/admin/categories/${id}`,
       method: 'put',
       data
-    })
+    });
   },
 
   // 删除分类
@@ -125,9 +126,9 @@ export const categoriesAPI = {
     return request({
       url: `/admin/categories/${id}`,
       method: 'delete'
-    })
+    });
   }
-}
+};
 
 // 工具统计分析API
 export const analyticsAPI = {
@@ -136,7 +137,7 @@ export const analyticsAPI = {
     return request({
       url: '/admin/tools/analytics/overview',
       method: 'get'
-    })
+    });
   },
 
   // 获取工具使用统计
@@ -149,7 +150,7 @@ export const analyticsAPI = {
         toolId: '',
         ...params
       }
-    })
+    });
   },
 
   // 获取用户行为分析
@@ -158,7 +159,16 @@ export const analyticsAPI = {
       url: '/admin/tools/analytics/behavior',
       method: 'get',
       params
-    })
+    });
+  },
+
+  // 获取全站聚合统计
+  getOverallStats(params = {}) {
+    return request({
+      url: '/admin/tools/analytics/overall',
+      method: 'get',
+      params
+    });
   },
 
   // 获取性能监控数据
@@ -167,7 +177,7 @@ export const analyticsAPI = {
       url: '/admin/tools/analytics/performance',
       method: 'get',
       params
-    })
+    });
   },
 
   // 导出统计报表
@@ -177,9 +187,9 @@ export const analyticsAPI = {
       method: 'post',
       data: params,
       responseType: 'blob'
-    })
+    });
   }
-}
+};
 
 // 系统管理API
 export const systemAPI = {
@@ -188,7 +198,7 @@ export const systemAPI = {
     return request({
       url: '/admin/tools/system/config',
       method: 'get'
-    })
+    });
   },
 
   // 更新系统配置
@@ -197,7 +207,7 @@ export const systemAPI = {
       url: '/admin/tools/system/config',
       method: 'put',
       data
-    })
+    });
   },
 
   // 获取操作日志
@@ -214,7 +224,7 @@ export const systemAPI = {
         endDate: '',
         ...params
       }
-    })
+    });
   },
 
   // 清理缓存
@@ -222,7 +232,7 @@ export const systemAPI = {
     return request({
       url: '/admin/tools/system/cache/clear',
       method: 'post'
-    })
+    });
   },
 
   // 系统健康检查
@@ -230,7 +240,7 @@ export const systemAPI = {
     return request({
       url: '/admin/tools/system/health',
       method: 'get'
-    })
+    });
   },
 
   // 获取系统监控数据
@@ -238,6 +248,6 @@ export const systemAPI = {
     return request({
       url: '/admin/tools/system/monitor',
       method: 'get'
-    })
+    });
   }
-}
+};

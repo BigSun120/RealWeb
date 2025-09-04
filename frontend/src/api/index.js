@@ -4,13 +4,13 @@ import router from '@/router';
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 10000
 });
 
 // 请求拦截器
 api.interceptors.request.use(
-  (config) => {
+  config => {
     // 添加认证token
     const token = localStorage.getItem('token');
     if (token) {
@@ -18,17 +18,17 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
+  error => {
     return Promise.reject(error);
   }
 );
 
 // 响应拦截器
 api.interceptors.response.use(
-  (response) => {
+  response => {
     return response;
   },
-  (error) => {
+  error => {
     const { response } = error;
 
     if (response) {

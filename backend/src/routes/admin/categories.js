@@ -18,6 +18,7 @@ router.get('/', async (req, res) => {
   try {
     const {
       includeTools = false,
+      includeCounts = false,
       status,
       search,
       page = 1,
@@ -53,6 +54,24 @@ router.get('/', async (req, res) => {
       });
     }
 
+    // 可选：统计每个分类的工具数量并回填（独立于是否返回 tools）
+    if (includeCounts === 'true' || includeCounts === true) {
+      try {
+        const counts = await Tool.aggregate([
+          { $match: {} },
+          { $group: { _id: '$category', count: { $sum: 1 } } }
+        ]);
+        const countMap = new Map(counts.map(c => [c._id, c.count]));
+        categories = categories.map(cat => {
+          const obj = typeof cat.toObject === 'function' ? cat.toObject() : cat;
+          obj.toolCount = countMap.get(obj.id) || 0;
+          return obj;
+        });
+      } catch (e) {
+        // 统计失败不阻塞主流程
+      }
+    }
+
     const total = await ToolCategory.countDocuments(query);
 
     res.json({
@@ -80,8 +99,10 @@ router.get('/', async (req, res) => {
 // 获取分类树结构
 router.get('/tree', async (req, res) => {
   try {
-    const categories = await ToolCategory.find({ status: 'active' })
-      .sort({ level: 1, sortOrder: 1 });
+    const categories = await ToolCategory.find({ status: 'active' }).sort({
+      level: 1,
+      sortOrder: 1
+    });
 
     // 构建树结构
     const categoryMap = new Map();

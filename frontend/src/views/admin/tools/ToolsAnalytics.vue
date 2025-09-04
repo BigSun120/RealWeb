@@ -44,12 +44,7 @@
         </el-form-item>
         <el-form-item label="工具">
           <el-select v-model="filterForm.toolId" placeholder="选择工具" clearable>
-            <el-option
-              v-for="tool in tools"
-              :key="tool.id"
-              :label="tool.name"
-              :value="tool.id"
-            />
+            <el-option v-for="tool in tools" :key="tool.id" :label="tool.name" :value="tool.id" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -132,11 +127,7 @@
             <span>热门工具排行</span>
           </template>
           <div class="ranking-list">
-            <div 
-              v-for="(tool, index) in topTools" 
-              :key="tool.toolIdentifier"
-              class="ranking-item"
-            >
+            <div v-for="(tool, index) in topTools" :key="tool.toolIdentifier" class="ranking-item">
               <div class="rank-number" :class="`rank-${index + 1}`">
                 {{ index + 1 }}
               </div>
@@ -176,114 +167,187 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
-import { 
-  TrendCharts, Refresh, Download, DataAnalysis, User, Timer, CircleCheck
-} from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import * as echarts from 'echarts'
+import { ref, reactive, onMounted, nextTick } from 'vue';
+import {
+  TrendCharts,
+  Refresh,
+  Download,
+  DataAnalysis,
+  User,
+  Timer,
+  CircleCheck
+} from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import * as echarts from 'echarts';
+import { analyticsAPI, toolsAPI } from '@/api/admin/tools';
 
 export default {
   name: 'ToolsAnalytics',
   components: {
-    TrendCharts, Refresh, Download, DataAnalysis, User, Timer, CircleCheck
+    TrendCharts,
+    Refresh,
+    Download,
+    DataAnalysis,
+    User,
+    Timer,
+    CircleCheck
   },
   setup() {
-    const usageTrendRef = ref(null)
-    const deviceChartRef = ref(null)
-    const behaviorChartRef = ref(null)
+    const usageTrendRef = ref(null);
+    const deviceChartRef = ref(null);
+    const behaviorChartRef = ref(null);
 
     // 筛选表单
     const filterForm = reactive({
       period: '7d',
       dateRange: null,
       toolId: ''
-    })
+    });
 
     // 分析数据
     const analytics = reactive({
-      totalUsage: 15420,
-      uniqueUsers: 1234,
-      avgResponseTime: 245,
-      successRate: 99.2
-    })
+      totalUsage: 0,
+      uniqueUsers: 0,
+      avgResponseTime: 0,
+      successRate: 0
+    });
 
-    const tools = ref([])
-    const topTools = ref([
-      { toolIdentifier: 'json-formatter', name: 'JSON格式化', usageCount: 3420 },
-      { toolIdentifier: 'image-compressor', name: '图片压缩', usageCount: 2890 },
-      { toolIdentifier: 'color-picker', name: '颜色选择器', usageCount: 2156 },
-      { toolIdentifier: 'qr-generator', name: '二维码生成', usageCount: 1876 },
-      { toolIdentifier: 'timestamp-converter', name: '时间戳转换', usageCount: 1234 }
-    ])
+    // 设备与行为真实数据
+    const deviceStats = ref([]);
+    const behaviorStats = ref([]);
+
+    const tools = ref([]);
+    const topTools = ref([]);
 
     // 格式化数字
-    const formatNumber = (num) => {
+    const formatNumber = num => {
       if (num >= 10000) {
-        return (num / 10000).toFixed(1) + 'w'
+        return (num / 10000).toFixed(1) + 'w';
       } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'k'
+        return (num / 1000).toFixed(1) + 'k';
       }
-      return num.toString()
-    }
+      return num.toString();
+    };
 
     // 处理时间范围变化
     const handlePeriodChange = () => {
       if (filterForm.period !== 'custom') {
-        filterForm.dateRange = null
+        filterForm.dateRange = null;
       }
-      loadAnalyticsData()
-    }
+      loadAnalyticsData();
+    };
 
     // 处理自定义日期范围变化
     const handleDateRangeChange = () => {
-      loadAnalyticsData()
-    }
+      loadAnalyticsData();
+    };
 
     // 加载分析数据
     const loadAnalyticsData = async () => {
       try {
-        // TODO: 调用API获取真实数据
-        ElMessage.success('数据已更新')
-        initCharts()
+        if (filterForm.toolId) {
+          const res = await analyticsAPI.getToolUsageStats({
+            period: filterForm.period,
+            toolId: filterForm.toolId
+          });
+          const stats = res.data?.data?.stats || {};
+          analytics.totalUsage = stats.totalUsage || 0;
+          analytics.uniqueUsers = stats.uniqueUsers || 0;
+          analytics.avgResponseTime = stats.avgResponseTime || 0;
+          analytics.successRate = stats.successRate || 0;
+        } else {
+          const res = await analyticsAPI.getOverviewStats();
+          const data = res.data || {};
+          analytics.totalUsage = data.totalUsage || data.weekUsage || data.todayUsage || 0;
+          analytics.uniqueUsers = 0;
+          analytics.avgResponseTime = 0;
+          analytics.successRate = 0;
+        }
+
+        const popularRes = await analyticsAPI.getToolUsageStats({ period: filterForm.period });
+        topTools.value = (popularRes.data?.data?.popularTools || []).map(t => ({
+          toolIdentifier: t.toolIdentifier || t.id || t._id,
+          name: t.name,
+          usageCount: t.usageCount || t.count || 0
+        }));
+
+        const toolsRes = await toolsAPI.getTools({ page: 1, limit: 1000, status: 'active' });
+        const list =
+          toolsRes.data?.tools || toolsRes.data?.data?.tools || toolsRes.data?.data?.items || [];
+        tools.value = list.map(t => ({ id: t.id || t._id || t.identifier, name: t.name }));
+
+        initCharts();
+        ElMessage.success('数据已更新');
       } catch (error) {
-        ElMessage.error('加载数据失败')
+        ElMessage.error('加载数据失败');
       }
-    }
+    };
 
     // 刷新数据
     const refreshData = () => {
-      loadAnalyticsData()
-    }
+      loadAnalyticsData();
+    };
 
     // 导出数据
     const exportData = () => {
-      ElMessage.info('导出功能开发中...')
-    }
+      ElMessage.info('导出功能开发中...');
+    };
 
     // 初始化图表
     const initCharts = () => {
-      initUsageTrendChart()
-      initDeviceChart()
-      initBehaviorChart()
-    }
+      initUsageTrendChart();
+      initDeviceChart();
+      initBehaviorChart();
+    };
 
     // 使用趋势图
-    const initUsageTrendChart = () => {
-      if (!usageTrendRef.value) return
+    const initUsageTrendChart = async () => {
+      if (!usageTrendRef.value) return;
 
-      const chart = echarts.init(usageTrendRef.value)
-      
-      const dates = []
-      const usageData = []
-      const userData = []
-      
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date()
-        date.setDate(date.getDate() - i)
-        dates.push(date.toLocaleDateString())
-        usageData.push(Math.floor(Math.random() * 1000) + 500)
-        userData.push(Math.floor(Math.random() * 200) + 100)
+      const chart = echarts.init(usageTrendRef.value);
+
+      const dates = [];
+      const usageData = [];
+      const userData = [];
+
+      try {
+        if (filterForm.toolId) {
+          const res = await analyticsAPI.getToolUsageStats({
+            period: filterForm.period,
+            toolId: filterForm.toolId
+          });
+          const trend = res.data?.data?.trend || [];
+          trend.forEach(p => {
+            dates.push(p.date);
+            usageData.push(p.count);
+            userData.push(p.uniqueUsers ?? 0);
+          });
+        } else {
+          const popularRes = await analyticsAPI.getToolUsageStats({ period: filterForm.period });
+          const top = (popularRes.data?.data?.popularTools || [])[0];
+          if (top) {
+            const trendRes = await analyticsAPI.getToolUsageStats({
+              period: filterForm.period,
+              toolId: top.toolIdentifier
+            });
+            const trend = trendRes.data?.data?.trend || [];
+            trend.forEach(p => {
+              dates.push(p.date);
+              usageData.push(p.count);
+              userData.push(p.uniqueUsers ?? 0);
+            });
+          }
+        }
+      } catch (e) {}
+
+      if (dates.length === 0) {
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          dates.push(date.toLocaleDateString());
+          usageData.push(0);
+          userData.push(0);
+        }
       }
 
       const option = {
@@ -329,79 +393,71 @@ export default {
             itemStyle: { color: '#67C23A' }
           }
         ]
-      }
+      };
 
-      chart.setOption(option)
-    }
+      chart.setOption(option);
+    };
 
     // 设备类型图
-    const initDeviceChart = () => {
-      if (!deviceChartRef.value) return
+    const initDeviceChart = async () => {
+      if (!deviceChartRef.value) return;
 
-      const chart = echarts.init(deviceChartRef.value)
-      
-      const option = {
-        tooltip: {
-          trigger: 'item'
-        },
-        series: [
-          {
-            type: 'pie',
-            radius: '70%',
-            data: [
-              { value: 1048, name: '桌面端' },
-              { value: 735, name: '移动端' },
-              { value: 580, name: '平板端' },
-              { value: 484, name: '其他' }
-            ],
-            emphasis: {
-              itemStyle: {
-                shadowBlur: 10,
-                shadowOffsetX: 0,
-                shadowColor: 'rgba(0, 0, 0, 0.5)'
+      const chart = echarts.init(deviceChartRef.value);
+
+      try {
+        const overall = await analyticsAPI.getOverallStats({ period: filterForm.period });
+        const list = overall?.data?.data?.deviceStats || [];
+        const data = list.map(i => ({ value: i.count, name: i.type || '未知' }));
+
+        const option = {
+          tooltip: { trigger: 'item' },
+          series: [
+            {
+              type: 'pie',
+              radius: '70%',
+              data,
+              emphasis: {
+                itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.5)' }
               }
             }
-          }
-        ]
+          ]
+        };
+        chart.setOption(option);
+      } catch (e) {
+        chart.setOption({ series: [{ type: 'pie', data: [] }] });
       }
+    };
 
-      chart.setOption(option)
-    }
+    // 用户行为图（真实数据）
+    const initBehaviorChart = async () => {
+      if (!behaviorChartRef.value) return;
 
-    // 用户行为图
-    const initBehaviorChart = () => {
-      if (!behaviorChartRef.value) return
+      const chart = echarts.init(behaviorChartRef.value);
 
-      const chart = echarts.init(behaviorChartRef.value)
-      
-      const option = {
-        tooltip: {
-          trigger: 'axis'
-        },
-        xAxis: {
-          type: 'category',
-          data: ['查看', '使用', '收藏', '分享', '下载']
-        },
-        yAxis: {
-          type: 'value'
-        },
-        series: [
-          {
-            data: [820, 932, 301, 234, 290],
-            type: 'bar',
-            itemStyle: {
-              color: '#E6A23C'
-            }
-          }
-        ]
+      try {
+        const overall = await analyticsAPI.getOverallStats({ period: filterForm.period });
+        const list = overall?.data?.data?.behaviorStats || [];
+        const labels = list.map(i => i.action || '未知');
+        const values = list.map(i => i.count || 0);
+
+        const option = {
+          tooltip: { trigger: 'axis' },
+          xAxis: { type: 'category', data: labels },
+          yAxis: { type: 'value' },
+          series: [{ data: values, type: 'bar', itemStyle: { color: '#E6A23C' } }]
+        };
+        chart.setOption(option);
+      } catch (e) {
+        chart.setOption({
+          xAxis: { type: 'category', data: [] },
+          series: [{ type: 'bar', data: [] }]
+        });
       }
-
-      chart.setOption(option)
-    }
+    };
 
     onMounted(() => {
-      loadAnalyticsData()
-    })
+      loadAnalyticsData();
+    });
 
     return {
       usageTrendRef,
@@ -416,9 +472,9 @@ export default {
       handleDateRangeChange,
       refreshData,
       exportData
-    }
+    };
   }
-}
+};
 </script>
 
 <style scoped>
@@ -487,10 +543,18 @@ export default {
   color: white;
 }
 
-.stat-icon.total { background: #409EFF; }
-.stat-icon.users { background: #67C23A; }
-.stat-icon.time { background: #E6A23C; }
-.stat-icon.success { background: #F56C6C; }
+.stat-icon.total {
+  background: #409eff;
+}
+.stat-icon.users {
+  background: #67c23a;
+}
+.stat-icon.time {
+  background: #e6a23c;
+}
+.stat-icon.success {
+  background: #f56c6c;
+}
 
 .stat-number {
   font-size: 28px;
@@ -549,11 +613,17 @@ export default {
   margin-right: 12px;
 }
 
-.rank-number.rank-1 { background: #FFD700; }
-.rank-number.rank-2 { background: #C0C0C0; }
-.rank-number.rank-3 { background: #CD7F32; }
-.rank-number:not(.rank-1):not(.rank-2):not(.rank-3) { 
-  background: #909399; 
+.rank-number.rank-1 {
+  background: #ffd700;
+}
+.rank-number.rank-2 {
+  background: #c0c0c0;
+}
+.rank-number.rank-3 {
+  background: #cd7f32;
+}
+.rank-number:not(.rank-1):not(.rank-2):not(.rank-3) {
+  background: #909399;
 }
 
 .tool-name {

@@ -21,8 +21,7 @@ router.get('/', async (req, res) => {
     if (group) query.group = group;
     if (includeSystem !== 'true') query.isSystem = { $ne: true };
 
-    const configs = await ToolConfig.find(query)
-      .sort({ group: 1, key: 1 });
+    const configs = await ToolConfig.find(query).sort({ group: 1, key: 1 });
 
     // 过滤敏感配置
     const filteredConfigs = configs.map(config => {
@@ -271,18 +270,40 @@ router.post('/:key/reset', async (req, res) => {
 
     // 这里需要定义默认值映射
     const defaultValues = {
+      // 通用（tools.*）
       'tools.enabled': true,
       'tools.requireAuth': false,
       'tools.maxUsagePerDay': 1000,
       'tools.maxUsagePerUser': 100,
+
+      // 分析（analytics.*）
       'analytics.enabled': true,
       'analytics.retentionDays': 90,
       'analytics.trackAnonymous': true,
+
+      // 缓存（cache.*）
       'cache.enabled': true,
       'cache.ttl': 3600,
+
+      // 安全（security.*）
       'security.rateLimitEnabled': true,
       'security.rateLimitWindow': 900,
-      'security.rateLimitMax': 100
+      'security.rateLimitMax': 100,
+
+      // 上传（upload.*）
+      'upload.maxFileSize': 10,
+      'upload.allowedTypes': [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'text/plain',
+        'application/json',
+        'application/pdf'
+      ],
+
+      // 通知（notifications.*）
+      'notifications.enabled': true,
+      'notifications.emailEnabled': false
     };
 
     const defaultValue = defaultValues[req.params.key];

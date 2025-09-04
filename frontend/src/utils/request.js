@@ -4,7 +4,7 @@ import { useUserStore } from '@/stores/user';
 
 // 创建axios实例
 const request = axios.create({
-  baseURL: '/api', // 基础URL
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api', // 基础URL
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json'

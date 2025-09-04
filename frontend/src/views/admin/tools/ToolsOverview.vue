@@ -58,7 +58,7 @@
               </div>
               <div class="stat-info">
                 <div class="stat-number">{{ formatNumber(overviewStats.totalUsage) }}</div>
-                <div class="stat-label">总使用次数</div>
+                <div class="stat-label">累计总使用次数</div>
               </div>
             </div>
           </el-card>
@@ -294,25 +294,27 @@ export default {
 
         // 概览统计
         const overviewRes = await analyticsAPI.getOverviewStats();
-        const overview = overviewRes.data?.data || {};
+        const overview = overviewRes.data || {};
         overviewStats.totalTools = overview.totalTools || 0;
         overviewStats.activeTools = overview.activeTools || 0;
-        // 暂用近7天使用次数作为总使用次数展示
-        overviewStats.totalUsage = overview.weekUsage ?? overview.todayUsage ?? 0;
+        // 使用累计总使用次数
+        overviewStats.totalUsage =
+          overview.totalUsage ?? overview.weekUsage ?? overview.todayUsage ?? 0;
         overviewStats.activeUsers = overview.activeUsers || 0;
 
         // 热门工具（用于排行榜与趋势图Top1）
         const popularRes = await analyticsAPI.getToolUsageStats({ period: usagePeriod.value });
-        const popularTools = popularRes.data?.data?.popularTools || [];
+        const popularTools = popularRes.data?.popularTools || [];
 
         // 构建工具名称映射，尽量显示名称
         let nameMap = {};
         try {
           const toolsRes = await toolsAPI.getTools({ page: 1, pageSize: 1000 });
           const list =
-            toolsRes.data?.data?.items ||
-            toolsRes.data?.data?.list ||
-            toolsRes.data?.data?.docs ||
+            toolsRes.data?.tools ||
+            toolsRes.data?.items ||
+            toolsRes.data?.list ||
+            toolsRes.data?.docs ||
             [];
           list.forEach(t => {
             const id = t._id || t.id || t.identifier;
@@ -331,11 +333,11 @@ export default {
 
         // 最近活动
         const actRes = await getRecentActivity(10);
-        recentActivities.value = actRes.data?.data?.activities || [];
+        recentActivities.value = actRes.data?.activities || [];
 
         // 系统状态
         const sysRes = await getSystemStatus();
-        const sys = sysRes.data?.data || {};
+        const sys = sysRes.data || {};
         const used = sys.memory?.used || 0;
         const total = sys.memory?.total || 0;
         const percent = total ? Math.round((used / total) * 100) : 0;

@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request from '@/utils/request';
 
 /**
  * 配置管理API
@@ -14,24 +14,24 @@ export const getConfigs = (params = {}) => {
       includeSystem: false,
       ...params
     }
-  })
-}
+  });
+};
 
 // 获取配置分组
 export const getConfigGroups = () => {
   return request({
     url: '/admin/configs/groups',
     method: 'get'
-  })
-}
+  });
+};
 
 // 获取单个配置
-export const getConfig = (key) => {
+export const getConfig = key => {
   return request({
     url: `/admin/configs/${key}`,
     method: 'get'
-  })
-}
+  });
+};
 
 // 设置配置值
 export const setConfig = (key, data) => {
@@ -39,33 +39,33 @@ export const setConfig = (key, data) => {
     url: `/admin/configs/${key}`,
     method: 'put',
     data
-  })
-}
+  });
+};
 
 // 批量设置配置
-export const setBatchConfigs = (configs) => {
+export const setBatchConfigs = configs => {
   return request({
     url: '/admin/configs/batch',
     method: 'post',
     data: { configs }
-  })
-}
+  });
+};
 
 // 删除配置
-export const deleteConfig = (key) => {
+export const deleteConfig = key => {
   return request({
     url: `/admin/configs/${key}`,
     method: 'delete'
-  })
-}
+  });
+};
 
 // 重置配置为默认值
-export const resetConfig = (key) => {
+export const resetConfig = key => {
   return request({
     url: `/admin/configs/${key}/reset`,
     method: 'post'
-  })
-}
+  });
+};
 
 // 导出配置
 export const exportConfigs = (params = {}) => {
@@ -77,24 +77,24 @@ export const exportConfigs = (params = {}) => {
       includeSensitive: false,
       ...params
     }
-  })
-}
+  });
+};
 
 // 导入配置
-export const importConfigs = (data) => {
+export const importConfigs = data => {
   return request({
     url: '/admin/configs/import',
     method: 'post',
     data
-  })
-}
+  });
+};
 
 // 获取工具箱相关配置
 export const getToolsSettings = async () => {
   try {
-    const response = await getConfigs({ group: 'general,limits,analytics,cache,security,upload,notifications' })
-    
-    // 将配置数组转换为分组对象
+    // 后端不支持逗号分隔多分组过滤，这里直接获取全部非系统配置，再按分组归类
+    const response = await getConfigs();
+
     const settings = {
       general: {},
       analytics: {},
@@ -102,45 +102,46 @@ export const getToolsSettings = async () => {
       security: {},
       upload: {},
       notifications: {}
-    }
-    
-    response.data.forEach(config => {
-      const group = config.group || 'general'
-      const key = config.key.split('.').pop() // 获取最后一部分作为键名
-      
+    };
+
+    (response.data || []).forEach(config => {
+      const group = config.group || 'general';
+      const key = (config.key || '').split('.').pop(); // 获取最后一部分作为键名
+      if (!key) return;
       if (settings[group] !== undefined) {
-        settings[group][key] = config.value
+        settings[group][key] = config.value;
       }
-    })
-    
-    return { data: settings }
+    });
+
+    return { data: settings };
   } catch (error) {
-    throw error
+    throw error;
   }
-}
+};
 
 // 保存工具箱设置
-export const saveToolsSettings = async (settings) => {
+export const saveToolsSettings = async settings => {
   try {
-    const configs = []
-    
+    const configs = [];
+
     // 将设置对象转换为配置数组
     Object.keys(settings).forEach(group => {
       Object.keys(settings[group]).forEach(key => {
+        const keyName = group === 'general' ? `tools.${key}` : `${group}.${key}`;
         configs.push({
-          key: `tools.${key}`,
+          key: keyName,
           value: settings[group][key],
-          group: group === 'general' ? 'general' : group,
+          group,
           description: getConfigDescription(key)
-        })
-      })
-    })
-    
-    return await setBatchConfigs(configs)
+        });
+      });
+    });
+
+    return await setBatchConfigs(configs);
   } catch (error) {
-    throw error
+    throw error;
   }
-}
+};
 
 // 获取配置描述
 function getConfigDescription(key) {
@@ -157,9 +158,9 @@ function getConfigDescription(key) {
     rateLimitMax: '频率限制最大请求数',
     maxFileSize: '最大文件上传大小（MB）',
     emailEnabled: '是否启用邮件通知'
-  }
-  
-  return descriptions[key] || `${key}配置`
+  };
+
+  return descriptions[key] || `${key}配置`;
 }
 
 export default {
@@ -174,4 +175,4 @@ export default {
   importConfigs,
   getToolsSettings,
   saveToolsSettings
-}
+};

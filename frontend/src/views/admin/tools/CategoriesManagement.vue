@@ -44,64 +44,56 @@
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="ID" width="120">
           <template #default="{ row }">
             <el-tag size="small" type="info">{{ row.id }}</el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag
-              :type="row.status === 'active' ? 'success' : 'danger'"
-              size="small"
-            >
+            <el-tag :type="row.status === 'active' ? 'success' : 'danger'" size="small">
               {{ row.status === 'active' ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="工具数量" width="100">
           <template #default="{ row }">
-            <el-badge :value="row.toolCount || 0" class="tool-count-badge">
+            <el-badge
+              :value="row.toolCount ?? row.tools?.length ?? 0"
+              :show-zero="true"
+              :offset="[8, 6]"
+              class="tool-count-badge"
+            >
               <el-icon><Tools /></el-icon>
             </el-badge>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="排序" width="80">
           <template #default="{ row }">
             {{ row.sortOrder }}
           </template>
         </el-table-column>
-        
+
         <el-table-column label="显示菜单" width="100">
           <template #default="{ row }">
-            <el-switch
-              v-model="row.showInMenu"
-              @change="updateShowInMenu(row)"
-            />
+            <el-switch v-model="row.showInMenu" @change="updateShowInMenu(row)" />
           </template>
         </el-table-column>
-        
+
         <el-table-column label="创建时间" width="160">
           <template #default="{ row }">
             {{ formatDate(row.createdAt) }}
           </template>
         </el-table-column>
-        
+
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="editCategory(row)">
-              编辑
-            </el-button>
-            <el-button
-              size="small"
-              @click="addSubCategory(row)"
-            >
-              添加子分类
-            </el-button>
+            <el-button size="small" @click="editCategory(row)"> 编辑 </el-button>
+            <el-button size="small" @click="addSubCategory(row)"> 添加子分类 </el-button>
             <el-button
               size="small"
               type="danger"
@@ -122,25 +114,16 @@
       width="600px"
       @close="resetForm"
     >
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="formRules"
-        label-width="100px"
-      >
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="100px">
         <el-form-item label="分类ID" prop="id">
-          <el-input
-            v-model="form.id"
-            :disabled="isEdit"
-            placeholder="唯一标识符，如：web、text"
-          />
+          <el-input v-model="form.id" :disabled="isEdit" placeholder="唯一标识符，如：web、text" />
           <div class="form-tip">只能包含小写字母、数字和连字符</div>
         </el-form-item>
-        
+
         <el-form-item label="分类名称" prop="name">
           <el-input v-model="form.name" placeholder="分类显示名称" />
         </el-form-item>
-        
+
         <el-form-item label="分类描述" prop="description">
           <el-input
             v-model="form.description"
@@ -167,12 +150,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="排序权重" prop="sortOrder">
-              <el-input-number
-                v-model="form.sortOrder"
-                :min="0"
-                :max="999"
-                style="width: 100%"
-              />
+              <el-input-number v-model="form.sortOrder" :min="0" :max="999" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -214,11 +192,7 @@
     </el-dialog>
 
     <!-- 图标选择器对话框 -->
-    <el-dialog
-      v-model="iconPickerVisible"
-      title="选择图标"
-      width="500px"
-    >
+    <el-dialog v-model="iconPickerVisible" title="选择图标" width="500px">
       <div class="icon-grid">
         <div
           v-for="icon in commonIcons"
@@ -239,37 +213,56 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed } from 'vue'
-import { 
-  FolderOpened, Plus, Refresh, Tools
-} from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { categoriesAPI } from '@/api/admin/tools'
+import { ref, reactive, onMounted, computed } from 'vue';
+import { FolderOpened, Plus, Refresh, Tools } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { categoriesAPI } from '@/api/admin/tools';
 
 export default {
   name: 'CategoriesManagement',
   components: {
-    FolderOpened, Plus, Refresh, Tools
+    FolderOpened,
+    Plus,
+    Refresh,
+    Tools
   },
   setup() {
-    const formRef = ref(null)
-    
+    const formRef = ref(null);
+
     // 响应式数据
-    const loading = ref(false)
-    const submitting = ref(false)
-    const dialogVisible = ref(false)
-    const iconPickerVisible = ref(false)
-    const isEdit = ref(false)
-    
-    const categories = ref([])
-    const selectedIcon = ref('')
-    
+    const loading = ref(false);
+    const submitting = ref(false);
+    const dialogVisible = ref(false);
+    const iconPickerVisible = ref(false);
+    const isEdit = ref(false);
+
+    const categories = ref([]);
+    const selectedIcon = ref('');
+
     // 常用图标
     const commonIcons = ref([
-      '🌐', '✏️', '🖼️', '⚙️', '🔧', '📁', '📊', '🎨', '📱', '💻',
-      '🔗', '📝', '🗜️', '🔄', '⏰', '🧮', '📄', '🎯', '🔍', '📦'
-    ])
-    
+      '🌐',
+      '✏️',
+      '🖼️',
+      '⚙️',
+      '🔧',
+      '📁',
+      '📊',
+      '🎨',
+      '📱',
+      '💻',
+      '🔗',
+      '📝',
+      '🗜️',
+      '🔄',
+      '⏰',
+      '🧮',
+      '📄',
+      '🎯',
+      '🔍',
+      '📦'
+    ]);
+
     // 表单数据
     const form = reactive({
       id: '',
@@ -281,21 +274,17 @@ export default {
       sortOrder: 0,
       showInMenu: true,
       status: 'active'
-    })
-    
+    });
+
     // 表单验证规则
     const formRules = {
       id: [
         { required: true, message: '请输入分类ID', trigger: 'blur' },
         { pattern: /^[a-z0-9-]+$/, message: 'ID只能包含小写字母、数字和连字符', trigger: 'blur' }
       ],
-      name: [
-        { required: true, message: '请输入分类名称', trigger: 'blur' }
-      ],
-      description: [
-        { required: true, message: '请输入分类描述', trigger: 'blur' }
-      ]
-    }
+      name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
+      description: [{ required: true, message: '请输入分类描述', trigger: 'blur' }]
+    };
 
     // 计算属性
     const categoryTreeOptions = computed(() => {
@@ -305,82 +294,85 @@ export default {
           .map(item => ({
             ...item,
             children: buildTree(items, item.id)
-          }))
-      }
-      return buildTree(categories.value)
-    })
+          }));
+      };
+      return buildTree(categories.value);
+    });
 
     // 方法
     const loadCategories = async () => {
-      loading.value = true
+      loading.value = true;
       try {
-        const response = await categoriesAPI.getCategories({ includeTools: true })
-        categories.value = buildCategoryTree(response.data.categories)
+        const response = await categoriesAPI.getCategories({
+          includeCounts: true,
+          includeTools: true
+        });
+        categories.value = buildCategoryTree(response.data.categories);
       } catch (error) {
-        ElMessage.error('加载分类列表失败')
+        ElMessage.error('加载分类列表失败');
       } finally {
-        loading.value = false
+        loading.value = false;
       }
-    }
+    };
 
-    const buildCategoryTree = (items) => {
-      const itemMap = new Map()
-      const rootItems = []
+    const buildCategoryTree = items => {
+      const itemMap = new Map();
+      const rootItems = [];
 
       // 创建映射
       items.forEach(item => {
-        itemMap.set(item.id, { ...item, children: [] })
-      })
+        itemMap.set(item.id, { ...item, children: [] });
+      });
 
       // 构建树结构
       items.forEach(item => {
-        const itemData = itemMap.get(item.id)
+        const itemData = itemMap.get(item.id);
         if (item.parentId) {
-          const parent = itemMap.get(item.parentId)
+          const parent = itemMap.get(item.parentId);
           if (parent) {
-            parent.children.push(itemData)
+            parent.children.push(itemData);
           }
         } else {
-          rootItems.push(itemData)
+          rootItems.push(itemData);
         }
-      })
+      });
 
-      return rootItems
-    }
+      return rootItems;
+    };
 
     const refreshData = () => {
-      loadCategories()
-    }
+      loadCategories();
+    };
 
-    const formatDate = (date) => {
-      return new Date(date).toLocaleString()
-    }
+    const formatDate = date => {
+      return new Date(date).toLocaleString();
+    };
 
     const showCreateDialog = () => {
-      isEdit.value = false
-      dialogVisible.value = true
-      resetForm()
-    }
+      isEdit.value = false;
+      dialogVisible.value = true;
+      resetForm();
+    };
 
-    const addSubCategory = (parent) => {
-      isEdit.value = false
-      dialogVisible.value = true
-      resetForm()
-      form.parentId = parent.id
-    }
+    const addSubCategory = parent => {
+      isEdit.value = false;
+      dialogVisible.value = true;
+      resetForm();
+      form.parentId = parent.id;
+    };
 
-    const editCategory = (category) => {
-      isEdit.value = true
-      dialogVisible.value = true
+    const editCategory = category => {
+      isEdit.value = true;
+      dialogVisible.value = true;
       Object.assign(form, {
         ...category,
         parentId: category.parentId || null
-      })
-    }
+      });
+    };
 
     const resetForm = () => {
       if (formRef.value) {
-        formRef.value.resetFields()
+        formRef.value.resetFields();
       }
       Object.assign(form, {
         id: '',
@@ -392,49 +384,49 @@ export default {
         sortOrder: 0,
         showInMenu: true,
         status: 'active'
-      })
-    }
+      });
+    };
 
     const submitForm = async () => {
-      if (!formRef.value) return
-      
+      if (!formRef.value) return;
+
       try {
-        await formRef.value.validate()
-        submitting.value = true
-        
+        await formRef.value.validate();
+        submitting.value = true;
+
         if (isEdit.value) {
-          await categoriesAPI.updateCategory(form._id, form)
-          ElMessage.success('分类更新成功')
+          await categoriesAPI.updateCategory(form._id, form);
+          ElMessage.success('分类更新成功');
         } else {
-          await categoriesAPI.createCategory(form)
-          ElMessage.success('分类创建成功')
+          await categoriesAPI.createCategory(form);
+          ElMessage.success('分类创建成功');
         }
-        
-        dialogVisible.value = false
-        loadCategories()
+
+        dialogVisible.value = false;
+        loadCategories();
       } catch (error) {
         if (error.errors) {
-          return
+          return;
         }
-        ElMessage.error(isEdit.value ? '更新失败' : '创建失败')
+        ElMessage.error(isEdit.value ? '更新失败' : '创建失败');
       } finally {
-        submitting.value = false
+        submitting.value = false;
       }
-    }
+    };
 
-    const updateShowInMenu = async (category) => {
+    const updateShowInMenu = async category => {
       try {
         await categoriesAPI.updateCategory(category._id, {
           showInMenu: category.showInMenu
-        })
-        ElMessage.success('设置已更新')
+        });
+        ElMessage.success('设置已更新');
       } catch (error) {
-        ElMessage.error('更新失败')
-        category.showInMenu = !category.showInMenu // 回滚
+        ElMessage.error('更新失败');
+        category.showInMenu = !category.showInMenu; // 回滚
       }
-    }
+    };
 
-    const deleteCategory = async (category) => {
+    const deleteCategory = async category => {
       try {
         await ElMessageBox.confirm(
           `确定要删除分类"${category.name}"吗？此操作不可恢复。`,
@@ -444,35 +436,35 @@ export default {
             cancelButtonText: '取消',
             type: 'warning'
           }
-        )
-        
-        await categoriesAPI.deleteCategory(category._id)
-        ElMessage.success('删除成功')
-        loadCategories()
+        );
+
+        await categoriesAPI.deleteCategory(category._id);
+        ElMessage.success('删除成功');
+        loadCategories();
       } catch (error) {
         if (error !== 'cancel') {
-          ElMessage.error('删除失败')
+          ElMessage.error('删除失败');
         }
       }
-    }
+    };
 
     const showIconPicker = () => {
-      selectedIcon.value = form.icon
-      iconPickerVisible.value = true
-    }
+      selectedIcon.value = form.icon;
+      iconPickerVisible.value = true;
+    };
 
-    const selectIcon = (icon) => {
-      selectedIcon.value = icon
-    }
+    const selectIcon = icon => {
+      selectedIcon.value = icon;
+    };
 
     const confirmIcon = () => {
-      form.icon = selectedIcon.value
-      iconPickerVisible.value = false
-    }
+      form.icon = selectedIcon.value;
+      iconPickerVisible.value = false;
+    };
 
     onMounted(() => {
-      loadCategories()
-    })
+      loadCategories();
+    });
 
     return {
       // 响应式数据
@@ -487,10 +479,10 @@ export default {
       formRules,
       formRef,
       selectedIcon,
-      
+
       // 计算属性
       categoryTreeOptions,
-      
+
       // 方法
       refreshData,
       formatDate,
@@ -504,9 +496,9 @@ export default {
       showIconPicker,
       selectIcon,
       confirmIcon
-    }
+    };
   }
-}
+};
 </script>
 
 <style scoped>
@@ -575,7 +567,7 @@ export default {
 
 .category-path {
   font-size: 11px;
-  color: #C0C4CC;
+  color: #c0c4cc;
   font-family: monospace;
 }
 
