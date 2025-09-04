@@ -28,7 +28,7 @@ export const getUsers = (params = {}) => {
 };
 
 // 获取用户详情
-export const getUserDetail = (userId) => {
+export const getUserDetail = userId => {
   return api.get(`/admin/users/${userId}`);
 };
 
@@ -43,7 +43,7 @@ export const resetUserPassword = (userId, newPassword) => {
 };
 
 // 删除用户
-export const deleteUser = (userId) => {
+export const deleteUser = userId => {
   return api.delete(`/admin/users/${userId}`);
 };
 
@@ -61,12 +61,12 @@ export const getSiteSettings = () => {
   return api.get('/admin/settings/site');
 };
 
-export const updateSiteSettings = (settings) => {
+export const updateSiteSettings = settings => {
   return api.put('/admin/settings/site', settings);
 };
 
 // 上传网站Logo
-export const uploadSiteLogo = (file) => {
+export const uploadSiteLogo = file => {
   const formData = new FormData();
   formData.append('logo', file);
   return api.post('/admin/settings/logo', formData, {
@@ -81,11 +81,9 @@ export const getSeoSettings = () => {
   return api.get('/admin/settings/seo');
 };
 
-export const updateSeoSettings = (settings) => {
+export const updateSeoSettings = settings => {
   return api.put('/admin/settings/seo', settings);
 };
-
-
 
 // 批量操作用户
 export const batchUserOperation = (userIds, action, data = {}) => {
@@ -93,22 +91,28 @@ export const batchUserOperation = (userIds, action, data = {}) => {
 };
 
 // 创建用户
-export const createUser = (userData) => {
+export const createUser = userData => {
   return api.post('/admin/users', userData);
 };
 
 // 更新用户信息
+
+// 查询权限枚举
+export const getAllPermissions = () => {
+  return api.get('/admin/permissions');
+};
+
 export const updateUser = (userId, userData) => {
   return api.put(`/admin/users/${userId}`, userData);
 };
 
 // 批量导入用户
-export const importUsers = (users) => {
+export const importUsers = users => {
   return api.post('/admin/users/import', { users });
 };
 
 // 获取活动日志
-export const getActivityLog = (params) => {
+export const getActivityLog = params => {
   return api.get('/admin/activity-log', { params });
 };
 

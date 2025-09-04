@@ -80,7 +80,7 @@ module.exports = {
         PORT: 8000,
         MONGODB_URI: 'mongodb://127.0.0.1:27017/personal_website_prod',
         FRONTEND_URL: 'https://godaug.fun',
-        UPLOAD_PATH: '/root/temp-email-system/backend/uploads'
+        UPLOAD_PATH: '/var/www/uploads'
         // JWT_SECRET: "请使用安全的随机密钥"
       }
     }
@@ -202,3 +202,259 @@ curl -s https://godaug.fun/api/health
 # 验证静态头像（替换为实际存在的文件名）
 curl -I https://godaug.fun/uploads/avatars/<an-existing-avatar-file>.png
 ```
+
+---
+
+# 🚚 更换服务器完整迁移指南（简单可靠）
+
+适用场景：整机迁移、云厂商更换或扩容重装。目标是“最少中断、可回滚、可重复”。
+
+## 一、整体思路
+
+- 数据与静态资源先备份；
+- 新机按“相同栈”装好：Nginx + Docker + Node + PM2；
+- 先在新机完成部署与自检（用临时域名/hosts 映射或 IP 访问）；
+- 最后切 DNS 到新机；
+- 验证无误后下线旧机。
+
+## 二、迁移前准备
+
+1. 降低 DNS TTL
+
+- 在域名控制台，将 godaug.fun（含 www、mail.temp 等记录）TTL 调低到 300 秒，等待生效。
+
+2. 备份数据（在旧服务器）
+
+> 可选说明：如果你不打算保留任何历史数据（用户、文章、上传图片、邮件等），本节“备份数据”可以跳过。只需在新服务器按后文“极速迁移（不保留历史数据）”执行即可。
+> 最少也建议保留一份运行参数/密钥（如 PM2 环境变量、JWT_SECRET），以防后续需要。
+
+```bash
+# 静态前端
+rsync -avz /var/www/html/ ./backup_html/
+# 上传文件
+rsync -avz /var/www/uploads/ ./backup_uploads/
+# Inbucket 邮件存档（如需保留）
+rsync -avz /var/lib/inbucket/ ./backup_inbucket/
+# MongoDB（容器或本机，根据你的环境）
+mongodump --out ./backup_mongo_$(date +%F)
+```
+
+3. 记录运行参数
+
+- PM2 环境变量（尤其是 UPLOAD_PATH=/var/www/uploads、PORT、MONGODB_URI、FRONTEND_URL、JWT_SECRET）
+- Nginx 站点配置关键段落（/、/uploads、/api、/inbucket）
+- Docker 端口（Inbucket: 25:2500, 9000, 1100；MongoDB: 27017 仅内网）
+
+## 三、新服务器初始化
+
+1. 安装依赖
+
+```bash
+# Ubuntu/Debian 示例
+apt update && apt install -y nginx git curl ufw docker.io docker-compose-plugin nodejs npm
+npm i -g pm2
+```
+
+2. 开放端口（云控制台安全组 + 系统防火墙）
+
+- 必须：80、443、25
+- 可选：27017（建议仅内网或本机，不对公网开放）
+- 示例：
+
+```bash
+ufw allow 80,443,25/tcp
+ufw enable
+```
+
+3. 创建目录
+
+```bash
+mkdir -p /var/www/html /var/www/uploads /var/lib/inbucket /var/www/certbot
+```
+
+## 四、部署应用到新服务器
+
+1. 拉代码 & 安装后端依赖
+
+```bash
+cd ~
+git clone https://github.com/BigSun120/RealWeb.git temp-email-system
+cd temp-email-system
+cd backend && npm install && cd ..
+```
+
+2. 配置 PM2（生产环境）
+
+```bash
+# ecosystem.config.js 中至少包含：
+#  - script: backend/app.js
+#  - env_production.UPLOAD_PATH=/var/www/uploads
+#  - 端口等
+pm2 delete website-backend || true
+pm2 start ecosystem.config.js --env production
+pm2 save && pm2 startup
+```
+
+3. Inbucket（临时邮箱）
+
+```bash
+docker rm -f inbucket || true
+# 持久化 + 25 端口映射
+docker run -d --name inbucket --restart unless-stopped \
+  -p 25:2500 -p 9000:9000 -p 1100:1100 \
+  -v /var/lib/inbucket:/storage \
+  -e INBUCKET_STORAGE_TYPE=file \
+  -e INBUCKET_STORAGE_PARAMS=path:/storage \
+  -e INBUCKET_STORAGE_RETENTIONPERIOD=72h \
+  inbucket/inbucket:latest
+```
+
+4. MongoDB（如使用容器）
+
+```bash
+docker run -d --name mongodb --restart unless-stopped \
+  -p 27017:27017 -v /var/lib/mongo:/data/db mongo:5-focal
+```
+
+5. Nginx 配置（简化且安全）
+
+- 仅 /inbucket/ 启用 Basic Auth；/uploads 做 alias；/api 反代到 127.0.0.1:8000
+
+```nginx
+# /etc/nginx/nginx.conf 关键片段（仅示例）
+http {
+  upstream backend { server 127.0.0.1:8000; }
+
+  server {
+    listen 80;
+    server_name godaug.fun www.godaug.fun;
+    location /.well-known/acme-challenge/ { root /var/www/certbot; }
+    location / { return 301 https://$host$request_uri; }
+  }
+
+  server {
+    listen 443 ssl http2;
+    server_name godaug.fun www.godaug.fun;
+
+    ssl_certificate /etc/letsencrypt/live/godaug.fun/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/godaug.fun/privkey.pem;
+
+    root /var/www/html;
+    index index.html index.htm;
+    location / { try_files $uri $uri/ /index.html; }
+
+    location ^~ /uploads/ {
+      alias /var/www/uploads/;
+      expires 30d;
+      add_header Cache-Control "public, immutable";
+      add_header Access-Control-Allow-Origin "*";
+    }
+
+    location /api/ {
+      proxy_pass http://backend;
+      proxy_http_version 1.1;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /inbucket/ {
+      auth_basic "Restricted";
+      auth_basic_user_file /etc/nginx/.htpasswd-inbucket;
+      proxy_pass http://127.0.0.1:9000/;
+      proxy_http_version 1.1;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+    }
+  }
+}
+```
+
+- 生成 Basic Auth：
+
+```bash
+INB_USER=admin
+INB_PASS=$(openssl rand -base64 18 | tr -d '\n')
+INB_HASH=$(openssl passwd -apr1 "$INB_PASS")
+printf "%s:%s\n" "$INB_USER" "$INB_HASH" > /etc/nginx/.htpasswd-inbucket
+nginx -t && systemctl reload nginx
+echo "Inbucket UI 用户: $INB_USER"; echo "密码(保存好): $INB_PASS"
+```
+
+6. 恢复数据
+
+```bash
+# 将备份拷到新机同路径
+rsync -avz ./backup_html/ root@NEW_IP:/var/www/html/
+rsync -avz ./backup_uploads/ root@NEW_IP:/var/www/uploads/
+rsync -avz ./backup_inbucket/ root@NEW_IP:/var/lib/inbucket/
+# MongoDB
+mongorestore backup_mongo_YYYY-MM-DD
+```
+
+7. 自检（不改 DNS 前就能测通）
+
+```bash
+curl -s http://localhost:8000/health
+
+## 四点场景建议
+- 保留全部历史数据：按完整备份→恢复流程执行（默认方案）
+- 仅保留上传与用户，不保留邮件：备份 /var/www/uploads 与数据库；/var/lib/inbucket 可跳过
+- 完全不保留历史数据：跳过“备份/恢复”步骤，按“极速迁移（不保留历史数据）”小节直接部署新环境并切 DNS
+- 希望更稳：两个服务器短时并行，先用 hosts 指向新机完成所有自检，再切 DNS
+
+## 极速迁移（不保留历史数据）
+1) 新机按“新服务器初始化 + 部署应用”章节完成安装、配置（PM2、Nginx、Inbucket、MongoDB）
+2) 前端：在本地构建，并上传 dist 到新机 /var/www/html
+3) 切 DNS：A 记录指向新 IP；（如使用 temp 子域收件）MX 指向新 IP 对应的 mail.temp 子域
+4) 验证：主页 200、/api/health 200、/uploads 可访问、/inbucket 401 且能收新邮件
+5) 下线旧机
+
+curl -sI http://NEW_IP/uploads/avatars/任意已存在文件.png
+curl -sI http://NEW_IP/inbucket/  # 预期 401
+```
+
+## 五、DNS 与域名变更
+
+1. 根站点与 WWW
+
+- A 记录：godaug.fun、www.godaug.fun → 新服务器 IP
+
+2. 邮件（推荐用子域承载临时邮箱）
+
+- A 记录：mail.temp.godaug.fun → 新 IP
+- MX 记录（主机名 temp）：指向 mail.temp.godaug.fun，优先级 10
+- 如果不希望根域接收邮件：
+  - 若 DNS 支持 Null MX：设置 MX 优先级 0，目标 “.”
+  - 否则可不设置根域 MX，并在 Inbucket 设置丢弃根域：
+    - 追加环境变量：INBUCKET_SMTP_DISCARDDOMAINS=godaug.fun
+    - 重建 Inbucket 容器生效
+
+3. TLS/SSL 证书
+
+- 在新机用 Certbot 为 godaug.fun、www.godaug.fun 签发或拷贝证书；
+- 确保 80 端口可被 ACME 验证临时文件访问。
+
+4. 验证生效
+
+```bash
+dig +short A godaug.fun
+curl -I https://godaug.fun
+# 发一封到 任意@temp.godaug.fun，查看 /inbucket UI
+```
+
+## 六、最终切换与回滚
+
+- 在低峰期进行切换；
+- 切换后观察 15~30 分钟：Nginx 日志、后端健康、上传与邮箱收信；
+- 如需回滚：把 DNS A/MX 切回旧 IP（TTL 生效后即回退）。
+
+## 七、常见问题
+
+- 25 端口被云厂商封禁：需要工单申请开放，或使用第三方中继替代；
+- 整站弹窗：确认 Nginx 的 Basic Auth 仅在 /inbucket/，其它 location 不要设置；
+- 上传 404：确保后端 UPLOAD_PATH=/var/www/uploads、Nginx /uploads alias 指向同目录；
+- MongoDB 暴露风险：避免公网开放 27017，可仅本机或内网访问。

@@ -113,14 +113,15 @@ router.get('/search', auth, async (req, res) => {
 
     let query = { isActive: true };
 
-    // 如果有搜索词，则按用户名搜索；否则返回所有活跃用户
+    // 如果有搜索词，则按展示名或用户名搜索；否则返回所有活跃用户
     if (searchTerm) {
-      query.username = { $regex: searchTerm, $options: 'i' };
+      const regex = { $regex: searchTerm, $options: 'i' };
+      query.$or = [{ displayName: regex }, { username: regex }];
     }
 
-    // 搜索用户名匹配的用户
+    // 搜索用户名或展示名匹配的用户
     const users = await User.find(query)
-      .select('username avatar bio')
+      .select('username displayName avatar bio')
       .limit(parseInt(limit))
       .sort({ username: 1 });
 
@@ -153,7 +154,7 @@ router.get('/profile', auth, async (req, res, next) => {
 // 更新用户资料
 router.put('/profile', auth, async (req, res, next) => {
   try {
-    const { username, bio, avatar } = req.body;
+    const { username, displayName, bio, avatar } = req.body;
     const user = req.user;
 
     if (username && username !== user.username) {
@@ -168,6 +169,7 @@ router.put('/profile', auth, async (req, res, next) => {
       user.username = username;
     }
 
+    if (displayName !== undefined) user.displayName = displayName;
     if (bio !== undefined) user.bio = bio;
     if (avatar !== undefined) user.avatar = avatar;
 

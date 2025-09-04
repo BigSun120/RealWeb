@@ -60,25 +60,20 @@ router.get('/dashboard/stats', async (req, res, next) => {
     ]);
 
     // 文章统计
-    const [
-      totalArticles,
-      publishedArticles,
-      draftArticles,
-      newArticlesThisWeek,
-      newArticlesToday
-    ] = await Promise.all([
-      Article.countDocuments(),
-      Article.countDocuments({ status: 'published' }),
-      Article.countDocuments({ status: 'draft' }),
-      Article.countDocuments({
-        createdAt: { $gte: thisWeek },
-        status: 'published'
-      }),
-      Article.countDocuments({
-        createdAt: { $gte: today },
-        status: 'published'
-      })
-    ]);
+    const [totalArticles, publishedArticles, draftArticles, newArticlesThisWeek, newArticlesToday] =
+      await Promise.all([
+        Article.countDocuments(),
+        Article.countDocuments({ status: 'published' }),
+        Article.countDocuments({ status: 'draft' }),
+        Article.countDocuments({
+          createdAt: { $gte: thisWeek },
+          status: 'published'
+        }),
+        Article.countDocuments({
+          createdAt: { $gte: today },
+          status: 'published'
+        })
+      ]);
 
     // 浏览量统计
     const viewsResult = await Article.aggregate([
@@ -99,9 +94,12 @@ router.get('/dashboard/stats', async (req, res, next) => {
     const todayViews = todayViewsResult.length > 0 ? todayViewsResult[0].todayViews : 0;
 
     // 计算增长率
-    const userGrowthRate = newUsersLastMonth > 0
-      ? Math.round(((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100)
-      : newUsersThisMonth > 0 ? 100 : 0;
+    const userGrowthRate =
+      newUsersLastMonth > 0
+        ? Math.round(((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100)
+        : newUsersThisMonth > 0
+        ? 100
+        : 0;
 
     const articleGrowthRate = newArticlesThisWeek > 0 ? 8 : 0; // 示例增长率
 
@@ -158,7 +156,6 @@ router.get('/dashboard/stats', async (req, res, next) => {
         }
       }
     });
-
   } catch (error) {
     logger.error('获取仪表板统计数据失败:', error);
     next(error);
@@ -225,7 +222,6 @@ router.get('/dashboard/activity', async (req, res, next) => {
       message: '获取最近活动成功',
       data: limitedActivities
     });
-
   } catch (error) {
     logger.error('获取最近活动失败:', error);
     next(error);
@@ -263,7 +259,6 @@ router.get('/system/status', async (req, res, next) => {
         nodeVersion: process.version
       }
     });
-
   } catch (error) {
     logger.error('获取系统状态失败:', error);
     next(error);
@@ -382,19 +377,22 @@ router.get('/users', async (req, res, next) => {
       }
     ]);
 
-    const searchStats = stats.length > 0 ? {
-      total: stats[0].totalUsers,
-      adminCount: stats[0].adminCount,
-      userCount: stats[0].totalUsers - stats[0].adminCount,
-      activeCount: stats[0].activeCount,
-      inactiveCount: stats[0].totalUsers - stats[0].activeCount
-    } : {
-      total: 0,
-      adminCount: 0,
-      userCount: 0,
-      activeCount: 0,
-      inactiveCount: 0
-    };
+    const searchStats =
+      stats.length > 0
+        ? {
+            total: stats[0].totalUsers,
+            adminCount: stats[0].adminCount,
+            userCount: stats[0].totalUsers - stats[0].adminCount,
+            activeCount: stats[0].activeCount,
+            inactiveCount: stats[0].totalUsers - stats[0].activeCount
+          }
+        : {
+            total: 0,
+            adminCount: 0,
+            userCount: 0,
+            activeCount: 0,
+            inactiveCount: 0
+          };
 
     res.json({
       code: 200,
@@ -410,7 +408,6 @@ router.get('/users', async (req, res, next) => {
         stats: searchStats
       }
     });
-
   } catch (error) {
     logger.error('获取用户列表失败:', error);
     next(error);
@@ -460,7 +457,6 @@ router.get('/users/:id', async (req, res, next) => {
         stats
       }
     });
-
   } catch (error) {
     logger.error('获取用户详情失败:', error);
     next(error);
@@ -480,11 +476,9 @@ router.put('/users/:id/status', async (req, res, next) => {
       });
     }
 
-    const user = await User.findByIdAndUpdate(
-      id,
-      { isActive: status },
-      { new: true }
-    ).select('-password');
+    const user = await User.findByIdAndUpdate(id, { isActive: status }, { new: true }).select(
+      '-password'
+    );
 
     if (!user) {
       return res.status(404).json({
@@ -510,14 +504,11 @@ router.put('/users/:id/status', async (req, res, next) => {
       message: `用户${status ? '启用' : '禁用'}成功`,
       data: user
     });
-
   } catch (error) {
     logger.error('更新用户状态失败:', error);
     next(error);
   }
 });
-
-
 
 // 重置用户密码
 router.put('/users/:id/password', async (req, res, next) => {
@@ -555,7 +546,6 @@ router.put('/users/:id/password', async (req, res, next) => {
       code: 200,
       message: '密码重置成功'
     });
-
   } catch (error) {
     logger.error('重置用户密码失败:', error);
     next(error);
@@ -605,7 +595,6 @@ router.delete('/users/:id', async (req, res, next) => {
       code: 200,
       message: '用户删除成功'
     });
-
   } catch (error) {
     logger.error('删除用户失败:', error);
     next(error);
@@ -636,16 +625,10 @@ router.post('/users/batch', async (req, res, next) => {
     let result;
     switch (action) {
       case 'activate':
-        result = await User.updateMany(
-          { _id: { $in: userIds } },
-          { isActive: true }
-        );
+        result = await User.updateMany({ _id: { $in: userIds } }, { isActive: true });
         break;
       case 'deactivate':
-        result = await User.updateMany(
-          { _id: { $in: userIds } },
-          { isActive: false }
-        );
+        result = await User.updateMany({ _id: { $in: userIds } }, { isActive: false });
         break;
       case 'delete':
         // 删除用户的文章
@@ -677,19 +660,26 @@ router.post('/users/batch', async (req, res, next) => {
       message: `批量操作成功，影响 ${result.modifiedCount || result.deletedCount} 个用户`,
       data: result
     });
-
   } catch (error) {
     logger.error('批量操作用户失败:', error);
     next(error);
   }
 });
 
-
-
 // 创建用户
 router.post('/users', async (req, res, next) => {
   try {
-    const { username, email, password, bio, isAdmin = false, isActive = true } = req.body;
+    const {
+      username,
+      email,
+      password,
+      bio,
+      displayName = '',
+      isAdmin = false,
+      isActive = true,
+      role,
+      permissions
+    } = req.body;
 
     // 验证必填字段
     if (!username || !email || !password) {
@@ -711,15 +701,46 @@ router.post('/users', async (req, res, next) => {
       });
     }
 
-    // 创建新用户
+    // 创建新用户（先用基础字段）
     const newUser = new User({
       username,
+      displayName,
       email,
       password,
       bio,
       isAdmin,
       isActive
     });
+
+    // 应用角色
+    if (role) {
+      const validRoles = ['user', 'blogger', 'moderator', 'admin'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ code: 400, message: '无效的角色' });
+      }
+      newUser.setRole(role);
+      if (role === 'admin') {
+        newUser.isAdmin = true;
+      }
+    }
+
+    // 应用权限（仅当非管理员时可自定义权限）
+    if (Array.isArray(permissions) && permissions.length > 0) {
+      if (!newUser.isAdmin) {
+        const validPermissions = [
+          'blog:create',
+          'blog:edit',
+          'blog:delete',
+          'blog:publish',
+          'comment:create',
+          'comment:edit',
+          'comment:delete',
+          'profile:edit',
+          'file:upload'
+        ];
+        newUser.permissions = permissions.filter(p => validPermissions.includes(p));
+      }
+    }
 
     await newUser.save();
 
@@ -743,7 +764,6 @@ router.post('/users', async (req, res, next) => {
       message: '用户创建成功',
       data: userResponse
     });
-
   } catch (error) {
     logger.error('创建用户失败:', error);
     next(error);
@@ -787,11 +807,7 @@ router.put('/users/:id', async (req, res, next) => {
     if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
     if (isActive !== undefined) updateData.isActive = isActive;
 
-    const user = await User.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
-    ).select('-password');
+    const user = await User.findByIdAndUpdate(id, updateData, { new: true }).select('-password');
 
     if (!user) {
       return res.status(404).json({
@@ -817,7 +833,6 @@ router.put('/users/:id', async (req, res, next) => {
       message: '用户信息更新成功',
       data: user
     });
-
   } catch (error) {
     logger.error('更新用户信息失败:', error);
     next(error);
@@ -878,21 +893,21 @@ router.post('/users/import', async (req, res, next) => {
 
         await newUser.save();
         results.success++;
-
       } catch (error) {
         results.failed++;
         results.errors.push(`创建用户 ${userData.username} 失败: ${error.message}`);
       }
     }
 
-    logger.info(`管理员 ${req.user.username} 批量导入用户，成功: ${results.success}，失败: ${results.failed}，跳过: ${results.skipped}`);
+    logger.info(
+      `管理员 ${req.user.username} 批量导入用户，成功: ${results.success}，失败: ${results.failed}，跳过: ${results.skipped}`
+    );
 
     res.json({
       code: 200,
       message: '批量导入完成',
       data: results
     });
-
   } catch (error) {
     logger.error('批量导入用户失败:', error);
     next(error);
@@ -969,11 +984,13 @@ router.get('/activity-log', async (req, res, next) => {
           type: activity.type,
           title: activity.title,
           description: activity.description,
-          user: activity.userId ? {
-            username: activity.userId.username,
-            email: activity.userId.email,
-            avatar: activity.userId.avatar
-          } : null,
+          user: activity.userId
+            ? {
+                username: activity.userId.username,
+                email: activity.userId.email,
+                avatar: activity.userId.avatar
+              }
+            : null,
           ipAddress: activity.ipAddress,
           userAgent: activity.userAgent,
           createdAt: activity.createdAt,
@@ -990,7 +1007,6 @@ router.get('/activity-log', async (req, res, next) => {
         stats
       }
     });
-
   } catch (error) {
     logger.error('获取活动日志失败:', error);
     next(error);
@@ -1000,7 +1016,14 @@ router.get('/activity-log', async (req, res, next) => {
 // 生成模拟活动数据的辅助函数
 function generateMockActivities(limit) {
   const activities = [];
-  const types = ['user_register', 'user_login', 'article_publish', 'article_edit', 'admin_action', 'system_event'];
+  const types = [
+    'user_register',
+    'user_login',
+    'article_publish',
+    'article_edit',
+    'admin_action',
+    'system_event'
+  ];
   const users = ['admin666', 'user001', 'user002', 'editor001'];
 
   for (let i = 0; i < limit; i++) {
@@ -1077,7 +1100,6 @@ router.post('/activity-log/generate', async (req, res, next) => {
       message: `成功生成 ${count} 条活动数据`,
       data: { count }
     });
-
   } catch (error) {
     logger.error('生成活动数据失败:', error);
     next(error);
@@ -1102,7 +1124,6 @@ router.delete('/activity-log/test-data', async (req, res, next) => {
       message: `成功清理 ${deletedCount} 条测试数据`,
       data: { deletedCount }
     });
-
   } catch (error) {
     logger.error('清理测试数据失败:', error);
     next(error);
@@ -1176,7 +1197,6 @@ router.put('/users/:id/role', async (req, res, next) => {
         canPublishBlog: user.canPublishBlog
       }
     });
-
   } catch (error) {
     logger.error('设置用户角色失败:', error);
     next(error);
@@ -1191,13 +1211,18 @@ router.put('/users/:id/permissions', async (req, res, next) => {
 
     // 验证参数
     const validPermissions = [
-      'blog:create', 'blog:edit', 'blog:delete', 'blog:publish',
-      'comment:create', 'comment:edit', 'comment:delete',
-      'profile:edit', 'file:upload'
+      'blog:create',
+      'blog:edit',
+      'blog:delete',
+      'blog:publish',
+      'comment:create',
+      'comment:edit',
+      'comment:delete',
+      'profile:edit',
+      'file:upload'
     ];
 
-    if (!Array.isArray(permissions) ||
-        !permissions.every(p => validPermissions.includes(p))) {
+    if (!Array.isArray(permissions) || !permissions.every(p => validPermissions.includes(p))) {
       return res.status(400).json({
         code: 400,
         message: '无效的权限列表'
@@ -1238,9 +1263,37 @@ router.put('/users/:id/permissions', async (req, res, next) => {
         canPublishBlog: user.canPublishBlog
       }
     });
-
   } catch (error) {
     logger.error('设置用户权限失败:', error);
+    next(error);
+  }
+});
+
+// 查询可用权限枚举
+router.get('/permissions', async (req, res, next) => {
+  try {
+    // 从 User 模型的 schema 中读取权限枚举，作为单一事实来源
+    const path = User.schema.path('permissions');
+    let enumValues = [];
+    if (path && path.caster && Array.isArray(path.caster.enumValues)) {
+      enumValues = path.caster.enumValues;
+    } else {
+      // 兜底：与模型保持一致
+      enumValues = [
+        'blog:create',
+        'blog:edit',
+        'blog:delete',
+        'blog:publish',
+        'comment:create',
+        'comment:edit',
+        'comment:delete',
+        'profile:edit',
+        'file:upload'
+      ];
+    }
+
+    res.json({ code: 200, data: enumValues });
+  } catch (error) {
     next(error);
   }
 });
@@ -1275,7 +1328,6 @@ router.get('/articles/deleted', async (req, res, next) => {
         }
       }
     });
-
   } catch (error) {
     logger.error('获取已删除文章列表失败:', error);
     next(error);
@@ -1319,7 +1371,6 @@ router.put('/articles/:id/restore', async (req, res, next) => {
       message: '文章恢复成功',
       data: article
     });
-
   } catch (error) {
     logger.error('恢复文章失败:', error);
     next(error);
@@ -1410,7 +1461,6 @@ router.get('/articles', async (req, res, next) => {
         pages: Math.ceil(total / limitNum)
       }
     });
-
   } catch (error) {
     logger.error('获取文章列表失败:', error);
     next(error);
@@ -1447,7 +1497,6 @@ router.delete('/articles/:id/permanent', async (req, res, next) => {
       code: 200,
       message: '文章永久删除成功'
     });
-
   } catch (error) {
     logger.error('永久删除文章失败:', error);
     next(error);
@@ -1467,7 +1516,11 @@ function validateSettingsData(type, data) {
       if (data.description !== undefined && typeof data.description !== 'string') {
         return '网站描述必须是字符串';
       }
-      if (data.email !== undefined && data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      if (
+        data.email !== undefined &&
+        data.email &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)
+      ) {
         return '邮箱格式不正确';
       }
       break;
@@ -1477,14 +1530,21 @@ function validateSettingsData(type, data) {
       if (data.bio !== undefined && typeof data.bio !== 'string') {
         return '个人简介必须是字符串';
       }
-      if (data.email !== undefined && data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      if (
+        data.email !== undefined &&
+        data.email &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)
+      ) {
         return '邮箱格式不正确';
       }
       break;
 
     case 'blog':
       // 博客设置验证
-      if (data.pageSize !== undefined && (!Number.isInteger(data.pageSize) || data.pageSize < 1 || data.pageSize > 100)) {
+      if (
+        data.pageSize !== undefined &&
+        (!Number.isInteger(data.pageSize) || data.pageSize < 1 || data.pageSize > 100)
+      ) {
         return '每页文章数必须是1-100之间的整数';
       }
       break;
@@ -1503,7 +1563,6 @@ router.get('/settings', async (req, res, next) => {
       message: '获取设置成功',
       data: settings
     });
-
   } catch (error) {
     logger.error('获取设置失败:', error);
     next(error);
@@ -1529,7 +1588,6 @@ router.get('/settings/:type', async (req, res, next) => {
       message: '获取设置成功',
       data
     });
-
   } catch (error) {
     logger.error('获取设置失败:', error);
     next(error);
@@ -1575,7 +1633,6 @@ router.put('/settings/:type', async (req, res, next) => {
       message: '设置更新成功',
       data: setting.data
     });
-
   } catch (error) {
     logger.error('更新设置失败:', error);
     next(error);
@@ -1619,7 +1676,6 @@ router.put('/settings', async (req, res, next) => {
       message: '设置批量更新成功',
       data: results
     });
-
   } catch (error) {
     logger.error('批量更新设置失败:', error);
     next(error);

@@ -5,15 +5,21 @@
       <div class="header-content">
         <div class="user-avatar">
           <AvatarUpload
-            :avatar="userStore.user && userStore.user.avatar || ''"
+            :avatar="(userStore.user && userStore.user.avatar) || ''"
             :size="80"
             @upload-success="handleAvatarUpload"
             @delete-success="handleAvatarDelete"
           />
         </div>
         <div class="user-details">
-          <h1 class="username">{{ userStore.user && userStore.user.username || '用户' }}</h1>
-          <p class="user-bio">{{ userStore.user && userStore.user.bio || '这个人很懒，什么都没写...' }}</p>
+          <h1 class="username">
+            {{
+              (userStore.user && (userStore.user.displayName || userStore.user.username)) || '用户'
+            }}
+          </h1>
+          <p class="user-bio">
+            {{ (userStore.user && userStore.user.bio) || '这个人很懒，什么都没写...' }}
+          </p>
           <div class="user-meta">
             <span class="join-date">
               <el-icon><Calendar /></el-icon>
@@ -38,8 +44,16 @@
         <div class="section-content">
           <el-form :model="form" ref="formRef" label-position="top">
             <div class="form-row">
-              <el-form-item label="用户名" class="form-item">
-                <el-input v-model="form.username" placeholder="请输入用户名" />
+              <el-form-item label="展示名（显示在页面上，可留空）" class="form-item">
+                <el-input
+                  v-model="form.displayName"
+                  placeholder="请输入展示名（支持中文/空格/emoji）"
+                />
+              </el-form-item>
+            </div>
+            <div class="form-row">
+              <el-form-item label="账号名（用于登录，仅字母/数字/下划线）" class="form-item">
+                <el-input v-model="form.username" placeholder="请输入账号名" />
               </el-form-item>
             </div>
             <div class="form-row">
@@ -105,6 +119,7 @@ export default {
     const loading = ref(false);
 
     const form = ref({
+      displayName: '',
       username: '',
       bio: ''
     });
@@ -121,14 +136,14 @@ export default {
       }
     };
 
-    const handleAvatarUpload = (data) => {
+    const handleAvatarUpload = data => {
       // 更新用户store中的头像信息
       if (data.user) {
         userStore.updateUser(data.user);
       }
     };
 
-    const handleAvatarDelete = (data) => {
+    const handleAvatarDelete = data => {
       // 更新用户store中的头像信息
       if (data.user) {
         userStore.updateUser(data.user);
@@ -139,7 +154,7 @@ export default {
       ElMessage.success('密码修改成功，请妥善保管新密码');
     };
 
-    const formatDate = (dateString) => {
+    const formatDate = dateString => {
       if (!dateString) return '未知';
       const date = new Date(dateString);
       return date.toLocaleDateString('zh-CN', {
@@ -151,6 +166,7 @@ export default {
 
     onMounted(() => {
       if (userStore.user) {
+        form.value.displayName = userStore.user.displayName || '';
         form.value.username = userStore.user.username;
         form.value.bio = userStore.user.bio || '';
       }

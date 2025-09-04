@@ -60,7 +60,7 @@
             浏览博客
           </button>
           <button class="btn btn-secondary btn-lg" @click="$router.push('/about')">
-            <i class="btn-icon">��</i>
+            <i class="btn-icon">💓 </i>
             联系我
           </button>
           <button
@@ -154,13 +154,18 @@
 
             <div class="card-footer">
               <div class="article-author">
-                <div class="author-avatar" :style="getAuthorAvatarStyle(article.author && article.author.avatar)">
+                <div
+                  class="author-avatar"
+                  :style="getAuthorAvatarStyle(article.author && article.author.avatar)"
+                >
                   <span class="avatar-fallback">{{
-                    (article.author && article.author.username || '匿名').charAt(0)
+                    ((article.author && article.author.username) || '匿名').charAt(0)
                   }}</span>
                 </div>
                 <div class="author-info">
-                  <span class="author-name">{{ article.author && article.author.username || '匿名' }}</span>
+                  <span class="author-name">{{
+                    (article.author && article.author.username) || '匿名'
+                  }}</span>
                   <span class="publish-date">{{ formatDate(article.createdAt) }}</span>
                 </div>
               </div>
@@ -278,7 +283,7 @@ export default {
     };
 
     // 获取完整的图片URL
-    const getFullImageUrl = (imageUrl) => {
+    const getFullImageUrl = imageUrl => {
       if (!imageUrl) return '';
 
       // 如果已经是完整的URL，直接返回
@@ -291,7 +296,7 @@ export default {
     };
 
     // 处理图片加载错误
-    const handleImageError = (event) => {
+    const handleImageError = event => {
       // 隐藏图片，显示占位符
       const imgElement = event.target;
       const imageDiv = imgElement.closest('.article-image');
@@ -309,6 +314,7 @@ export default {
       if (!settingsStore.loaded) {
         settingsStore.loadSettings();
       }
+
       // 初始化千足虫背景
       checkMotionPreference();
       adjustMillipedeCount();
@@ -527,431 +533,431 @@ export default {
             transform: translateY(-2px);
             box-shadow: 0 12px 35px rgba(102, 126, 234, 0.6);
           }
-
-          .btn-icon {
-            margin-right: 8px;
-            font-style: normal;
-          }
         }
 
-        .secondary-btn {
-          background: rgba(255, 255, 255, 0.2);
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          color: white;
-          padding: 13px 28px;
-          font-size: 16px;
-          font-weight: 600;
-          border-radius: 50px;
-          backdrop-filter: blur(10px);
-          transition: all 0.3s ease;
-
-          &:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: translateY(-2px);
-          }
-
-          .btn-icon {
-            margin-right: 8px;
-            font-style: normal;
-          }
+        .btn-icon {
+          margin-right: 8px;
+          font-style: normal;
         }
       }
 
-      .hero-social {
+      .secondary-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 13px 28px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 50px;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.3);
+          border-color: rgba(255, 255, 255, 0.5);
+          transform: translateY(-2px);
+        }
+
+        .btn-icon {
+          margin-right: 8px;
+          font-style: normal;
+        }
+      }
+    }
+
+    .hero-social {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      animation: fadeInUp 1s ease-out 1.4s both;
+
+      .social-link {
         display: flex;
-        justify-content: center;
-        gap: 20px;
-        flex-wrap: wrap;
-        animation: fadeInUp 1s ease-out 1.4s both;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 25px;
+        color: white;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
 
-        .social-link {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 20px;
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 25px;
-          color: white;
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 500;
-          backdrop-filter: blur(10px);
-          transition: all 0.3s ease;
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+          border-color: rgba(255, 255, 255, 0.4);
+          transform: translateY(-2px);
+        }
 
-          &:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.4);
-            transform: translateY(-2px);
-          }
-
-          .social-icon {
-            font-style: normal;
-            font-size: 16px;
-          }
+        .social-icon {
+          font-style: normal;
+          font-size: 16px;
         }
       }
     }
   }
+}
 
-  .section-header {
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 50px;
+
+  h2 {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(45deg, #409eff, #667eea);
+      border-radius: 2px;
+    }
+  }
+
+  .more-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #409eff;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 12px 24px;
+    border: 2px solid #409eff;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    background: rgba(64, 158, 255, 0.05);
+
+    &:hover {
+      background: #409eff;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(64, 158, 255, 0.3);
+
+      .arrow-icon {
+        transform: translateX(4px);
+      }
+    }
+
+    .arrow-icon {
+      font-style: normal;
+      transition: transform 0.3s ease;
+    }
+  }
+}
+
+// 最新文章区域
+.latest-articles-section {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  padding: 80px 0;
+  background: transparent; // 移除背景，让银河背景透过
+  position: relative;
+  overflow: hidden; // 防止子元素溢出导致滚动条
+
+  .articles-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .articles-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 50px;
+    margin-bottom: 48px;
 
-    h2 {
+    .articles-title {
       font-size: 36px;
-      font-weight: 700;
-      color: #1a202c;
+      font-weight: 800;
+      color: #6579e1;
       margin: 0;
       position: relative;
 
       &::after {
         content: '';
         position: absolute;
-        bottom: -10px;
+        bottom: -8px;
         left: 0;
         width: 60px;
         height: 4px;
-        background: linear-gradient(45deg, #409eff, #667eea);
+        background: linear-gradient(90deg, #409eff 0%, #667eea 100%);
         border-radius: 2px;
       }
     }
 
-    .more-link {
-      display: flex;
+    .view-more-btn {
+      display: inline-flex;
       align-items: center;
       gap: 8px;
       color: #409eff;
       text-decoration: none;
       font-weight: 600;
+      font-size: 16px;
       padding: 12px 24px;
       border: 2px solid #409eff;
-      border-radius: 25px;
+      border-radius: 50px;
       transition: all 0.3s ease;
-      background: rgba(64, 158, 255, 0.05);
+      background: transparent;
 
       &:hover {
         background: #409eff;
         color: white;
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(64, 158, 255, 0.3);
-
-        .arrow-icon {
-          transform: translateX(4px);
-        }
-      }
-
-      .arrow-icon {
-        font-style: normal;
-        transition: transform 0.3s ease;
       }
     }
   }
 
-  // 最新文章区域
-  .latest-articles-section {
-    width: 100vw;
-    margin-left: calc(-50vw + 50%);
-    padding: 80px 0;
-    background: transparent; // 移除背景，让银河背景透过
-    position: relative;
-    overflow: hidden; // 防止子元素溢出导致滚动条
+  .loading-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
 
-    .articles-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 20px;
+    .loading-spinner {
+      font-size: 18px;
+      color: #409eff;
+      font-weight: 500;
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #718096;
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
     }
 
-    .articles-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 48px;
+    h3 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #4a5568;
+    }
 
-      .articles-title {
-        font-size: 36px;
-        font-weight: 800;
-        color: #6579e1;
-        margin: 0;
+    p {
+      font-size: 16px;
+      opacity: 0.8;
+    }
+  }
+
+  .articles-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    contain: layout; // 防止子元素影响外部布局
+
+    .article-item {
+      background: rgba(255, 255, 255, 0.08); // 更柔和的半透明背景
+      backdrop-filter: blur(12px); // 稍强的毛玻璃效果
+      border-radius: 16px;
+      overflow: hidden; // 确保所有内容都被裁剪在卡片内
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      display: flex;
+      flex-direction: column;
+      height: fit-content;
+      will-change: transform;
+      contain: layout style paint; // 严格的CSS containment
+      isolation: isolate; // 创建新的堆叠上下文
+
+      &:hover {
+        transform: translateY(-6px) translateZ(0);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.26);
+
+        .article-image {
+          // 确保图片容器在hover时也不会溢出
+          overflow: hidden;
+
+          img {
+            transform: scale(1.03) translateZ(0);
+            // 确保缩放不会影响文档流
+            position: relative;
+            z-index: 1;
+          }
+          &::after {
+            opacity: 0.9;
+          }
+        }
+
+        .article-title {
+          color: #8ec8ff;
+        }
+      }
+
+      .article-image {
+        height: 160px;
+        overflow: hidden; // 关键：确保缩放的图片不会溢出容器
+        background: #f7fafc;
+        flex-shrink: 0;
         position: relative;
+        contain: layout style paint; // CSS containment 优化性能和防止布局影响
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
         &::after {
           content: '';
           position: absolute;
-          bottom: -8px;
           left: 0;
-          width: 60px;
-          height: 4px;
-          background: linear-gradient(90deg, #409eff 0%, #667eea 100%);
-          border-radius: 2px;
+          right: 0;
+          bottom: 0;
+          height: 70px;
+          background: linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(2, 6, 23, 0.28) 60%,
+            rgba(2, 6, 23, 0.42) 100%
+          );
+          transition: opacity 0.3s ease;
+          opacity: 0.75;
+          z-index: 1;
+        }
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: transform;
+          backface-visibility: hidden;
+          transform-origin: center center; // 确保从中心缩放
         }
       }
 
-      .view-more-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: #409eff;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 16px;
-        padding: 12px 24px;
-        border: 2px solid #409eff;
-        border-radius: 50px;
-        transition: all 0.3s ease;
-        background: transparent;
-
-        &:hover {
-          background: #409eff;
-          color: white;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(64, 158, 255, 0.3);
-        }
-      }
-    }
-
-    .loading-state {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 300px;
-
-      .loading-spinner {
-        font-size: 18px;
-        color: #409eff;
-        font-weight: 500;
-      }
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #718096;
-
-      .empty-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
-      }
-
-      h3 {
-        font-size: 24px;
-        margin-bottom: 8px;
-        color: #4a5568;
-      }
-
-      p {
-        font-size: 16px;
-        opacity: 0.8;
-      }
-    }
-
-    .articles-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 24px;
-      contain: layout; // 防止子元素影响外部布局
-
-      .article-item {
-        background: rgba(255, 255, 255, 0.08); // 更柔和的半透明背景
-        backdrop-filter: blur(12px); // 稍强的毛玻璃效果
-        border-radius: 16px;
-        overflow: hidden; // 确保所有内容都被裁剪在卡片内
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+      .article-image-placeholder {
+        height: 160px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         display: flex;
-        flex-direction: column;
-        height: fit-content;
-        will-change: transform;
-        contain: layout style paint; // 严格的CSS containment
-        isolation: isolate; // 创建新的堆叠上下文
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        position: relative;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
-        &:hover {
-          transform: translateY(-6px) translateZ(0);
-          box-shadow: 0 18px 48px rgba(0, 0, 0, 0.26);
+        .placeholder-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          color: white;
 
-          .article-image {
-            // 确保图片容器在hover时也不会溢出
-            overflow: hidden;
-
-            img {
-              transform: scale(1.03) translateZ(0);
-              // 确保缩放不会影响文档流
-              position: relative;
-              z-index: 1;
-            }
-            &::after {
-              opacity: 0.9;
-            }
+          .placeholder-icon {
+            font-size: 32px;
+            opacity: 0.8;
           }
 
-          .article-title {
-            color: #8ec8ff;
+          .placeholder-text {
+            font-size: 24px;
+            font-weight: 700;
+            opacity: 0.9;
           }
         }
+      }
 
-        .article-image {
-          height: 160px;
-          overflow: hidden; // 关键：确保缩放的图片不会溢出容器
-          background: #f7fafc;
-          flex-shrink: 0;
-          position: relative;
-          contain: layout style paint; // CSS containment 优化性能和防止布局影响
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      /* 适配模板结构：card-body / card-footer */
+      .card-body {
+        padding: 18px 18px 6px 18px;
+      }
 
-          &::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 70px;
-            background: linear-gradient(
-              180deg,
-              rgba(0, 0, 0, 0) 0%,
-              rgba(2, 6, 23, 0.28) 60%,
-              rgba(2, 6, 23, 0.42) 100%
-            );
-            transition: opacity 0.3s ease;
-            opacity: 0.75;
-            z-index: 1;
-          }
+      .article-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #ffffff; // 改为白色，在透明背景上可见
+        margin: 0 0 8px 0;
+        line-height: 1.4;
+        transition: color 0.3s ease;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 48px;
+        word-wrap: break-word;
+        word-break: break-word;
+      }
 
-          img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: transform;
-            backface-visibility: hidden;
-            transform-origin: center center; // 确保从中心缩放
-          }
-        }
+      .article-summary {
+        color: rgba(255, 255, 255, 0.82); // 半透明白色
+        line-height: 1.6;
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 42px;
+      }
 
-        .article-image-placeholder {
-          height: 160px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      .card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 18px 16px 18px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+
+        .article-author {
           display: flex;
           align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          position: relative;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          gap: 10px;
+          .author-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.16);
+            background-size: cover;
+            background-position: center;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+          }
+          .avatar-fallback {
+            color: #fff;
+            font-weight: 700;
+          }
 
-          .placeholder-content {
+          .author-info {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            color: white;
+            line-height: 1.2;
 
-            .placeholder-icon {
-              font-size: 32px;
-              opacity: 0.8;
-            }
-
-            .placeholder-text {
-              font-size: 24px;
-              font-weight: 700;
-              opacity: 0.9;
-            }
-          }
-        }
-
-        /* 适配模板结构：card-body / card-footer */
-        .card-body {
-          padding: 18px 18px 6px 18px;
-        }
-
-        .article-title {
-          font-size: 18px;
-          font-weight: 700;
-          color: #ffffff; // 改为白色，在透明背景上可见
-          margin: 0 0 8px 0;
-          line-height: 1.4;
-          transition: color 0.3s ease;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          min-height: 48px;
-          word-wrap: break-word;
-          word-break: break-word;
-        }
-
-        .article-summary {
-          color: rgba(255, 255, 255, 0.82); // 半透明白色
-          line-height: 1.6;
-          margin: 0 0 12px 0;
-          font-size: 14px;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          min-height: 42px;
-        }
-
-        .card-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 18px 16px 18px;
-          border-top: 1px solid rgba(255, 255, 255, 0.12);
-
-          .article-author {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            .author-avatar {
-              width: 32px;
-              height: 32px;
-              border-radius: 50%;
-              background-color: rgba(255, 255, 255, 0.16);
-              background-size: cover;
-              background-position: center;
-              border: 1px solid rgba(255, 255, 255, 0.22);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              overflow: hidden;
-            }
-            .avatar-fallback {
-              color: #fff;
-              font-weight: 700;
-            }
-
-            .author-info {
-              display: flex;
-              flex-direction: column;
-              line-height: 1.2;
-
-              .author-name {
-                font-size: 12px;
-                font-weight: 500;
-                color: hotpink; // 提高对比度
-              }
-
-              .publish-date {
-                font-size: 11px;
-                color: #1a1a1a;
-              }
-            }
-          }
-
-          .article-stats {
-            .badge {
-              border-radius: 999px;
-              padding: 4px 10px;
+            .author-name {
               font-size: 12px;
-              background: rgba(64, 158, 255, 0.15);
-              color: #8ec8ff;
-              border: 1px solid rgba(64, 158, 255, 0.25);
+              font-weight: 500;
+              color: hotpink; // 提高对比度
             }
+
+            .publish-date {
+              font-size: 11px;
+              color: #1a1a1a;
+            }
+          }
+        }
+
+        .article-stats {
+          .badge {
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            background: rgba(64, 158, 255, 0.15);
+            color: #8ec8ff;
+            border: 1px solid rgba(64, 158, 255, 0.25);
           }
         }
       }

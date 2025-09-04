@@ -9,12 +9,7 @@
           </div>
           <h2 v-show="!isCollapsed" class="logo-text">管理后台</h2>
         </div>
-        <el-button
-          :icon="Fold"
-          text
-          @click="toggleSidebar"
-          class="collapse-btn"
-        />
+        <el-button :icon="Fold" text @click="toggleSidebar" class="collapse-btn" />
       </div>
 
       <el-scrollbar class="menu-scrollbar">
@@ -55,9 +50,6 @@
             </el-menu-item>
             <el-menu-item index="/admin/tags" class="sub-menu-item">
               <span class="sub-menu-title">标签管理</span>
-            </el-menu-item>
-            <el-menu-item index="/admin/games" class="sub-menu-item">
-              <span class="sub-menu-title">游戏管理</span>
             </el-menu-item>
           </el-sub-menu>
 
@@ -123,10 +115,20 @@
       <div class="sidebar-footer">
         <div v-if="!isCollapsed" class="user-info">
           <el-avatar :src="userStore.user && userStore.user.avatar" :size="32" class="user-avatar">
-            {{ userStore.user && userStore.user.username && userStore.user.username.charAt(0) || 'U' }}
+            {{
+              (userStore.user &&
+                (userStore.user.displayName || userStore.user.username) &&
+                (userStore.user.displayName || userStore.user.username).charAt(0)) ||
+              'U'
+            }}
           </el-avatar>
           <div class="user-details">
-            <div class="username">{{ userStore.user && userStore.user.username || '用户' }}</div>
+            <div class="username">
+              {{
+                (userStore.user && (userStore.user.displayName || userStore.user.username)) ||
+                '用户'
+              }}
+            </div>
             <div class="user-role">管理员</div>
           </div>
           <el-dropdown @command="handleUserCommand" class="user-dropdown">
@@ -144,8 +146,17 @@
         <div v-else class="collapsed-user">
           <el-tooltip content="用户菜单" placement="right">
             <el-dropdown @command="handleUserCommand">
-              <el-avatar :src="userStore.user && userStore.user.avatar" :size="28" class="collapsed-avatar">
-                {{ userStore.user && userStore.user.username && userStore.user.username.charAt(0) || 'U' }}
+              <el-avatar
+                :src="userStore.user && userStore.user.avatar"
+                :size="28"
+                class="collapsed-avatar"
+              >
+                {{
+                  (userStore.user &&
+                    (userStore.user.displayName || userStore.user.username) &&
+                    (userStore.user.displayName || userStore.user.username).charAt(0)) ||
+                  'U'
+                }}
               </el-avatar>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -165,11 +176,7 @@
       <el-header class="admin-header">
         <div class="header-left">
           <el-breadcrumb separator="/">
-            <el-breadcrumb-item
-              v-for="item in breadcrumbs"
-              :key="item.path"
-              :to="item.path"
-            >
+            <el-breadcrumb-item v-for="item in breadcrumbs" :key="item.path" :to="item.path">
               {{ item.title }}
             </el-breadcrumb-item>
           </el-breadcrumb>
@@ -177,12 +184,7 @@
 
         <div class="header-right">
           <el-tooltip content="返回主站 (Ctrl+H)" placement="bottom">
-            <el-button
-              type="primary"
-              plain
-              @click="goToMainSite"
-              class="back-to-site-btn"
-            >
+            <el-button type="primary" plain @click="goToMainSite" class="back-to-site-btn">
               <el-icon><House /></el-icon>
               <span class="btn-text">返回主站</span>
             </el-button>
@@ -253,12 +255,12 @@ export default {
       const breadcrumbList = [{ title: '管理后台', path: '/admin' }];
 
       const menuMap = {
-        'dashboard': '仪表板',
-        'users': '用户管理',
-        'articles': '文章管理',
-        'games': '游戏管理',
-        'settings': '系统设置',
-        'monitoring': '系统监控'
+        dashboard: '仪表板',
+        users: '用户管理',
+        articles: '文章管理',
+
+        settings: '系统设置',
+        monitoring: '系统监控'
       };
 
       pathArray.forEach((item, index) => {
@@ -279,22 +281,18 @@ export default {
     };
 
     // 处理用户下拉菜单命令
-    const handleUserCommand = async (command) => {
+    const handleUserCommand = async command => {
       switch (command) {
         case 'profile':
           router.push('/profile');
           break;
         case 'logout':
           try {
-            await ElMessageBox.confirm(
-              '确定要退出登录吗？',
-              '提示',
-              {
-                confirmButtonText: '确定',
-                cancelButtonText: '取消',
-                type: 'warning'
-              }
-            );
+            await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              type: 'warning'
+            });
             await userStore.logout();
             router.push('/auth/login');
             ElMessage.success('退出登录成功');
@@ -315,7 +313,7 @@ export default {
     };
 
     // 添加快捷键支持
-    const handleKeydown = (e) => {
+    const handleKeydown = e => {
       if (e.ctrlKey && e.key === 'h') {
         e.preventDefault();
         goToMainSite();

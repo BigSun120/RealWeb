@@ -174,6 +174,55 @@
           </el-form-item>
         </el-form>
       </el-card>
+
+      <!-- 用户注册默认配置 -->
+      <el-card class="settings-card">
+        <template #header>
+          <div class="card-header">
+            <el-icon><UserFilled /></el-icon>
+            <span>用户注册默认配置</span>
+          </div>
+        </template>
+
+        <el-form label-width="120px" class="settings-form">
+          <el-form-item label="默认角色">
+            <el-select v-model="newUserDefaults.role" placeholder="选择角色" style="width: 260px">
+              <el-option label="普通用户" value="user" />
+              <el-option label="博主" value="blogger" />
+              <el-option label="版主" value="moderator" />
+              <el-option label="管理员" value="admin" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="默认权限">
+            <el-select
+              v-model="newUserDefaults.permissions"
+              multiple
+              collapse-tags
+              placeholder="选择权限"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="perm in permissionsOptions"
+                :key="perm.value"
+                :label="perm.label"
+                :value="perm.value"
+              />
+            </el-select>
+            <div class="field-tip">如设置角色为管理员，权限选项将被忽略</div>
+          </el-form-item>
+
+          <el-form-item label="默认启用">
+            <el-switch v-model="newUserDefaults.isActive" />
+          </el-form-item>
+
+          <el-form-item>
+            <el-button type="primary" :loading="saving" @click="saveNewUserDefaults"
+              >保存默认配置</el-button
+            >
+          </el-form-item>
+        </el-form>
+      </el-card>
     </div>
   </div>
 </template>
@@ -181,7 +230,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Setting, User, Document, Plus, Link } from '@element-plus/icons-vue';
+import { Setting, User, Document, Plus, Link, UserFilled } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import api from '@/api';
 
@@ -192,7 +241,8 @@ export default {
     User,
     Document,
     Plus,
-    Link
+    Link,
+    UserFilled
   },
   setup() {
     const userStore = useUserStore();
@@ -271,6 +321,77 @@ export default {
       } catch (error) {
         console.error('保存个人信息失败:', error);
         ElMessage.error('保存个人信息失败：' + (error.response?.data?.message || error.message));
+      } finally {
+        saving.value = false;
+      }
+    };
+
+    // 新用户默认配置
+    const newUserDefaults = ref({
+      role: 'user',
+      permissions: [],
+      isActive: true
+    });
+
+    const permissionsOptions = ref([]);
+
+    const loadPermissionsOptions = async () => {
+      try {
+        const res = await api.get('/admin/permissions');
+        const values = Array.isArray(res.data?.data) ? res.data.data : [];
+        const labelMap = {
+          'blog:create': '创建博客',
+          'blog:edit': '编辑博客',
+          'blog:delete': '删除博客',
+          'blog:publish': '发布博客',
+          'comment:create': '发表评论',
+          'comment:edit': '编辑评论',
+          'comment:delete': '删除评论',
+          'profile:edit': '编辑个人资料',
+          'file:upload': '上传文件'
+        };
+        permissionsOptions.value = values.map(v => ({ value: v, label: labelMap[v] || v }));
+      } catch (e) {
+        permissionsOptions.value = [];
+      }
+    };
+
+    const loadNewUserDefaults = async () => {
+      try {
+        const [roleCfg, permCfg, activeCfg] = await Promise.all([
+          api.get('/admin/configs/user.defaultRole'),
+          api.get('/admin/configs/user.defaultPermissions'),
+          api.get('/admin/configs/user.defaultIsActive')
+        ]);
+        if (roleCfg.data?.data?.value) newUserDefaults.value.role = roleCfg.data.data.value;
+        if (Array.isArray(permCfg.data?.data?.value))
+          newUserDefaults.value.permissions = permCfg.data.data.value;
+        if (typeof activeCfg.data?.data?.value === 'boolean')
+          newUserDefaults.value.isActive = activeCfg.data.data.value;
+      } catch (e) {
+        // 使用默认值
+      }
+    };
+
+    const saveNewUserDefaults = async () => {
+      try {
+        saving.value = true;
+        const permsToSave =
+          newUserDefaults.value.role === 'admin' ? [] : newUserDefaults.value.permissions;
+        await Promise.all([
+          api.put('/admin/configs/user.defaultRole', {
+            value: newUserDefaults.value.role,
+            group: 'user'
+          }),
+          api.put('/admin/configs/user.defaultPermissions', { value: permsToSave, group: 'user' }),
+          api.put('/admin/configs/user.defaultIsActive', {
+            value: !!newUserDefaults.value.isActive,
+            group: 'user'
+          })
+        ]);
+        ElMessage.success('默认配置已保存');
+      } catch (error) {
+        ElMessage.error(error.response?.data?.message || '保存失败');
       } finally {
         saving.value = false;
       }
@@ -355,6 +476,8 @@ export default {
 
     onMounted(() => {
       loadAllSettings();
+      loadNewUserDefaults();
+      loadPermissionsOptions();
     });
 
     return {
@@ -370,7 +493,10 @@ export default {
       saveBlogSettings,
       handleLogoSuccess,
       beforeLogoUpload,
-      formatDate
+      formatDate,
+      newUserDefaults,
+      permissionsOptions,
+      saveNewUserDefaults
     };
   }
 };

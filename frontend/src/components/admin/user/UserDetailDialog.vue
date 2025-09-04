@@ -1,19 +1,14 @@
 <template>
-  <el-dialog
-    v-model="visible"
-    title="用户详情"
-    width="600px"
-    :before-close="handleClose"
-  >
+  <el-dialog v-model="visible" title="用户详情" width="600px" :before-close="handleClose">
     <div v-loading="loading" class="user-detail">
       <div v-if="userDetail" class="detail-content">
         <!-- 用户基本信息 -->
         <div class="user-header">
           <el-avatar :src="userDetail.avatar" :size="80">
-            {{ userDetail.username && userDetail.username.charAt(0) || 'U' }}
+            {{ (userDetail.displayName || userDetail.username || 'U').charAt(0) }}
           </el-avatar>
           <div class="user-info">
-            <h3>{{ userDetail.username }}</h3>
+            <h3>{{ userDetail.displayName || userDetail.username }}</h3>
             <p>{{ userDetail.email }}</p>
             <div class="user-tags">
               <el-tag :type="userDetail.isAdmin ? 'danger' : 'primary'" size="small">
@@ -22,7 +17,7 @@
               <el-tag
                 :type="userDetail.isActive ? 'success' : 'danger'"
                 size="small"
-                style="margin-left: 8px;"
+                style="margin-left: 8px"
               >
                 {{ userDetail.isActive ? '正常' : '禁用' }}
               </el-tag>
@@ -129,20 +124,23 @@ export default {
     const recentActivities = ref([]);
 
     // 监听显示状态
-    watch(() => props.modelValue, (newVal) => {
-      visible.value = newVal;
-      if (newVal && props.userId) {
-        loadUserDetail();
+    watch(
+      () => props.modelValue,
+      newVal => {
+        visible.value = newVal;
+        if (newVal && props.userId) {
+          loadUserDetail();
+        }
       }
-    });
+    );
 
     // 监听visible变化
-    watch(visible, (newVal) => {
+    watch(visible, newVal => {
       emit('update:modelValue', newVal);
     });
 
     // 格式化日期
-    const formatDate = (dateString) => {
+    const formatDate = dateString => {
       if (!dateString) return '--';
       return new Date(dateString).toLocaleString('zh-CN');
     };
@@ -172,7 +170,6 @@ export default {
             createdAt: userDetail.value.updatedAt
           }
         ].filter(item => item.createdAt);
-
       } catch (error) {
         console.error('加载用户详情失败:', error);
         ElMessage.error('加载用户详情失败');
@@ -287,7 +284,8 @@ export default {
     text-align: center;
   }
 
-  .detail-descriptions :deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+  .detail-descriptions
+    :deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
     padding: 8px;
   }
 }

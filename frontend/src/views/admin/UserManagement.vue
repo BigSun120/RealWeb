@@ -10,11 +10,7 @@
     <el-card class="search-card" shadow="never">
       <div class="search-header">
         <span class="search-title">用户搜索</span>
-        <el-button
-          text
-          type="primary"
-          @click="toggleAdvancedSearch"
-        >
+        <el-button text type="primary" @click="toggleAdvancedSearch">
           {{ showAdvancedSearch ? '收起高级搜索' : '展开高级搜索' }}
           <el-icon>
             <component :is="showAdvancedSearch ? 'ArrowUp' : 'ArrowDown'" />
@@ -115,11 +111,7 @@
 
               <el-col :span="8">
                 <el-form-item label="排序方式">
-                  <el-select
-                    v-model="searchForm.sortBy"
-                    placeholder="选择排序"
-                    style="width: 100%"
-                  >
+                  <el-select v-model="searchForm.sortBy" placeholder="选择排序" style="width: 100%">
                     <el-option label="注册时间(新到旧)" value="createdAt_desc" />
                     <el-option label="注册时间(旧到新)" value="createdAt_asc" />
                     <el-option label="最后登录(新到旧)" value="lastLoginAt_desc" />
@@ -231,7 +223,7 @@
             <el-dropdown
               v-if="selectedUsers.length > 0"
               @command="handleBatchAction"
-              style="margin-right: 8px;"
+              style="margin-right: 8px"
             >
               <el-button type="warning">
                 批量操作 ({{ selectedUsers.length }})
@@ -246,13 +238,7 @@
               </template>
             </el-dropdown>
 
-            <el-button
-              type="primary"
-              :icon="Plus"
-              @click="handleAddUser"
-            >
-              添加用户
-            </el-button>
+            <el-button type="primary" :icon="Plus" @click="handleAddUser"> 添加用户 </el-button>
 
             <el-dropdown @command="handleExportCommand">
               <el-button :icon="Download">
@@ -269,11 +255,7 @@
               </template>
             </el-dropdown>
 
-            <el-button
-              type="success"
-              :icon="Upload"
-              @click="handleImportUser"
-            >
+            <el-button type="success" :icon="Upload" @click="handleImportUser">
               导入用户
             </el-button>
           </div>
@@ -296,7 +278,10 @@
                 {{ row.username.charAt(0) }}
               </el-avatar>
               <div class="user-details">
-                <div class="username">{{ row.username }}</div>
+                <div class="username">
+                  {{ row.displayName || row.username }}
+                  <span class="secondary">（{{ row.username }}）</span>
+                </div>
                 <div class="email">{{ row.email }}</div>
               </div>
             </div>
@@ -313,10 +298,7 @@
 
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag
-              :type="row.isActive ? 'success' : 'danger'"
-              size="small"
-            >
+            <el-tag :type="row.isActive ? 'success' : 'danger'" size="small">
               {{ row.isActive ? '正常' : '禁用' }}
             </el-tag>
           </template>
@@ -324,10 +306,7 @@
 
         <el-table-column label="角色" width="100">
           <template #default="{ row }">
-            <el-tag
-              :type="getRoleTagType(row.role)"
-              size="small"
-            >
+            <el-tag :type="getRoleTagType(row.role)" size="small">
               {{ getRoleDisplayName(row.role) }}
             </el-tag>
           </template>
@@ -335,10 +314,7 @@
 
         <el-table-column label="权限" width="120">
           <template #default="{ row }">
-            <el-tag
-              :type="row.canPublishBlog ? 'success' : 'info'"
-              size="small"
-            >
+            <el-tag :type="row.canPublishBlog ? 'success' : 'info'" size="small">
               {{ row.canPublishBlog ? '可发博客' : '基础用户' }}
             </el-tag>
           </template>
@@ -358,20 +334,10 @@
 
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button
-              type="primary"
-              size="small"
-              text
-              @click="handleViewUser(row)"
-            >
+            <el-button type="primary" size="small" text @click="handleViewUser(row)">
               查看
             </el-button>
-            <el-button
-              type="warning"
-              size="small"
-              text
-              @click="handleEditUser(row)"
-            >
+            <el-button type="warning" size="small" text @click="handleEditUser(row)">
               编辑
             </el-button>
             <el-button
@@ -383,7 +349,7 @@
               {{ row.isActive ? '禁用' : '启用' }}
             </el-button>
 
-            <el-dropdown @command="(command) => handleUserAction(command, row)">
+            <el-dropdown @command="command => handleUserAction(command, row)">
               <el-button size="small" text>
                 更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
               </el-button>
@@ -398,9 +364,7 @@
                   <el-dropdown-item :command="`permissions:${row._id}`">
                     管理权限
                   </el-dropdown-item>
-                  <el-dropdown-item :command="`password:${row._id}`">
-                    重置密码
-                  </el-dropdown-item>
+                  <el-dropdown-item :command="`password:${row._id}`"> 重置密码 </el-dropdown-item>
                   <el-dropdown-item
                     :command="`delete:${row._id}`"
                     :disabled="row._id === userStore.user?._id"
@@ -444,12 +408,62 @@
     />
 
     <!-- 用户导入对话框 -->
-    <UserImportDialog
-      v-model="showImportDialog"
-      @success="handleDialogSuccess"
-    />
+    <UserImportDialog v-model="showImportDialog" @success="handleDialogSuccess" />
 
-    <!-- 角色设置对话框 -->
+    <!-- 权限管理对话框 -->
+    <el-dialog
+      v-model="permissionsDialogVisible"
+      title="管理用户权限"
+      width="560px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="currentEditUser" class="permissions-dialog-content">
+        <div class="user-info">
+          <el-avatar :src="currentEditUser.avatar" :size="40">
+            {{ currentEditUser.username.charAt(0) }}
+          </el-avatar>
+          <div class="user-basic">
+            <div class="username">{{ currentEditUser.username }}</div>
+            <div class="email">{{ currentEditUser.email }}</div>
+          </div>
+        </div>
+        <div class="permission-groups">
+          <div class="group" v-if="permissionGroups.blog?.length">
+            <div class="group-title">博客</div>
+            <el-checkbox-group v-model="editingPermissions">
+              <el-checkbox v-for="p in permissionGroups.blog" :key="p.value" :label="p.value">{{
+                p.label
+              }}</el-checkbox>
+            </el-checkbox-group>
+          </div>
+          <div class="group" v-if="permissionGroups.comment?.length">
+            <div class="group-title">评论</div>
+            <el-checkbox-group v-model="editingPermissions">
+              <el-checkbox v-for="p in permissionGroups.comment" :key="p.value" :label="p.value">{{
+                p.label
+              }}</el-checkbox>
+            </el-checkbox-group>
+          </div>
+          <div class="group" v-if="permissionGroups.other?.length">
+            <div class="group-title">个人/文件</div>
+            <el-checkbox-group v-model="editingPermissions">
+              <el-checkbox v-for="p in permissionGroups.other" :key="p.value" :label="p.value">{{
+                p.label
+              }}</el-checkbox>
+            </el-checkbox-group>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="closePermissionsDialog">取消</el-button>
+          <el-button type="primary" :loading="permissionsDialogLoading" @click="confirmPermissions">
+            保存
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <el-dialog
       v-model="roleDialogVisible"
       title="设置用户角色"
@@ -553,11 +567,17 @@ import {
   updateUserStatus,
   updateUserRole,
   updateUserPermissions,
+  getAllPermissions,
   resetUserPassword,
   deleteUser,
   batchUserOperation,
   toggleUserBlogPermission
 } from '@/api/admin';
+import {
+  PERMISSION_LABELS,
+  toPermissionOptions,
+  groupPermissionOptions
+} from '@/utils/permissions';
 
 // 导入组件
 import UserDetailDialog from '@/components/admin/user/UserDetailDialog.vue';
@@ -623,13 +643,13 @@ export default {
     });
 
     // 格式化日期
-    const formatDate = (dateString) => {
+    const formatDate = dateString => {
       if (!dateString) return '--';
       return new Date(dateString).toLocaleString('zh-CN');
     };
 
     // 获取角色显示名称
-    const getRoleDisplayName = (role) => {
+    const getRoleDisplayName = role => {
       const roleNames = {
         user: '普通用户',
         blogger: '博主',
@@ -640,7 +660,7 @@ export default {
     };
 
     // 获取角色标签类型
-    const getRoleTagType = (role) => {
+    const getRoleTagType = role => {
       const tagTypes = {
         user: 'info',
         blogger: 'success',
@@ -651,17 +671,28 @@ export default {
     };
 
     // 获取角色对应的权限列表
-    const getRolePermissions = (role) => {
+    const getRolePermissions = role => {
       const rolePermissions = {
         user: ['comment:create', 'profile:edit'],
         blogger: [
-          'comment:create', 'profile:edit', 'file:upload',
-          'blog:create', 'blog:edit', 'blog:delete', 'blog:publish'
+          'comment:create',
+          'profile:edit',
+          'file:upload',
+          'blog:create',
+          'blog:edit',
+          'blog:delete',
+          'blog:publish'
         ],
         moderator: [
-          'comment:create', 'comment:edit', 'comment:delete',
-          'profile:edit', 'file:upload',
-          'blog:create', 'blog:edit', 'blog:delete', 'blog:publish'
+          'comment:create',
+          'comment:edit',
+          'comment:delete',
+          'profile:edit',
+          'file:upload',
+          'blog:create',
+          'blog:edit',
+          'blog:delete',
+          'blog:publish'
         ],
         admin: ['所有权限']
       };
@@ -669,7 +700,7 @@ export default {
     };
 
     // 获取权限显示名称
-    const getPermissionDisplayName = (permission) => {
+    const getPermissionDisplayName = permission => {
       const permissionNames = {
         'blog:create': '创建博客',
         'blog:edit': '编辑博客',
@@ -680,7 +711,7 @@ export default {
         'comment:delete': '删除评论',
         'profile:edit': '编辑个人资料',
         'file:upload': '上传文件',
-        '所有权限': '所有权限'
+        所有权限: '所有权限'
       };
       return permissionNames[permission] || permission;
     };
@@ -744,7 +775,6 @@ export default {
         } else {
           updateSearchStats(response.data.data.users);
         }
-
       } catch (error) {
         console.error('加载用户列表失败:', error);
         ElMessage.error('加载用户列表失败');
@@ -754,7 +784,7 @@ export default {
     };
 
     // 更新搜索结果统计
-    const updateSearchStats = (users) => {
+    const updateSearchStats = users => {
       searchResultStats.value = {
         total: pagination.total,
         adminCount: users.filter(user => user.isAdmin).length,
@@ -843,14 +873,13 @@ export default {
         localStorage.setItem('userSearchTemplates', JSON.stringify(searchTemplates.value));
 
         ElMessage.success('搜索模板保存成功');
-
       } catch (error) {
         // 用户取消操作
       }
     };
 
     // 应用搜索模板
-    const applySearchTemplate = (template) => {
+    const applySearchTemplate = template => {
       Object.assign(searchForm, template.searchForm);
       pagination.page = 1;
       loadUsers();
@@ -858,7 +887,7 @@ export default {
     };
 
     // 删除搜索模板
-    const removeSearchTemplate = (templateId) => {
+    const removeSearchTemplate = templateId => {
       const index = searchTemplates.value.findIndex(t => t.id === templateId);
       if (index > -1) {
         const template = searchTemplates.value[index];
@@ -884,55 +913,50 @@ export default {
     };
 
     // 选择变化
-    const handleSelectionChange = (selection) => {
+    const handleSelectionChange = selection => {
       selectedUsers.value = selection;
     };
 
     // 分页大小变化
-    const handleSizeChange = (size) => {
+    const handleSizeChange = size => {
       pagination.limit = size;
       pagination.page = 1;
       loadUsers();
     };
 
     // 当前页变化
-    const handleCurrentChange = (page) => {
+    const handleCurrentChange = page => {
       pagination.page = page;
       loadUsers();
     };
 
     // 查看用户
-    const handleViewUser = (user) => {
+    const handleViewUser = user => {
       currentUser.value = user;
       showDetailDialog.value = true;
     };
 
     // 编辑用户
-    const handleEditUser = (user) => {
+    const handleEditUser = user => {
       currentUser.value = user;
       showEditDialog.value = true;
     };
 
     // 切换用户状态
-    const handleToggleStatus = async (user) => {
+    const handleToggleStatus = async user => {
       const newStatus = !user.isActive;
       const action = newStatus ? '启用' : '禁用';
 
       try {
-        await ElMessageBox.confirm(
-          `确定要${action}用户 "${user.username}" 吗？`,
-          '确认操作',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        );
+        await ElMessageBox.confirm(`确定要${action}用户 "${user.username}" 吗？`, '确认操作', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        });
 
         await updateUserStatus(user._id, newStatus);
         user.isActive = newStatus;
         ElMessage.success(`${action}成功`);
-
       } catch (error) {
         if (error.response) {
           ElMessage.error(error.response.data.message || `${action}失败`);
@@ -953,7 +977,7 @@ export default {
     };
 
     // 导出命令处理
-    const handleExportCommand = (command) => {
+    const handleExportCommand = command => {
       switch (command) {
         case 'current':
           exportUsers(userList.value, '当前页用户数据');
@@ -975,9 +999,7 @@ export default {
       }
 
       // 准备导出数据
-      const exportData = [
-        ['用户名', '邮箱', '角色', '状态', '个人简介', '注册时间', '最后登录']
-      ];
+      const exportData = [['用户名', '邮箱', '角色', '状态', '个人简介', '注册时间', '最后登录']];
 
       users.forEach(user => {
         exportData.push([
@@ -992,9 +1014,7 @@ export default {
       });
 
       // 创建CSV内容
-      const csvContent = exportData.map(row =>
-        row.map(cell => `"${cell}"`).join(',')
-      ).join('\n');
+      const csvContent = exportData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
 
       const blob = new Blob(['\ufeff' + csvContent], {
         type: 'text/csv;charset=utf-8;'
@@ -1019,14 +1039,13 @@ export default {
         setTimeout(() => {
           exportUsers(userList.value, '全部用户数据');
         }, 1000);
-
       } catch (error) {
         ElMessage.error('导出失败');
       }
     };
 
     // 批量操作
-    const handleBatchAction = async (command) => {
+    const handleBatchAction = async command => {
       if (selectedUsers.value.length === 0) {
         ElMessage.warning('请先选择用户');
         return;
@@ -1061,7 +1080,6 @@ export default {
         await batchUserOperation(userIds, command);
         ElMessage.success(`批量${actionText}成功`);
         loadUsers();
-
       } catch (error) {
         if (error.response) {
           ElMessage.error(error.response.data.message || `批量${actionText}失败`);
@@ -1096,7 +1114,7 @@ export default {
     const currentEditUser = ref(null);
     const selectedRole = ref('');
 
-    // 角色选项
+    // 角色选项（用于角色设置弹窗）
     const roleOptions = [
       {
         value: 'user',
@@ -1116,16 +1134,56 @@ export default {
         description: '可以管理评论和博客内容',
         color: '#E6A23C'
       },
-      {
-        value: 'admin',
-        label: '管理员',
-        description: '拥有所有权限',
-        color: '#F56C6C'
-      }
+      { value: 'admin', label: '管理员', description: '拥有所有权限', color: '#F56C6C' }
     ];
 
+    // 权限对话框状态与选项
+    const permissionsDialogVisible = ref(false);
+    const permissionsDialogLoading = ref(false);
+    const editingPermissions = ref([]);
+    const permissionOptions = ref([]);
+    const permissionGroups = reactive({ blog: [], comment: [], other: [] });
+
+    const loadPermissionOptions = async () => {
+      try {
+        const res = await getAllPermissions();
+        const values = Array.isArray(res.data?.data) ? res.data.data : [];
+        permissionOptions.value = toPermissionOptions(values);
+        const groups = groupPermissionOptions(permissionOptions.value);
+        permissionGroups.blog = groups.blog;
+        permissionGroups.comment = groups.comment;
+        permissionGroups.other = groups.other;
+      } catch (e) {
+        permissionOptions.value = [];
+        permissionGroups.blog = [];
+        permissionGroups.comment = [];
+        permissionGroups.other = [];
+      }
+    };
+
+    const closePermissionsDialog = () => {
+      permissionsDialogVisible.value = false;
+      editingPermissions.value = [];
+      currentEditUser.value = null;
+    };
+
+    const confirmPermissions = async () => {
+      if (!currentEditUser.value) return;
+      try {
+        permissionsDialogLoading.value = true;
+        await updateUserPermissions(currentEditUser.value._id, editingPermissions.value);
+        ElMessage.success('权限已更新');
+        closePermissionsDialog();
+        await loadUsers();
+      } catch (error) {
+        ElMessage.error(error.response?.data?.message || '更新权限失败');
+      } finally {
+        permissionsDialogLoading.value = false;
+      }
+    };
+
     // 设置用户角色
-    const handleSetRole = async (user) => {
+    const handleSetRole = async user => {
       // 防止管理员取消自己的管理员权限
       if (user._id === userStore.user?._id && user.isAdmin) {
         ElMessage.warning('不能修改自己的角色');
@@ -1159,7 +1217,6 @@ export default {
 
         ElMessage.success(`用户角色已更新为 ${getRoleDisplayName(selectedRole.value)}`);
         roleDialogVisible.value = false;
-
       } catch (error) {
         ElMessage.error(error.response?.data?.message || '设置角色失败');
       } finally {
@@ -1175,36 +1232,23 @@ export default {
     };
 
     // 管理用户权限
-    const handleManagePermissions = async (user) => {
-      const allPermissions = [
-        { value: 'blog:create', label: '创建博客', category: '博客' },
-        { value: 'blog:edit', label: '编辑博客', category: '博客' },
-        { value: 'blog:delete', label: '删除博客', category: '博客' },
-        { value: 'blog:publish', label: '发布博客', category: '博客' },
-        { value: 'comment:create', label: '发表评论', category: '评论' },
-        { value: 'comment:edit', label: '编辑评论', category: '评论' },
-        { value: 'comment:delete', label: '删除评论', category: '评论' },
-        { value: 'profile:edit', label: '编辑个人资料', category: '个人' },
-        { value: 'file:upload', label: '上传文件', category: '文件' }
-      ];
-
+    const handleManagePermissions = async user => {
       if (user.isAdmin) {
         ElMessage.info('管理员拥有所有权限，无需单独设置');
         return;
       }
-
       try {
-        // 这里应该打开一个权限管理对话框
-        // 为了简化，我们先用角色设置来代替
-        await handleSetRole(user);
-
+        await loadPermissionOptions();
+        currentEditUser.value = user;
+        editingPermissions.value = Array.isArray(user.permissions) ? [...user.permissions] : [];
+        permissionsDialogVisible.value = true;
       } catch (error) {
-        ElMessage.error('权限管理失败');
+        ElMessage.error(error.response?.data?.message || '权限管理失败');
       }
     };
 
     // 重置密码
-    const handleResetPassword = async (user) => {
+    const handleResetPassword = async user => {
       try {
         const { value: newPassword } = await ElMessageBox.prompt(
           `为用户 "${user.username}" 设置新密码`,
@@ -1220,7 +1264,6 @@ export default {
 
         await resetUserPassword(user._id, newPassword);
         ElMessage.success('密码重置成功');
-
       } catch (error) {
         if (error.response) {
           ElMessage.error(error.response.data.message || '密码重置失败');
@@ -1230,7 +1273,7 @@ export default {
     };
 
     // 删除用户
-    const handleDeleteUser = async (user) => {
+    const handleDeleteUser = async user => {
       try {
         await ElMessageBox.confirm(
           `确定要删除用户 "${user.username}" 吗？此操作不可恢复！`,
@@ -1245,7 +1288,6 @@ export default {
         await deleteUser(user._id);
         ElMessage.success('用户删除成功');
         loadUsers();
-
       } catch (error) {
         if (error.response) {
           ElMessage.error(error.response.data.message || '用户删除失败');
@@ -1315,6 +1357,14 @@ export default {
       handleDeleteUser,
       // 对话框处理
       handleDialogSuccess,
+      // 权限对话框
+      permissionsDialogVisible,
+      permissionsDialogLoading,
+      editingPermissions,
+      permissionGroups,
+      closePermissionsDialog,
+      confirmPermissions,
+
       handleEditSuccess,
       // 角色管理
       roleDialogVisible,

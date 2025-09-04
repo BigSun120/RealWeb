@@ -4,7 +4,13 @@
       <h2>注册</h2>
       <el-form :model="form" :rules="rules" ref="formRef">
         <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名" />
+          <el-input v-model="form.username" placeholder="账号名（用于登录，仅字母/数字/下划线）" />
+        </el-form-item>
+        <el-form-item prop="displayName">
+          <el-input
+            v-model="form.displayName"
+            placeholder="展示名（支持中文/空格/emoji，可留空）"
+          />
         </el-form-item>
         <el-form-item prop="email">
           <el-input v-model="form.email" placeholder="邮箱" />
@@ -42,19 +48,21 @@ export default {
 
     const form = ref({
       username: '',
+      displayName: '',
       email: '',
       password: ''
     });
 
     const rules = {
-      username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+      username: [{ required: true, message: '请输入账号名', trigger: 'blur' }],
+      // displayName 可选，不强制
       email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }],
       password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
     };
 
     const handleRegister = async () => {
       if (!formRef.value) return;
-      
+
       const valid = await formRef.value.validate();
       if (!valid) return;
 

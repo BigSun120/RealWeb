@@ -63,13 +63,14 @@
                 <el-avatar :src="avatarUrl" :size="32">
                   {{
                     (userStore.user &&
-                      userStore.user.username &&
-                      userStore.user.username.charAt(0)) ||
+                      (userStore.user.displayName || userStore.user.username) &&
+                      (userStore.user.displayName || userStore.user.username).charAt(0)) ||
                     'U'
                   }}
                 </el-avatar>
                 <span class="username">{{
-                  (userStore.user && userStore.user.username) || '用户'
+                  (userStore.user && (userStore.user.displayName || userStore.user.username)) ||
+                  '用户'
                 }}</span>
                 <el-icon><ArrowDown /></el-icon>
               </span>

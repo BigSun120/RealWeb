@@ -119,15 +119,29 @@ export class MillipedeEntity {
     }
   }
 
-  update(deltaTime) {
+  update(
+    deltaTime,
+    flags = { interactionEnabled: true, particlesEnabled: true, mouse: { x: 0, y: 0 } }
+  ) {
     this.time += deltaTime;
+
+    if (flags.mouse) {
+      this.mousePosition.x = flags.mouse.x;
+      this.mousePosition.y = flags.mouse.y;
+    }
 
     this.updateMovement(deltaTime);
     this.updatePositionHistory();
     this.updateSegments();
     this.updateColors();
     this.updateMathematicalMotion(deltaTime);
-    this.updateParticles(deltaTime);
+
+    if (flags.particlesEnabled) {
+      this.updateParticles(deltaTime);
+    } else {
+      // 关闭粒子时清理
+      this.particles.length = 0;
+    }
   }
 
   updateMovement(deltaTime) {
@@ -153,8 +167,7 @@ export class MillipedeEntity {
 
     // 鼠标交互 - 更平滑的避让
     const mouseDistance = Math.sqrt(
-      (this.position.x - this.mousePosition.x) ** 2 +
-      (this.position.y - this.mousePosition.y) ** 2
+      (this.position.x - this.mousePosition.x) ** 2 + (this.position.y - this.mousePosition.y) ** 2
     );
 
     let avoidForceX = 0;
@@ -163,7 +176,10 @@ export class MillipedeEntity {
     if (mouseDistance < this.avoidanceRadius && mouseDistance > 0) {
       const avoidX = (this.position.x - this.mousePosition.x) / mouseDistance;
       const avoidY = (this.position.y - this.mousePosition.y) / mouseDistance;
-      const avoidStrength = Math.pow((this.avoidanceRadius - mouseDistance) / this.avoidanceRadius, 3); // 更平滑的曲线
+      const avoidStrength = Math.pow(
+        (this.avoidanceRadius - mouseDistance) / this.avoidanceRadius,
+        3
+      ); // 更平滑的曲线
 
       avoidForceX = avoidX * avoidStrength * 0.8; // 减小避让力
       avoidForceY = avoidY * avoidStrength * 0.8;
@@ -184,10 +200,14 @@ export class MillipedeEntity {
 
     // 限制最大速度变化
     const maxSpeedChange = 0.1;
-    this.velocity.x = Math.max(-this.options.speed - maxSpeedChange,
-                              Math.min(this.options.speed + maxSpeedChange, this.velocity.x));
-    this.velocity.y = Math.max(-this.options.speed - maxSpeedChange,
-                              Math.min(this.options.speed + maxSpeedChange, this.velocity.y));
+    this.velocity.x = Math.max(
+      -this.options.speed - maxSpeedChange,
+      Math.min(this.options.speed + maxSpeedChange, this.velocity.x)
+    );
+    this.velocity.y = Math.max(
+      -this.options.speed - maxSpeedChange,
+      Math.min(this.options.speed + maxSpeedChange, this.velocity.y)
+    );
 
     // 更新位置
     this.position.x += this.velocity.x * deltaTime * 60;
@@ -204,28 +224,28 @@ export class MillipedeEntity {
     // 柔和的边界反弹 - 使用正弦函数创建平滑过渡
     if (this.position.x < margin) {
       const penetration = (margin - this.position.x) / softZone;
-      const force = Math.sin(Math.min(penetration, 1) * Math.PI / 2) * 2;
+      const force = Math.sin((Math.min(penetration, 1) * Math.PI) / 2) * 2;
       this.velocity.x += force;
       this.wanderAngle += (Math.PI / 2 - this.wanderAngle) * 0.02;
     }
 
     if (this.position.x > this.canvas.width - margin) {
       const penetration = (this.position.x - (this.canvas.width - margin)) / softZone;
-      const force = Math.sin(Math.min(penetration, 1) * Math.PI / 2) * 2;
+      const force = Math.sin((Math.min(penetration, 1) * Math.PI) / 2) * 2;
       this.velocity.x -= force;
       this.wanderAngle += (Math.PI - this.wanderAngle) * 0.02;
     }
 
     if (this.position.y < margin) {
       const penetration = (margin - this.position.y) / softZone;
-      const force = Math.sin(Math.min(penetration, 1) * Math.PI / 2) * 2;
+      const force = Math.sin((Math.min(penetration, 1) * Math.PI) / 2) * 2;
       this.velocity.y += force;
-      this.wanderAngle += (-this.wanderAngle) * 0.02;
+      this.wanderAngle += -this.wanderAngle * 0.02;
     }
 
     if (this.position.y > this.canvas.height - margin) {
       const penetration = (this.position.y - (this.canvas.height - margin)) / softZone;
-      const force = Math.sin(Math.min(penetration, 1) * Math.PI / 2) * 2;
+      const force = Math.sin((Math.min(penetration, 1) * Math.PI) / 2) * 2;
       this.velocity.y -= force;
       this.wanderAngle += (Math.PI - this.wanderAngle) * 0.02;
     }
@@ -246,7 +266,7 @@ export class MillipedeEntity {
   updateSegments() {
     // 优美的身体流动 - 结合历史位置和数学波动
     for (let i = 0; i < this.segments.length; i++) {
-      const historyIndex = this.positionHistory.length - 1 - (i * this.options.segmentSpacing);
+      const historyIndex = this.positionHistory.length - 1 - i * this.options.segmentSpacing;
 
       if (historyIndex >= 0 && this.positionHistory[historyIndex]) {
         const targetPos = this.positionHistory[historyIndex];
@@ -318,7 +338,7 @@ export class MillipedeEntity {
       const speedWave = Math.sin(this.time * 3 + index * 0.2) * speedFactor * 10;
 
       // 添加位置波动
-      const fibWave = Math.sin(this.time * 0.8 + index * goldenAngle * Math.PI / 180) * 8;
+      const fibWave = Math.sin(this.time * 0.8 + (index * goldenAngle * Math.PI) / 180) * 8;
 
       // 组合所有颜色效果
       segment.hue = (baseHue + timeWave + speedWave + fibWave) % 360;
@@ -453,7 +473,7 @@ export class MillipedeEntity {
         life: particle.life,
         hue: particle.hue,
         sparkle: particle.sparkle || false,
-        alpha: particle.life * (particle.sparkle ? (0.5 + Math.sin(this.time * 10) * 0.5) : 1)
+        alpha: particle.life * (particle.sparkle ? 0.5 + Math.sin(this.time * 10) * 0.5 : 1)
       });
     });
 

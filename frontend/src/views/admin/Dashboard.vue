@@ -3,7 +3,11 @@
     <!-- 页面标题 -->
     <div class="dashboard-header">
       <h1>仪表板</h1>
-      <p>欢迎回来，{{ userStore.user && userStore.user.username || '管理员' }}！这里是您的管理概览。</p>
+      <p>
+        欢迎回来，{{
+          (userStore.user && (userStore.user.displayName || userStore.user.username)) || '管理员'
+        }}！这里是您的管理概览。
+      </p>
     </div>
 
     <!-- 统计卡片 -->
@@ -44,7 +48,9 @@
         icon="UserFilled"
         type="info"
         :trend="stats.trends && stats.trends.activeUserGrowth"
-        :description="getTrendDescription(stats.trends && stats.trends.activeUserGrowth, '活跃用户')"
+        :description="
+          getTrendDescription(stats.trends && stats.trends.activeUserGrowth, '活跃用户')
+        "
         :loading="statsLoading"
       />
     </div>
@@ -72,35 +78,19 @@
         </template>
 
         <div class="actions-grid">
-          <el-button
-            type="primary"
-            :icon="EditPen"
-            @click="$router.push('/articles/new')"
-          >
+          <el-button type="primary" :icon="EditPen" @click="$router.push('/articles/new')">
             写文章
           </el-button>
 
-          <el-button
-            type="success"
-            :icon="User"
-            @click="$router.push('/admin/users')"
-          >
+          <el-button type="success" :icon="User" @click="$router.push('/admin/users')">
             用户管理
           </el-button>
 
-          <el-button
-            type="warning"
-            :icon="Setting"
-            @click="$router.push('/admin/settings')"
-          >
+          <el-button type="warning" :icon="Setting" @click="$router.push('/admin/settings')">
             系统设置
           </el-button>
 
-          <el-button
-            type="info"
-            :icon="Monitor"
-            @click="$router.push('/admin/monitoring')"
-          >
+          <el-button type="info" :icon="Monitor" @click="$router.push('/admin/monitoring')">
             系统监控
           </el-button>
         </div>

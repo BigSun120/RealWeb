@@ -5,27 +5,21 @@
     width="500px"
     :before-close="handleClose"
   >
-    <el-form
-      ref="formRef"
-      :model="formData"
-      :rules="formRules"
-      label-width="80px"
-      @submit.prevent
-    >
-      <el-form-item label="用户名" prop="username">
+    <el-form ref="formRef" :model="formData" :rules="formRules" label-width="80px" @submit.prevent>
+      <el-form-item label="展示名" prop="displayName">
+        <el-input v-model="formData.displayName" placeholder="请输入展示名（用于显示，可留空）" />
+      </el-form-item>
+
+      <el-form-item label="账号名" prop="username">
         <el-input
           v-model="formData.username"
-          placeholder="请输入用户名"
+          placeholder="请输入账号名（用于登录，字母/数字/下划线）"
           :disabled="isEdit"
         />
       </el-form-item>
 
       <el-form-item label="邮箱" prop="email">
-        <el-input
-          v-model="formData.email"
-          placeholder="请输入邮箱"
-          type="email"
-        />
+        <el-input v-model="formData.email" placeholder="请输入邮箱" type="email" />
       </el-form-item>
 
       <el-form-item v-if="!isEdit" label="密码" prop="password">
@@ -58,7 +52,7 @@
           >
             <div>
               <span>{{ role.label }}</span>
-              <div style="font-size: 12px; color: #999; margin-top: 2px;">
+              <div style="font-size: 12px; color: #999; margin-top: 2px">
                 {{ role.description }}
               </div>
             </div>
@@ -135,6 +129,7 @@ export default {
 
     // 表单数据
     const formData = reactive({
+      displayName: '',
       username: '',
       email: '',
       password: '',
@@ -158,24 +153,23 @@ export default {
         { required: true, message: '请输入密码', trigger: 'blur' },
         { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
       ],
-      bio: [
-        { max: 200, message: '个人简介不能超过200个字符', trigger: 'blur' }
-      ],
-      role: [
-        { required: true, message: '请选择用户角色', trigger: 'change' }
-      ]
+      bio: [{ max: 200, message: '个人简介不能超过200个字符', trigger: 'blur' }],
+      role: [{ required: true, message: '请选择用户角色', trigger: 'change' }]
     };
 
     // 监听显示状态
-    watch(() => props.modelValue, (newVal) => {
-      visible.value = newVal;
-      if (newVal) {
-        initForm();
+    watch(
+      () => props.modelValue,
+      newVal => {
+        visible.value = newVal;
+        if (newVal) {
+          initForm();
+        }
       }
-    });
+    );
 
     // 监听visible变化
-    watch(visible, (newVal) => {
+    watch(visible, newVal => {
       emit('update:modelValue', newVal);
     });
 
@@ -186,6 +180,7 @@ export default {
       if (props.userData) {
         // 编辑模式
         Object.assign(formData, {
+          displayName: props.userData.displayName || '',
           username: props.userData.username || '',
           email: props.userData.email || '',
           bio: props.userData.bio || '',
@@ -241,11 +236,11 @@ export default {
 
         emit('success');
         handleClose();
-
       } catch (error) {
         if (error.response) {
           ElMessage.error(error.response.data.message || '操作失败');
-        } else if (error !== false) { // 表单验证失败时error为false
+        } else if (error !== false) {
+          // 表单验证失败时error为false
           ElMessage.error('操作失败');
         }
       } finally {

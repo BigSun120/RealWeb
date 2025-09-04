@@ -26,11 +26,7 @@
     </button>
 
     <!-- 性能控制面板 (开发模式) -->
-    <div
-      v-if="showControls && isDev && showControlPanel"
-      class="performance-controls"
-      @click.stop
-    >
+    <div v-if="showControls && isDev && showControlPanel" class="performance-controls" @click.stop>
       <div class="control-header">
         <h4>WebGL 千足虫控制面板</h4>
         <button class="close-btn" @click="showControlPanel = false">×</button>
@@ -38,13 +34,7 @@
 
       <div class="control-group">
         <label>千足虫数量: {{ millipedeCount }}</label>
-        <input
-          type="range"
-          min="1"
-          max="5"
-          v-model="millipedeCount"
-          @input="updateCount"
-        />
+        <input type="range" min="1" max="5" v-model="millipedeCount" @input="updateCount" />
       </div>
 
       <div class="control-group">
@@ -64,21 +54,21 @@
 
       <div class="control-group">
         <label>粒子效果:</label>
-        <input
-          type="checkbox"
-          v-model="particlesEnabled"
-          @change="updateParticles"
-        />
+        <input type="checkbox" v-model="particlesEnabled" @change="updateParticles" />
       </div>
 
       <div class="stats">
         <div class="stat-item">
           <span class="stat-label">FPS:</span>
-          <span class="stat-value" :class="{
-            'good': fps >= 50,
-            'fair': fps >= 30 && fps < 50,
-            'poor': fps < 30
-          }">{{ fps }}</span>
+          <span
+            class="stat-value"
+            :class="{
+              good: fps >= 50,
+              fair: fps >= 30 && fps < 50,
+              poor: fps < 30
+            }"
+            >{{ fps }}</span
+          >
         </div>
         <div class="stat-item">
           <span class="stat-label">WebGL:</span>
@@ -150,7 +140,7 @@ export default {
         const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
         prefersReducedMotion.value = mediaQuery.matches;
 
-        mediaQuery.addEventListener('change', (e) => {
+        mediaQuery.addEventListener('change', e => {
           prefersReducedMotion.value = e.matches;
           if (e.matches && webglRenderer.value) {
             webglRenderer.value.pause();
@@ -160,8 +150,6 @@ export default {
         });
       }
     };
-
-
 
     // 初始化WebGL千足虫系统
     const initMillipedes = async () => {
@@ -210,7 +198,6 @@ export default {
         startPerformanceMonitoring();
 
         // console.log('千足虫WebGL渲染器启动成功');
-
       } catch (error) {
         console.error('Failed to initialize millipede WebGL renderer:', error);
         webglSupported.value = false;
@@ -243,7 +230,7 @@ export default {
     };
 
     // 控制方法
-    const updateCount = (event) => {
+    const updateCount = event => {
       const count = parseInt(event.target.value);
       millipedeCount.value = count;
       if (webglRenderer.value) {
@@ -329,7 +316,7 @@ export default {
   height: 100%;
   background: transparent;
   z-index: 2;
-  pointer-events: none; /* 避免干扰页面交互 */
+  pointer-events: none; /* 保持为 none，防止阻断滚动与点击 */
 }
 
 .millipede-canvas.reduced-motion {
@@ -439,7 +426,7 @@ export default {
   color: #e2e8f0;
 }
 
-.control-group input[type="range"] {
+.control-group input[type='range'] {
   width: 100%;
   height: 6px;
   border-radius: 3px;
@@ -449,7 +436,7 @@ export default {
   appearance: none;
 }
 
-.control-group input[type="range"]::-webkit-slider-thumb {
+.control-group input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
@@ -518,12 +505,14 @@ export default {
 .fallback-background {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(59, 130, 246, 0.1) 0%,
     rgba(147, 51, 234, 0.1) 25%,
     rgba(236, 72, 153, 0.1) 50%,
     rgba(34, 197, 94, 0.1) 75%,
-    rgba(251, 191, 36, 0.1) 100%);
+    rgba(251, 191, 36, 0.1) 100%
+  );
   animation: gradientShift 10s ease-in-out infinite;
 }
 
@@ -537,7 +526,8 @@ export default {
 }
 
 @keyframes gradientShift {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {

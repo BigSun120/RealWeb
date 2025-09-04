@@ -22,6 +22,10 @@ export class MillipedeWebGLRenderer {
     // 千足虫实体
     this.millipedes = [];
 
+    // 运行时开关
+    this.interactionEnabled = true;
+    this.particlesEnabled = true;
+
     // 鼠标交互
     this.mouse = { x: 0, y: 0 };
 
@@ -78,7 +82,6 @@ export class MillipedeWebGLRenderer {
       }
 
       console.log('千足虫WebGL渲染器初始化完成');
-
     } catch (error) {
       console.error('千足虫WebGL渲染器初始化失败:', error);
       throw error;
@@ -269,15 +272,14 @@ export class MillipedeWebGLRenderer {
   createMillipedes() {
     // 动态导入千足虫实体类
     import('./MillipedeEntity.js').then(({ MillipedeEntity }) => {
+      this.millipedes.length = 0; // 重置
       for (let i = 0; i < this.options.count; i++) {
         const millipede = new MillipedeEntity(this.canvas, {
           segmentCount: this.options.segmentCount,
           segmentSpacing: this.options.segmentSpacing
         });
-
         this.millipedes.push(millipede);
       }
-
       console.log(`创建了 ${this.millipedes.length} 个千足虫`);
     });
   }
@@ -323,7 +325,8 @@ export class MillipedeWebGLRenderer {
   }
 
   setupEventListeners() {
-    this.canvas.addEventListener('mousemove', (event) => {
+    // 使用 window 捕获鼠标移动，避免 canvas 的 pointer-events 影响
+    window.addEventListener('mousemove', event => {
       const rect = this.canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
       const mouseY = event.clientY - rect.top;
@@ -331,6 +334,7 @@ export class MillipedeWebGLRenderer {
       this.mouse.x = mouseX;
       this.mouse.y = mouseY;
 
+      if (!this.interactionEnabled) return;
       this.millipedes.forEach(millipede => {
         millipede.onMouseMove(mouseX, mouseY);
       });
@@ -375,10 +379,16 @@ export class MillipedeWebGLRenderer {
 
   update() {
     this.millipedes.forEach(millipede => {
-      millipede.update(0.016);
+      millipede.update(0.016, {
+        interactionEnabled: this.interactionEnabled,
+        particlesEnabled: this.particlesEnabled,
+        mouse: this.mouse
+      });
     });
 
-    this.updateBackgroundParticles();
+    if (this.particlesEnabled) {
+      this.updateBackgroundParticles();
+    }
   }
 
   updateBackgroundParticles() {
@@ -448,7 +458,6 @@ export class MillipedeWebGLRenderer {
       this.millipedes.forEach(millipede => {
         this.renderMillipede(millipede);
       });
-
     } catch (error) {
       console.error('千足虫WebGL渲染错误:', error);
       console.error('错误堆栈:', error.stack);
@@ -606,17 +615,17 @@ export class MillipedeWebGLRenderer {
       const hue2rgb = (p, q, t) => {
         if (t < 0) t += 1;
         if (t > 1) t -= 1;
-        if (t < 1/6) return p + (q - p) * 6 * t;
-        if (t < 1/2) return q;
-        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
         return p;
       };
 
       const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
       const p = 2 * l - q;
-      r = hue2rgb(p, q, h + 1/3);
+      r = hue2rgb(p, q, h + 1 / 3);
       g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1/3);
+      b = hue2rgb(p, q, h - 1 / 3);
     }
 
     return { r, g, b };
@@ -664,17 +673,38 @@ export class MillipedeWebGLRenderer {
 
   setCount(count) {
     this.options.count = count;
+    // 重新创建千足虫列表
+    this.createMillipedes();
   }
 
   setQuality(quality) {
-    console.log('设置渲染质量:', quality);
+    // 简单映射到段数/间距/粒子等参数
+    if (quality === 'low') {
+      this.options.segmentCount = 30;
+      this.options.segmentSpacing = 10;
+      this.particlesEnabled = false;
+    } else if (quality === 'medium') {
+      this.options.segmentCount = 50;
+      this.options.segmentSpacing = 12;
+      this.particlesEnabled = true;
+    } else if (quality === 'high') {
+      this.options.segmentCount = 70;
+      this.options.segmentSpacing = 12;
+      this.particlesEnabled = true;
+    }
+    // 让现有实体应用新参数
+    this.millipedes.forEach(m => {
+      m.options.segmentCount = this.options.segmentCount;
+      m.options.segmentSpacing = this.options.segmentSpacing;
+      m.maxHistoryLength = m.options.segmentCount * m.options.segmentSpacing;
+    });
   }
 
   setInteractionEnabled(enabled) {
-    console.log('设置交互:', enabled);
+    this.interactionEnabled = !!enabled;
   }
 
   setParticlesEnabled(enabled) {
-    console.log('设置粒子:', enabled);
+    this.particlesEnabled = !!enabled;
   }
 }
