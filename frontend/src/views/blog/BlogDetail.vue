@@ -18,13 +18,18 @@
               <!-- 文章元信息 -->
               <div class="article-meta">
                 <div class="author-section">
-                  <div class="author-avatar" :style="getAuthorAvatarStyle(article.author && article.author.avatar)">
+                  <div
+                    class="author-avatar"
+                    :style="getAuthorAvatarStyle(article.author && article.author.avatar)"
+                  >
                     <span class="avatar-fallback">
-                      {{ (article.author && article.author.username || '匿名').charAt(0) }}
+                      {{ ((article.author && article.author.username) || '匿名').charAt(0) }}
                     </span>
                   </div>
                   <div class="author-details">
-                    <span class="author-name">{{ article.author && article.author.username || '匿名' }}</span>
+                    <span class="author-name">{{
+                      (article.author && article.author.username) || '匿名'
+                    }}</span>
                     <div class="meta-info">
                       <span class="publish-date">{{
                         formatDate(article.publishedAt || article.createdAt)
@@ -64,7 +69,10 @@
           </article>
 
           <!-- 评论区域 -->
-          <section class="comments-section card">
+          <section
+            v-if="settingsStore.blogConfig?.enableComments !== false"
+            class="comments-section card"
+          >
             <div class="card-header">
               <h3>评论区</h3>
             </div>
@@ -91,7 +99,11 @@
                   v-for="heading in tableOfContents"
                   :key="heading.id"
                   :href="`#${heading.id}`"
-                  :class="['toc-link', `toc-level-${heading.level}`, { 'active': activeHeadingId === heading.id }]"
+                  :class="[
+                    'toc-link',
+                    `toc-level-${heading.level}`,
+                    { active: activeHeadingId === heading.id }
+                  ]"
                   @click.prevent="scrollToHeading(heading.id)"
                 >
                   {{ heading.text }}
@@ -134,6 +146,7 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import api from '@/api';
 import CommentList from '@/components/CommentList.vue';
+import { useSettingsStore } from '@/stores/settings';
 import { getAvatarStyle } from '@/utils/avatar';
 
 export default {
@@ -143,6 +156,7 @@ export default {
   },
   setup() {
     const route = useRoute();
+    const settingsStore = useSettingsStore();
     const article = ref(null);
     const loading = ref(false);
     const highlightCommentId = ref(null);
@@ -155,7 +169,7 @@ export default {
     const renderer = new marked.Renderer();
 
     // 自定义图片渲染，处理相对路径
-    renderer.image = function(href, title, text) {
+    renderer.image = function (href, title, text) {
       // 处理新版marked.js可能传递token对象的情况
       let actualHref = href;
       let actualTitle = title;
@@ -175,7 +189,9 @@ export default {
 
       let fullHref = actualHref;
       if (actualHref && !actualHref.startsWith('http://') && !actualHref.startsWith('https://')) {
-        fullHref = `${window.location.origin}${actualHref}`;
+        // 规范化相对路径，确保以斜杠开头
+        const normalized = actualHref.startsWith('/') ? actualHref : `/${actualHref}`;
+        fullHref = `${window.location.origin}${normalized}`;
       }
 
       const titleAttr = actualTitle ? ` title="${actualTitle}"` : '';
@@ -396,6 +412,12 @@ export default {
 
     onMounted(() => {
       fetchArticle();
+
+      // 加载设置
+      if (!settingsStore.isLoaded) {
+        settingsStore.loadSettings();
+      }
+
       nextTick(() => {
         window.scrollTo({ top: 0, behavior: 'auto' });
       });
@@ -423,6 +445,7 @@ export default {
     );
 
     return {
+      settingsStore,
       article,
       loading,
       highlightCommentId,

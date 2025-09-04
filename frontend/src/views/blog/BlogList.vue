@@ -19,9 +19,7 @@
               class="search-input"
               @input="handleSearch"
             />
-            <button v-if="searchQuery" class="clear-search-btn" @click="clearSearch">
-              ✕
-            </button>
+            <button v-if="searchQuery" class="clear-search-btn" @click="clearSearch">✕</button>
           </div>
         </div>
 
@@ -48,7 +46,10 @@
             <label class="filter-label">标签：</label>
             <div class="filter-options">
               <button
-                v-for="tag in filterOptions.tags.slice(0, showAllTags ? filterOptions.tags.length : 8)"
+                v-for="tag in filterOptions.tags.slice(
+                  0,
+                  showAllTags ? filterOptions.tags.length : 8
+                )"
                 :key="tag"
                 class="btn btn-sm"
                 :class="selectedTag === tag ? 'btn-primary' : 'btn-ghost'"
@@ -75,10 +76,7 @@
                 <option value="viewCount">阅读量</option>
                 <option value="title">标题</option>
               </select>
-              <button
-                class="btn btn-sm btn-ghost sort-order-btn"
-                @click="toggleSortOrder"
-              >
+              <button class="btn btn-sm btn-ghost sort-order-btn" @click="toggleSortOrder">
                 {{ sortOrder === 'desc' ? '↓' : '↑' }}
               </button>
             </div>
@@ -99,9 +97,7 @@
               搜索: {{ searchQuery }}
               <button @click="clearSearch">✕</button>
             </span>
-            <button class="btn btn-sm btn-ghost" @click="clearAllFilters">
-              清除所有筛选
-            </button>
+            <button class="btn btn-sm btn-ghost" @click="clearAllFilters">清除所有筛选</button>
           </div>
         </div>
       </div>
@@ -118,7 +114,7 @@
             <div class="skeleton skeleton-text"></div>
             <div class="card-footer">
               <div class="skeleton skeleton-avatar"></div>
-              <div class="skeleton skeleton-text" style="width: 100px;"></div>
+              <div class="skeleton skeleton-text" style="width: 100px"></div>
             </div>
           </div>
         </div>
@@ -129,9 +125,7 @@
         <div class="empty-icon">📝</div>
         <h3>{{ searchQuery ? '未找到相关文章' : '暂无文章' }}</h3>
         <p>{{ searchQuery ? '尝试使用其他关键词搜索' : '还没有发布任何文章，敬请期待...' }}</p>
-        <button v-if="searchQuery" class="btn btn-primary" @click="clearSearch">
-          清除搜索
-        </button>
+        <button v-if="searchQuery" class="btn btn-primary" @click="clearSearch">清除搜索</button>
       </div>
 
       <!-- 文章网格 -->
@@ -160,11 +154,7 @@
 
             <!-- 文章标签 -->
             <div v-if="article.tags && article.tags.length > 0" class="article-tags">
-              <span
-                v-for="tag in article.tags.slice(0, 2)"
-                :key="tag"
-                class="badge badge-primary"
-              >
+              <span v-for="tag in article.tags.slice(0, 2)" :key="tag" class="badge badge-primary">
                 {{ tag }}
               </span>
             </div>
@@ -184,11 +174,13 @@
                 :style="getAuthorAvatarStyle(article.author && article.author.avatar)"
               >
                 <span v-if="!article.author || !article.author.avatar" class="avatar-text">
-                  {{ (article.author && article.author.username || '匿名').charAt(0) }}
+                  {{ ((article.author && article.author.username) || '匿名').charAt(0) }}
                 </span>
               </div>
               <div class="author-info">
-                <span class="author-name">{{ article.author && article.author.username || '匿名' }}</span>
+                <span class="author-name">{{
+                  (article.author && article.author.username) || '匿名'
+                }}</span>
                 <span class="publish-date">{{ formatDate(article.createdAt) }}</span>
               </div>
             </div>
@@ -242,11 +234,13 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
+import { useSettingsStore } from '@/stores/settings';
 import api from '@/api';
 
 export default {
   name: 'BlogList',
   setup() {
+    const settingsStore = useSettingsStore();
     const articles = ref([]);
     const loading = ref(false);
     const searchQuery = ref('');
@@ -255,9 +249,13 @@ export default {
     const sortBy = ref('publishedAt');
     const sortOrder = ref('desc');
     const currentPage = ref(1);
-    const pageSize = ref(12);
     const totalCount = ref(0);
     const showAllTags = ref(false);
+
+    // 使用博客设置中的pageSize，如果未加载则使用默认值12
+    const pageSize = computed(() => {
+      return settingsStore.blogConfig?.pageSize || 12;
+    });
 
     // 筛选选项
     const filterOptions = ref({
@@ -273,9 +271,11 @@ export default {
     });
 
     const hasActiveFilters = computed(() => {
-      return selectedCategory.value !== '全部' ||
-             selectedTag.value !== '全部' ||
-             searchQuery.value.trim() !== '';
+      return (
+        selectedCategory.value !== '全部' ||
+        selectedTag.value !== '全部' ||
+        searchQuery.value.trim() !== ''
+      );
     });
 
     const totalPages = computed(() => {
@@ -339,7 +339,7 @@ export default {
       }
     };
 
-    const formatDate = (date) => {
+    const formatDate = date => {
       const now = new Date();
       const articleDate = new Date(date);
       const diffTime = Math.abs(now - articleDate);
@@ -356,7 +356,7 @@ export default {
       }
     };
 
-    const getExcerpt = (content) => {
+    const getExcerpt = content => {
       if (!content) return '暂无摘要...';
       const text = content.replace(/<[^>]*>/g, ''); // 移除HTML标签
       return text.length > 120 ? text.substring(0, 120) + '...' : text;
@@ -367,13 +367,13 @@ export default {
       fetchArticles();
     };
 
-    const filterByCategory = (category) => {
+    const filterByCategory = category => {
       selectedCategory.value = category;
       currentPage.value = 1;
       fetchArticles();
     };
 
-    const filterByTag = (tag) => {
+    const filterByTag = tag => {
       selectedTag.value = tag;
       currentPage.value = 1;
       fetchArticles();
@@ -406,7 +406,7 @@ export default {
       fetchArticles();
     };
 
-    const changePage = (page) => {
+    const changePage = page => {
       if (page >= 1 && page <= totalPages.value) {
         currentPage.value = page;
         fetchArticles();
@@ -416,7 +416,7 @@ export default {
     };
 
     // 获取完整的图片URL
-    const getFullImageUrl = (imageUrl) => {
+    const getFullImageUrl = imageUrl => {
       if (!imageUrl) return '';
 
       // 如果已经是完整的URL，直接返回
@@ -429,7 +429,7 @@ export default {
     };
 
     // 获取作者头像样式
-    const getAuthorAvatarStyle = (avatarUrl) => {
+    const getAuthorAvatarStyle = avatarUrl => {
       if (!avatarUrl) return {};
 
       // 处理相对路径
@@ -447,7 +447,7 @@ export default {
     };
 
     // 处理图片加载错误
-    const handleImageError = (event) => {
+    const handleImageError = event => {
       // 隐藏图片，显示占位符
       const imgElement = event.target;
       const coverDiv = imgElement.closest('.article-cover');
@@ -460,6 +460,11 @@ export default {
     };
 
     onMounted(() => {
+      // 加载设置
+      if (!settingsStore.isLoaded) {
+        settingsStore.loadSettings();
+      }
+
       fetchFilterOptions();
       fetchArticles();
     });
@@ -556,7 +561,9 @@ export default {
   font-size: var(--font-size-base);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .search-input:focus {
@@ -580,7 +587,9 @@ export default {
   cursor: pointer;
   padding: var(--spacing-2);
   border-radius: var(--radius-full);
-  transition: color var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
 }
 
 .clear-search-btn:hover {
@@ -687,7 +696,9 @@ export default {
 
 .article-card {
   cursor: pointer;
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
   overflow: hidden;
 }
 

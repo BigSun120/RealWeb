@@ -71,6 +71,7 @@
       <div class="comment-footer">
         <div class="comment-stats">
           <el-button
+            v-if="settingsStore.blogConfig?.enableLikes !== false"
             type="text"
             size="small"
             :class="{ 'is-liked': comment.isLiked }"
@@ -136,6 +137,7 @@
 import { ref, computed, nextTick } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useUserStore } from '@/stores/user';
+import { useSettingsStore } from '@/stores/settings';
 import CommentEditor from './CommentEditor.vue';
 import commentApi from '@/api/comments';
 import { renderMentions } from '@/utils/mention';
@@ -170,6 +172,7 @@ export default {
   emits: ['like', 'reply', 'edit', 'delete'],
   setup(props, { emit }) {
     const userStore = useUserStore();
+    const settingsStore = useSettingsStore();
 
     const isEditing = ref(false);
     const showReplyEditor = ref(false);

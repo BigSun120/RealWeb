@@ -232,6 +232,7 @@ import { ref, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Setting, User, Document, Plus, Link, UserFilled } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
+import { useSettingsStore } from '@/stores/settings';
 import api from '@/api';
 
 export default {
@@ -246,6 +247,7 @@ export default {
   },
   setup() {
     const userStore = useUserStore();
+    const settingsStore = useSettingsStore();
     const saving = ref(false);
 
     // 网站基本信息
@@ -304,6 +306,10 @@ export default {
         };
 
         await api.put('/admin/settings/site', dataToSave);
+
+        // 更新settingsStore，使前端页面立即显示更新后的数据
+        settingsStore.updateSiteInfo(dataToSave);
+
         ElMessage.success('网站信息保存成功');
       } catch (error) {
         console.error('保存网站信息失败:', error);
@@ -326,6 +332,10 @@ export default {
         };
 
         await api.put('/admin/settings/personal', dataToSave);
+
+        // 更新settingsStore
+        settingsStore.updatePersonalInfo(dataToSave);
+
         ElMessage.success('个人信息保存成功');
       } catch (error) {
         console.error('保存个人信息失败:', error);
@@ -420,6 +430,10 @@ export default {
         };
 
         await api.put('/admin/settings/blog', dataToSave);
+
+        // 更新settingsStore
+        settingsStore.updateBlogSettings(dataToSave);
+
         ElMessage.success('博客设置保存成功');
       } catch (error) {
         console.error('保存博客设置失败:', error);
@@ -433,6 +447,10 @@ export default {
     const handleLogoSuccess = response => {
       if (response.code === 200) {
         siteInfo.value.logo = response.data.url;
+
+        // 立即更新settingsStore，使前端页面立即显示新Logo
+        settingsStore.updateSiteInfo({ logo: response.data.url });
+
         ElMessage.success('Logo上传成功');
       } else {
         ElMessage.error('Logo上传失败');
