@@ -231,17 +231,45 @@ router.get('/dashboard/activity', async (req, res, next) => {
 // 获取系统状态
 router.get('/system/status', async (req, res, next) => {
   try {
-    // 获取系统信息
+    const os = require('os');
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    // 获取系统信息（真实）
     const uptime = process.uptime();
-    const memoryUsage = process.memoryUsage();
+
+    // 使用系统内存而非 Node 堆内存
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = Math.max(0, totalMem - freeMem);
 
     // 检查数据库连接状态
     const mongoose = require('mongoose');
     const databaseStatus = mongoose.connection.readyState === 1 ? 'online' : 'offline';
 
-    // 模拟CPU和磁盘使用率（实际项目中可以使用系统监控库）
-    const cpuUsage = Math.floor(Math.random() * 30) + 20; // 20-50%
-    const diskUsage = Math.floor(Math.random() * 20) + 30; // 30-50%
+    // CPU 使用率近似：1分钟负载 / CPU核心数 → 百分比（上限 100）
+    const cores = (os.cpus() && os.cpus().length) || 1;
+    const load1 = (os.loadavg && os.loadavg()[0]) || 0;
+    const cpuUsage = Math.max(0, Math.min(100, Math.round((load1 / cores) * 100)));
+
+    // 磁盘使用率（Linux）：解析 df -P /
+    let diskUsage = null;
+    try {
+      const { stdout } = await execAsync('df -P /');
+      // 取第二行：Filesystem 1024-blocks Used Available Capacity Mounted on
+      const lines = stdout.trim().split('\n');
+      if (lines.length >= 2) {
+        const parts = lines[1].split(/\s+/);
+        // 有的系统第5列是容量百分比
+        const capacityCol = parts.find(p => /%$/.test(p));
+        if (capacityCol) {
+          diskUsage = parseInt(capacityCol.replace('%', ''), 10);
+        }
+      }
+    } catch (_) {
+      // 忽略 df 错误，diskUsage 维持为 null
+    }
 
     res.json({
       code: 200,
@@ -251,12 +279,13 @@ router.get('/system/status', async (req, res, next) => {
         databaseStatus,
         uptime,
         memory: {
-          used: memoryUsage.heapUsed,
-          total: memoryUsage.heapTotal
+          used: usedMem,
+          total: totalMem
         },
         cpuUsage,
         diskUsage,
-        nodeVersion: process.version
+        nodeVersion: process.version,
+        serverTime: new Date().toISOString()
       }
     });
   } catch (error) {

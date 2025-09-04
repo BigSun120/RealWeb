@@ -1,8 +1,9 @@
-# API接口文档
+# API 接口文档
 
 ## 一、文档概述
+
 - **版本**：1.0
-- **基础URL**：`http://api.example.com/v1`
+- **基础 URL**：`http://api.example.com/v1`
 - **认证方式**：JWT Token
 - **数据格式**：JSON
 - **状态码说明**：
@@ -16,6 +17,7 @@
 ## 二、认证接口
 
 ### 2.1 用户注册
+
 - **URL**: `/auth/register`
 - **方法**: POST
 - **权限**: 公开
@@ -42,6 +44,7 @@
   ```
 
 ### 2.2 用户登录
+
 - **URL**: `/auth/login`
 - **方法**: POST
 - **权限**: 公开
@@ -71,6 +74,7 @@
 ## 三、用户接口
 
 ### 3.1 获取用户信息
+
 - **URL**: `/users/profile`
 - **方法**: GET
 - **权限**: 登录用户
@@ -92,6 +96,7 @@
   ```
 
 ### 3.2 更新用户信息
+
 - **URL**: `/users/profile`
 - **方法**: PUT
 - **权限**: 登录用户
@@ -120,12 +125,13 @@
 ## 四、博客接口
 
 ### 4.1 获取文章列表
+
 - **URL**: `/articles`
 - **方法**: GET
 - **权限**: 公开
 - **查询参数**:
-  - `page`: 页码(默认1)
-  - `limit`: 每页条数(默认10)
+  - `page`: 页码(默认 1)
+  - `limit`: 每页条数(默认 10)
   - `category`: 分类(可选)
   - `tag`: 标签(可选)
   - `search`: 搜索关键词(可选)
@@ -159,6 +165,7 @@
   ```
 
 ### 4.2 获取文章详情
+
 - **URL**: `/articles/{articleId}`
 - **方法**: GET
 - **权限**: 公开
@@ -188,6 +195,7 @@
   ```
 
 ### 4.3 创建文章
+
 - **URL**: `/articles`
 - **方法**: POST
 - **权限**: 登录用户
@@ -216,6 +224,7 @@
   ```
 
 ### 4.4 添加评论
+
 - **URL**: `/articles/{articleId}/comments`
 - **方法**: POST
 - **权限**: 登录用户
@@ -224,10 +233,11 @@
   ```json
   {
     "content": "很棒的文章，学到很多！",
-    "parentId": null  // 回复评论时填写父评论ID
+    "parentId": null // 回复评论时填写父评论ID
   }
   ```
 - **响应示例**:
+
   ```json
   {
     "code": 200,
@@ -239,71 +249,8 @@
   }
   ```
 
-## 五、游戏接口
+  - `limit`: 显示条数(默认 10)
 
-### 5.1 获取游戏列表
-- **URL**: `/games`
-- **方法**: GET
-- **权限**: 公开
-- **查询参数**:
-  - `category`: 游戏分类(可选)
-  - `page`: 页码(默认1)
-  - `limit`: 每页条数(默认10)
-- **响应示例**:
-  ```json
-  {
-    "code": 200,
-    "message": "success",
-    "data": {
-      "games": [
-        {
-          "id": "60d21b4667d0d8992e610c89",
-          "name": "贪吃蛇",
-          "description": "经典贪吃蛇游戏",
-          "category": "休闲",
-          "thumbnail": "https://example.com/snake.jpg",
-          "playCount": 350
-        }
-      ],
-      "pagination": {
-        "total": 12,
-        "page": 1,
-        "limit": 10,
-        "pages": 2
-      }
-    }
-  }
-  ```
-
-### 5.2 提交游戏分数
-- **URL**: `/games/{gameId}/scores`
-- **方法**: POST
-- **权限**: 登录用户
-- **请求头**: `Authorization: Bearer {token}`
-- **请求体**:
-  ```json
-  {
-    "score": 1500
-  }
-  ```
-- **响应示例**:
-  ```json
-  {
-    "code": 200,
-    "message": "分数提交成功",
-    "data": {
-      "rank": 5,  // 该游戏中的排名
-      "score": 1500
-    }
-  }
-  ```
-
-### 5.3 获取游戏排行榜
-- **URL**: `/games/{gameId}/ranking`
-- **方法**: GET
-- **权限**: 公开
-- **查询参数**:
-  - `limit`: 显示条数(默认10)
 - **响应示例**:
   ```json
   {
@@ -324,14 +271,16 @@
           "avatar": "https://example.com/john.jpg"
         }
       ],
-      "myRank": 5,  // 当前登录用户排名(未登录则为null)
+      "myRank": 5, // 当前登录用户排名(未登录则为null)
       "myScore": 1500
     }
   }
   ```
 
 ## 六、通用响应格式
+
 ### 成功响应
+
 ```json
 {
   "code": 200,
@@ -343,6 +292,7 @@
 ```
 
 ### 错误响应
+
 ```json
 {
   "code": 400,
@@ -357,7 +307,9 @@
 ```
 
 ## 七、接口调用示例
-### 使用Axios调用登录接口
+
+### 使用 Axios 调用登录接口
+
 ```javascript
 import axios from 'axios';
 
@@ -367,7 +319,7 @@ const login = async () => {
       email: 'john@example.com',
       password: 'Password123!'
     });
-    
+
     // 保存token
     localStorage.setItem('token', response.data.data.token);
     console.log('登录成功');
@@ -377,7 +329,8 @@ const login = async () => {
 };
 ```
 
-### 使用认证token调用接口
+### 使用认证 token 调用接口
+
 ```javascript
 // 创建axios实例
 const api = axios.create({

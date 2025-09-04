@@ -7,12 +7,7 @@ const { param, body, validationResult } = require('express-validator');
 // 获取用户通知列表
 router.get('/', auth, async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 20,
-      type = '',
-      isRead = ''
-    } = req.query;
+    const { page = 1, limit = 20, type = '', isRead = '' } = req.query;
 
     const options = {
       page: parseInt(page),
@@ -34,8 +29,6 @@ router.get('/', auth, async (req, res) => {
       ...(type && { type }),
       ...(isRead !== '' && { isRead: isRead === 'true' })
     });
-
-
 
     res.json({
       success: true,
@@ -75,7 +68,8 @@ router.get('/unread-count', auth, async (req, res) => {
 });
 
 // 标记单个通知为已读
-router.put('/:notificationId/read',
+router.put(
+  '/:notificationId([0-9a-fA-F]{24})/read',
   auth,
   [param('notificationId').isMongoId().withMessage('通知ID格式不正确')],
   async (req, res) => {
@@ -126,7 +120,8 @@ router.put('/:notificationId/read',
 );
 
 // 批量标记通知为已读
-router.put('/batch-read',
+router.put(
+  '/batch-read',
   auth,
   [
     body('notificationIds').optional().isArray().withMessage('通知ID列表必须是数组'),
@@ -165,7 +160,8 @@ router.put('/batch-read',
 );
 
 // 删除通知
-router.delete('/:notificationId',
+router.delete(
+  '/:notificationId([0-9a-fA-F]{24})',
   auth,
   [param('notificationId').isMongoId().withMessage('通知ID格式不正确')],
   async (req, res) => {
@@ -210,7 +206,7 @@ router.delete('/:notificationId',
   }
 );
 
-// 清空所有通知
+// 清空所有通知（放在参数化路由之前更安全）
 router.delete('/clear-all', auth, async (req, res) => {
   try {
     const result = await Notification.updateMany(

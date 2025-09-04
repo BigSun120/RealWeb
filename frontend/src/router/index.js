@@ -22,18 +22,6 @@ const routes = [
     component: () => import('@/views/blog/BlogDetail.vue'),
     meta: { title: '文章详情' }
   },
-  {
-    path: '/games',
-    name: 'Games',
-    component: () => import('@/views/games/GameList.vue'),
-    meta: { title: '小游戏' }
-  },
-  {
-    path: '/games/:id',
-    name: 'GameDetail',
-    component: () => import('@/views/games/GameDetail.vue'),
-    meta: { title: '游戏详情' }
-  },
   // 工具箱路由
   toolsRoutes,
   {

@@ -105,11 +105,7 @@
             <span>热门工具排行</span>
           </template>
           <div class="tool-ranking">
-            <div 
-              v-for="(tool, index) in topTools" 
-              :key="tool.id"
-              class="ranking-item"
-            >
+            <div v-for="(tool, index) in topTools" :key="tool.id" class="ranking-item">
               <div class="rank-number" :class="`rank-${index + 1}`">
                 {{ index + 1 }}
               </div>
@@ -118,8 +114,8 @@
                 <div class="tool-usage">{{ formatNumber(tool.usageCount) }} 次使用</div>
               </div>
               <div class="usage-bar">
-                <div 
-                  class="usage-progress" 
+                <div
+                  class="usage-progress"
                   :style="{ width: `${(tool.usageCount / topTools[0].usageCount) * 100}%` }"
                 ></div>
               </div>
@@ -138,11 +134,7 @@
             <span>最近活动</span>
           </template>
           <div class="activity-list">
-            <div 
-              v-for="activity in recentActivities" 
-              :key="activity.id"
-              class="activity-item"
-            >
+            <div v-for="activity in recentActivities" :key="activity.id" class="activity-item">
               <div class="activity-icon" :class="activity.type">
                 <el-icon>
                   <component :is="getActivityIcon(activity.type)" />
@@ -165,22 +157,30 @@
           </template>
           <div class="status-list">
             <div class="status-item">
-              <div class="status-label">系统运行状态</div>
-              <el-tag :type="systemStatus.status === 'healthy' ? 'success' : 'danger'">
-                {{ systemStatus.status === 'healthy' ? '正常' : '异常' }}
+              <div class="status-label">服务器状态</div>
+              <el-tag :type="systemStatus.serverStatus === 'online' ? 'success' : 'danger'">
+                {{ systemStatus.serverStatus === 'online' ? '在线' : '离线' }}
               </el-tag>
             </div>
             <div class="status-item">
-              <div class="status-label">平均响应时间</div>
-              <span class="status-value">{{ systemStatus.avgResponseTime }}ms</span>
+              <div class="status-label">数据库连接</div>
+              <el-tag :type="systemStatus.databaseStatus === 'online' ? 'success' : 'danger'">
+                {{ systemStatus.databaseStatus === 'online' ? '正常' : '异常' }}
+              </el-tag>
             </div>
             <div class="status-item">
-              <div class="status-label">错误率</div>
-              <span class="status-value">{{ systemStatus.errorRate }}%</span>
+              <div class="status-label">内存使用</div>
+              <span class="status-value">{{ systemStatus.memoryUsage }}</span>
             </div>
             <div class="status-item">
-              <div class="status-label">在线用户</div>
-              <span class="status-value">{{ systemStatus.onlineUsers }}</span>
+              <div class="status-label">CPU 使用率</div>
+              <span class="status-value">{{ systemStatus.cpuUsage }}%</span>
+            </div>
+            <div class="status-item">
+              <div class="status-label">磁盘使用率</div>
+              <span class="status-value"
+                >{{ systemStatus.diskUsage === null ? '--' : systemStatus.diskUsage + '%' }}
+              </span>
             </div>
           </div>
         </el-card>
@@ -190,113 +190,190 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { 
-  Tools, Refresh, Setting, CircleCheck, TrendCharts, User,
-  Plus, Edit, Delete, Warning
-} from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import * as echarts from 'echarts'
+import { ref, reactive, onMounted, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
+import {
+  Tools,
+  Refresh,
+  Setting,
+  CircleCheck,
+  TrendCharts,
+  User,
+  Plus,
+  Edit,
+  Delete,
+  Warning
+} from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import * as echarts from 'echarts';
 
 export default {
   name: 'ToolsOverview',
   components: {
-    Tools, Refresh, Setting, CircleCheck, TrendCharts, User,
-    Plus, Edit, Delete, Warning
+    Tools,
+    Refresh,
+    Setting,
+    CircleCheck,
+    TrendCharts,
+    User,
+    Plus,
+    Edit,
+    Delete,
+    Warning
   },
   setup() {
-    const router = useRouter()
-    const usageChartRef = ref(null)
-    const usagePeriod = ref('7d')
+    const router = useRouter();
+    const usageChartRef = ref(null);
+    const usagePeriod = ref('7d');
 
     // 概览统计数据
     const overviewStats = reactive({
-      totalTools: 12,
-      activeTools: 8,
-      totalUsage: 15420,
-      activeUsers: 1234
-    })
+      totalTools: 0,
+      activeTools: 0,
+      totalUsage: 0,
+      activeUsers: 0
+    });
 
     // 热门工具排行
-    const topTools = ref([
-      { id: 1, name: 'JSON格式化', usageCount: 3420 },
-      { id: 2, name: '图片压缩', usageCount: 2890 },
-      { id: 3, name: '颜色选择器', usageCount: 2156 },
-      { id: 4, name: '二维码生成', usageCount: 1876 },
-      { id: 5, name: '时间戳转换', usageCount: 1234 }
-    ])
+    const topTools = ref([]);
 
     // 最近活动
-    const recentActivities = ref([
-      { id: 1, type: 'create', title: '新增工具：Markdown编辑器', createdAt: new Date() },
-      { id: 2, type: 'update', title: '更新工具：JSON格式化器', createdAt: new Date(Date.now() - 3600000) },
-      { id: 3, type: 'delete', title: '删除工具：旧版图片转换器', createdAt: new Date(Date.now() - 7200000) },
-      { id: 4, type: 'warning', title: '工具异常：SEO分析工具响应超时', createdAt: new Date(Date.now() - 10800000) }
-    ])
+    const recentActivities = ref([]);
 
     // 系统状态
     const systemStatus = reactive({
-      status: 'healthy',
-      avgResponseTime: 245,
-      errorRate: 0.2,
-      onlineUsers: 89
-    })
+      serverStatus: 'online',
+      databaseStatus: 'online',
+      memoryUsage: '--',
+      cpuUsage: 0,
+      diskUsage: null
+    });
 
     // 格式化数字
-    const formatNumber = (num) => {
+    const formatNumber = num => {
       if (num >= 10000) {
-        return (num / 10000).toFixed(1) + 'w'
+        return (num / 10000).toFixed(1) + 'w';
       } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'k'
+        return (num / 1000).toFixed(1) + 'k';
       }
-      return num.toString()
-    }
+      return num.toString();
+    };
 
     // 格式化时间
-    const formatTime = (date) => {
-      const now = new Date()
-      const diff = now - date
-      const minutes = Math.floor(diff / 60000)
-      const hours = Math.floor(diff / 3600000)
-      
+    const formatTime = date => {
+      const now = new Date();
+      const diff = now - date;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+
       if (minutes < 60) {
-        return `${minutes}分钟前`
+        return `${minutes}分钟前`;
       } else if (hours < 24) {
-        return `${hours}小时前`
+        return `${hours}小时前`;
       } else {
-        return date.toLocaleDateString()
+        return date.toLocaleDateString();
       }
-    }
+    };
 
     // 获取活动图标
-    const getActivityIcon = (type) => {
+    const getActivityIcon = type => {
       const iconMap = {
         create: 'Plus',
         update: 'Edit',
         delete: 'Delete',
         warning: 'Warning'
-      }
-      return iconMap[type] || 'Plus'
-    }
+      };
+      return iconMap[type] || 'Plus';
+    };
 
+    // 拉取真实数据并绑定
+    const fetchRealData = async () => {
+      try {
+        const { analyticsAPI, toolsAPI } = await import('@/api/admin/tools');
+        const { getSystemStatus, getRecentActivity } = await import('@/api/admin');
+
+        // 概览统计
+        const overviewRes = await analyticsAPI.getOverviewStats();
+        const overview = overviewRes.data?.data || {};
+        overviewStats.totalTools = overview.totalTools || 0;
+        overviewStats.activeTools = overview.activeTools || 0;
+        // 暂用近7天使用次数作为总使用次数展示
+        overviewStats.totalUsage = overview.weekUsage ?? overview.todayUsage ?? 0;
+        overviewStats.activeUsers = overview.activeUsers || 0;
+
+        // 热门工具（用于排行榜与趋势图Top1）
+        const popularRes = await analyticsAPI.getToolUsageStats({ period: usagePeriod.value });
+        const popularTools = popularRes.data?.data?.popularTools || [];
+
+        // 构建工具名称映射，尽量显示名称
+        let nameMap = {};
+        try {
+          const toolsRes = await toolsAPI.getTools({ page: 1, pageSize: 1000 });
+          const list =
+            toolsRes.data?.data?.items ||
+            toolsRes.data?.data?.list ||
+            toolsRes.data?.data?.docs ||
+            [];
+          list.forEach(t => {
+            const id = t._id || t.id || t.identifier;
+            if (id) nameMap[id] = t.name || t.title || t.identifier || t.slug || '';
+          });
+        } catch (e) {
+          // 忽略
+        }
+
+        topTools.value = popularTools.map(t => {
+          const id = t.toolIdentifier || t.id || t._id;
+          const name = t.name || nameMap[id] || (id ? String(id) : '未知工具');
+          const count = t.count || t.usageCount || t.total || 0;
+          return { id, name, usageCount: count };
+        });
+
+        // 最近活动
+        const actRes = await getRecentActivity(10);
+        recentActivities.value = actRes.data?.data?.activities || [];
+
+        // 系统状态
+        const sysRes = await getSystemStatus();
+        const sys = sysRes.data?.data || {};
+        const used = sys.memory?.used || 0;
+        const total = sys.memory?.total || 0;
+        const percent = total ? Math.round((used / total) * 100) : 0;
+        systemStatus.serverStatus = sys.serverStatus || 'online';
+        systemStatus.databaseStatus = sys.databaseStatus || 'online';
+        systemStatus.memoryUsage = total
+          ? `${(used / 1024 / 1024).toFixed(0)}MB / ${(total / 1024 / 1024).toFixed(0)}MB (${percent}%)`
+          : '--';
+        systemStatus.cpuUsage = sys.cpuUsage ?? 0;
+        systemStatus.diskUsage = sys.diskUsage ?? null;
+      } catch (err) {
+        console.error('获取工具概览数据失败:', err);
+      }
+    };
     // 加载使用趋势图表
     const loadUsageChart = async () => {
-      await nextTick()
-      if (!usageChartRef.value) return
+      await nextTick();
+      if (!usageChartRef.value) return;
 
-      const chart = echarts.init(usageChartRef.value)
-      
-      // 模拟数据
-      const dates = []
-      const usageData = []
-      const days = usagePeriod.value === '7d' ? 7 : usagePeriod.value === '30d' ? 30 : 90
-      
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date()
-        date.setDate(date.getDate() - i)
-        dates.push(date.toLocaleDateString())
-        usageData.push(Math.floor(Math.random() * 500) + 100)
+      const chart = echarts.init(usageChartRef.value);
+
+      // 使用真实数据：选取热门工具Top1的趋势数据
+      let dates = [];
+      let usageData = [];
+      try {
+        if (topTools.value.length > 0) {
+          const { analyticsAPI } = await import('@/api/admin/tools');
+          const res = await analyticsAPI.getToolUsageStats({
+            period: usagePeriod.value,
+            toolId: topTools.value[0].id
+          });
+          const trend = res.data?.data?.trend || [];
+          dates = trend.map(i => i.date);
+          usageData = trend.map(i => i.count);
+        }
+      } catch (e) {
+        dates = [];
+        usageData = [];
       }
 
       const option = {
@@ -310,33 +387,42 @@ export default {
         yAxis: {
           type: 'value'
         },
-        series: [{
-          data: usageData,
-          type: 'line',
-          smooth: true,
-          areaStyle: {
-            opacity: 0.3
+        series: [
+          {
+            data: usageData,
+            type: 'line',
+            smooth: true,
+            areaStyle: {
+              opacity: 0.3
+            }
           }
-        }]
-      }
+        ]
+      };
 
-      chart.setOption(option)
-    }
+      chart.setOption(option);
+    };
 
     // 刷新数据
-    const refreshData = () => {
-      ElMessage.success('数据已刷新')
-      // TODO: 实际的数据刷新逻辑
-    }
+    const refreshData = async () => {
+      try {
+        await fetchRealData();
+        await loadUsageChart();
+        ElMessage.success('数据已刷新');
+      } catch (e) {
+        console.error('刷新失败:', e);
+        ElMessage.error('刷新失败');
+      }
+    };
 
     // 跳转到工具管理
     const goToManagement = () => {
-      router.push('/admin/tools/management')
-    }
+      router.push('/admin/tools/management');
+    };
 
-    onMounted(() => {
-      loadUsageChart()
-    })
+    onMounted(async () => {
+      await fetchRealData();
+      await loadUsageChart();
+    });
 
     return {
       usageChartRef,
@@ -351,9 +437,9 @@ export default {
       loadUsageChart,
       refreshData,
       goToManagement
-    }
+    };
   }
-}
+};
 </script>
 
 <style scoped>
@@ -417,10 +503,18 @@ export default {
   margin-right: 15px;
 }
 
-.stat-icon.total { background: #409eff; }
-.stat-icon.active { background: #67c23a; }
-.stat-icon.usage { background: #e6a23c; }
-.stat-icon.users { background: #f56c6c; }
+.stat-icon.total {
+  background: #409eff;
+}
+.stat-icon.active {
+  background: #67c23a;
+}
+.stat-icon.usage {
+  background: #e6a23c;
+}
+.stat-icon.users {
+  background: #f56c6c;
+}
 
 .stat-number {
   font-size: 24px;
@@ -484,11 +578,17 @@ export default {
   margin-right: 12px;
 }
 
-.rank-number.rank-1 { background: #ffd700; }
-.rank-number.rank-2 { background: #c0c0c0; }
-.rank-number.rank-3 { background: #cd7f32; }
-.rank-number:not(.rank-1):not(.rank-2):not(.rank-3) { 
-  background: #909399; 
+.rank-number.rank-1 {
+  background: #ffd700;
+}
+.rank-number.rank-2 {
+  background: #c0c0c0;
+}
+.rank-number.rank-3 {
+  background: #cd7f32;
+}
+.rank-number:not(.rank-1):not(.rank-2):not(.rank-3) {
+  background: #909399;
 }
 
 .tool-info {
@@ -559,10 +659,18 @@ export default {
   color: white;
 }
 
-.activity-icon.create { background: #67c23a; }
-.activity-icon.update { background: #409eff; }
-.activity-icon.delete { background: #f56c6c; }
-.activity-icon.warning { background: #e6a23c; }
+.activity-icon.create {
+  background: #67c23a;
+}
+.activity-icon.update {
+  background: #409eff;
+}
+.activity-icon.delete {
+  background: #f56c6c;
+}
+.activity-icon.warning {
+  background: #e6a23c;
+}
 
 .activity-title {
   font-size: 14px;
