@@ -11,7 +11,7 @@ const api = axios.create({
 // 请求拦截器
 api.interceptors.request.use(
   config => {
-    // 添加认证token
+    // 添加认证token - 优先从localStorage获取，确保与userStore同步
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

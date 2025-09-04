@@ -283,9 +283,13 @@ export default {
         return `${baseUrl}/articles/upload-image`;
       }
     });
-    const uploadHeaders = computed(() => ({
-      Authorization: `Bearer ${userStore.token}`
-    }));
+    const uploadHeaders = computed(() => {
+      // 确保使用最新的token，与API拦截器保持一致
+      const token = localStorage.getItem('token') || userStore.token;
+      return {
+        Authorization: `Bearer ${token}`
+      };
+    });
 
     // 保存网站信息
     const saveSiteInfo = async () => {
