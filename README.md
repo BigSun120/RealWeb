@@ -8,7 +8,7 @@
 - 📝 **完整博客系统** - 支持 Markdown 编辑、语法高亮、文章管理
 - 👥 **用户权限系统** - 完整的注册登录、权限控制和用户管理
 - 📊 **管理后台** - 功能完善的管理员面板
-- 📧 **临时邮箱服务** - 集成 Inbucket，支持多域名临时邮箱
+- 📧 **完整邮件系统** - 注册验证邮件 + 临时邮箱服务（Postfix + Inbucket）
 - 🛡️ **安全防护** - JWT 认证、密码加密、API 限流等安全措施
 
 ## 🚀 技术栈
@@ -90,7 +90,7 @@ npm run setup
 npm run dev
 
 # 或者分步启动
-npm run email:setup    # 首次运行：设置邮箱服务
+npm run email:setup    # 首次运行：设置临时邮箱服务（Inbucket）
 npm run dev           # 启动所有服务
 ```
 
@@ -104,12 +104,16 @@ npm run dev           # 启动所有服务
 ### 邮箱服务管理
 
 ```bash
-# 邮箱服务相关命令
-npm run email:start    # 启动邮箱服务
-npm run email:stop     # 停止邮箱服务
-npm run email:logs     # 查看邮箱服务日志
-npm run email:status   # 查看邮箱服务状态
-npm run email:clean    # 清理邮箱服务容器
+# 临时邮箱服务相关命令（开发环境）
+npm run email:start    # 启动临时邮箱服务（Inbucket）
+npm run email:stop     # 停止临时邮箱服务
+npm run email:logs     # 查看临时邮箱服务日志
+npm run email:status   # 查看临时邮箱服务状态
+npm run email:clean    # 清理临时邮箱服务容器
+
+# 生产环境邮件服务已配置：
+# - 注册验证邮件：通过Postfix发送到用户真实邮箱
+# - 临时邮箱服务：通过Inbucket提供临时邮箱功能
 ```
 
 ### 部署
@@ -122,8 +126,8 @@ npm run deploy
 npm run deploy:backend
 ```
 
-📖 **详细部署指南**: 查看 [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
-⚡ **快速参考**: 查看 [QUICK_DEPLOY_REFERENCE.md](./QUICK_DEPLOY_REFERENCE.md)
+📖 **详细部署指南**: 查看 [部署更新指南](./docx/部署更新指南.md)
+📧 **邮件服务配置**: 查看 [邮件服务配置指南](./docx/邮件服务配置指南.md)
 
 ## 🔧 环境配置
 

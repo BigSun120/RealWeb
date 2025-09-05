@@ -17,7 +17,7 @@
         </div>
         <h2>🎉 邮箱验证成功！</h2>
         <p>恭喜您！您的邮箱已成功验证，现在可以享受完整的网站功能了。</p>
-        
+
         <div class="success-features">
           <h3>现在您可以：</h3>
           <ul>
@@ -47,7 +47,7 @@
         </div>
         <h2>❌ 验证失败</h2>
         <p class="error-message">{{ errorMessage }}</p>
-        
+
         <div class="error-reasons">
           <h3>可能的原因：</h3>
           <ul>
@@ -83,9 +83,9 @@
             />
           </el-form-item>
           <el-form-item>
-            <el-button 
-              type="primary" 
-              size="large" 
+            <el-button
+              type="primary"
+              size="large"
               :loading="resending"
               @click="handleResendVerification"
               style="width: 100%"
@@ -100,10 +100,17 @@
 </template>
 
 <script>
-import { verifyEmail, resendVerificationEmail } from '@/api/auth'
+import { verifyEmail, resendVerificationEmail } from '@/api/auth';
+import { useUserStore } from '@/stores/user';
 
 export default {
   name: 'EmailVerification',
+  setup() {
+    const userStore = useUserStore();
+    return {
+      userStore
+    };
+  },
   data() {
     return {
       loading: true,
@@ -120,88 +127,88 @@ export default {
           { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
         ]
       }
-    }
+    };
   },
-  
+
   async mounted() {
-    await this.verifyEmailToken()
+    await this.verifyEmailToken();
   },
-  
+
   methods: {
     async verifyEmailToken() {
-      const token = this.$route.params.token
-      
+      const token = this.$route.params.token;
+
       if (!token) {
-        this.verificationStatus = 'error'
-        this.errorMessage = '验证令牌缺失'
-        this.loading = false
-        return
+        this.verificationStatus = 'error';
+        this.errorMessage = '验证令牌缺失';
+        this.loading = false;
+        return;
       }
 
       try {
-        const response = await verifyEmail(token)
-        
+        const response = await verifyEmail(token);
+
         if (response.data.code === 200) {
-          this.verificationStatus = 'success'
-          
+          this.verificationStatus = 'success';
+
           // 如果用户已登录，更新用户信息
-          if (this.$store.getters.isLoggedIn) {
-            await this.$store.dispatch('fetchUserInfo')
+          if (this.userStore.isLoggedIn) {
+            await this.userStore.fetchUserInfo();
           }
-          
-          this.$message.success('邮箱验证成功！')
+
+          this.$message.success('邮箱验证成功！');
         } else {
-          throw new Error(response.data.message || '验证失败')
+          throw new Error(response.data.message || '验证失败');
         }
       } catch (error) {
-        console.error('邮箱验证失败:', error)
-        this.verificationStatus = 'error'
-        this.errorMessage = error.response?.data?.message || error.message || '验证过程中发生错误'
+        console.error('邮箱验证失败:', error);
+        this.verificationStatus = 'error';
+        this.errorMessage = error.response?.data?.message || error.message || '验证过程中发生错误';
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
-    
+
     async handleResendVerification() {
-      if (!this.$refs.resendForm) return
-      
+      if (!this.$refs.resendForm) return;
+
       try {
-        await this.$refs.resendForm.validate()
+        await this.$refs.resendForm.validate();
       } catch {
-        return
+        return;
       }
 
-      this.resending = true
-      
+      this.resending = true;
+
       try {
-        await resendVerificationEmail(this.resendForm.email)
-        this.$message.success('验证邮件已发送，请检查您的邮箱')
-        this.showResend = false
+        await resendVerificationEmail(this.resendForm.email);
+        this.$message.success('验证邮件已发送，请检查您的邮箱');
+        this.showResend = false;
       } catch (error) {
-        console.error('重发验证邮件失败:', error)
-        this.$message.error(error.response?.data?.message || '发送失败，请稍后重试')
+        console.error('重发验证邮件失败:', error);
+        this.$message.error(error.response?.data?.message || '发送失败，请稍后重试');
       } finally {
-        this.resending = false
+        this.resending = false;
       }
     },
-    
+
     showResendForm() {
-      this.showResend = true
+      this.showResend = true;
     },
-    
+
     goToHome() {
-      this.$router.push('/')
+      this.$router.push('/');
     },
-    
+
     goToProfile() {
-      this.$router.push('/profile')
+      this.$router.push('/profile');
     },
-    
+
     goToLogin() {
-      this.$router.push('/auth/login')
+      this.$router.push('/auth/login');
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -388,12 +395,12 @@ export default {
     padding: 30px 20px;
     margin: 10px;
   }
-  
+
   .success-actions,
   .error-actions {
     flex-direction: column;
   }
-  
+
   .success-actions .el-button,
   .error-actions .el-button {
     width: 100%;
