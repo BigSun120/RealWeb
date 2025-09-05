@@ -12,7 +12,7 @@ if not exist "backend" (
 )
 
 REM 服务器信息
-set SERVER=root@38.146.29.35
+set SERVER=root@38.146.30.42
 set BACKEND_PATH=~/temp-email-system/backend
 
 echo 📤 上传后端文件...

@@ -6,7 +6,7 @@
 set -e
 
 # ========== 配置区域 ==========
-SERVER="root@38.146.29.35"
+SERVER="root@38.146.30.42"
 PROJECT_PATH="~/temp-email-system"
 BRANCH="master"
 SERVICE_NAME="website-backend"

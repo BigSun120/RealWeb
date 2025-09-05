@@ -14,7 +14,7 @@ if [ ! -d "backend" ]; then
 fi
 
 # 服务器信息
-SERVER="root@38.146.29.35"
+SERVER="root@38.146.30.42"
 BACKEND_PATH="~/temp-email-system/backend"
 
 echo "📤 上传后端文件..."

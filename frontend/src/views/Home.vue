@@ -45,10 +45,6 @@
             <div class="stat-number">{{ totalViews }}+</div>
             <div class="stat-label">总阅读量</div>
           </div>
-          <div class="stat-item">
-            <div class="stat-number">3+</div>
-            <div class="stat-label">年经验</div>
-          </div>
         </div>
 
         <div class="hero-actions">

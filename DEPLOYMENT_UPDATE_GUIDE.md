@@ -2,7 +2,7 @@
 
 下述流程采用“本地提交并推送到 GitHub，服务器通过 Git 拉取”的方式，是最通用、最正规、可追踪回滚的部署方式。每一步都标明“在本地执行/在服务器执行”。
 
-- 服务器地址: 38.146.29.35
+- 服务器地址: 38.146.30.42
 - 项目目录: /root/temp-email-system
 - 仓库地址: git@github.com:BigSun120/RealWeb.git 或 https://github.com/BigSun120/RealWeb.git
 - 主分支: master
@@ -29,7 +29,7 @@ git push origin master
 
 ```bash
 # 1. SSH 登录服务器（在本地终端执行）
-ssh root@38.146.29.35
+ssh root@38.146.30.42
 
 # 2. 切到项目目录（在服务器执行）
 cd ~/temp-email-system
@@ -117,13 +117,13 @@ npm run build
 - 使用 scp（Windows 自带 OpenSSH 或 Git Bash）：
 
 ```bash
-scp -r dist/* root@38.146.29.35:/var/www/html/
+scp -r dist/* root@38.146.30.42:/var/www/html/
 ```
 
 - 或使用 rsync（如已安装）：
 
 ```bash
-rsync -avz --delete dist/ root@38.146.29.35:/var/www/html/
+rsync -avz --delete dist/ root@38.146.30.42:/var/www/html/
 ```
 
 ### C. 验证（本地或服务器）

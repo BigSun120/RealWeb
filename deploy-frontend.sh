@@ -44,10 +44,10 @@ echo "📤 上传文件到服务器..."
 # 使用 rsync 同步文件（更高效，支持增量更新）
 if command -v rsync &> /dev/null; then
     echo "使用 rsync 同步文件..."
-    rsync -avz --delete --progress dist/ root@38.146.29.35:/var/www/html/
+    rsync -avz --delete --progress dist/ root@38.146.30.42:/var/www/html/
 else
     echo "使用 scp 上传文件..."
-    scp -r dist/* root@38.146.29.35:/var/www/html/
+    scp -r dist/* root@38.146.30.42:/var/www/html/
 fi
 
 echo "✅ 验证部署..."
@@ -61,11 +61,11 @@ fi
 
 # 测试静态资源
 echo "🔍 检查静态资源..."
-ssh root@38.146.29.35 "ls -la /var/www/html/ | head -10"
+ssh root@38.146.30.42 "ls -la /var/www/html/ | head -10"
 
 echo ""
 echo "🎉 前端部署完成！"
 echo "🌐 访问地址: https://godaug.fun"
-echo "📝 如有问题，请检查 nginx 日志: ssh root@38.146.29.35 'tail -f /var/log/nginx/error.log'"
+echo "📝 如有问题，请检查 nginx 日志: ssh root@38.146.30.42 'tail -f /var/log/nginx/error.log'"
 
 cd ..

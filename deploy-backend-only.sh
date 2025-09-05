@@ -5,7 +5,7 @@
 
 set -e
 
-SERVER="root@38.146.29.35"
+SERVER="root@38.146.30.42"
 PROJECT_PATH="~/temp-email-system"
 PASSWORD="X33207862q"
 

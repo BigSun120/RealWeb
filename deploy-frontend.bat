@@ -45,7 +45,7 @@ if not exist "dist" (
 echo 📤 上传文件到服务器...
 
 REM 使用 scp 上传文件
-scp -r dist/* root@38.146.29.35:/var/www/html/
+scp -r dist/* root@38.146.30.42:/var/www/html/
 
 echo ✅ 验证部署...
 

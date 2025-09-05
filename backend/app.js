@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
+// const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -95,7 +95,7 @@ app.use(
     origin: [
       process.env.FRONTEND_URL || 'http://localhost:3000',
       'http://localhost:3001', // 支持Vite的备用端口
-      'http://38.146.29.35', // 生产环境IP
+      'http://38.146.30.42', // 生产环境IP
       'https://godaug.fun', // 生产环境域名
       'http://godaug.fun', // 生产环境域名（HTTP）
       'http://localhost' // 本地访问
