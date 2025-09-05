@@ -87,6 +87,30 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['user', 'blogger', 'moderator', 'admin'],
       default: 'user'
+    },
+
+    // 邮箱验证相关字段
+    emailVerified: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    emailVerificationToken: {
+      type: String,
+      index: true,
+      sparse: true,
+      select: false // 默认查询时不返回验证令牌
+    },
+    emailVerificationExpires: {
+      type: Date,
+      index: true
+    },
+    emailVerifiedAt: {
+      type: Date
+    },
+    // 重发验证邮件的限制
+    lastVerificationEmailSent: {
+      type: Date
     }
   },
   {
@@ -108,6 +132,9 @@ userSchema.virtual('articleCount', {
 userSchema.index({ email: 1 });
 userSchema.index({ username: 1 });
 userSchema.index({ createdAt: -1 });
+userSchema.index({ emailVerified: 1 });
+userSchema.index({ emailVerificationToken: 1 });
+userSchema.index({ emailVerificationExpires: 1 });
 
 // 密码加密中间件
 userSchema.pre('save', async function (next) {
@@ -166,6 +193,21 @@ userSchema.methods.hasPermission = function (permission) {
   // 管理员拥有所有权限
   if (this.isAdmin) {
     return true;
+  }
+
+  // 某些权限需要邮箱验证
+  const emailVerificationRequiredPermissions = [
+    'blog:create',
+    'blog:edit',
+    'blog:delete',
+    'blog:publish',
+    'comment:create',
+    'file:upload'
+  ];
+
+  // 如果权限需要邮箱验证但用户未验证邮箱，则拒绝
+  if (emailVerificationRequiredPermissions.includes(permission) && !this.emailVerified) {
+    return false;
   }
 
   // 检查用户是否有特定权限
@@ -228,12 +270,94 @@ userSchema.methods.getPublicProfile = function () {
   return userObject;
 };
 
+// 实例方法：生成邮箱验证令牌
+userSchema.methods.generateEmailVerificationToken = function () {
+  const crypto = require('crypto');
+
+  // 生成更安全的随机令牌（64字节）
+  const token = crypto.randomBytes(64).toString('hex');
+
+  // 创建令牌哈希（存储哈希值而不是原始令牌）
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  // 设置令牌哈希和过期时间（24小时）
+  this.emailVerificationToken = tokenHash;
+  this.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24小时后过期
+
+  // 返回原始令牌（用于发送邮件）
+  return token;
+};
+
+// 实例方法：验证邮箱验证令牌
+userSchema.methods.verifyEmailToken = function (token) {
+  const crypto = require('crypto');
+
+  if (!token || !this.emailVerificationToken) {
+    return false;
+  }
+
+  // 检查令牌是否过期
+  if (this.emailVerificationExpires && this.emailVerificationExpires < new Date()) {
+    return false;
+  }
+
+  // 创建令牌哈希并与存储的哈希比较
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  // 使用时间安全的比较方法
+  return crypto.timingSafeEqual(
+    Buffer.from(this.emailVerificationToken, 'hex'),
+    Buffer.from(tokenHash, 'hex')
+  );
+};
+
+// 实例方法：完成邮箱验证
+userSchema.methods.completeEmailVerification = function () {
+  this.emailVerified = true;
+  this.emailVerifiedAt = new Date();
+  this.emailVerificationToken = undefined;
+  this.emailVerificationExpires = undefined;
+  return this;
+};
+
+// 实例方法：检查是否需要重新发送验证邮件
+userSchema.methods.canResendVerificationEmail = function () {
+  // 如果已经验证，不需要重发
+  if (this.emailVerified) {
+    return false;
+  }
+
+  // 检查是否在冷却期内（5分钟）
+  if (this.lastVerificationEmailSent) {
+    const cooldownPeriod = 5 * 60 * 1000; // 5分钟
+    const timeSinceLastSent = Date.now() - this.lastVerificationEmailSent.getTime();
+    if (timeSinceLastSent < cooldownPeriod) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+// 实例方法：记录验证邮件发送时间
+userSchema.methods.markVerificationEmailSent = function () {
+  this.lastVerificationEmailSent = new Date();
+  return this;
+};
+
 // 自定义toJSON方法
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;
+  delete user.emailVerificationToken; // 不返回验证令牌
+
   // 添加向后兼容的canPublishBlog字段
   user.canPublishBlog = this.isAdmin || this.hasPermission('blog:create');
+
+  // 添加邮箱验证相关的计算字段
+  user.needsEmailVerification = !this.emailVerified;
+  user.canResendVerificationEmail = this.canResendVerificationEmail();
+
   return user;
 };
 
@@ -262,6 +386,36 @@ userSchema.statics.isUsernameTaken = async function (username, excludeUserId) {
   }
   const user = await this.findOne(query);
   return !!user;
+};
+
+// 静态方法：通过验证令牌查找用户
+userSchema.statics.findByVerificationToken = function (token) {
+  const crypto = require('crypto');
+
+  // 创建令牌哈希
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  return this.findOne({
+    emailVerificationToken: tokenHash,
+    emailVerificationExpires: { $gt: new Date() }
+  }).select('+emailVerificationToken');
+};
+
+// 静态方法：清理过期的验证令牌
+userSchema.statics.cleanupExpiredTokens = async function () {
+  const result = await this.updateMany(
+    {
+      emailVerificationExpires: { $lt: new Date() },
+      emailVerified: false
+    },
+    {
+      $unset: {
+        emailVerificationToken: 1,
+        emailVerificationExpires: 1
+      }
+    }
+  );
+  return result;
 };
 
 module.exports = mongoose.model('User', userSchema);

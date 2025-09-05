@@ -1,0 +1,252 @@
+# 📧 邮箱验证系统部署指南
+
+## 🎯 部署前检查清单
+
+### 1. 后端配置检查
+
+#### 1.1 环境变量配置
+确保以下环境变量已正确设置：
+
+```bash
+# 邮件服务配置
+SMTP_HOST=localhost                    # SMTP 服务器地址
+SMTP_PORT=2500                        # SMTP 端口
+SMTP_SECURE=false                     # 是否使用 SSL
+SMTP_AUTH=false                       # 是否需要认证
+SMTP_USER=                            # SMTP 用户名（如需要）
+SMTP_PASS=                            # SMTP 密码（如需要）
+
+# 邮件发送配置
+EMAIL_FROM=noreply@godaug.fun         # 发件人地址
+SITE_NAME=个人网站                     # 网站名称
+FRONTEND_URL=https://godaug.fun       # 前端 URL
+
+# 数据库配置
+MONGODB_URI=mongodb://admin:password@127.0.0.1:27017/personal_website_prod?authSource=admin
+```
+
+#### 1.2 依赖检查
+确保已安装必要的依赖：
+```bash
+cd backend
+npm install nodemailer
+npm install node-cron  # 如果使用令牌清理功能
+```
+
+#### 1.3 数据库迁移
+运行数据库迁移脚本（如果有现有用户）：
+```bash
+node scripts/migrate-email-verification.js
+```
+
+### 2. 前端配置检查
+
+#### 2.1 API 配置
+确保前端 API 配置正确：
+```javascript
+// frontend/.env.production
+VITE_API_BASE_URL=https://godaug.fun/api
+```
+
+#### 2.2 路由配置
+确认以下路由已正确配置：
+- `/auth/verification-pending` - 验证等待页面
+- `/auth/verify-email/:token` - 邮箱验证页面
+
+### 3. 邮件服务检查
+
+#### 3.1 Inbucket 服务状态
+```bash
+# 检查 Inbucket 容器状态
+docker ps | grep inbucket
+
+# 如果未运行，启动 Inbucket
+docker run -d --name inbucket --restart unless-stopped \
+  -p 25:2500 -p 9000:9000 -p 1100:1100 \
+  -v /var/lib/inbucket:/storage \
+  inbucket/inbucket:latest
+```
+
+#### 3.2 邮件服务连接测试
+```bash
+# 运行邮箱验证测试脚本
+cd backend
+node scripts/test-email-verification.js
+```
+
+## 🚀 部署步骤
+
+### 1. 后端部署
+
+```bash
+# 1. 更新代码
+cd ~/RealWeb
+git pull origin master
+
+# 2. 安装依赖
+cd backend
+npm install
+
+# 3. 重启服务
+pm2 restart website-backend
+
+# 4. 检查服务状态
+pm2 status
+pm2 logs website-backend --lines 20
+```
+
+### 2. 前端部署
+
+```bash
+# 1. 本地构建（在开发机器上）
+cd frontend
+npm run build
+
+# 2. 上传构建文件到服务器
+scp -r dist/* root@38.146.30.42:/var/www/html/
+
+# 3. 检查文件权限
+ssh root@38.146.30.42 "chown -R www-data:www-data /var/www/html/"
+```
+
+### 3. 服务验证
+
+```bash
+# 1. 健康检查
+curl -s https://godaug.fun/api/health
+
+# 2. 注册测试
+curl -X POST https://godaug.fun/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "testpass123"
+  }'
+
+# 3. 检查邮件发送日志
+pm2 logs website-backend | grep "Verification email"
+```
+
+## 🔧 故障排除
+
+### 1. 邮件发送失败
+
+**问题**：验证邮件发送失败
+**解决方案**：
+```bash
+# 检查 Inbucket 服务状态
+docker logs inbucket
+
+# 检查 SMTP 连接
+telnet localhost 2500
+
+# 检查应用日志
+pm2 logs website-backend | grep -i email
+```
+
+### 2. 验证令牌无效
+
+**问题**：用户点击验证链接后提示令牌无效
+**可能原因**：
+- 令牌已过期（24小时有效期）
+- 数据库连接问题
+- 令牌格式错误
+
+**解决方案**：
+```bash
+# 检查数据库中的令牌记录
+mongo personal_website_prod
+db.users.find({emailVerificationToken: {$exists: true}}).count()
+
+# 清理过期令牌
+node -e "
+const User = require('./src/models/User');
+User.cleanupExpiredTokens().then(result => {
+  console.log('Cleaned tokens:', result.modifiedCount);
+  process.exit(0);
+});
+"
+```
+
+### 3. 前端页面无法访问
+
+**问题**：验证页面返回 404
+**解决方案**：
+```bash
+# 检查 Nginx 配置
+nginx -t
+
+# 重新加载 Nginx
+systemctl reload nginx
+
+# 检查前端文件
+ls -la /var/www/html/
+```
+
+## 📊 监控和维护
+
+### 1. 日志监控
+
+```bash
+# 监控邮箱验证相关日志
+pm2 logs website-backend | grep -E "(EMAIL_VERIFICATION|VERIFICATION_EMAIL)"
+
+# 监控错误日志
+pm2 logs website-backend --err
+```
+
+### 2. 数据库维护
+
+```bash
+# 定期清理过期令牌（可设置定时任务）
+# 添加到 crontab: 0 2 * * * cd /root/RealWeb/backend && node -e "require('./src/models/User').cleanupExpiredTokens()"
+```
+
+### 3. 性能监控
+
+- 监控邮件发送成功率
+- 监控验证完成率
+- 监控系统响应时间
+
+## ✅ 部署完成验证
+
+部署完成后，请验证以下功能：
+
+1. **用户注册**：
+   - [ ] 注册成功后显示验证提示
+   - [ ] 收到验证邮件
+   - [ ] 邮件内容正确显示
+
+2. **邮箱验证**：
+   - [ ] 点击验证链接成功验证
+   - [ ] 验证后显示成功页面
+   - [ ] 用户状态正确更新
+
+3. **权限控制**：
+   - [ ] 未验证用户看到验证提醒
+   - [ ] 未验证用户无法使用受限功能
+   - [ ] 已验证用户可以正常使用所有功能
+
+4. **重发邮件**：
+   - [ ] 重发验证邮件功能正常
+   - [ ] 冷却时间限制生效
+
+5. **安全功能**：
+   - [ ] 安全日志正常记录
+   - [ ] 过期令牌自动清理
+
+## 🎉 部署成功
+
+如果所有检查项都通过，恭喜！邮箱验证系统已成功部署。
+
+用户现在可以：
+- 注册账户并收到验证邮件
+- 通过邮件链接验证邮箱
+- 享受完整的网站功能
+- 重新发送验证邮件（如需要）
+
+管理员可以：
+- 查看验证相关的安全日志
+- 监控系统运行状态
+- 手动清理过期数据

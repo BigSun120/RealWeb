@@ -1,5 +1,8 @@
 <template>
   <div class="article-edit">
+    <!-- 邮箱验证提醒 -->
+    <EmailVerificationBanner />
+
     <div class="edit-header">
       <div class="header-left">
         <el-button @click="goBack" icon="ArrowLeft">返回</el-button>
@@ -72,26 +75,16 @@
                 :loading="loading"
                 @change="handleTagChange"
               >
-                <el-option
-                  v-for="tag in availableTags"
-                  :key="tag"
-                  :label="tag"
-                  :value="tag"
-                />
+                <el-option v-for="tag in availableTags" :key="tag" :label="tag" :value="tag" />
               </el-select>
-              <div class="form-tip">
-                可以输入新标签名称并按回车创建
-              </div>
+              <div class="form-tip">可以输入新标签名称并按回车创建</div>
             </el-form-item>
           </div>
         </el-form>
       </div>
 
       <div class="editor-section">
-        <MarkdownEditor
-          v-model="article.content"
-          height="600px"
-        />
+        <MarkdownEditor v-model="article.content" height="600px" />
       </div>
     </div>
   </div>
@@ -104,6 +97,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft, Folder } from '@element-plus/icons-vue';
 
 import MarkdownEditor from '@/components/MarkdownEditor.vue';
+import EmailVerificationBanner from '@/components/EmailVerificationBanner.vue';
 import api from '@/api';
 import { createArticle, updateArticle, getArticle } from '@/api/articles';
 
@@ -111,6 +105,7 @@ export default {
   name: 'ArticleEdit',
   components: {
     MarkdownEditor,
+    EmailVerificationBanner,
     ArrowLeft,
     Folder
   },
@@ -138,15 +133,11 @@ export default {
     const goBack = async () => {
       if (hasUnsavedChanges()) {
         try {
-          await ElMessageBox.confirm(
-            '您有未保存的更改，确定要离开吗？',
-            '提示',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning'
-            }
-          );
+          await ElMessageBox.confirm('您有未保存的更改，确定要离开吗？', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          });
         } catch {
           return;
         }
@@ -243,7 +234,7 @@ export default {
     };
 
     // 处理标签变化，自动创建新标签
-    const handleTagChange = async (newTags) => {
+    const handleTagChange = async newTags => {
       // 找出新添加的标签（不在availableTags中的）
       const newTagsToCreate = newTags.filter(tag => !availableTags.value.includes(tag));
 
@@ -284,7 +275,8 @@ export default {
           // 如果是新建文章且没有设置分类，设置默认分类
           if (!isEdit.value && !article.value.category && categories.value.length > 0) {
             // 优先选择"其他"分类，如果没有则选择第一个
-            const defaultCategory = categories.value.find(cat => cat.value === '其他') || categories.value[0];
+            const defaultCategory =
+              categories.value.find(cat => cat.value === '其他') || categories.value[0];
             article.value.category = defaultCategory.value;
           }
         }

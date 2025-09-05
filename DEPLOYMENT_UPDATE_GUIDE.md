@@ -78,7 +78,8 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 8000,
-        MONGODB_URI: 'mongodb://127.0.0.1:27017/personal_website_prod',
+        MONGODB_URI:
+          'mongodb://admin:your_strong_password_here@127.0.0.1:27017/personal_website_prod?authSource=admin',
         FRONTEND_URL: 'https://godaug.fun',
         UPLOAD_PATH: '/var/www/uploads'
         // JWT_SECRET: "请使用安全的随机密钥"

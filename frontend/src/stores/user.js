@@ -12,7 +12,7 @@ export const useUserStore = defineStore('user', () => {
   const isAdmin = computed(() => !!user.value?.isAdmin);
 
   // 动作
-  const login = async (credentials) => {
+  const login = async credentials => {
     try {
       const response = await api.post('/auth/login', credentials);
       const { token: newToken, user: userData } = response.data.data;
@@ -31,12 +31,13 @@ export const useUserStore = defineStore('user', () => {
     }
   };
 
-  const register = async (userData) => {
+  const register = async userData => {
     try {
       const response = await api.post('/auth/register', userData);
       return {
         success: true,
-        message: response.data.message || '注册成功'
+        message: response.data.message || '注册成功',
+        data: response.data.data // 包含邮箱验证相关信息
       };
     } catch (error) {
       return {
@@ -69,7 +70,7 @@ export const useUserStore = defineStore('user', () => {
     }
   };
 
-  const updateProfile = async (profileData) => {
+  const updateProfile = async profileData => {
     try {
       const response = await api.put('/users/profile', profileData);
       user.value = { ...user.value, ...response.data.data };
@@ -82,7 +83,7 @@ export const useUserStore = defineStore('user', () => {
     }
   };
 
-  const updateUser = (userData) => {
+  const updateUser = userData => {
     if (user.value) {
       user.value = { ...user.value, ...userData };
     }

@@ -37,6 +37,18 @@ const routes = [
     meta: { title: '注册', guest: true }
   },
   {
+    path: '/auth/verification-pending',
+    name: 'VerificationPending',
+    component: () => import('@/views/auth/VerificationPending.vue'),
+    meta: { title: '邮箱验证', guest: true }
+  },
+  {
+    path: '/auth/verify-email/:token',
+    name: 'EmailVerification',
+    component: () => import('@/views/auth/EmailVerification.vue'),
+    meta: { title: '验证邮箱', guest: true }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/user/Profile.vue'),
@@ -46,7 +58,11 @@ const routes = [
     path: '/articles/new',
     name: 'ArticleCreate',
     component: () => import('@/views/ArticleEdit.vue'),
-    meta: { requiresAuth: true, requiresBlogPermission: true }
+    meta: {
+      requiresAuth: true,
+      requiresBlogPermission: true,
+      requiresEmailVerification: true
+    }
   },
   {
     path: '/test-notifications',
@@ -257,6 +273,14 @@ router.beforeEach(async (to, _from, next) => {
     !userStore.user?.canPublishBlog
   ) {
     ElMessage.error('您没有发布博客的权限，请联系管理员');
+    next({ name: 'Home' });
+  } else if (
+    to.meta.requiresEmailVerification &&
+    userStore.isLoggedIn &&
+    !userStore.isAdmin &&
+    !userStore.user?.emailVerified
+  ) {
+    ElMessage.warning('此功能需要验证邮箱后才能使用');
     next({ name: 'Home' });
   } else if (to.meta.guest && userStore.isLoggedIn) {
     next({ name: 'Home' });

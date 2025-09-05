@@ -217,6 +217,13 @@ app.listen(PORT, () => {
   logger.info(`服务器运行在端口 ${PORT}`);
   logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`健康检查: http://localhost:${PORT}/health`);
+
+  // 启动令牌清理任务
+  if (process.env.NODE_ENV === 'production') {
+    const tokenCleanup = require('./src/utils/tokenCleanup');
+    tokenCleanup.start();
+    logger.info('Token cleanup scheduler started');
+  }
 });
 
 // 优雅关闭
