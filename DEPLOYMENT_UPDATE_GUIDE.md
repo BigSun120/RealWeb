@@ -3,7 +3,7 @@
 下述流程采用“本地提交并推送到 GitHub，服务器通过 Git 拉取”的方式，是最通用、最正规、可追踪回滚的部署方式。每一步都标明“在本地执行/在服务器执行”。
 
 - 服务器地址: 38.146.30.42
-- 项目目录: /root/temp-email-system
+- 项目目录: /root/RealWeb
 - 仓库地址: git@github.com:BigSun120/RealWeb.git 或 https://github.com/BigSun120/RealWeb.git
 - 主分支: master
 - 后端进程: PM2 进程名 website-backend（端口 8000 由 Nginx 反代）
@@ -32,7 +32,7 @@ git push origin master
 ssh root@38.146.30.42
 
 # 2. 切到项目目录（在服务器执行）
-cd ~/temp-email-system
+cd ~/RealWeb
 
 # 3. 拉取最新代码（在服务器执行）
 # 常用且安全：
@@ -91,7 +91,7 @@ module.exports = {
 应用方式（在服务器执行）：
 
 ```bash
-cd ~/temp-email-system
+cd ~/RealWeb
 pm2 delete website-backend || true
 pm2 start ecosystem.config.js --env production
 pm2 save
@@ -145,7 +145,7 @@ pm2 status
 pm2 logs website-backend --lines 100
 
 # 使用 PM2 生态文件重新拉起（如修改了 ecosystem.config.js 或环境变量）
-cd ~/temp-email-system
+cd ~/RealWeb
 pm2 delete website-backend || true
 pm2 start ecosystem.config.js --env production
 pm2 save
@@ -278,8 +278,8 @@ mkdir -p /var/www/html /var/www/uploads /var/lib/inbucket /var/www/certbot
 
 ```bash
 cd ~
-git clone https://github.com/BigSun120/RealWeb.git temp-email-system
-cd temp-email-system
+git clone git@github.com:BigSun120/RealWeb.git RealWeb
+cd RealWeb
 cd backend && npm install && cd ..
 ```
 
