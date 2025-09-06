@@ -112,12 +112,7 @@
             >
               刷新全部
             </el-button>
-            <el-switch
-              v-model="showCurrentEmailOnly"
-              active-text="仅当前邮箱"
-              inactive-text="显示全部"
-              style="margin-left: 10px"
-            />
+
           </div>
         </div>
 
@@ -126,9 +121,10 @@
           v-loading="loading"
           empty-text="暂无邮件"
         >
-          <el-table-column prop="email" label="收件邮箱" width="200" v-if="!showCurrentEmailOnly">
+          <el-table-column prop="email" label="收件邮箱" width="260">
             <template #default="{ row }">
               <el-tag type="primary" size="small">{{ row.email }}</el-tag>
+              <el-button type="text" size="small" @click="copyText(row.email)" style="margin-left: 6px">复制</el-button>
             </template>
           </el-table-column>
           <el-table-column prop="from" label="发件人" width="200" />
@@ -138,7 +134,20 @@
               {{ formatDate(row.date) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150">
+          <el-table-column label="验证码" width="200">
+            <template #default="{ row }">
+              <span class="code-text">{{ row.code || extractCode(row) || '—' }}</span>
+              <el-button
+                v-if="row.code || extractCode(row)"
+                size="small"
+                type="text"
+                @click="copyText(row.code || extractCode(row))"
+                style="margin-left: 6px"
+              >复制</el-button>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="操作" width="160">
             <template #default="{ row }">
               <el-button
                 type="primary"
@@ -167,7 +176,18 @@
       width="80%"
       :before-close="closeMessageDialog"
     >
-      <div v-if="currentMessage" class="message-content">
+      <template #header>
+        <div class="dialog-header">
+          <span>邮件详情</span>
+          <div class="dialog-actions">
+            <el-button size="small" @click="toggleFullscreen" type="primary" plain>
+              {{ isFullscreen ? '退出全屏' : '全屏查看' }}
+            </el-button>
+          </div>
+        </div>
+      </template>
+
+      <div v-if="currentMessage" class="message-content" :class="{ fullscreen: isFullscreen }">
         <el-descriptions :column="1" border>
           <el-descriptions-item label="发件人">
             {{ currentMessage.from }}
@@ -265,6 +285,8 @@ const generating = ref(false)
 const sendingTest = ref(false)
 const messageDialogVisible = ref(false)
 const currentMessage = ref(null)
+const isFullscreen = ref(false)
+const toggleFullscreen = () => (isFullscreen.value = !isFullscreen.value)
 
 // 邮箱配置
 const emailPrefix = ref('')
@@ -275,19 +297,11 @@ const availableDomains = ref([])
 const allEmailsDialogVisible = ref(false)
 const allEmailBoxes = ref([])
 const activeEmailTab = ref('')
-const showCurrentEmailOnly = ref(false)
+const showCurrentEmailOnly = ref(false) // 已不再使用，仅保留变量避免大范围改动
 const allMessages = ref([])
 
-// 计算属性：显示的邮件列表
-const displayMessages = computed(() => {
-  if (showCurrentEmailOnly.value && currentEmail.value) {
-    return messages.value.map(msg => ({
-      ...msg,
-      email: currentEmail.value
-    }))
-  }
-  return allMessages.value
-})
+// 计算属性：显示的邮件列表（默认显示全部）
+const displayMessages = computed(() => allMessages.value)
 
 // 生成随机前缀
 const generateRandomPrefix = () => {
@@ -308,7 +322,6 @@ const generateEmail = async () => {
     // 验证输入
     if (!selectedDomain.value) {
       ElMessage.warning('请选择邮箱域名')
-      console.log('❌ 未选择域名')
       return
     }
 
@@ -316,17 +329,12 @@ const generateEmail = async () => {
       domain: selectedDomain.value,
       customName: emailPrefix.value || undefined
     }
-    console.log('📤 发送参数:', params)
 
     const response = await tempEmailApi.generateEmail(params)
-    console.log('📥 生成响应:', response.data)
 
     if (response.data.success) {
       currentEmail.value = response.data.data.email
       messages.value = []
-      ElMessage.success('邮箱生成成功: ' + currentEmail.value)
-      console.log('✅ 邮箱生成成功:', currentEmail.value)
-
       // 清空输入框
       emailPrefix.value = ''
 
@@ -336,7 +344,6 @@ const generateEmail = async () => {
       }, 1000)
     }
   } catch (error) {
-    console.error('❌ 生成邮箱失败:', error)
     ElMessage.error('生成邮箱失败: ' + (error.response?.data?.message || error.message))
   } finally {
     generating.value = false
@@ -359,7 +366,6 @@ const sendTestEmail = async () => {
       }, 3000)
     }
   } catch (error) {
-    console.error('发送测试邮件失败:', error)
     ElMessage.error('发送测试邮件失败')
   } finally {
     sendingTest.value = false
@@ -378,14 +384,13 @@ const refreshMessages = async () => {
       messages.value = response.data.data.messages
     }
   } catch (error) {
-    console.error('获取邮件列表失败:', error)
     ElMessage.error('获取邮件列表失败')
   } finally {
     loading.value = false
   }
 }
 
-// 刷新全部邮件
+// 刷新全部邮件（并补充最近5封的正文验证码）
 const refreshAllMessages = async () => {
   try {
     loading.value = true
@@ -407,10 +412,12 @@ const refreshAllMessages = async () => {
       // 按时间排序，最新的在前
       allMessages.value.sort((a, b) => new Date(b.date) - new Date(a.date))
 
+      // 异步补充最近5封的验证码（从正文提取），不阻塞主列表刷新
+      await enrichLatestCodes()
+
       ElMessage.success(`已加载 ${allMessages.value.length} 封邮件`)
     }
   } catch (error) {
-    console.error('获取全部邮件失败:', error)
     ElMessage.error('获取全部邮件失败')
   } finally {
     loading.value = false
@@ -428,9 +435,38 @@ const viewMessage = async (message) => {
       messageDialogVisible.value = true
     }
   } catch (error) {
-    console.error('获取邮件详情失败:', error)
     ElMessage.error('获取邮件详情失败')
   }
+}
+
+// 从邮件的主题/纯文本/HTML中提取6位验证码
+const extractCode = (msgOrString) => {
+  const pick6 = (s) => (s || '').match(/\b(\d{6})\b/);
+  if (!msgOrString) return '';
+  if (typeof msgOrString === 'string') {
+    const m = pick6(msgOrString); return m ? m[1] : '';
+  }
+  const bySubject = pick6(msgOrString.subject);
+  if (bySubject) return bySubject[1];
+  // 如果列表没有正文，等 getMessage 时再补
+  return '';
+}
+
+// 批量补充最近10封的验证码（从正文获取）
+const enrichLatestCodes = async () => {
+  const top = displayMessages.value.slice(0, 10);
+  const tasks = top.map(async (row) => {
+    try {
+      const email = row.email || currentEmail.value;
+      const res = await tempEmailApi.getMessage(email, row.id);
+      if (res.data?.success) {
+        const body = res.data.data?.body || {};
+        const code = extractCode(body.text) || extractCode(body.html);
+        if (code) row.code = code;
+      }
+    } catch (e) { /* 忽略单条失败 */ }
+  });
+  await Promise.allSettled(tasks);
 }
 
 // 删除邮件
@@ -452,22 +488,24 @@ const deleteMessage = async (message) => {
     }
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('删除邮件失败:', error)
       const errorMessage = error.response?.data?.message || error.message || '删除邮件失败'
       ElMessage.error('删除邮件失败: ' + errorMessage)
     }
   }
 }
 
-// 复制邮箱地址
-const copyEmail = async () => {
+// 复制文本通用方法
+const copyText = async (text) => {
   try {
-    await navigator.clipboard.writeText(currentEmail.value)
-    ElMessage.success('邮箱地址已复制到剪贴板')
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制到剪贴板')
   } catch (error) {
     ElMessage.error('复制失败')
   }
 }
+
+// 复制邮箱地址
+const copyEmail = () => copyText(currentEmail.value)
 
 // 关闭邮件详情对话框
 const closeMessageDialog = () => {
@@ -512,7 +550,6 @@ const showAllEmails = async () => {
       }
     }
   } catch (error) {
-    console.error('获取全部邮件失败:', error)
     ElMessage.error('获取全部邮件失败')
   }
 }
@@ -527,7 +564,6 @@ const viewMessageFromAll = async (email, message) => {
       messageDialogVisible.value = true
     }
   } catch (error) {
-    console.error('获取邮件详情失败:', error)
     ElMessage.error('获取邮件详情失败')
   }
 }
@@ -549,22 +585,17 @@ const formatDate = (dateString) => {
 // 获取可用域名列表
 const loadAvailableDomains = async () => {
   try {
-    console.log('🔍 正在加载域名列表...')
     const response = await tempEmailApi.getDomains()
-    console.log('📋 域名列表响应:', response.data)
 
     if (response.data.success) {
       availableDomains.value = response.data.data
-      console.log('✅ 可用域名:', availableDomains.value)
 
       // 默认选择第一个域名
       if (availableDomains.value.length > 0) {
         selectedDomain.value = availableDomains.value[0]
-        console.log('🎯 默认选择域名:', selectedDomain.value)
       }
     }
   } catch (error) {
-    console.error('❌ 获取域名列表失败:', error)
     ElMessage.error('获取域名列表失败: ' + error.message)
   }
 }
@@ -638,9 +669,18 @@ onMounted(() => {
   gap: 10px;
 }
 
+.dialog-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
 .message-content {
   max-height: 70vh;
   overflow-y: auto;
+}
+.message-content.fullscreen{
+  max-height: calc(90vh - 120px);
 }
 
 .message-body {
@@ -657,7 +697,8 @@ onMounted(() => {
   border-radius: 4px;
   padding: 15px;
   background-color: #fafafa;
-  max-height: 400px;
+  max-height: 60vh;
+  min-height: 200px;
   overflow-y: auto;
 }
 
@@ -667,10 +708,13 @@ onMounted(() => {
   padding: 15px;
   background-color: #fafafa;
   white-space: pre-wrap;
-  max-height: 400px;
+  max-height: 60vh;
+  min-height: 200px;
   overflow-y: auto;
   font-family: monospace;
 }
+
+.code-text{font-family:monospace;color:#333;}
 
 .no-content {
   color: #909399;

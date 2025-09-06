@@ -1,5 +1,6 @@
 const express = require('express');
 const axios = require('axios');
+const { adminAuth } = require('../middleware/auth');
 const router = express.Router();
 
 // Inbucket API配置
@@ -83,7 +84,7 @@ router.post('/generate', async (req, res) => {
 router.get('/:email/messages', async (req, res) => {
   try {
     const { email } = req.params;
-    
+
     // 验证邮箱格式
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -92,14 +93,14 @@ router.get('/:email/messages', async (req, res) => {
         message: '邮箱格式不正确'
       });
     }
-    
+
     // 从Inbucket获取邮件列表
     const response = await axios.get(`${INBUCKET_API}/mailbox/${email}`, {
       timeout: 5000
     });
-    
+
     const messages = response.data || [];
-    
+
     res.json({
       success: true,
       data: {
@@ -149,14 +150,14 @@ router.get('/:email/messages', async (req, res) => {
 router.get('/:email/messages/:messageId', async (req, res) => {
   try {
     const { email, messageId } = req.params;
-    
+
     // 从Inbucket获取邮件详情
     const response = await axios.get(`${INBUCKET_API}/mailbox/${email}/${messageId}`, {
       timeout: 5000
     });
-    
+
     const message = response.data;
-    
+
     res.json({
       success: true,
       data: {
@@ -179,7 +180,7 @@ router.get('/:email/messages/:messageId', async (req, res) => {
         message: '邮件不存在'
       });
     }
-    
+
     console.error('获取邮件详情失败:', error);
     res.status(500).json({
       success: false,
@@ -192,15 +193,15 @@ router.get('/:email/messages/:messageId', async (req, res) => {
  * 删除邮件
  * DELETE /api/temp-email/:email/messages/:messageId
  */
-router.delete('/:email/messages/:messageId', async (req, res) => {
+router.delete('/:email/messages/:messageId', adminAuth, async (req, res) => {
   try {
     const { email, messageId } = req.params;
-    
+
     // 从Inbucket删除邮件
     await axios.delete(`${INBUCKET_API}/mailbox/${email}/${messageId}`, {
       timeout: 5000
     });
-    
+
     res.json({
       success: true,
       message: '邮件删除成功'
@@ -212,7 +213,7 @@ router.delete('/:email/messages/:messageId', async (req, res) => {
         message: '邮件不存在'
       });
     }
-    
+
     console.error('删除邮件失败:', error);
     res.status(500).json({
       success: false,
