@@ -52,4 +52,7 @@ app.use(createPinia());
 app.use(router);
 app.use(ElementPlus);
 
-app.mount('#app');
+// 等路由就绪再挂载，避免在 /admin 刷新时短暂渲染默认布局导致闪屏
+router.isReady().then(() => {
+  app.mount('#app');
+});

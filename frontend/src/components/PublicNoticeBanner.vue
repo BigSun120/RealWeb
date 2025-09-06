@@ -51,15 +51,13 @@ export default {
       }
     };
 
+    // 本地“不再显示”状态（响应式）
     const key = 'public_notice_dismissed_v1';
-    const isDismissed = (id) => {
-      const map = JSON.parse(localStorage.getItem(key) || '{}');
-      return !!map[id];
-    };
+    const dismissedMap = ref({});
+    const isDismissed = (id) => !!dismissedMap.value[id];
     const dismiss = (id) => {
-      const map = JSON.parse(localStorage.getItem(key) || '{}');
-      map[id] = Date.now();
-      localStorage.setItem(key, JSON.stringify(map));
+      dismissedMap.value = { ...dismissedMap.value, [id]: Date.now() };
+      localStorage.setItem(key, JSON.stringify(dismissedMap.value));
     };
 
     const load = async () => {
@@ -70,6 +68,11 @@ export default {
     };
 
     onMounted(() => {
+      // 初始化本地“不再显示”状态
+      try {
+        dismissedMap.value = JSON.parse(localStorage.getItem(key) || '{}');
+      } catch { dismissedMap.value = {}; }
+
       load();
       timer = setInterval(load, 120 * 1000);
     });
