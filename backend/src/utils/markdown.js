@@ -21,12 +21,22 @@ function renderInline(md = '') {
   // code
   let html = escapeHtml(md);
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // images ![alt](url) — handle before links
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
+    const safeUrl = sanitizeUrl(url);
+    // alt 已在前面 escape 过，这里再次 escape 以确保属性安全（可能会双转义特殊字符，但不影响显示）
+    return `<img src="${safeUrl}" alt="${escapeHtml(alt)}" loading="lazy">`;
+  });
   // bold and italic (handle bold first)
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
   // links [text](url)
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, text, url) => {
     const safeUrl = sanitizeUrl(url);
+    // 如果链接目标是图片，则直接渲染为 <img>
+    if (/\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(safeUrl)) {
+      return `<img src="${safeUrl}" alt="${escapeHtml(text)}" loading="lazy">`;
+    }
     return `<a href="${safeUrl}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`;
   });
   return html;

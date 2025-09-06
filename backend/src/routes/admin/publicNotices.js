@@ -67,6 +67,8 @@ router.post('/:id/publish', adminAuth, [param('id').isMongoId(), body('published
     cache.del(['public-notices:latest']);
     res.json({ success: true, data: notice });
   } catch (e) {
+    // 提示：如需服务端主动推送，请在此集成 SSE/WS 进行通知刷新
+
     res.status(500).json({ success: false, message: '更新发布状态失败' });
   }
 });
