@@ -29,7 +29,11 @@ export default {
     const notice = ref(null);
 
     const formatTime = (t) => new Date(t).toLocaleString();
-    const renderBody = (n) => n.bodyHtml || marked.parse(n.bodyMarkdown || '');
+    const renderBody = (n) => {
+      // 优先使用后端生成的 HTML；否则对 Markdown 渲染，并允许图片直接显示
+      const html = n.bodyHtml || marked.parse(n.bodyMarkdown || '');
+      return html;
+    };
 
     const openLink = (url) => {
       if (!url) return;

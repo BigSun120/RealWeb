@@ -159,11 +159,16 @@ export default {
       }
       dialogVisible.value = false;
       await load();
+      // 广播前台立即刷新
+      window.dispatchEvent(new Event('refresh-public-notices'));
     };
 
     const togglePublish = async (row) => {
       await adminPublishPublicNotice(row._id, !row.published);
       await load();
+      // 广播前台立即刷新
+      window.dispatchEvent(new Event('refresh-public-notices'));
+
     };
 
     const remove = async (row) => {
@@ -179,6 +184,9 @@ export default {
       } catch (e) {
         // 取消
       }
+        // 广播前台立即刷新
+        window.dispatchEvent(new Event('refresh-public-notices'));
+
     };
 
     onMounted(load);

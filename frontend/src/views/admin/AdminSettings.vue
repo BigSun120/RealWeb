@@ -553,10 +553,6 @@ export default {
         // 使用默认值，不显示错误消息
       }
     };
-,
-      noticePlacements,
-      savingPlacements,
-      savePlacements
 
     onMounted(() => {
       loadAllSettings();
@@ -581,7 +577,12 @@ export default {
       formatDate,
       newUserDefaults,
       permissionsOptions,
-      saveNewUserDefaults
+      saveNewUserDefaults,
+
+      // 公告展示设置
+      noticePlacements,
+      savingPlacements,
+      savePlacements
     };
   }
 };

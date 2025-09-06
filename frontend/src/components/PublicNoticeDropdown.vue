@@ -99,6 +99,10 @@ export default {
     };
 
     const unreadCount = computed(() => unreadSet.value.size);
+    // 管理端操作成功后立即刷新（跨页全局事件）
+    const onRefresh = () => load();
+    window.addEventListener('refresh-public-notices', onRefresh);
+
 
     onMounted(() => {
       load();
@@ -107,9 +111,11 @@ export default {
 
     onUnmounted(() => {
       if (timer) clearInterval(timer);
+      window.removeEventListener('refresh-public-notices', onRefresh);
     });
 
     return { notices, loading, renderBody, openLink, formatTime, openNotice, unreadCount };
+
   }
 };
 </script>
