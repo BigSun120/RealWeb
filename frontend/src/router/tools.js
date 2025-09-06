@@ -30,6 +30,16 @@ export default {
         category: 'web'
       },
       children: [
+        // 分类默认页：展示网页工具列表
+        {
+          path: '',
+          name: 'WebToolsIndex',
+          component: () => import('@/views/tools/CategoryIndex.vue'),
+          meta: {
+            title: '网页工具',
+            category: 'web'
+          }
+        },
         {
           path: 'seo-analyzer',
           name: 'SeoAnalyzer',
@@ -50,6 +60,16 @@ export default {
         category: 'text'
       },
       children: [
+        // 分类默认页：展示文本工具列表
+        {
+          path: '',
+          name: 'TextToolsIndex',
+          component: () => import('@/views/tools/CategoryIndex.vue'),
+          meta: {
+            title: '文本工具',
+            category: 'text'
+          }
+        },
         {
           path: 'text-counter',
           name: 'TextCounter',
@@ -88,6 +108,16 @@ export default {
         category: 'image'
       },
       children: [
+        // 分类默认页：展示图片工具列表
+        {
+          path: '',
+          name: 'ImageToolsIndex',
+          component: () => import('@/views/tools/CategoryIndex.vue'),
+          meta: {
+            title: '图片工具',
+            category: 'image'
+          }
+        },
         {
           path: 'compressor',
           name: 'ImageCompressor',
@@ -117,6 +147,16 @@ export default {
         category: 'dev'
       },
       children: [
+        // 分类默认页：展示开发工具列表
+        {
+          path: '',
+          name: 'DevToolsIndex',
+          component: () => import('@/views/tools/CategoryIndex.vue'),
+          meta: {
+            title: '开发工具',
+            category: 'dev'
+          }
+        },
         {
           path: 'color-picker',
           name: 'ColorPicker',
@@ -146,6 +186,16 @@ export default {
         category: 'utility'
       },
       children: [
+        // 分类默认页：展示实用工具列表
+        {
+          path: '',
+          name: 'UtilityToolsIndex',
+          component: () => import('@/views/tools/CategoryIndex.vue'),
+          meta: {
+            title: '实用工具',
+            category: 'utility'
+          }
+        },
         {
           path: 'timestamp-converter',
           name: 'TimestampConverter',
@@ -185,6 +235,16 @@ export default {
         category: 'media'
       },
       children: [
+        // 分类默认页：展示媒体工具列表
+        {
+          path: '',
+          name: 'MediaToolsIndex',
+          component: () => import('@/views/tools/CategoryIndex.vue'),
+          meta: {
+            title: '媒体工具',
+            category: 'media'
+          }
+        },
         {
           path: 'video-downloader',
           name: 'VideoDownloader',
