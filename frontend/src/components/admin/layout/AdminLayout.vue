@@ -51,6 +51,9 @@
             <el-menu-item index="/admin/tags" class="sub-menu-item">
               <span class="sub-menu-title">标签管理</span>
             </el-menu-item>
+            <el-menu-item index="/admin/public-notices" class="sub-menu-item">
+              <span class="sub-menu-title">公告管理</span>
+            </el-menu-item>
           </el-sub-menu>
 
           <el-sub-menu index="tools" class="sub-menu">

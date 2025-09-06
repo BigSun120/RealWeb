@@ -34,6 +34,8 @@ const adminCategoriesRoutes = require('./src/routes/admin/categories');
 const adminConfigsRoutes = require('./src/routes/admin/configs');
 const adminEmailDomainsRoutes = require('./src/routes/admin/emailDomains');
 const tempEmailRoutes = require('./src/routes/tempEmail');
+const publicNoticesRoutes = require('./src/routes/publicNotices');
+const adminPublicNoticesRoutes = require('./src/routes/admin/publicNotices');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -101,7 +103,7 @@ app.use(
       'http://localhost' // 本地访问
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
@@ -182,6 +184,8 @@ app.use('/api/admin/categories', adminCategoriesRoutes);
 app.use('/api/admin/configs', adminConfigsRoutes);
 app.use('/api/admin/email-domains', adminEmailDomainsRoutes);
 app.use('/api/temp-email', tempEmailRoutes);
+app.use('/api/public-notices', publicNoticesRoutes);
+app.use('/api/admin/public-notices', adminPublicNoticesRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

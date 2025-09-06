@@ -18,6 +18,21 @@ import 'animate.css';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
+import { getPublicNoticeSettings } from './api/publicNotices';
+
+// 预拉取公告展示设置（公开读），写入全局变量供早期组件使用
+(async () => {
+  try {
+    const res = await getPublicNoticeSettings();
+    const placements = res.data?.data?.placements;
+    if (Array.isArray(placements) && placements.length) {
+      window.__PUBLIC_NOTICE_PLACEMENTS__ = placements;
+    }
+  } catch (_) {
+    window.__PUBLIC_NOTICE_PLACEMENTS__ = ['banner', 'dropdown'];
+  }
+})();
+
 const app = createApp(App);
 
 // 初始化AOS动画库

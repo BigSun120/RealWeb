@@ -51,8 +51,10 @@
         <!-- 用户操作区 -->
         <div class="user-actions">
           <template v-if="userStore.isLoggedIn">
-            <!-- 通知 -->
+            <!-- 站内通知（私人） -->
             <NotificationDropdown />
+            <!-- 公告（全体）下拉 -->
+            <PublicNoticeDropdown :placements="uiPlacements" />
 
             <el-dropdown @command="handleCommand">
               <span class="user-info">
@@ -132,13 +134,16 @@ import { ElMessage } from 'element-plus';
 import { EditPen, Tools, Message } from '@element-plus/icons-vue';
 import NotificationDropdown from '@/components/NotificationDropdown.vue';
 
+import PublicNoticeDropdown from '@/components/PublicNoticeDropdown.vue';
+
 export default {
   name: 'AppHeader',
   components: {
     EditPen,
     Tools,
     Message,
-    NotificationDropdown
+    NotificationDropdown,
+    PublicNoticeDropdown
   },
   setup() {
     const route = useRoute();
@@ -276,6 +281,8 @@ export default {
       showMobileMenu.value = false;
     };
 
+    const uiPlacements = window.__PUBLIC_NOTICE_PLACEMENTS__ || ['banner','dropdown'];
+
     return {
       userStore,
       settingsStore,
@@ -286,7 +293,8 @@ export default {
       handleCommand,
       handleLogout,
       isAtTop,
-      isHomePage
+      isHomePage,
+      uiPlacements
     };
   }
 };

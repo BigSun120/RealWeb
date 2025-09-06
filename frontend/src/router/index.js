@@ -146,6 +146,12 @@ const routes = [
         component: () => import('@/views/admin/TagManagement.vue'),
         meta: { title: '标签管理', requiresAuth: true, requiresAdmin: true }
       },
+      {
+        path: 'public-notices',
+        name: 'AdminPublicNotices',
+        component: () => import('@/views/admin/PublicNotices.vue'),
+        meta: { title: '公告管理', requiresAuth: true, requiresAdmin: true }
+      },
       // 工具箱管理路由
       {
         path: 'tools',

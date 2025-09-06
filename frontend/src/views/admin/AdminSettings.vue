@@ -68,6 +68,28 @@
         </el-form>
       </el-card>
 
+      <!-- 公告展示设置 -->
+      <el-card class="settings-card">
+        <template #header>
+          <div class="card-header">
+            <el-icon><Setting /></el-icon>
+            <span>公告展示设置</span>
+          </div>
+        </template>
+        <el-form label-width="120px" class="settings-form">
+          <el-form-item label="前台展示位置">
+            <el-checkbox-group v-model="noticePlacements">
+              <el-checkbox label="banner">顶部横幅（Banner）</el-checkbox>
+              <el-checkbox label="dropdown">头部下拉（Dropdown）</el-checkbox>
+            </el-checkbox-group>
+            <div class="field-tip">可多选；未勾选则前台不显示公告</div>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" :loading="savingPlacements" @click="savePlacements">保存设置</el-button>
+          </el-form-item>
+        </el-form>
+      </el-card>
+
       <!-- 个人信息 -->
       <el-card class="settings-card">
         <template #header>
@@ -249,6 +271,37 @@ export default {
     const userStore = useUserStore();
     const settingsStore = useSettingsStore();
     const saving = ref(false);
+
+    // 公告展示设置
+    const noticePlacements = ref(['banner','dropdown']);
+    const savingPlacements = ref(false);
+
+
+    // 保存公告展示位置
+    const savePlacements = async () => {
+      try {
+        savingPlacements.value = true;
+        const { savePublicNoticePlacements } = await import('@/api/admin');
+        await savePublicNoticePlacements(noticePlacements.value);
+        ElMessage.success('公告展示设置已保存');
+      } catch (e) {
+        ElMessage.error('保存失败');
+      } finally {
+        savingPlacements.value = false;
+      }
+    };
+
+    // 读取公告展示位置配置
+    const loadPlacements = async () => {
+      try {
+        const { getPublicNoticePlacements } = await import('@/api/admin');
+        const res = await getPublicNoticePlacements();
+        const val = res.data?.data?.value;
+        if (Array.isArray(val) && val.length) {
+          noticePlacements.value = val;
+        }
+      } catch (_) {}
+    };
 
     // 网站基本信息
     const siteInfo = ref({
@@ -500,11 +553,16 @@ export default {
         // 使用默认值，不显示错误消息
       }
     };
+,
+      noticePlacements,
+      savingPlacements,
+      savePlacements
 
     onMounted(() => {
       loadAllSettings();
       loadNewUserDefaults();
       loadPermissionsOptions();
+      loadPlacements();
     });
 
     return {

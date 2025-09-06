@@ -148,3 +148,8 @@ export default {
   getSeoSettings,
   updateSeoSettings
 };
+
+
+// Public notices placement settings via ToolConfig
+export const savePublicNoticePlacements = (placements) => api.put('/admin/configs/publicNotices.uiPlacements', { value: placements, group: 'publicNotices' });
+export const getPublicNoticePlacements = () => api.get('/admin/configs/publicNotices.uiPlacements');

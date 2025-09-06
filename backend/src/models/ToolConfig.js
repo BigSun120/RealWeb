@@ -11,44 +11,44 @@ const toolConfigSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
-  
+
   // 配置值
   value: {
     type: mongoose.Schema.Types.Mixed,
     required: true
   },
-  
+
   // 配置类型
   type: {
     type: String,
     enum: ['string', 'number', 'boolean', 'object', 'array'],
     required: true
   },
-  
+
   // 配置分组
   group: {
     type: String,
     default: 'general',
     index: true
   },
-  
+
   // 配置描述
   description: {
     type: String
   },
-  
+
   // 是否为系统配置（不可删除）
   isSystem: {
     type: Boolean,
     default: false
   },
-  
+
   // 是否为敏感配置（不在前端显示）
   isSensitive: {
     type: Boolean,
     default: false
   },
-  
+
   // 配置验证规则
   validation: {
     required: {
@@ -60,7 +60,7 @@ const toolConfigSchema = new mongoose.Schema({
     pattern: String,
     enum: [String]
   },
-  
+
   // 时间戳
   createdAt: {
     type: Date,
@@ -82,19 +82,19 @@ const toolConfigSchema = new mongoose.Schema({
 toolConfigSchema.index({ group: 1, key: 1 });
 
 // 中间件：更新时间戳
-toolConfigSchema.pre('save', function(next) {
+toolConfigSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });
 
 // 静态方法：获取配置值
-toolConfigSchema.statics.getValue = async function(key, defaultValue = null) {
+toolConfigSchema.statics.getValue = async function (key, defaultValue = null) {
   const config = await this.findOne({ key });
   return config ? config.value : defaultValue;
 };
 
 // 静态方法：设置配置值
-toolConfigSchema.statics.setValue = async function(key, value, options = {}) {
+toolConfigSchema.statics.setValue = async function (key, value, options = {}) {
   const config = await this.findOneAndUpdate(
     { key },
     {
@@ -112,12 +112,12 @@ toolConfigSchema.statics.setValue = async function(key, value, options = {}) {
 };
 
 // 静态方法：获取分组配置
-toolConfigSchema.statics.getGroupConfigs = function(group) {
+toolConfigSchema.statics.getGroupConfigs = function (group) {
   return this.find({ group }).sort({ key: 1 });
 };
 
 // 静态方法：批量设置配置
-toolConfigSchema.statics.setMultiple = async function(configs, updatedBy = null) {
+toolConfigSchema.statics.setMultiple = async function (configs, updatedBy = null) {
   const operations = configs.map(config => ({
     updateOne: {
       filter: { key: config.key },
@@ -129,12 +129,12 @@ toolConfigSchema.statics.setMultiple = async function(configs, updatedBy = null)
       upsert: true
     }
   }));
-  
+
   return this.bulkWrite(operations);
 };
 
 // 静态方法：初始化默认配置
-toolConfigSchema.statics.initializeDefaults = async function() {
+toolConfigSchema.statics.initializeDefaults = async function () {
   const defaultConfigs = [
     // 工具箱基本配置
     {
@@ -166,7 +166,7 @@ toolConfigSchema.statics.initializeDefaults = async function() {
       group: 'limits',
       description: '单用户每日最大使用次数'
     },
-    
+
     // 统计配置
     {
       key: 'analytics.enabled',
@@ -189,7 +189,7 @@ toolConfigSchema.statics.initializeDefaults = async function() {
       group: 'analytics',
       description: '是否跟踪匿名用户'
     },
-    
+
     // 缓存配置
     {
       key: 'cache.enabled',
@@ -205,7 +205,7 @@ toolConfigSchema.statics.initializeDefaults = async function() {
       group: 'cache',
       description: '缓存过期时间（秒）'
     },
-    
+
     // 安全配置
     {
       key: 'security.rateLimitEnabled',
@@ -228,7 +228,7 @@ toolConfigSchema.statics.initializeDefaults = async function() {
       group: 'security',
       description: '频率限制最大请求数'
     },
-    
+
     // 文件上传配置
     {
       key: 'upload.maxFileSize',
@@ -244,7 +244,7 @@ toolConfigSchema.statics.initializeDefaults = async function() {
       group: 'upload',
       description: '允许的文件类型'
     },
-    
+
     // 通知配置
     {
       key: 'notifications.enabled',
@@ -259,9 +259,18 @@ toolConfigSchema.statics.initializeDefaults = async function() {
       type: 'boolean',
       group: 'notifications',
       description: '是否启用邮件通知'
+    },
+
+    // 公告显示位置配置（默认 Banner + Dropdown ）
+    {
+      key: 'publicNotices.uiPlacements',
+      value: ['banner', 'dropdown'],
+      type: 'array',
+      group: 'publicNotices',
+      description: '公告在前台的展示位置'
     }
   ];
-  
+
   // 检查并创建不存在的配置
   for (const config of defaultConfigs) {
     const existing = await this.findOne({ key: config.key });
@@ -269,7 +278,7 @@ toolConfigSchema.statics.initializeDefaults = async function() {
       await this.create(config);
     }
   }
-  
+
   return defaultConfigs.length;
 };
 
