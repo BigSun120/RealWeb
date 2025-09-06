@@ -15,7 +15,7 @@ router.get('/latest', async (req, res) => {
     if (cached) return res.json({ success: true, data: cached });
 
     const now = new Date();
-    const notices = await PublicNotice.find({
+    const docs = await PublicNotice.find({
       published: true,
       startsAt: { $lte: now },
       $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: now } }]
@@ -23,6 +23,13 @@ router.get('/latest', async (req, res) => {
       .sort({ startsAt: -1, createdAt: -1 })
       .limit(limit)
       .select('title bodyHtml bodyMarkdown level link ctaText startsAt expiresAt createdAt');
+
+    // 为兼容历史数据，这里统一按当前渲染规则生成安全的 bodyHtml（包含图片处理）
+    const notices = docs.map(d => {
+      const obj = d.toObject ? d.toObject() : d;
+      obj.bodyHtml = markdownToSafeHtml(obj.bodyMarkdown || '');
+      return obj;
+    });
 
     cache.set(cacheKey, notices, 15);
     res.json({ success: true, data: notices });
