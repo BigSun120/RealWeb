@@ -258,17 +258,12 @@ export default {
         const userResponse = await api.get(`/users/${userId}/profile`);
         const username = userResponse.data.data.username;
 
-        console.log('获取用户文章:', { userId, username });
-
         // 使用username查询文章
         const response = await api.get('/articles', {
           params: { author: username, limit: 10 }
         });
 
-        console.log('文章API响应:', response.data);
-
         articles.value = response.data.data.articles || [];
-        console.log('设置文章列表:', articles.value);
       } catch (error) {
         console.error('获取用户文章失败:', error);
         articles.value = [];

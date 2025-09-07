@@ -87,8 +87,7 @@ body.profile-page {
     margin: 0;
     min-height: auto;
     max-width: none;
-    width: 100vw;
-    margin-left: calc(-50vw + 50%);
+    width: 100%;
   }
 
   .app-footer {

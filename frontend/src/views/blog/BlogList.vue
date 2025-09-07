@@ -4,206 +4,104 @@
     <div class="page-header">
       <div class="header-content">
         <h1 class="page-title">博客文章</h1>
-        <p class="page-subtitle">分享技术心得，记录学习历程</p>
       </div>
 
-      <!-- 搜索和筛选 -->
-      <div class="filters">
-        <!-- 搜索框 -->
-        <div class="search-section">
-          <div class="search-box">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="搜索文章标题、内容、标签..."
-              class="search-input"
-              @input="handleSearch"
-            />
-            <button v-if="searchQuery" class="clear-search-btn" @click="clearSearch">✕</button>
+      <!-- 工具栏 -->
+      <div class="main-toolbar">
+        <!-- 第一行：搜索和功能 -->
+        <div class="toolbar-row">
+          <!-- 搜索区域 -->
+          <div class="toolbar-section search-section">
+            <div class="search-box">
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="🔍 搜索文章..."
+                class="search-input"
+                @input="handleSearch"
+              />
+              <button v-if="searchQuery" class="clear-search-btn" @click="clearSearch">✕</button>
+            </div>
+          </div>
+
+          <!-- 分隔符 -->
+          <div class="toolbar-divider">|</div>
+
+          <!-- 功能区域 -->
+          <div class="toolbar-section action-section">
+            <el-button
+              type="primary"
+              plain
+              @click="goToPopularArticles"
+              class="action-button"
+              size="small"
+            >
+              热门排行
+            </el-button>
+
+            <div class="view-controls">
+              <button
+                class="view-btn"
+                :class="{ active: viewMode === 'list' }"
+                @click="switchViewMode('list')"
+                title="列表视图"
+              >
+                📊
+              </button>
+              <button
+                class="view-btn"
+                :class="{ active: viewMode === 'grid' }"
+                @click="switchViewMode('grid')"
+                title="网格视图"
+              >
+                ⊞
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- 视图切换工具条 -->
-        <div class="toolbar">
-          <div class="view-controls">
-            <button
-              class="btn btn-ghost btn-sm"
-              :class="viewMode === 'grid' ? 'active' : ''"
-              @click="switchViewMode('grid')"
-            >
-              网格
-            </button>
-            <button
-              class="btn btn-ghost btn-sm"
-              :class="viewMode === 'list' ? 'active' : ''"
-              @click="switchViewMode('list')"
-            >
-              列表
-            </button>
-          </div>
-        </div>
-
-        <!-- 筛选选项（网格模式时显示在顶部） -->
-        <div class="filter-section" v-show="viewMode === 'grid'">
-          <!-- 分类筛选 -->
-          <div class="filter-group">
-            <label class="filter-label">分类：</label>
-            <div class="filter-options">
-              <button
-                v-for="category in filterOptions.categories"
-                :key="category"
-                class="btn btn-sm"
-                :class="selectedCategory === category ? 'btn-primary' : 'btn-ghost'"
-                @click="filterByCategory(category)"
-              >
-                {{ category }}
-              </button>
+        <!-- 第二行：筛选 -->
+        <div class="toolbar-row filter-row">
+          <div class="filter-container">
+            <!-- 分类筛选 -->
+            <div class="filter-line">
+              <span class="filter-label">分类：</span>
+              <div class="filter-items">
+                <span
+                  v-for="category in filterOptions.categories.slice(0, 8)"
+                  :key="category"
+                  class="filter-item"
+                  :class="{ active: selectedCategory === category }"
+                  @click="filterByCategory(category)"
+                >
+                  {{ category }}
+                </span>
+              </div>
             </div>
-          </div>
 
-          <!-- 标签筛选 -->
-          <div class="filter-group">
-            <label class="filter-label">标签：</label>
-            <div class="filter-options">
-              <button
-                v-for="tag in filterOptions.tags.slice(
-                  0,
-                  showAllTags ? filterOptions.tags.length : 8
-                )"
-                :key="tag"
-                class="btn btn-sm"
-                :class="selectedTag === tag ? 'btn-primary' : 'btn-ghost'"
-                @click="filterByTag(tag)"
-              >
-                {{ tag }}
-              </button>
-              <button
-                v-if="filterOptions.tags.length > 8"
-                class="btn btn-sm btn-ghost toggle-tags-btn"
-                @click="showAllTags = !showAllTags"
-              >
-                {{ showAllTags ? '收起' : `更多 (${filterOptions.tags.length - 8})` }}
-              </button>
+            <!-- 标签筛选 -->
+            <div class="filter-line">
+              <span class="filter-label">标签：</span>
+              <div class="filter-items">
+                <span
+                  v-for="tag in filterOptions.tags.slice(0, 8)"
+                  :key="tag"
+                  class="filter-item"
+                  :class="{ active: selectedTag === tag }"
+                  @click="filterByTag(tag)"
+                >
+                  {{ tag }}
+                </span>
+              </div>
             </div>
-          </div>
-
-          <!-- 排序和其他选项 -->
-          <div class="filter-group">
-            <label class="filter-label">排序：</label>
-            <div class="filter-options">
-              <select v-model="sortBy" class="sort-select" @change="handleSortChange">
-                <option value="publishedAt">发布时间</option>
-                <option value="viewCount">阅读量</option>
-                <option value="title">标题</option>
-              </select>
-              <button class="btn btn-sm btn-ghost sort-order-btn" @click="toggleSortOrder">
-                {{ sortOrder === 'desc' ? '↓' : '↑' }}
-              </button>
-            </div>
-          </div>
-
-          <!-- 活跃筛选器显示 -->
-          <div v-if="hasActiveFilters" class="active-filters">
-            <span class="active-filters-label">当前筛选：</span>
-            <span v-if="selectedCategory !== '全部'" class="filter-tag">
-              分类: {{ selectedCategory }}
-              <button @click="filterByCategory('全部')">✕</button>
-            </span>
-            <span v-if="selectedTag !== '全部'" class="filter-tag">
-              标签: {{ selectedTag }}
-              <button @click="filterByTag('全部')">✕</button>
-            </span>
-            <span v-if="searchQuery" class="filter-tag">
-              搜索: {{ searchQuery }}
-              <button @click="clearSearch">✕</button>
-            </span>
-            <button class="btn btn-sm btn-ghost" @click="clearAllFilters">清除所有筛选</button>
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- 主内容区域 -->
-    <div class="main-content" :class="{ 'with-sidebar': viewMode === 'list' }">
-      <!-- 左侧筛选栏（仅列表模式） -->
-      <div class="sidebar-filters" v-if="viewMode === 'list'">
-        <div class="filter-group">
-          <label class="filter-label">分类</label>
-          <div class="filter-options vertical">
-            <button
-              v-for="category in filterOptions.categories"
-              :key="category"
-              class="btn btn-sm"
-              :class="selectedCategory === category ? 'btn-primary' : 'btn-ghost'"
-              @click="filterByCategory(category)"
-            >
-              {{ category }}
-            </button>
-          </div>
-        </div>
-
-        <div class="filter-group">
-          <label class="filter-label">标签</label>
-          <div class="filter-options vertical">
-            <button
-              v-for="tag in filterOptions.tags.slice(
-                0,
-                showAllTags ? filterOptions.tags.length : 8
-              )"
-              :key="tag"
-              class="btn btn-sm"
-              :class="selectedTag === tag ? 'btn-primary' : 'btn-ghost'"
-              @click="filterByTag(tag)"
-            >
-              {{ tag }}
-            </button>
-            <button
-              v-if="filterOptions.tags.length > 8"
-              class="btn btn-sm btn-ghost toggle-tags-btn"
-              @click="showAllTags = !showAllTags"
-            >
-              {{ showAllTags ? '收起' : `更多 (${filterOptions.tags.length - 8})` }}
-            </button>
-          </div>
-        </div>
-
-        <div class="filter-group">
-          <label class="filter-label">排序</label>
-          <div class="filter-options vertical">
-            <select v-model="sortBy" class="sort-select" @change="handleSortChange">
-              <option value="publishedAt">发布时间</option>
-              <option value="viewCount">阅读量</option>
-              <option value="title">标题</option>
-            </select>
-            <button class="btn btn-sm btn-ghost sort-order-btn" @click="toggleSortOrder">
-              {{ sortOrder === 'desc' ? '↓ 降序' : '↑ 升序' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 活跃筛选器显示 -->
-        <div v-if="hasActiveFilters" class="active-filters">
-          <span class="active-filters-label">当前筛选</span>
-          <div class="filter-tags">
-            <span v-if="selectedCategory !== '全部'" class="filter-tag">
-              {{ selectedCategory }}
-              <button @click="filterByCategory('全部')">✕</button>
-            </span>
-            <span v-if="selectedTag !== '全部'" class="filter-tag">
-              {{ selectedTag }}
-              <button @click="filterByTag('全部')">✕</button>
-            </span>
-            <span v-if="searchQuery" class="filter-tag">
-              "{{ searchQuery }}"
-              <button @click="clearSearch">✕</button>
-            </span>
-          </div>
-          <button class="btn btn-sm btn-ghost clear-all-btn" @click="clearAllFilters">
-            清除所有
-          </button>
-        </div>
-      </div>
-
+    <div class="main-content">
       <!-- 文章列表容器 -->
       <div class="articles-container">
         <!-- 加载状态 -->
@@ -312,38 +210,42 @@
             </article>
           </template>
 
-          <!-- 列表模式 - 极简列表 -->
+          <!-- 列表模式 - 表格样式 -->
           <template v-else>
-            <div
-              class="list-item"
-              v-for="article in filteredArticles"
-              :key="article._id"
-              @click="$router.push(`/blog/${article._id}`)"
-            >
-              <div class="list-content">
-                <h3 class="list-title">{{ article.title }}</h3>
-                <div class="list-meta">
-                  <span class="author">{{
+            <div class="table-list">
+              <div
+                class="table-row"
+                v-for="article in filteredArticles"
+                :key="article._id"
+                @click="$router.push(`/blog/${article._id}`)"
+              >
+                <!-- 第一行：标题和热门图标 -->
+                <div class="row-title">
+                  <h3 class="article-title">{{ article.title }}</h3>
+                  <span
+                    v-if="getPopularityBadge(article.likeCount || 0)"
+                    :class="['popularity-badge', getPopularityBadge(article.likeCount || 0).class]"
+                  >
+                    {{ getPopularityBadge(article.likeCount || 0).icon }}
+                    {{ getPopularityBadge(article.likeCount || 0).text }}
+                  </span>
+                </div>
+
+                <!-- 第二行：作者、时间、统计信息 -->
+                <div class="row-meta">
+                  <span class="meta-item author">{{
                     (article.author && (article.author.displayName || article.author.username)) ||
                     '匿名'
                   }}</span>
-                  <span class="separator">·</span>
-                  <span class="date">{{ formatDate(article.createdAt) }}</span>
-                  <span class="separator">·</span>
-                  <span class="stats">
-                    <i class="stat-icon">👁</i>{{ article.viewCount || 0 }}
+                  <span class="meta-separator">*</span>
+                  <span class="meta-item date">{{ formatDate(article.createdAt) }}</span>
+                  <span class="meta-separator">*</span>
+                  <span class="meta-item stats">
+                    👁 {{ article.viewCount || 0 }}
                   </span>
-                  <span class="stats">
-                    <i class="stat-icon">💬</i>{{ article.commentCount || 0 }}
-                  </span>
-                  <span class="separator" v-if="article.tags && article.tags.length > 0">·</span>
-                  <span class="tags" v-if="article.tags && article.tags.length > 0">
-                    <span v-for="tag in article.tags.slice(0, 2)" :key="tag" class="tag"
-                      >#{{ tag }}</span
-                    >
-                    <span v-if="article.tags.length > 2" class="more-tags"
-                      >+{{ article.tags.length - 2 }}</span
-                    >
+                  <span class="meta-separator">*</span>
+                  <span class="meta-item stats">
+                    💬 {{ article.commentCount || 0 }}
                   </span>
                 </div>
               </div>
@@ -459,12 +361,14 @@
 
 <script>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useSettingsStore } from '@/stores/settings';
 import api from '@/api';
 
 export default {
   name: 'BlogList',
   setup() {
+    const router = useRouter();
     const settingsStore = useSettingsStore();
     const articles = ref([]);
     const loading = ref(false);
@@ -478,8 +382,8 @@ export default {
     const showAllTags = ref(false);
     const jumpPage = ref(1);
 
-    // 从本地存储加载布局偏好
-    const viewMode = ref(localStorage.getItem('blog-view-mode') || 'grid');
+    // 从本地存储加载布局偏好，默认为列表布局
+    const viewMode = ref(localStorage.getItem('blog-view-mode') || 'list');
     const pageSizeLocal = ref(parseInt(localStorage.getItem('blog-page-size')) || 12);
 
     // 规范化每页数量（避免本地存了无效值导致下拉无选项、分页异常）
@@ -586,9 +490,16 @@ export default {
       return text.length > 120 ? text.substring(0, 120) + '...' : text;
     };
 
+    // 搜索防抖
+    let searchTimeout = null;
     const handleSearch = () => {
-      currentPage.value = 1;
-      fetchArticles();
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      searchTimeout = setTimeout(() => {
+        currentPage.value = 1;
+        fetchArticles();
+      }, 300); // 300ms防抖
     };
 
     const filterByCategory = category => {
@@ -764,6 +675,37 @@ export default {
       fetchArticles();
     });
 
+    // 跳转到热门文章页面
+    const goToPopularArticles = () => {
+      router.push('/blog/ranking/popular');
+    };
+
+    // 获取文章热门等级
+    const getPopularityLevel = (likeCount) => {
+      if (likeCount >= 100) return 'super-hot';
+      if (likeCount >= 50) return 'very-hot';
+      if (likeCount >= 20) return 'hot';
+      if (likeCount >= 10) return 'warm';
+      return 'normal';
+    };
+
+    // 获取热门标记文本和图标
+    const getPopularityBadge = (likeCount) => {
+      const level = getPopularityLevel(likeCount);
+      switch (level) {
+        case 'super-hot':
+          return { text: '超热', icon: '🔥🔥🔥', class: 'super-hot' };
+        case 'very-hot':
+          return { text: '很热', icon: '🔥🔥', class: 'very-hot' };
+        case 'hot':
+          return { text: '热门', icon: '🔥', class: 'hot' };
+        case 'warm':
+          return { text: '温热', icon: '🌡️', class: 'warm' };
+        default:
+          return null;
+      }
+    };
+
     return {
       articles,
       loading,
@@ -799,7 +741,12 @@ export default {
       jumpPage,
       handlePageSizeChange,
       switchViewMode,
-      handlePageJump
+      handlePageJump,
+      // 导航方法
+      goToPopularArticles,
+      // 热门标记方法
+      getPopularityLevel,
+      getPopularityBadge
     };
   }
 };
@@ -814,26 +761,266 @@ export default {
 
 /* 页面头部 */
 .page-header {
-  margin-bottom: var(--spacing-12);
+  margin-bottom: var(--spacing-6);
 }
 
 .header-content {
-  text-align: center;
-  margin-bottom: var(--spacing-8);
-}
-
-.page-title {
-  font-size: var(--font-size-4xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
   margin-bottom: var(--spacing-4);
 }
 
-.page-subtitle {
-  font-size: var(--font-size-lg);
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.nav-button {
+  font-size: 0.85rem;
+}
+
+.page-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+  text-align: center;
+  background: linear-gradient(135deg, #ff6b9d, #c44569, #f8b500);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* 主工具栏样式 */
+.main-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-6);
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.filter-row {
+  justify-content: flex-start;
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.filter-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  align-items: flex-start;
+  width: 100%;
+}
+
+.filter-line {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.filter-items {
+  display: flex;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.toolbar-divider {
+  color: var(--color-border);
+  font-size: 1.2rem;
+  margin: 0 var(--spacing-2);
+}
+
+/* 搜索区域 */
+.search-section {
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: var(--spacing-2);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-search-btn:hover {
+  background: var(--color-bg-soft);
   color: var(--color-text-secondary);
-  max-width: 600px;
-  margin: 0 auto;
+}
+
+/* 筛选区域 */
+.filter-label {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: 40px;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.filter-item {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  height: 24px;
+}
+
+.filter-item:hover {
+  color: #ff6b9d;
+  background: rgba(255, 107, 157, 0.1);
+}
+
+.filter-item.active {
+  color: #ff6b9d;
+  font-weight: 600;
+  background: rgba(255, 107, 157, 0.15);
+}
+
+/* 功能区域 */
+.action-section {
+  gap: var(--spacing-3);
+}
+
+.action-button {
+  font-size: 0.85rem;
+}
+
+.view-controls {
+  display: flex;
+  gap: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.view-btn {
+  padding: var(--spacing-1) var(--spacing-2);
+  border: none;
+  background: white;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-btn:hover {
+  background: var(--color-bg-soft);
+  color: var(--color-text-primary);
+}
+
+.view-btn.active {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .main-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-3);
+  }
+
+  .toolbar-section {
+    justify-content: center;
+  }
+
+  .toolbar-divider {
+    display: none;
+  }
+
+  .search-section {
+    min-width: auto;
+  }
+
+  .filter-section .filter-group {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .action-section {
+    justify-content: space-between;
+  }
 }
 
 /* 搜索和筛选 */
@@ -999,14 +1186,13 @@ export default {
 
 /* 列表布局样式 */
 .blog-list-page.list-layout .main-content {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: var(--spacing-6);
-  align-items: start;
+  display: block;
+  width: 100%;
 }
 
 .blog-list-page.list-layout .main-content.with-sidebar {
-  grid-template-columns: 280px 1fr;
+  display: block;
+  width: 100%;
 }
 
 /* 左侧筛选栏 */
@@ -1030,7 +1216,6 @@ export default {
 .filter-label {
   display: block;
   font-weight: 600;
-  margin-bottom: var(--spacing-2);
   color: var(--color-text-primary);
 }
 
@@ -1112,17 +1297,79 @@ export default {
   gap: 0;
 }
 
-.list-item {
+/* 表格列表样式 */
+.table-list {
   display: flex;
-  align-items: center;
-  padding: var(--spacing-3) var(--spacing-4);
-  border-bottom: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: background-color 0.2s;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  background: white;
 }
 
-.list-item:hover {
-  background-color: var(--color-bg-secondary);
+.table-row {
+  padding: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-row:hover {
+  background: linear-gradient(135deg, rgba(255, 107, 157, 0.05), rgba(196, 69, 105, 0.05));
+  transform: translateX(2px);
+  box-shadow: inset 3px 0 0 #ff6b9d;
+}
+
+.row-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.article-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.row-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+}
+
+.meta-item {
+  white-space: nowrap;
+}
+
+.meta-separator {
+  color: var(--color-border);
+  font-weight: bold;
+}
+
+.author {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.date {
+  color: var(--color-text-tertiary);
+}
+
+.stats {
+  color: var(--color-text-tertiary);
 }
 
 .list-item:last-child {
@@ -1134,14 +1381,55 @@ export default {
   min-width: 0;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-1);
+}
+
 .list-title {
   font-size: var(--text-lg);
   font-weight: 600;
-  margin: 0 0 var(--spacing-1) 0;
+  margin: 0;
   color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* 热门标记样式 */
+.popularity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.popularity-badge.super-hot {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+  color: white;
+}
+
+.popularity-badge.very-hot {
+  background: linear-gradient(135deg, #ff9f43, #ffb74d);
+  color: white;
+}
+
+.popularity-badge.hot {
+  background: linear-gradient(135deg, #ffa726, #ffcc02);
+  color: white;
+}
+
+.popularity-badge.warm {
+  background: linear-gradient(135deg, #66bb6a, #81c784);
+  color: white;
 }
 
 .list-meta {
@@ -1214,9 +1502,9 @@ export default {
   background: var(--color-bg-primary);
 }
 
-/* 在列表布局下，让分页器跨越两列显示 */
+/* 在列表布局下，分页器正常显示 */
 .blog-list-page.list-layout .bottom-pagination {
-  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .pagination-info {
@@ -1398,7 +1686,8 @@ export default {
 /* 响应式 */
 @media (max-width: 1024px) {
   .blog-list-page.list-layout .main-content {
-    grid-template-columns: 1fr;
+    display: block;
+    width: 100%;
   }
 
   .sidebar-filters {

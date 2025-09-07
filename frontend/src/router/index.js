@@ -22,6 +22,12 @@ const routes = [
     component: () => import('@/views/blog/BlogDetail.vue'),
     meta: { title: '文章详情' }
   },
+  {
+    path: '/blog/ranking/popular',
+    name: 'PopularArticles',
+    component: () => import('@/views/blog/PopularArticles.vue'),
+    meta: { title: '热门文章排行榜' }
+  },
   // 工具箱路由
   toolsRoutes,
   {

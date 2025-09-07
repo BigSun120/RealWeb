@@ -115,10 +115,11 @@ export default {
 <style lang="scss" scoped>
 .app-footer {
   position: relative;
-  // background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
   color: #e2e8f0;
   margin-top: auto;
   overflow: hidden;
+  z-index: 1; // 确保footer在正常层级，不会浮在页面内容上方
 
   .footer-background {
     position: absolute;
@@ -154,14 +155,13 @@ export default {
   }
 
   .footer-content {
-    position: relative;
-    z-index: 2;
+    position: relative !important;
+    z-index: 10000 !important;
     max-width: 1200px;
     margin: 0 auto;
-    display: flex;
+    display: flex !important;
     justify-content: space-between;
     padding: 60px 20px 40px;
-    // border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
     .footer-info {
       flex: 1;
@@ -171,10 +171,7 @@ export default {
         font-size: 28px;
         font-weight: 700;
         margin-bottom: 16px;
-        background: linear-gradient(45deg, #409eff, #667eea);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: #e2e8f0;
       }
 
       p {
@@ -204,7 +201,7 @@ export default {
             left: 0;
             width: 30px;
             height: 2px;
-            background: linear-gradient(45deg, #409eff, #667eea);
+            background: #64748b;
             border-radius: 1px;
           }
         }

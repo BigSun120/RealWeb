@@ -71,3 +71,20 @@ export const getCategories = () => {
 export const getTags = () => {
   return api.get('/tags');
 };
+
+// 文章点赞相关API
+
+// 点赞/取消点赞文章
+export const toggleArticleLike = (articleId) => {
+  return api.post(`/articles/${articleId}/like`);
+};
+
+// 获取文章点赞统计
+export const getArticleLikeStats = (articleId) => {
+  return api.get(`/articles/${articleId}/like-stats`);
+};
+
+// 获取热门文章排行榜
+export const getPopularArticles = (params = {}) => {
+  return api.get('/articles/ranking/popular', { params });
+};

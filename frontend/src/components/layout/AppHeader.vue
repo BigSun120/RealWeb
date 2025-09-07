@@ -383,7 +383,7 @@ export default {
       font-size: 20px;
       font-weight: 700;
       margin: 0;
-      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      background: linear-gradient(135deg, #ff6b9d, #c44569, #f8b500);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -408,14 +408,14 @@ export default {
 
       &:hover {
         background: rgba(255, 255, 255, 0.1);
-        color: #60a5fa;
+        color: #3da437;
         transform: translateY(-1px);
       }
 
       &.is-active {
-        background: linear-gradient(45deg, #60a5fa, #a78bfa);
+        background: linear-gradient(45deg, #3da437, #31c1e7);
         color: white !important;
-        box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4);
+        box-shadow: 0 4px 12px rgba(255, 107, 157, 0.4);
         font-weight: 600;
       }
     }

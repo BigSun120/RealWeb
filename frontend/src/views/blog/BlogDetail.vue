@@ -69,6 +69,19 @@
                     {{ article.commentCount || 0 }} 评论
                   </span>
 
+                  <!-- 点赞按钮 -->
+                  <div class="like-action">
+                    <ArticleLikeButton
+                      v-if="article._id"
+                      :article-id="article._id"
+                      :initial-liked="article.isLiked || false"
+                      :initial-like-count="article.likeCount || 0"
+                      size="small"
+                      :show-text="false"
+                      @like-changed="handleLikeChange"
+                    />
+                  </div>
+
                   <!-- 收藏按钮 -->
                   <div class="bookmark-action">
                     <BookmarkButton
@@ -181,6 +194,7 @@ import api from '@/api';
 import CommentList from '@/components/CommentList.vue';
 import FollowButton from '@/components/social/FollowButton.vue';
 import BookmarkButton from '@/components/social/BookmarkButton.vue';
+import ArticleLikeButton from '@/components/social/ArticleLikeButton.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { getAvatarStyle } from '@/utils/avatar';
 
@@ -189,7 +203,8 @@ export default {
   components: {
     CommentList,
     FollowButton,
-    BookmarkButton
+    BookmarkButton,
+    ArticleLikeButton
   },
   setup() {
     const route = useRoute();
@@ -495,6 +510,16 @@ export default {
       // 这里可以添加一些UI反馈或者更新作者信息
     };
 
+    // 处理点赞状态变化
+    const handleLikeChange = (data) => {
+      console.log('点赞状态变化:', data);
+      // 更新文章的点赞数据
+      if (article.value) {
+        article.value.isLiked = data.liked;
+        article.value.likeCount = data.likeCount;
+      }
+    };
+
     // 处理收藏状态变化
     const handleBookmarkChange = (data) => {
       console.log('收藏状态变化:', data);
@@ -518,6 +543,7 @@ export default {
       activeHeadingId,
       goToUserProfile,
       handleFollowChange,
+      handleLikeChange,
       handleBookmarkChange
     };
   }

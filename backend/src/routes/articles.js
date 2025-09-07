@@ -1,5 +1,6 @@
 const express = require('express');
 const Article = require('../models/Article');
+const ArticleLike = require('../models/ArticleLike');
 const { auth, optionalAuth, adminAuth } = require('../middleware/auth');
 const { uploadArticleImage, handleUploadError } = require('../middleware/upload');
 const logger = require('../utils/logger');
@@ -285,10 +286,21 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
     // 增加浏览量
     await article.incrementViewCount();
 
+    // 如果用户已登录，检查点赞状态
+    let isLiked = false;
+    if (req.user) {
+      const likeRecord = await ArticleLike.isLiked(article._id, req.user._id);
+      isLiked = !!likeRecord;
+    }
+
+    // 将点赞状态添加到文章数据中
+    const articleData = article.toJSON();
+    articleData.isLiked = isLiked;
+
     res.json({
       code: 200,
       message: '获取文章详情成功',
-      data: article
+      data: articleData
     });
   } catch (error) {
     next(error);
@@ -652,6 +664,97 @@ router.post('/batch', adminAuth, async (req, res, next) => {
     });
   } catch (error) {
     logger.error('Batch article operation failed:', error);
+    next(error);
+  }
+});
+
+// 点赞/取消点赞文章
+router.post('/:id/like', auth, async (req, res, next) => {
+  try {
+    const { id: articleId } = req.params;
+
+    // 验证文章是否存在
+    const article = await Article.findById(articleId);
+    if (!article || article.status !== 'published' || article.isDeleted) {
+      return res.status(404).json({
+        code: 404,
+        message: '文章不存在'
+      });
+    }
+
+    // 切换点赞状态
+    const result = await ArticleLike.toggleLike(articleId, req.user._id, req.ip);
+
+    logger.info('Article like toggled', {
+      articleId,
+      userId: req.user._id,
+      action: result.action,
+      likeCount: result.likeCount
+    });
+
+    res.json({
+      code: 200,
+      message: result.action === 'liked' ? '点赞成功' : '取消点赞成功',
+      data: {
+        action: result.action,
+        likeCount: result.likeCount,
+        isLiked: result.action === 'liked'
+      }
+    });
+  } catch (error) {
+    logger.error('Article like toggle failed:', error);
+    next(error);
+  }
+});
+
+// 获取文章点赞统计
+router.get('/:id/like-stats', async (req, res, next) => {
+  try {
+    const { id: articleId } = req.params;
+
+    // 验证文章是否存在
+    const article = await Article.findById(articleId);
+    if (!article || article.status !== 'published' || article.isDeleted) {
+      return res.status(404).json({
+        code: 404,
+        message: '文章不存在'
+      });
+    }
+
+    const stats = await ArticleLike.getLikeStats(articleId);
+
+    res.json({
+      code: 200,
+      message: '获取点赞统计成功',
+      data: stats
+    });
+  } catch (error) {
+    logger.error('Get article like stats failed:', error);
+    next(error);
+  }
+});
+
+// 获取热门文章排行榜
+router.get('/ranking/popular', async (req, res, next) => {
+  try {
+    const { timeRange = 'all', limit = 10 } = req.query;
+
+    const articles = await ArticleLike.getPopularArticles({
+      timeRange,
+      limit: parseInt(limit)
+    });
+
+    res.json({
+      code: 200,
+      message: '获取热门文章排行榜成功',
+      data: {
+        articles,
+        timeRange,
+        total: articles.length
+      }
+    });
+  } catch (error) {
+    logger.error('Get popular articles ranking failed:', error);
     next(error);
   }
 });

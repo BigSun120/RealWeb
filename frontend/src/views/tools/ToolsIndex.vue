@@ -413,7 +413,7 @@ export default {
     const loading = ref(true);
 
     // 从本地存储加载布局偏好
-    const viewMode = ref(localStorage.getItem('tools-view-mode') || 'grid');
+    const viewMode = ref(localStorage.getItem('tools-view-mode') || 'list');
 
     // 分页相关状态
     const currentPage = ref(1);
@@ -806,7 +806,7 @@ export default {
 .header-content {
   text-align: center;
   padding: 2rem 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff6b9d 0%, #c44569 50%, #f8b500 100%);
   border-radius: 12px;
   margin-bottom: 2rem;
   color: white;

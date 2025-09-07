@@ -354,6 +354,10 @@ export default {
   position: relative;
   min-height: 100vh;
 
+  // 确保footer在首页画布模式下正确定位
+  display: flex;
+  flex-direction: column;
+
   // 全页面背景
   .page-background {
     position: fixed;
@@ -362,7 +366,7 @@ export default {
     right: 0;
     bottom: 0;
     z-index: 0; /* 修改为0，确保在页面内容下方但可见 */
-    width: 100vw;
+    width: 100%;
     height: 100vh;
 
     .page-gradient {
@@ -385,9 +389,8 @@ export default {
   // 全屏Hero区域
   .fullscreen-hero {
     position: relative;
-    width: 100vw;
+    width: 100%;
     height: 100vh;
-    margin-left: calc(-50vw + 50%);
     margin-top: -70px; // 向上移动70px以实现全屏背景效果
     margin-bottom: 0;
     display: flex;
@@ -660,12 +663,12 @@ export default {
 
 // 最新文章区域
 .latest-articles-section {
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
+  width: 100%;
   padding: 80px 0;
   background: transparent; // 移除背景，让银河背景透过
   position: relative;
   overflow: hidden; // 防止子元素溢出导致滚动条
+  flex: 1; // 让文章区域占据剩余空间，将footer推到底部
 
   .articles-container {
     max-width: 1200px;
@@ -982,7 +985,6 @@ export default {
   .home {
     .fullscreen-hero {
       min-height: 80vh;
-      margin-left: calc(-50vw + 50%);
       margin-top: -70px;
       pointer-events: none;
 
