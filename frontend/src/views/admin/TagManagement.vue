@@ -14,9 +14,33 @@
       </div>
     </div>
 
+    <!-- 批量操作工具栏 -->
+    <el-card v-if="selectedTags.length > 0" class="batch-toolbar">
+      <div class="batch-info">
+        <span>已选择 {{ selectedTags.length }} 个标签</span>
+        <el-button size="small" @click="clearSelection">清空选择</el-button>
+      </div>
+      <div class="batch-actions">
+        <el-button size="small" @click="batchOperation('enable')">批量启用</el-button>
+        <el-button size="small" @click="batchOperation('disable')">批量禁用</el-button>
+        <el-button size="small" type="warning" @click="batchOperation('setHot')">设为热门</el-button>
+        <el-button size="small" @click="batchOperation('unsetHot')">取消热门</el-button>
+        <el-button size="small" type="info" @click="showBatchColorDialog = true">修改颜色</el-button>
+        <el-button size="small" @click="batchOperation('updateCount')">更新数量</el-button>
+        <el-button size="small" type="danger" @click="batchOperation('delete')">批量删除</el-button>
+      </div>
+    </el-card>
+
     <!-- 标签列表 -->
     <el-card>
-      <el-table v-loading="loading" :data="tags" style="width: 100%">
+      <el-table
+        v-loading="loading"
+        :data="tags"
+        style="width: 100%"
+        ref="tagTableRef"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" />
         <el-table-column prop="name" label="标签名称" width="150">
           <template #default="{ row }">
             <el-tag :color="row.color" style="color: white">
@@ -122,6 +146,24 @@
       </template>
     </el-dialog>
 
+    <!-- 批量修改颜色对话框 -->
+    <el-dialog v-model="showBatchColorDialog" title="批量修改标签颜色" width="400px">
+      <el-form label-width="80px">
+        <el-form-item label="选择颜色">
+          <el-color-picker v-model="batchColor" />
+        </el-form-item>
+        <el-alert
+          :title="`将为 ${selectedTags.length} 个标签设置颜色`"
+          type="info"
+          :closable="false"
+        />
+      </el-form>
+      <template #footer>
+        <el-button @click="showBatchColorDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmBatchColor">确定</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 查看标签文章对话框 -->
     <el-dialog
       v-model="showArticlesDialog"
@@ -183,12 +225,16 @@ export default {
     const tags = ref([]);
     const showCreateDialog = ref(false);
     const showBatchDialog = ref(false);
+    const showBatchColorDialog = ref(false);
     const showArticlesDialog = ref(false);
     const editingTag = ref(null);
     const currentTag = ref(null);
     const tagFormRef = ref();
+    const tagTableRef = ref();
     const articlesLoading = ref(false);
     const tagArticles = ref([]);
+    const selectedTags = ref([]);
+    const batchColor = ref('#6B7280');
 
     const tagForm = ref({
       name: '',
@@ -453,6 +499,120 @@ export default {
       }
     };
 
+    // 处理表格选择变化
+    const handleSelectionChange = (selection) => {
+      selectedTags.value = selection;
+    };
+
+    // 清空选择
+    const clearSelection = () => {
+      tagTableRef.value.clearSelection();
+      selectedTags.value = [];
+    };
+
+    // 批量操作
+    const batchOperation = async (action) => {
+      if (selectedTags.value.length === 0) {
+        ElMessage.warning('请先选择要操作的标签');
+        return;
+      }
+
+      const tagIds = selectedTags.value.map(tag => tag._id);
+      const tagNames = selectedTags.value.map(tag => tag.name).join('、');
+
+      let confirmMessage = '';
+      switch (action) {
+        case 'enable':
+          confirmMessage = `确定要启用选中的 ${selectedTags.value.length} 个标签吗？`;
+          break;
+        case 'disable':
+          confirmMessage = `确定要禁用选中的 ${selectedTags.value.length} 个标签吗？`;
+          break;
+        case 'setHot':
+          confirmMessage = `确定要将选中的 ${selectedTags.value.length} 个标签设为热门吗？`;
+          break;
+        case 'unsetHot':
+          confirmMessage = `确定要取消选中的 ${selectedTags.value.length} 个标签的热门状态吗？`;
+          break;
+        case 'updateCount':
+          confirmMessage = `确定要更新选中的 ${selectedTags.value.length} 个标签的文章数量吗？`;
+          break;
+        case 'delete':
+          confirmMessage = `确定要删除选中的 ${selectedTags.value.length} 个标签吗？\n注意：有文章关联的标签将被跳过`;
+          break;
+        default:
+          return;
+      }
+
+      try {
+        await ElMessageBox.confirm(confirmMessage, '批量操作确认', {
+          type: 'warning'
+        });
+
+        const response = await api.post('/tags/batch-operation', {
+          tagIds,
+          action
+        });
+
+        const { success, failed, skipped } = response.data.data;
+
+        let message = `操作完成！成功: ${success.length}`;
+        if (failed.length > 0) message += `，失败: ${failed.length}`;
+        if (skipped.length > 0) message += `，跳过: ${skipped.length}`;
+
+        ElMessage.success(message);
+
+        // 显示详细结果
+        if (failed.length > 0 || skipped.length > 0) {
+          let details = '';
+          if (failed.length > 0) {
+            details += `失败的标签：${failed.map(f => f.reason).join('、')}\n`;
+          }
+          if (skipped.length > 0) {
+            details += `跳过的标签：${skipped.map(s => `${s.tagName}(${s.reason})`).join('、')}`;
+          }
+          ElMessageBox.alert(details, '操作详情', { type: 'info' });
+        }
+
+        clearSelection();
+        fetchTags();
+      } catch (error) {
+        if (error !== 'cancel') {
+          ElMessage.error('批量操作失败');
+        }
+      }
+    };
+
+    // 确认批量修改颜色
+    const confirmBatchColor = async () => {
+      if (!batchColor.value) {
+        ElMessage.warning('请选择颜色');
+        return;
+      }
+
+      try {
+        const tagIds = selectedTags.value.map(tag => tag._id);
+        const response = await api.post('/tags/batch-operation', {
+          tagIds,
+          action: 'updateColor',
+          data: { color: batchColor.value }
+        });
+
+        const { success, failed } = response.data.data;
+        ElMessage.success(`成功修改 ${success.length} 个标签的颜色`);
+
+        if (failed.length > 0) {
+          ElMessage.warning(`${failed.length} 个标签修改失败`);
+        }
+
+        showBatchColorDialog.value = false;
+        clearSelection();
+        fetchTags();
+      } catch (error) {
+        ElMessage.error('批量修改颜色失败');
+      }
+    };
+
     onMounted(() => {
       fetchTags();
     });
@@ -462,6 +622,7 @@ export default {
       tags,
       showCreateDialog,
       showBatchDialog,
+      showBatchColorDialog,
       showArticlesDialog,
       editingTag,
       currentTag,
@@ -469,8 +630,11 @@ export default {
       batchForm,
       tagRules,
       tagFormRef,
+      tagTableRef,
       articlesLoading,
       tagArticles,
+      selectedTags,
+      batchColor,
       editTag,
       saveTag,
       deleteTag,
@@ -482,7 +646,11 @@ export default {
       deleteArticle,
       batchUnpublishArticles,
       openCreateDialog,
-      handleCreateDialogClose
+      handleCreateDialogClose,
+      handleSelectionChange,
+      clearSelection,
+      batchOperation,
+      confirmBatchColor
     };
   }
 };
@@ -503,5 +671,31 @@ export default {
 .header-actions {
   display: flex;
   gap: 10px;
+}
+
+.batch-toolbar {
+  margin-bottom: 16px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.batch-toolbar :deep(.el-card__body) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+}
+
+.batch-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #666;
+  font-size: 14px;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 8px;
 }
 </style>

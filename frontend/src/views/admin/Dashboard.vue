@@ -90,8 +90,8 @@
             系统设置
           </el-button>
 
-          <el-button type="info" :icon="Monitor" @click="$router.push('/admin/monitoring')">
-            系统监控
+          <el-button type="info" :icon="Document" @click="$router.push('/admin/activity')">
+            活动日志
           </el-button>
         </div>
       </el-card>
@@ -107,7 +107,6 @@ import {
   EditPen,
   User,
   Setting,
-  Monitor,
   Document,
   View as ViewIcon,
   UserFilled

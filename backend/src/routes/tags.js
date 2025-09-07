@@ -303,4 +303,118 @@ router.post('/:id/update-count', adminAuth, async (req, res) => {
   }
 });
 
+// 批量操作标签（管理员）
+router.post('/batch-operation', adminAuth, async (req, res) => {
+  try {
+    const { tagIds, action, data = {} } = req.body;
+
+    if (!Array.isArray(tagIds) || tagIds.length === 0) {
+      return res.status(400).json({
+        code: 400,
+        message: '请选择要操作的标签'
+      });
+    }
+
+    const validActions = ['enable', 'disable', 'setHot', 'unsetHot', 'updateColor', 'updateCount', 'delete'];
+    if (!validActions.includes(action)) {
+      return res.status(400).json({
+        code: 400,
+        message: '无效的操作类型'
+      });
+    }
+
+    const results = {
+      success: [],
+      failed: [],
+      skipped: []
+    };
+
+    for (const tagId of tagIds) {
+      try {
+        const tag = await Tag.findById(tagId);
+        if (!tag) {
+          results.failed.push({ tagId, reason: '标签不存在' });
+          continue;
+        }
+
+        switch (action) {
+          case 'enable':
+            tag.isActive = true;
+            await tag.save();
+            results.success.push({ tagId, tagName: tag.name });
+            break;
+
+          case 'disable':
+            tag.isActive = false;
+            await tag.save();
+            results.success.push({ tagId, tagName: tag.name });
+            break;
+
+          case 'setHot':
+            tag.isHot = true;
+            await tag.save();
+            results.success.push({ tagId, tagName: tag.name });
+            break;
+
+          case 'unsetHot':
+            tag.isHot = false;
+            await tag.save();
+            results.success.push({ tagId, tagName: tag.name });
+            break;
+
+          case 'updateColor':
+            if (!data.color) {
+              results.failed.push({ tagId, reason: '缺少颜色参数' });
+              continue;
+            }
+            tag.color = data.color;
+            await tag.save();
+            results.success.push({ tagId, tagName: tag.name });
+            break;
+
+          case 'updateCount':
+            await tag.updateArticleCount();
+            results.success.push({ tagId, tagName: tag.name });
+            break;
+
+          case 'delete':
+            // 检查是否有文章使用此标签
+            const Article = require('../models/Article');
+            const articleCount = await Article.countDocuments({
+              tags: tag.name,
+              isDeleted: { $ne: true }
+            });
+
+            if (articleCount > 0) {
+              results.skipped.push({
+                tagId,
+                tagName: tag.name,
+                reason: `有 ${articleCount} 篇文章正在使用此标签`
+              });
+              continue;
+            }
+
+            await Tag.findByIdAndDelete(tagId);
+            results.success.push({ tagId, tagName: tag.name });
+            break;
+        }
+      } catch (error) {
+        results.failed.push({ tagId, reason: error.message });
+      }
+    }
+
+    res.json({
+      code: 200,
+      message: '批量操作完成',
+      data: results
+    });
+  } catch (error) {
+    logger.error('批量操作标签失败:', error);
+    res.status(500).json({
+      code: 500,
+      message: '批量操作失败'
+    });
+  }
+});
+
 module.exports = router;

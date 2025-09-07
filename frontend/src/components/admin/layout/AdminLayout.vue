@@ -23,6 +23,7 @@
           text-color="rgba(255, 255, 255, 0.85)"
           active-text-color="#1890ff"
         >
+          <!-- 核心功能区 -->
           <el-menu-item index="/admin/dashboard" class="menu-item">
             <el-icon class="menu-icon"><DataBoard /></el-icon>
             <template #title>
@@ -30,13 +31,7 @@
             </template>
           </el-menu-item>
 
-          <el-menu-item index="/admin/users" class="menu-item">
-            <el-icon class="menu-icon"><User /></el-icon>
-            <template #title>
-              <span class="menu-title">用户管理</span>
-            </template>
-          </el-menu-item>
-
+          <!-- 内容管理区 -->
           <el-sub-menu index="content" class="sub-menu">
             <template #title>
               <el-icon class="menu-icon"><Document /></el-icon>
@@ -56,10 +51,11 @@
             </el-menu-item>
           </el-sub-menu>
 
+          <!-- 工具箱管理区 -->
           <el-sub-menu index="tools" class="sub-menu">
             <template #title>
               <el-icon class="menu-icon"><Tools /></el-icon>
-              <span class="menu-title">工具箱管理</span>
+              <span class="menu-title">工具箱</span>
             </template>
             <el-menu-item index="/admin/tools" class="sub-menu-item">
               <span class="sub-menu-title">工具概览</span>
@@ -68,23 +64,25 @@
               <span class="sub-menu-title">工具管理</span>
             </el-menu-item>
             <el-menu-item index="/admin/tools/categories" class="sub-menu-item">
-              <span class="sub-menu-title">分类管理</span>
+              <span class="sub-menu-title">工具分类</span>
             </el-menu-item>
             <el-menu-item index="/admin/tools/analytics" class="sub-menu-item">
-              <span class="sub-menu-title">使用分析</span>
+              <span class="sub-menu-title">使用统计</span>
             </el-menu-item>
             <el-menu-item index="/admin/tools/settings" class="sub-menu-item">
-              <span class="sub-menu-title">工具箱设置</span>
+              <span class="sub-menu-title">工具设置</span>
             </el-menu-item>
           </el-sub-menu>
 
-          <el-menu-item index="/admin/activity" class="menu-item">
-            <el-icon class="menu-icon"><Document /></el-icon>
+          <!-- 用户管理区 -->
+          <el-menu-item index="/admin/users" class="menu-item">
+            <el-icon class="menu-icon"><User /></el-icon>
             <template #title>
-              <span class="menu-title">活动日志</span>
+              <span class="menu-title">用户管理</span>
             </template>
           </el-menu-item>
 
+          <!-- 邮箱管理区 -->
           <el-sub-menu index="email" class="sub-menu">
             <template #title>
               <el-icon class="menu-icon"><Message /></el-icon>
@@ -98,6 +96,7 @@
             </el-menu-item>
           </el-sub-menu>
 
+          <!-- 系统管理区 -->
           <el-menu-item index="/admin/settings" class="menu-item">
             <el-icon class="menu-icon"><Setting /></el-icon>
             <template #title>
@@ -105,10 +104,10 @@
             </template>
           </el-menu-item>
 
-          <el-menu-item index="/admin/monitoring" class="menu-item">
-            <el-icon class="menu-icon"><Monitor /></el-icon>
+          <el-menu-item index="/admin/activity" class="menu-item">
+            <el-icon class="menu-icon"><List /></el-icon>
             <template #title>
-              <span class="menu-title">系统监控</span>
+              <span class="menu-title">活动日志</span>
             </template>
           </el-menu-item>
         </el-menu>
@@ -218,7 +217,8 @@ import {
   ArrowDown,
   House,
   Tools,
-  Message
+  Message,
+  List
 } from '@element-plus/icons-vue';
 
 export default {
@@ -261,9 +261,14 @@ export default {
         dashboard: '仪表板',
         users: '用户管理',
         articles: '文章管理',
-
-        settings: '系统设置',
-        monitoring: '系统监控'
+        categories: '分类管理',
+        tags: '标签管理',
+        'public-notices': '公告管理',
+        tools: '工具箱',
+        'email-domains': '邮箱域名管理',
+        'email-management': '邮件管理',
+        activity: '活动日志',
+        settings: '系统设置'
       };
 
       pathArray.forEach((item, index) => {

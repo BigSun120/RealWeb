@@ -98,8 +98,8 @@ router.get('/dashboard/stats', async (req, res, next) => {
       newUsersLastMonth > 0
         ? Math.round(((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100)
         : newUsersThisMonth > 0
-        ? 100
-        : 0;
+          ? 100
+          : 0;
 
     const articleGrowthRate = newArticlesThisWeek > 0 ? 8 : 0; // 示例增长率
 
@@ -409,19 +409,19 @@ router.get('/users', async (req, res, next) => {
     const searchStats =
       stats.length > 0
         ? {
-            total: stats[0].totalUsers,
-            adminCount: stats[0].adminCount,
-            userCount: stats[0].totalUsers - stats[0].adminCount,
-            activeCount: stats[0].activeCount,
-            inactiveCount: stats[0].totalUsers - stats[0].activeCount
-          }
+          total: stats[0].totalUsers,
+          adminCount: stats[0].adminCount,
+          userCount: stats[0].totalUsers - stats[0].adminCount,
+          activeCount: stats[0].activeCount,
+          inactiveCount: stats[0].totalUsers - stats[0].activeCount
+        }
         : {
-            total: 0,
-            adminCount: 0,
-            userCount: 0,
-            activeCount: 0,
-            inactiveCount: 0
-          };
+          total: 0,
+          adminCount: 0,
+          userCount: 0,
+          activeCount: 0,
+          inactiveCount: 0
+        };
 
     res.json({
       code: 200,
@@ -803,7 +803,7 @@ router.post('/users', async (req, res, next) => {
 router.put('/users/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { username, email, bio, isAdmin, isActive, displayName } = req.body;
+    const { username, email, bio, isAdmin, isActive, displayName, role } = req.body;
 
     // 防止管理员修改自己的管理员权限
     if (req.user._id.toString() === id && req.user.isAdmin && isAdmin === false) {
@@ -828,6 +828,25 @@ router.put('/users/:id', async (req, res, next) => {
       }
     }
 
+    // 验证角色参数
+    if (role !== undefined) {
+      const validRoles = ['user', 'blogger', 'moderator', 'admin'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({
+          code: 400,
+          message: '无效的角色类型'
+        });
+      }
+
+      // 防止管理员取消自己的管理员权限
+      if (req.user._id.toString() === id && req.user.isAdmin && role !== 'admin') {
+        return res.status(400).json({
+          code: 400,
+          message: '不能取消自己的管理员权限'
+        });
+      }
+    }
+
     // 更新用户信息
     const updateData = {};
     if (username !== undefined) updateData.username = username;
@@ -845,7 +864,22 @@ router.put('/users/:id', async (req, res, next) => {
     if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
     if (isActive !== undefined) updateData.isActive = isActive;
 
+    // 先更新基础字段
     const user = await User.findByIdAndUpdate(id, updateData, { new: true }).select('-password');
+
+    // 如果需要更新角色，使用setRole方法
+    if (role !== undefined && user) {
+      user.setRole(role);
+
+      // 如果设置为admin角色，同时设置isAdmin为true
+      if (role === 'admin') {
+        user.isAdmin = true;
+      } else if (user.role === 'admin' && role !== 'admin') {
+        user.isAdmin = false;
+      }
+
+      await user.save();
+    }
 
     if (!user) {
       return res.status(404).json({
@@ -1024,10 +1058,10 @@ router.get('/activity-log', async (req, res, next) => {
           description: activity.description,
           user: activity.userId
             ? {
-                username: activity.userId.username,
-                email: activity.userId.email,
-                avatar: activity.userId.avatar
-              }
+              username: activity.userId.username,
+              email: activity.userId.email,
+              avatar: activity.userId.avatar
+            }
             : null,
           ipAddress: activity.ipAddress,
           userAgent: activity.userAgent,
