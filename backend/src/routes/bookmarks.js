@@ -169,6 +169,50 @@ router.post('/check', auth, async (req, res, next) => {
   }
 });
 
+// 获取用户收藏统计（必须在动态路由之前）
+router.get('/stats', auth, async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+
+    const stats = await Bookmark.getUserBookmarkStats(userId);
+
+    res.json({
+      code: 200,
+      message: '获取收藏统计成功',
+      data: stats
+    });
+  } catch (error) {
+    logger.error('Get bookmark stats failed:', error);
+    next(error);
+  }
+});
+
+// 获取内容收藏统计（公开接口）
+router.get('/content/:targetType/:targetId/stats', async (req, res, next) => {
+  try {
+    const { targetType, targetId } = req.params;
+
+    // 参数验证
+    if (!['article', 'comment'].includes(targetType)) {
+      return res.status(400).json({
+        code: 400,
+        message: '无效的目标类型'
+      });
+    }
+
+    const stats = await Bookmark.getBookmarkStats(targetType, targetId);
+
+    res.json({
+      code: 200,
+      message: '获取收藏统计成功',
+      data: stats
+    });
+  } catch (error) {
+    logger.error('Get content bookmark stats failed:', error);
+    next(error);
+  }
+});
+
 // 删除收藏
 router.delete('/:bookmarkId', auth, async (req, res, next) => {
   try {
@@ -218,48 +262,6 @@ router.delete('/:bookmarkId', auth, async (req, res, next) => {
   }
 });
 
-// 获取用户收藏统计
-router.get('/stats', auth, async (req, res, next) => {
-  try {
-    const userId = req.user._id;
 
-    const stats = await Bookmark.getUserBookmarkStats(userId);
-
-    res.json({
-      code: 200,
-      message: '获取收藏统计成功',
-      data: stats
-    });
-  } catch (error) {
-    logger.error('Get bookmark stats failed:', error);
-    next(error);
-  }
-});
-
-// 获取内容收藏统计（公开接口）
-router.get('/content/:targetType/:targetId/stats', async (req, res, next) => {
-  try {
-    const { targetType, targetId } = req.params;
-
-    // 参数验证
-    if (!['article', 'comment'].includes(targetType)) {
-      return res.status(400).json({
-        code: 400,
-        message: '不支持的收藏目标类型'
-      });
-    }
-
-    const stats = await Bookmark.getBookmarkStats(targetType, targetId);
-
-    res.json({
-      code: 200,
-      message: '获取内容收藏统计成功',
-      data: stats
-    });
-  } catch (error) {
-    logger.error('Get content bookmark stats failed:', error);
-    next(error);
-  }
-});
 
 module.exports = router;

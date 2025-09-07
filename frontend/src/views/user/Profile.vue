@@ -340,7 +340,14 @@ export default {
         const response = await getUserBookmarkStats();
         bookmarkStats.value = response.data.data;
       } catch (error) {
-        console.error('获取收藏统计失败:', error);
+        if (error.response?.status === 404) {
+          // API不存在时的优雅降级
+          bookmarkStats.value = { total: 0 };
+          console.warn('收藏功能API暂不可用');
+        } else {
+          console.error('获取收藏统计失败:', error);
+          bookmarkStats.value = { total: 0 };
+        }
       }
     };
 
