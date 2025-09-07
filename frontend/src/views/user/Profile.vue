@@ -281,7 +281,7 @@ export default {
 
       verificationLoading.value = true;
       try {
-        await api.post('/auth/send-verification-email', {
+        await api.post('/auth/resend-verification', {
           email: form.value.email
         });
         ElMessage.success('验证邮件已发送，请查收邮箱');

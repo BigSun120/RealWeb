@@ -141,10 +141,13 @@ router.get('/search', auth, async (req, res) => {
 // 获取用户资料
 router.get('/profile', auth, async (req, res, next) => {
   try {
+    // 获取用户的完整信息（包含邮箱）
+    const userProfile = req.user.toJSON();
+
     res.json({
       code: 200,
       message: '获取用户资料成功',
-      data: req.user.getPublicProfile()
+      data: userProfile
     });
   } catch (error) {
     next(error);
@@ -154,7 +157,7 @@ router.get('/profile', auth, async (req, res, next) => {
 // 更新用户资料
 router.put('/profile', auth, async (req, res, next) => {
   try {
-    const { username, displayName, bio, avatar } = req.body;
+    const { username, displayName, email, bio, avatar } = req.body;
     const user = req.user;
 
     if (username && username !== user.username) {
@@ -180,6 +183,28 @@ router.put('/profile', auth, async (req, res, next) => {
       }
       user.displayName = displayName;
     }
+
+    // 处理邮箱更新
+    if (email && email !== user.email) {
+      // 检查邮箱是否已被使用
+      const User = require('../models/User');
+      const emailExists = await User.findOne({ email: email.toLowerCase(), _id: { $ne: user._id } });
+      if (emailExists) {
+        return res.status(400).json({
+          code: 400,
+          message: '邮箱已被使用'
+        });
+      }
+
+      // 更新邮箱并重置验证状态
+      user.email = email.toLowerCase();
+      user.emailVerified = false;
+      user.emailVerifiedAt = null;
+      // 清除旧的验证令牌
+      user.emailVerificationToken = undefined;
+      user.emailVerificationExpires = undefined;
+    }
+
     if (bio !== undefined) user.bio = bio;
     if (avatar !== undefined) user.avatar = avatar;
 
@@ -188,7 +213,7 @@ router.put('/profile', auth, async (req, res, next) => {
     res.json({
       code: 200,
       message: '更新用户资料成功',
-      data: user.getPublicProfile()
+      data: user.toJSON()
     });
   } catch (error) {
     next(error);
