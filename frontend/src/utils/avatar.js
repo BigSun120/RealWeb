@@ -9,14 +9,29 @@
  */
 export const getFullAvatarUrl = (avatarUrl) => {
   if (!avatarUrl) return '';
-  
+
   // 如果已经是完整的URL，直接返回
   if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
     return avatarUrl;
   }
-  
-  // 如果是相对路径，添加基础URL
-  return `${window.location.origin}${avatarUrl}`;
+
+  // 如果是相对路径，根据环境选择基础URL
+  let baseUrl;
+
+  // 优先使用环境变量，但需要去掉/api后缀（头像是静态文件，不走API路由）
+  if (import.meta.env.VITE_API_BASE_URL) {
+    baseUrl = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
+  } else {
+    // 本地开发环境fallback
+    baseUrl = 'http://localhost:8000';
+  }
+
+  // 确保路径以/开头
+  const normalizedPath = avatarUrl.startsWith('/') ? avatarUrl : `/${avatarUrl}`;
+
+  const fullUrl = `${baseUrl}${normalizedPath}`;
+
+  return fullUrl;
 };
 
 /**
@@ -54,7 +69,7 @@ export const getUserInitial = (username) => {
  */
 export const getAvatarPlaceholderColor = (username) => {
   if (!username) return '#6B7280';
-  
+
   // 基于用户名生成一致的颜色
   const colors = [
     '#EF4444', '#F97316', '#F59E0B', '#EAB308',
@@ -62,12 +77,12 @@ export const getAvatarPlaceholderColor = (username) => {
     '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
     '#8B5CF6', '#A855F7', '#D946EF', '#EC4899'
   ];
-  
+
   let hash = 0;
   for (let i = 0; i < username.length; i++) {
     hash = username.charCodeAt(i) + ((hash << 5) - hash);
   }
-  
+
   return colors[Math.abs(hash) % colors.length];
 };
 
@@ -82,7 +97,7 @@ export const isValidAvatarUrl = (avatarUrl) => {
       resolve(false);
       return;
     }
-    
+
     const img = new Image();
     img.onload = () => resolve(true);
     img.onerror = () => resolve(false);

@@ -78,9 +78,32 @@ router.get('/', optionalAuth, async (req, res, next) => {
       query.tags = { $in: [tag] };
     }
 
-    // 作者筛选
+    // 作者筛选 - 需要先查找用户ID
+    let authorId = null;
     if (author) {
-      query['author.username'] = new RegExp(author, 'i');
+      const User = require('../models/User');
+      const authorUser = await User.findOne({
+        username: new RegExp(`^${author}$`, 'i')
+      }).select('_id');
+      if (authorUser) {
+        authorId = authorUser._id;
+        query.authorId = authorId;
+      } else {
+        // 如果找不到用户，返回空结果
+        return res.json({
+          code: 200,
+          message: '获取文章列表成功',
+          data: {
+            articles: [],
+            pagination: {
+              page: pageNum,
+              limit: limitNum,
+              total: 0,
+              pages: 0
+            }
+          }
+        });
+      }
     }
 
     // 日期范围筛选

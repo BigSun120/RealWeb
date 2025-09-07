@@ -130,6 +130,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useSettingsStore } from '@/stores/settings';
+import { getFullAvatarUrl } from '@/utils/avatar';
 import { ElMessage } from 'element-plus';
 import { EditPen, Tools, Message } from '@element-plus/icons-vue';
 import NotificationDropdown from '@/components/NotificationDropdown.vue';
@@ -240,12 +241,7 @@ export default {
     const activeIndex = computed(() => route.path || '/');
 
     const avatarUrl = computed(() => {
-      const avatar = userStore.user?.avatar;
-      if (avatar && avatar.startsWith('/uploads/')) {
-        // 使用当前域名构建完整URL
-        return `${window.location.origin}${avatar}`;
-      }
-      return avatar || '';
+      return getFullAvatarUrl(userStore.user?.avatar);
     });
 
     const handleSelect = key => {

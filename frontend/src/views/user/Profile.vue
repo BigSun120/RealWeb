@@ -39,6 +39,10 @@
                 <strong>{{ userStore.user?.articleCount || 0 }}</strong>
                 <span class="stat-label">文章</span>
               </div>
+              <div class="stat-item clickable" @click="goToBookmarks">
+                <strong>{{ bookmarkStats?.total || 0 }}</strong>
+                <span class="stat-label">收藏</span>
+              </div>
             </div>
 
             <!-- 加入时间 -->
@@ -168,11 +172,12 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { ElMessage } from 'element-plus';
 import api from '@/api';
+import { getUserBookmarkStats } from '@/api/bookmarks';
 import { Calendar, User, Lock, Check } from '@element-plus/icons-vue';
 import AvatarUpload from '@/components/AvatarUpload.vue';
 import PasswordChange from '@/components/PasswordChange.vue';
@@ -206,6 +211,9 @@ export default {
     // 邮箱验证相关状态
     const verificationLoading = ref(false);
     const originalEmail = ref('');
+
+    // 收藏统计
+    const bookmarkStats = ref(null);
     const emailChanged = computed(() => {
       return form.value.email !== originalEmail.value;
     });
@@ -267,6 +275,11 @@ export default {
       }
     };
 
+    // 跳转到收藏页面
+    const goToBookmarks = () => {
+      router.push('/bookmarks');
+    };
+
     // 处理菜单选择
     const handleMenuSelect = (index) => {
       activeMenu.value = index;
@@ -293,6 +306,19 @@ export default {
       }
     };
 
+    // 更新表单数据
+    const updateFormData = (userData) => {
+      if (userData) {
+        form.value.displayName = userData.displayName || '';
+        form.value.username = userData.username || '';
+        form.value.email = userData.email || '';
+        form.value.bio = userData.bio || '';
+
+        // 更新原始邮箱地址
+        originalEmail.value = userData.email || '';
+      }
+    };
+
     // 获取用户完整统计信息
     const fetchUserStats = async () => {
       if (userStore.user?._id) {
@@ -300,28 +326,43 @@ export default {
           const response = await api.get(`/users/${userStore.user._id}/profile`);
           // 更新用户store中的统计信息
           userStore.updateUser(response.data.data);
+          // 更新表单数据
+          updateFormData(response.data.data);
         } catch (error) {
           console.error('获取用户统计失败:', error);
         }
       }
     };
 
+    // 获取收藏统计
+    const fetchBookmarkStats = async () => {
+      try {
+        const response = await getUserBookmarkStats();
+        bookmarkStats.value = response.data.data;
+      } catch (error) {
+        console.error('获取收藏统计失败:', error);
+      }
+    };
+
+    // 监听userStore变化，及时更新表单数据
+    watch(() => userStore.user, (newUser) => {
+      if (newUser) {
+        updateFormData(newUser);
+      }
+    }, { immediate: true, deep: true });
+
     onMounted(() => {
       // 添加body类用于全屏背景
       document.body.classList.add('profile-page');
 
+      // 初始化表单数据
       if (userStore.user) {
-        form.value.displayName = userStore.user.displayName || '';
-        form.value.username = userStore.user.username;
-        form.value.email = userStore.user.email || '';
-        form.value.bio = userStore.user.bio || '';
-
-        // 保存原始邮箱地址
-        originalEmail.value = userStore.user.email || '';
-
-        // 获取最新的统计信息
-        fetchUserStats();
+        updateFormData(userStore.user);
       }
+
+      // 获取最新的统计信息
+      fetchUserStats();
+      fetchBookmarkStats();
     });
 
     // 组件卸载时清理
@@ -344,7 +385,9 @@ export default {
       handleMenuSelect,
       sendVerificationEmail,
       formatDate,
-      goToFollowList
+      goToFollowList,
+      goToBookmarks,
+      bookmarkStats
     };
   }
 };

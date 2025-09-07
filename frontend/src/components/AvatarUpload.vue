@@ -78,6 +78,7 @@
 import { ref, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { User, Camera, Upload, Delete, InfoFilled } from '@element-plus/icons-vue';
+import { getFullAvatarUrl } from '@/utils/avatar';
 import api from '@/api';
 
 export default {
@@ -113,11 +114,7 @@ export default {
     const selectedFile = ref(null);
 
     const currentAvatar = computed(() => {
-      if (props.avatar && props.avatar.startsWith('/uploads/')) {
-        // 使用当前域名构建完整URL
-        return `${window.location.origin}${props.avatar}`;
-      }
-      return props.avatar;
+      return getFullAvatarUrl(props.avatar);
     });
 
     const triggerUpload = () => {

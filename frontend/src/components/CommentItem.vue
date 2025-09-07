@@ -93,6 +93,19 @@
           <el-button type="text" size="small" @click="handleReply" v-if="canReply && !isReply">
             回复
           </el-button>
+
+          <!-- 收藏按钮 -->
+          <BookmarkButton
+            v-if="!isReply"
+            target-type="comment"
+            :target-id="comment._id"
+            :initial-bookmarked="false"
+            :initial-bookmark-count="0"
+            size="small"
+            :show-text="false"
+            :show-count="false"
+            @bookmark-changed="handleBookmarkChange"
+          />
         </div>
       </div>
 
@@ -141,13 +154,15 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { useUserStore } from '@/stores/user';
 import { useSettingsStore } from '@/stores/settings';
 import CommentEditor from './CommentEditor.vue';
+import BookmarkButton from './social/BookmarkButton.vue';
 import commentApi from '@/api/comments';
 import { renderMentions } from '@/utils/mention';
 
 export default {
   name: 'CommentItem',
   components: {
-    CommentEditor
+    CommentEditor,
+    BookmarkButton
   },
   props: {
     comment: {
@@ -489,6 +504,12 @@ export default {
       emit('like', data);
     };
 
+    // 处理收藏状态变化
+    const handleBookmarkChange = (data) => {
+      console.log('评论收藏状态变化:', data);
+      // 这里可以添加一些UI反馈
+    };
+
     return {
       settingsStore,
       isEditing,
@@ -515,7 +536,8 @@ export default {
       handleDelete,
       toggleReplies,
       loadMoreReplies,
-      handleReplyLike
+      handleReplyLike,
+      handleBookmarkChange
     };
   }
 };

@@ -52,7 +52,7 @@
                 <strong>{{ user.followingCount || 0 }}</strong>
                 <span class="stat-label">关注</span>
               </div>
-              <div class="stat-item">
+              <div class="stat-item clickable" @click="activeTab = 'articles'">
                 <strong>{{ user.articleCount || 0 }}</strong>
                 <span class="stat-label">文章</span>
               </div>
@@ -184,6 +184,7 @@ import { Calendar, ArrowDown } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import FollowButton from '@/components/social/FollowButton.vue';
 import UserCard from '@/components/social/UserCard.vue';
+import { getFullAvatarUrl } from '@/utils/avatar';
 import api from '@/api';
 import { getUserFollowing, getUserFollowers } from '@/api/users';
 
@@ -221,14 +222,7 @@ export default {
     });
     
     const avatarUrl = computed(() => {
-      if (!user.value?.avatar) return '';
-      
-      if (user.value.avatar.startsWith('http')) {
-        return user.value.avatar;
-      }
-      
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      return `${baseUrl}${user.value.avatar}`;
+      return getFullAvatarUrl(user.value?.avatar);
     });
     
     // 格式化日期
@@ -260,10 +254,21 @@ export default {
     const fetchArticles = async (userId) => {
       articlesLoading.value = true;
       try {
+        // 先获取用户信息以获取username
+        const userResponse = await api.get(`/users/${userId}/profile`);
+        const username = userResponse.data.data.username;
+
+        console.log('获取用户文章:', { userId, username });
+
+        // 使用username查询文章
         const response = await api.get('/articles', {
-          params: { author: userId, limit: 10 }
+          params: { author: username, limit: 10 }
         });
-        articles.value = response.data.data || [];
+
+        console.log('文章API响应:', response.data);
+
+        articles.value = response.data.data.articles || [];
+        console.log('设置文章列表:', articles.value);
       } catch (error) {
         console.error('获取用户文章失败:', error);
         articles.value = [];
@@ -387,6 +392,8 @@ export default {
       const userId = route.params.id;
       if (userId) {
         fetchUser(userId);
+        // 默认加载文章列表
+        fetchArticles(userId);
       }
     });
     

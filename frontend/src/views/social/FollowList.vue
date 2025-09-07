@@ -223,7 +223,7 @@ export default {
     const fetchTargetUser = async () => {
       targetUserLoading.value = true;
       try {
-        const response = await api.get(`/admin/users/${userId.value}`);
+        const response = await api.get(`/users/${userId.value}/profile`);
         targetUser.value = response.data.data;
       } catch (error) {
         console.error('获取用户信息失败:', error);

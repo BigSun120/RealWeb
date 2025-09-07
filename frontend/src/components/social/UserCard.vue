@@ -72,6 +72,7 @@ import { computed } from 'vue';
 import { MoreFilled } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import FollowButton from './FollowButton.vue';
+import { getFullAvatarUrl } from '@/utils/avatar';
 
 export default {
   name: 'UserCard',
@@ -121,16 +122,7 @@ export default {
     });
     
     const avatarUrl = computed(() => {
-      if (!props.user.avatar) return '';
-      
-      // 如果是完整URL，直接返回
-      if (props.user.avatar.startsWith('http')) {
-        return props.user.avatar;
-      }
-      
-      // 否则拼接基础URL
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      return `${baseUrl}${props.user.avatar}`;
+      return getFullAvatarUrl(props.user.avatar);
     });
     
     // 处理头像加载错误

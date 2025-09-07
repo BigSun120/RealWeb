@@ -36,6 +36,7 @@ const adminEmailDomainsRoutes = require('./src/routes/admin/emailDomains');
 const tempEmailRoutes = require('./src/routes/tempEmail');
 const publicNoticesRoutes = require('./src/routes/publicNotices');
 const adminPublicNoticesRoutes = require('./src/routes/admin/publicNotices');
+const bookmarkRoutes = require('./src/routes/bookmarks');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -186,6 +187,7 @@ app.use('/api/admin/email-domains', adminEmailDomainsRoutes);
 app.use('/api/temp-email', tempEmailRoutes);
 app.use('/api/public-notices', publicNoticesRoutes);
 app.use('/api/admin/public-notices', adminPublicNoticesRoutes);
+app.use('/api/bookmarks', bookmarkRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

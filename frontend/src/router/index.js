@@ -67,6 +67,12 @@ const routes = [
     meta: { title: '关注列表' }
   },
   {
+    path: '/bookmarks',
+    name: 'BookmarkList',
+    component: () => import('@/views/social/BookmarkList.vue'),
+    meta: { title: '我的收藏', requiresAuth: true }
+  },
+  {
     path: '/articles/new',
     name: 'ArticleCreate',
     component: () => import('@/views/ArticleEdit.vue'),

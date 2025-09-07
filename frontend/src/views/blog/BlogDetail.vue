@@ -68,6 +68,20 @@
                     <i class="stat-icon">💬</i>
                     {{ article.commentCount || 0 }} 评论
                   </span>
+
+                  <!-- 收藏按钮 -->
+                  <div class="bookmark-action">
+                    <BookmarkButton
+                      v-if="article._id"
+                      target-type="article"
+                      :target-id="article._id"
+                      :initial-bookmarked="false"
+                      :initial-bookmark-count="0"
+                      size="small"
+                      :show-text="false"
+                      @bookmark-changed="handleBookmarkChange"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -166,6 +180,7 @@ import 'highlight.js/styles/github.css';
 import api from '@/api';
 import CommentList from '@/components/CommentList.vue';
 import FollowButton from '@/components/social/FollowButton.vue';
+import BookmarkButton from '@/components/social/BookmarkButton.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { getAvatarStyle } from '@/utils/avatar';
 
@@ -173,7 +188,8 @@ export default {
   name: 'BlogDetail',
   components: {
     CommentList,
-    FollowButton
+    FollowButton,
+    BookmarkButton
   },
   setup() {
     const route = useRoute();
@@ -479,6 +495,12 @@ export default {
       // 这里可以添加一些UI反馈或者更新作者信息
     };
 
+    // 处理收藏状态变化
+    const handleBookmarkChange = (data) => {
+      console.log('收藏状态变化:', data);
+      // 这里可以添加一些UI反馈或者更新文章信息
+    };
+
     return {
       settingsStore,
       article,
@@ -495,7 +517,8 @@ export default {
       getAuthorAvatarStyle,
       activeHeadingId,
       goToUserProfile,
-      handleFollowChange
+      handleFollowChange,
+      handleBookmarkChange
     };
   }
 };
@@ -634,7 +657,12 @@ export default {
 
 .article-stats {
   display: flex;
+  align-items: center;
   gap: var(--spacing-2);
+}
+
+.bookmark-action {
+  margin-left: auto;
 }
 
 .stat-icon {
