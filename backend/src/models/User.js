@@ -124,6 +124,22 @@ userSchema.virtual('articleCount', {
   count: true
 });
 
+// 虚拟字段：关注数量
+userSchema.virtual('followingCount', {
+  ref: 'Follow',
+  localField: '_id',
+  foreignField: 'followerId',
+  count: true
+});
+
+// 虚拟字段：粉丝数量
+userSchema.virtual('followersCount', {
+  ref: 'Follow',
+  localField: '_id',
+  foreignField: 'followingId',
+  count: true
+});
+
 // 索引
 userSchema.index({ email: 1 });
 userSchema.index({ username: 1 });
@@ -266,6 +282,21 @@ userSchema.methods.getPublicProfile = function () {
   return userObject;
 };
 
+// 实例方法：获取包含关注统计的公开信息
+userSchema.methods.getPublicProfileWithStats = async function () {
+  const Follow = require('./Follow');
+  const userObject = this.toObject();
+  delete userObject.password;
+  delete userObject.email;
+
+  // 获取关注统计
+  const stats = await Follow.getFollowStats(this._id);
+  userObject.followingCount = stats.followingCount;
+  userObject.followersCount = stats.followersCount;
+
+  return userObject;
+};
+
 // 实例方法：生成邮箱验证令牌
 userSchema.methods.generateEmailVerificationToken = function () {
   const crypto = require('crypto');
@@ -353,6 +384,14 @@ userSchema.methods.toJSON = function () {
   // 添加邮箱验证相关的计算字段
   user.needsEmailVerification = !this.emailVerified;
   user.canResendVerificationEmail = this.canResendVerificationEmail();
+
+  // 添加关注统计字段（如果已填充）
+  if (this.followingCount !== undefined) {
+    user.followingCount = this.followingCount;
+  }
+  if (this.followersCount !== undefined) {
+    user.followersCount = this.followersCount;
+  }
 
   return user;
 };

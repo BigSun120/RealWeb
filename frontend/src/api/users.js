@@ -30,3 +30,30 @@ export const uploadAvatar = (formData) => {
 export const changePassword = (data) => {
   return request.put('/users/password', data);
 };
+
+// ==================== 关注功能相关API ====================
+
+// 关注/取消关注用户
+export const toggleFollow = (userId, source = 'profile') => {
+  return request.post(`/users/${userId}/follow`, { source });
+};
+
+// 检查关注状态
+export const getFollowStatus = (userId) => {
+  return request.get(`/users/${userId}/follow-status`);
+};
+
+// 获取用户的关注列表
+export const getUserFollowing = (userId, params = {}) => {
+  return request.get(`/users/${userId}/following`, { params });
+};
+
+// 获取用户的粉丝列表
+export const getUserFollowers = (userId, params = {}) => {
+  return request.get(`/users/${userId}/followers`, { params });
+};
+
+// 获取用户的关注统计
+export const getUserFollowStats = (userId) => {
+  return request.get(`/users/${userId}/follow-stats`);
+};

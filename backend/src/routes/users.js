@@ -367,4 +367,220 @@ router.put('/password', auth, async (req, res, next) => {
   }
 });
 
+// ==================== 关注功能相关API ====================
+
+const Follow = require('../models/Follow');
+
+// 获取用户公开信息（包含关注统计）
+router.get('/:userId/profile', async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // 获取用户基本信息
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        code: 404,
+        message: '用户不存在'
+      });
+    }
+
+    // 获取关注统计
+    const stats = await Follow.getFollowStats(userId);
+
+    // 获取公开信息
+    const publicProfile = user.getPublicProfile();
+
+    // 添加统计信息
+    publicProfile.followingCount = stats.followingCount;
+    publicProfile.followersCount = stats.followersCount;
+
+    res.json({
+      code: 200,
+      message: '获取用户信息成功',
+      data: publicProfile
+    });
+  } catch (error) {
+    logger.error('获取用户信息失败:', error);
+    next(error);
+  }
+});
+
+// 关注/取消关注用户
+router.post('/:userId/follow', auth, async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const followerId = req.user._id;
+    const { source = 'profile' } = req.body;
+
+    // 验证目标用户是否存在
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return res.status(404).json({
+        code: 404,
+        message: '用户不存在'
+      });
+    }
+
+    // 防止关注自己
+    if (followerId.toString() === userId) {
+      return res.status(400).json({
+        code: 400,
+        message: '不能关注自己'
+      });
+    }
+
+    // 切换关注状态
+    const result = await Follow.toggleFollow(followerId, userId, req.ip, source);
+
+    res.json({
+      code: 200,
+      message: result.message,
+      data: {
+        action: result.action,
+        isFollowing: result.isFollowing,
+        targetUserId: userId
+      }
+    });
+  } catch (error) {
+    logger.error('关注操作失败:', error);
+    next(error);
+  }
+});
+
+// 检查关注状态
+router.get('/:userId/follow-status', auth, async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const followerId = req.user._id;
+
+    const isFollowing = await Follow.isFollowing(followerId, userId);
+
+    res.json({
+      code: 200,
+      message: '获取关注状态成功',
+      data: {
+        isFollowing: !!isFollowing,
+        targetUserId: userId
+      }
+    });
+  } catch (error) {
+    logger.error('获取关注状态失败:', error);
+    next(error);
+  }
+});
+
+// 获取用户的关注列表
+router.get('/:userId/following', async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+
+    // 验证用户是否存在
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        code: 404,
+        message: '用户不存在'
+      });
+    }
+
+    const following = await Follow.getFollowing(userId, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy,
+      sortOrder: sortOrder === 'desc' ? -1 : 1
+    });
+
+    const total = await Follow.countDocuments({ followerId: userId });
+
+    res.json({
+      code: 200,
+      message: '获取关注列表成功',
+      data: {
+        following: following.map(f => f.following),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('获取关注列表失败:', error);
+    next(error);
+  }
+});
+
+// 获取用户的粉丝列表
+router.get('/:userId/followers', async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+
+    // 验证用户是否存在
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        code: 404,
+        message: '用户不存在'
+      });
+    }
+
+    const followers = await Follow.getFollowers(userId, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy,
+      sortOrder: sortOrder === 'desc' ? -1 : 1
+    });
+
+    const total = await Follow.countDocuments({ followingId: userId });
+
+    res.json({
+      code: 200,
+      message: '获取粉丝列表成功',
+      data: {
+        followers: followers.map(f => f.follower),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('获取粉丝列表失败:', error);
+    next(error);
+  }
+});
+
+// 获取用户的关注统计
+router.get('/:userId/follow-stats', async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // 验证用户是否存在
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        code: 404,
+        message: '用户不存在'
+      });
+    }
+
+    const stats = await Follow.getFollowStats(userId);
+
+    res.json({
+      code: 200,
+      message: '获取关注统计成功',
+      data: stats
+    });
+  } catch (error) {
+    logger.error('获取关注统计失败:', error);
+    next(error);
+  }
+});
+
 module.exports = router;

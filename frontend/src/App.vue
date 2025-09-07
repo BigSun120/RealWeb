@@ -72,4 +72,78 @@ export default {
   flex: 1;
   width: 100%;
 }
+
+// Profile页面特殊样式
+body.profile-page {
+  background: linear-gradient(135deg, #c8e6c8 0%, #d4e6d4 100%);
+
+  #app {
+    background: transparent;
+  }
+
+  .main-content {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    min-height: auto;
+    max-width: none;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+  }
+
+  .app-footer {
+    background: linear-gradient(135deg, #c8e6c8 0%, #d4e6d4 100%);
+
+    .footer-background {
+      display: none;
+    }
+
+    .container {
+      background: transparent;
+    }
+
+    // 修改字体颜色为深色
+    .footer-content {
+      .footer-info {
+        h3 {
+          color: #2c3e50 !important;
+          background: none !important;
+          -webkit-text-fill-color: #2c3e50 !important;
+        }
+
+        p {
+          color: #4a5568 !important;
+        }
+      }
+
+      .footer-links {
+        .link-group {
+          h4 {
+            color: #2c3e50 !important;
+          }
+
+          ul li a {
+            color: #4a5568 !important;
+
+            &:hover {
+              color: #2c3e50 !important;
+            }
+          }
+        }
+      }
+    }
+
+    .footer-bottom {
+      color: #4a5568 !important;
+
+      a {
+        color: #4a5568 !important;
+
+        &:hover {
+          color: #2c3e50 !important;
+        }
+      }
+    }
+  }
+}
 </style>

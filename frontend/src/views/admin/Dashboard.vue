@@ -129,7 +129,6 @@ export default {
     EditPen,
     User,
     Setting,
-    Monitor,
     Document,
     ViewIcon,
     UserFilled

@@ -55,6 +55,18 @@ const routes = [
     meta: { title: '个人中心', requiresAuth: true }
   },
   {
+    path: '/user/:id',
+    name: 'UserProfile',
+    component: () => import('@/views/user/UserProfile.vue'),
+    meta: { title: '用户资料' }
+  },
+  {
+    path: '/user/:id/follow',
+    name: 'FollowList',
+    component: () => import('@/views/social/FollowList.vue'),
+    meta: { title: '关注列表' }
+  },
+  {
     path: '/articles/new',
     name: 'ArticleCreate',
     component: () => import('@/views/ArticleEdit.vue'),

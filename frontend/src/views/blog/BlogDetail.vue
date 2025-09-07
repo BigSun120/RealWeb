@@ -21,6 +21,7 @@
                   <div
                     class="author-avatar"
                     :style="getAuthorAvatarStyle(article.author && article.author.avatar)"
+                    @click="goToUserProfile"
                   >
                     <span class="avatar-fallback">
                       {{
@@ -33,7 +34,7 @@
                     </span>
                   </div>
                   <div class="author-details">
-                    <span class="author-name">{{
+                    <span class="author-name" @click="goToUserProfile">{{
                       (article.author && (article.author.displayName || article.author.username)) ||
                       '匿名'
                     }}</span>
@@ -44,6 +45,17 @@
                       <span class="divider"></span>
                       <span class="read-time">约 {{ readTime }} 分钟阅读</span>
                     </div>
+                  </div>
+
+                  <!-- 关注按钮 -->
+                  <div v-if="article.author && article.author._id" class="author-actions">
+                    <FollowButton
+                      :user-id="article.author._id"
+                      :user="article.author"
+                      source="article"
+                      size="small"
+                      @follow-change="handleFollowChange"
+                    />
                   </div>
                 </div>
 
@@ -147,22 +159,25 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import api from '@/api';
 import CommentList from '@/components/CommentList.vue';
+import FollowButton from '@/components/social/FollowButton.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { getAvatarStyle } from '@/utils/avatar';
 
 export default {
   name: 'BlogDetail',
   components: {
-    CommentList
+    CommentList,
+    FollowButton
   },
   setup() {
     const route = useRoute();
+    const router = useRouter();
     const settingsStore = useSettingsStore();
     const article = ref(null);
     const loading = ref(false);
@@ -451,6 +466,19 @@ export default {
       }
     );
 
+    // 跳转到用户资料页面
+    const goToUserProfile = () => {
+      if (article.value?.author?._id) {
+        router.push(`/user/${article.value.author._id}`);
+      }
+    };
+
+    // 处理关注状态变化
+    const handleFollowChange = (data) => {
+      console.log('关注状态变化:', data);
+      // 这里可以添加一些UI反馈或者更新作者信息
+    };
+
     return {
       settingsStore,
       article,
@@ -465,7 +493,9 @@ export default {
       handleCommentsLoaded,
       scrollToHeading,
       getAuthorAvatarStyle,
-      activeHeadingId
+      activeHeadingId,
+      goToUserProfile,
+      handleFollowChange
     };
   }
 };
@@ -537,6 +567,7 @@ export default {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
+  justify-content: space-between;
 }
 
 .author-avatar {
@@ -551,6 +582,12 @@ export default {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.author-avatar:hover {
+  transform: scale(1.05);
 }
 
 .avatar-fallback {
@@ -562,12 +599,25 @@ export default {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
+  flex: 1;
 }
 
 .author-name {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.author-name:hover {
+  color: var(--color-primary);
+}
+
+.author-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
 }
 
 .meta-info {

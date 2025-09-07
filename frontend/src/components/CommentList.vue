@@ -44,11 +44,44 @@
       />
     </div>
 
-    <!-- 登录提示 -->
+    <!-- 登录/验证提示 -->
     <div class="login-prompt" v-else>
-      <el-alert title="请登录后发表评论" type="info" show-icon :closable="false">
+      <!-- 未登录提示 -->
+      <el-alert
+        v-if="!userStore.isLoggedIn"
+        title="请登录后发表评论"
+        type="info"
+        show-icon
+        :closable="false"
+      >
         <template #default>
           <el-button type="primary" size="small" @click="goToLogin"> 立即登录 </el-button>
+        </template>
+      </el-alert>
+
+      <!-- 邮箱验证提示 -->
+      <el-alert
+        v-else-if="userStore.user?.needsEmailVerification"
+        title="请先验证邮箱后发表评论"
+        type="warning"
+        show-icon
+        :closable="false"
+      >
+        <template #default>
+          <el-button type="primary" size="small" @click="goToProfile"> 去验证邮箱 </el-button>
+        </template>
+      </el-alert>
+
+      <!-- 权限不足提示 -->
+      <el-alert
+        v-else
+        title="您暂无评论权限"
+        type="warning"
+        show-icon
+        :closable="false"
+      >
+        <template #default>
+          <span>请联系管理员获取评论权限</span>
         </template>
       </el-alert>
     </div>
@@ -128,12 +161,17 @@ export default {
     const hasMore = ref(false);
 
     // 计算属性
-    const showEditor = computed(
-      () =>
-        userStore.isLoggedIn &&
-        (userStore.isAdmin ||
-          (userStore.user?.permissions && userStore.user.permissions.includes('comment:create')))
-    );
+    const showEditor = computed(() => {
+      // 必须已登录
+      if (!userStore.isLoggedIn) return false;
+
+      // 必须已验证邮箱（管理员除外）
+      if (!userStore.isAdmin && userStore.user?.needsEmailVerification) return false;
+
+      // 必须有评论权限
+      return userStore.isAdmin ||
+        (userStore.user?.permissions && userStore.user.permissions.includes('comment:create'));
+    });
 
     // 加载评论列表
     const loadComments = async (reset = false) => {
@@ -298,6 +336,11 @@ export default {
       router.push('/auth/login');
     };
 
+    // 跳转到个人资料页面
+    const goToProfile = () => {
+      router.push('/profile');
+    };
+
     // 监听文章ID变化
     watch(
       () => props.articleId,
@@ -389,6 +432,7 @@ export default {
     });
 
     return {
+      userStore,
       comments,
       loading,
       loadingMore,
@@ -404,6 +448,7 @@ export default {
       handleCommentEdit,
       handleCommentDelete,
       goToLogin,
+      goToProfile,
       Check
     };
   }
