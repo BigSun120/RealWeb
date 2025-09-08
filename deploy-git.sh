@@ -5,7 +5,7 @@
 
 set -e
 
-SERVER="root@38.146.30.42"
+SERVER="root@38.146.30.39"
 PROJECT_PATH="~/RealWeb"
 # 注意：请使用SSH密钥认证，避免明文密码
 

@@ -28,9 +28,9 @@ class EmailService {
         auth:
           process.env.SMTP_AUTH === 'true'
             ? {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-              }
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASS
+            }
             : false,
         connectionTimeout: 10000,
         greetingTimeout: 5000,
@@ -203,7 +203,7 @@ class EmailService {
       `,
       welcome: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #67c23a;">🎉 欢迎加入 {{siteName}}</h2>
+          <h2 style="color: #67c23a;">🎉 欢迎加入:{{siteName}}</h2>
           <p>您好 {{username}}，</p>
           <p>欢迎加入 {{siteName}}！您的邮箱已成功验证。</p>
           <p>现在您可以：</p>
