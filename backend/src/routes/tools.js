@@ -13,6 +13,7 @@ const logger = require('../utils/logger');
 const videoRoutes = require('./tools/video');
 const youtubeRoutes = require('./tools/youtube');
 const iqiyiRoutes = require('./tools/iqiyi');
+const augmentRoutes = require('./tools/augment');
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ router.use(ToolsAnalytics.createMiddleware()); // 应用分析中间件
 router.use('/video', videoRoutes); // 视频下载工具
 router.use('/youtube', youtubeRoutes); // YouTube下载工具
 router.use('/iqiyi', iqiyiRoutes); // 爱奇艺下载工具
+router.use('/augment', augmentRoutes); // Augment令牌管理工具
 
 // 公开路由：获取工具列表
 router.get('/', optionalAuth, async (req, res) => {

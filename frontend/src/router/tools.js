@@ -174,6 +174,16 @@ export default {
             title: '二维码生成器',
             description: '生成各种类型的二维码'
           }
+        },
+        {
+          path: 'augment-token-manager',
+          name: 'AugmentTokenManager',
+          component: () => import('@/views/tools/dev/AugmentTokenManager.vue'),
+          meta: {
+            title: 'Augment 令牌管理器',
+            description: '管理 Augment Code 访问令牌',
+            requiresAuth: true
+          }
         }
       ]
     },

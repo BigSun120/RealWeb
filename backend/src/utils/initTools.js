@@ -284,6 +284,24 @@ const initTools = async () => {
       difficulty: 'easy',
       estimatedTime: '1-2分钟',
       sortOrder: 1
+    },
+
+    // 开发工具 - Augment Token Manager
+    {
+      id: 'augment-token-manager',
+      name: 'Augment 令牌管理器',
+      description: '管理 Augment Code 访问令牌，支持OAuth认证和令牌存储',
+      icon: '🔑',
+      category: 'dev',
+      route: '/tools/dev/augment-token-manager',
+      component: '@/views/tools/dev/AugmentTokenManager.vue',
+      tags: ['Augment', '令牌', 'OAuth', '认证', '开发'],
+      featured: true,
+      status: 'active',
+      difficulty: 'medium',
+      estimatedTime: '2-3分钟',
+      requiresAuth: true,
+      sortOrder: 1
     }
   ];
 

@@ -10,10 +10,6 @@
         <p class="page-description">管理工具的增删改查和配置</p>
       </div>
       <div class="header-actions">
-        <el-button type="primary" @click="showCreateDialog">
-          <el-icon><Plus /></el-icon>
-          新增工具
-        </el-button>
         <el-button @click="refreshData">
           <el-icon><Refresh /></el-icon>
           刷新
@@ -85,7 +81,6 @@
           <div class="batch-buttons">
             <el-button size="small" @click="batchUpdateStatus('active')"> 批量启用 </el-button>
             <el-button size="small" @click="batchUpdateStatus('inactive')"> 批量禁用 </el-button>
-            <el-button size="small" type="danger" @click="batchDelete"> 批量删除 </el-button>
           </div>
         </template>
       </el-alert>
@@ -145,7 +140,6 @@
             >
               {{ row.status === 'active' ? '禁用' : '启用' }}
             </el-button>
-            <el-button size="small" type="danger" @click="deleteTool(row)"> 删除 </el-button>
           </template>
         </el-table-column>
       </el-table>

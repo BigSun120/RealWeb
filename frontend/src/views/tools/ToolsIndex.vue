@@ -577,7 +577,19 @@ export default {
 
     // 跳转到工具页面
     const goToTool = tool => {
-      if (tool.status === 'active' && tool.path) {
+      if (tool.status !== 'active') {
+        return;
+      }
+
+      // 静态工具使用路由跳转
+      if (tool.isStatic && tool.route) {
+        // 使用Vue Router进行内部跳转
+        window.open(tool.route, '_blank');
+        return;
+      }
+
+      // API工具使用path字段跳转
+      if (tool.path) {
         window.open(tool.path, '_blank');
       }
     };

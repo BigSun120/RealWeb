@@ -159,15 +159,50 @@ class ToolsService {
   }
 
   /**
+   * 获取固定工具列表（写死在代码中的工具）
+   */
+  getStaticTools() {
+    return [
+      {
+        id: 'augment-token-manager',
+        name: 'Augment 令牌管理器',
+        description: '管理 Augment Code 访问令牌，支持OAuth认证和令牌存储',
+        icon: '🔑',
+        category: 'dev',
+        route: '/tools/dev/augment-token-manager',
+        component: '@/views/tools/dev/AugmentTokenManager.vue',
+        tags: ['Augment', '令牌', 'OAuth', '认证', '开发'],
+        featured: true,
+        status: 'active',
+        difficulty: 'medium',
+        estimatedTime: '2-3分钟',
+        requiresAuth: true,
+        sortOrder: 1,
+        isStatic: true // 标记为静态工具
+      }
+    ];
+  }
+
+  /**
    * 初始化数据
    */
   async initialize() {
     try {
       await Promise.all([this.getAllTools(), this.getAllCategories()]);
+
+      // 合并静态工具
+      const staticTools = this.getStaticTools();
+      this.tools = [...this.tools, ...staticTools];
+
       return true;
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('工具服务初始化失败:', error);
+
+      // 即使API失败，也要加载静态工具
+      const staticTools = this.getStaticTools();
+      this.tools = staticTools;
+
       return false;
     }
   }

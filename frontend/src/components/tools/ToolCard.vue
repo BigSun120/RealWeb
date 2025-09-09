@@ -163,10 +163,26 @@ export default {
 
     // 跳转到工具页面
     const goToTool = () => {
-      if (props.tool.status === 'active') {
-        router.push(props.tool.route)
-      } else {
+      if (props.tool.status !== 'active') {
         ElMessage.info('该工具即将上线，敬请期待！')
+        return
+      }
+
+      // 静态工具使用路由跳转
+      if (props.tool.isStatic && props.tool.route) {
+        router.push(props.tool.route)
+        return
+      }
+
+      // API工具使用path字段跳转
+      if (props.tool.path) {
+        window.open(props.tool.path, '_blank')
+        return
+      }
+
+      // 兜底：使用route字段
+      if (props.tool.route) {
+        router.push(props.tool.route)
       }
     }
 
