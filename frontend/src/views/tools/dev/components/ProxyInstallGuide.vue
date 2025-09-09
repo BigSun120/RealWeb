@@ -262,15 +262,6 @@ const downloadOptions = [
     icon: Platform,
     url: '/api/tools/augment/download/linux',
     filename: 'Augment-Token-Manager-Linux.AppImage'
-  },
-  {
-    platform: 'source',
-    title: '源代码',
-    description: '适用于开发者和高级用户',
-    size: '~5MB',
-    icon: Platform,
-    url: '/api/tools/augment/download/source',
-    filename: 'Augment-Token-Manager-Source.zip'
   }
 ]
 

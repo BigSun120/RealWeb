@@ -237,7 +237,27 @@ export function useAugmentAuth() {
       // 更新本地状态
       const index = tokens.value.findIndex(t => t.id === tokenId)
       if (index !== -1) {
-        tokens.value[index].usage_stats = result.usage_stats
+        // 检查数据结构并安全更新
+        if (result.data && result.data.usage_stats) {
+          tokens.value[index].usage_stats = result.data.usage_stats
+        } else if (result.data && result.data.portal_info) {
+          // 如果没有usage_stats，从portal_info构建
+          tokens.value[index].usage_stats = {
+            credits_balance: result.data.portal_info.credits_balance || 0,
+            total_usage: result.data.portal_info.total_usage || 0,
+            last_updated: new Date()
+          }
+        } else if (result.usage_stats) {
+          // 兼容直接返回usage_stats的情况
+          tokens.value[index].usage_stats = result.usage_stats
+        } else if (result.portal_info) {
+          // 兼容直接返回portal_info的情况
+          tokens.value[index].usage_stats = {
+            credits_balance: result.portal_info.credits_balance || 0,
+            total_usage: result.portal_info.total_usage || 0,
+            last_updated: new Date()
+          }
+        }
       }
 
       ElMessage.success('使用次数刷新成功')
@@ -258,10 +278,20 @@ export function useAugmentAuth() {
 
       // 更新本地状态
       results.forEach(result => {
-        if (result.success) {
+        if (result.success && result.data) {
           const index = tokens.value.findIndex(t => t.id === result.tokenId)
           if (index !== -1) {
-            tokens.value[index].usage_stats = result.data.usage_stats
+            // 检查数据结构并安全更新
+            if (result.data.usage_stats) {
+              tokens.value[index].usage_stats = result.data.usage_stats
+            } else if (result.data.portal_info) {
+              // 如果没有usage_stats，从portal_info构建
+              tokens.value[index].usage_stats = {
+                credits_balance: result.data.portal_info.credits_balance || 0,
+                total_usage: result.data.portal_info.total_usage || 0,
+                last_updated: new Date()
+              }
+            }
           }
         }
       })
@@ -393,6 +423,26 @@ export function useAugmentAuth() {
     // 工具方法
     getTokenDisplayName: augmentService.getTokenDisplayName,
     formatTokenStatus: augmentService.formatTokenStatus,
-    validateUrl: augmentService.validateUrl
+    validateUrl: augmentService.validateUrl,
+    formatDate: (dateString) => {
+      if (!dateString) return '-'
+      const date = new Date(dateString)
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    },
+    formatUrl: (url) => {
+      if (!url) return '-'
+      try {
+        const urlObj = new URL(url)
+        return urlObj.hostname
+      } catch {
+        return url
+      }
+    }
   }
 }

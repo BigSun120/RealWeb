@@ -197,7 +197,7 @@ class AugmentService {
   async refreshTokenUsage(tokenId) {
     try {
       const response = await augmentApi.post(`/tokens/${tokenId}/refresh-portal-info`)
-      return response.data.data
+      return response.data
     } catch (error) {
       throw new Error(`刷新使用次数失败: ${error.message}`)
     }

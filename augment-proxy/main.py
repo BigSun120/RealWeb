@@ -92,16 +92,16 @@ class AugmentProxy:
             """切换账号"""
             try:
                 data = request.get_json()
-                token_id = data.get('tokenId')
+                token_data = data.get('tokenData')
                 editor_type = data.get('editorType')
-                
-                if not token_id or not editor_type:
+
+                if not token_data or not editor_type:
                     return jsonify({
                         'success': False,
-                        'error': 'Missing tokenId or editorType'
+                        'error': 'Missing tokenData or editorType'
                     }), 400
-                
-                result = self.account_manager.switch_account(token_id, editor_type)
+
+                result = self.account_manager.switch_account_with_data(token_data, editor_type)
                 return jsonify({
                     'success': True,
                     'data': result

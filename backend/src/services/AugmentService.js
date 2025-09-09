@@ -242,20 +242,35 @@ class AugmentService {
    */
   async getCustomerInfo(token, tenantUrl) {
     try {
-      // 从Portal URL中提取token
+      // 从Portal URL中提取token - 完全复制temp的逻辑
       let portalToken = token;
       if (tenantUrl && tenantUrl.includes('portal.withorb.com')) {
-        const urlParams = new URLSearchParams(tenantUrl.split('?')[1]);
-        portalToken = urlParams.get('token') || token;
+        try {
+          const url = new URL(tenantUrl);
+          const extractedToken = url.searchParams.get('token');
+          if (extractedToken) {
+            portalToken = extractedToken;
+          }
+        } catch (error) {
+          // 如果URL解析失败，使用原始token
+          portalToken = token;
+        }
       }
+
+
 
       const url = `https://portal.withorb.com/api/v1/customer_from_link?token=${portalToken}`;
 
       const response = await axios.get(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'application/json, text/plain, */*',
-          'Accept-Language': 'en-US,en;q=0.9'
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Charset': 'utf-8',
+          'Connection': 'keep-alive',
+          'Sec-Fetch-Dest': 'empty',
+          'Sec-Fetch-Mode': 'cors',
+          'Sec-Fetch-Site': 'same-origin'
         },
         timeout: 30000
       });
@@ -326,9 +341,14 @@ class AugmentService {
 
       const response = await axios.get(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'application/json, text/plain, */*',
-          'Accept-Language': 'en-US,en;q=0.9'
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Charset': 'utf-8',
+          'Connection': 'keep-alive',
+          'Sec-Fetch-Dest': 'empty',
+          'Sec-Fetch-Mode': 'cors',
+          'Sec-Fetch-Site': 'same-origin'
         },
         timeout: 30000
       });

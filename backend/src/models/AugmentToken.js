@@ -95,17 +95,12 @@ const augmentTokenSchema = new mongoose.Schema({
     lastUpdated: Date
   },
 
-  // 使用统计
+  // 使用统计 - 使用Mixed类型支持灵活的数据结构
   usageStats: {
-    totalUses: {
-      type: Number,
-      default: 0
-    },
-    lastUsed: Date,
-    lastSuccessfulUse: Date,
-    failureCount: {
-      type: Number,
-      default: 0
+    type: mongoose.Schema.Types.Mixed,
+    default: {
+      totalUses: 0,
+      failureCount: 0
     }
   },
 
@@ -149,6 +144,10 @@ const augmentTokenSchema = new mongoose.Schema({
   toJSON: {
     virtuals: true,
     transform: function (doc, ret) {
+      // 添加解密后的令牌字段供本地代理使用
+      if (doc.decryptToken) {
+        ret.token = doc.decryptToken();
+      }
       // 不返回加密的访问令牌
       delete ret.accessToken;
       return ret;
@@ -220,16 +219,23 @@ augmentTokenSchema.methods.getMaskedToken = function () {
 
 // 实例方法：更新使用统计
 augmentTokenSchema.methods.recordUsage = function (success = true) {
-  this.usageStats.totalUses += 1;
+  // 确保usageStats是对象
+  if (!this.usageStats || typeof this.usageStats !== 'object') {
+    this.usageStats = { totalUses: 0, failureCount: 0 };
+  }
+
+  this.usageStats.totalUses = (this.usageStats.totalUses || 0) + 1;
   this.usageStats.lastUsed = new Date();
 
   if (success) {
     this.usageStats.lastSuccessfulUse = new Date();
     this.usageStats.failureCount = 0;
   } else {
-    this.usageStats.failureCount += 1;
+    this.usageStats.failureCount = (this.usageStats.failureCount || 0) + 1;
   }
 
+  // 标记字段已修改（Mixed类型需要）
+  this.markModified('usageStats');
   return this.save();
 };
 
@@ -261,6 +267,8 @@ augmentTokenSchema.methods.updatePortalInfo = function (portalInfo) {
     last_updated: new Date()
   };
 
+  // 标记字段已修改（Mixed类型需要）
+  this.markModified('usageStats');
   return this.save();
 };
 

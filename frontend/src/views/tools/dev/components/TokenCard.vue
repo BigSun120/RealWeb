@@ -85,13 +85,38 @@
       <!-- 使用统计 -->
       <div v-if="token.usage_stats" class="usage-stats">
         <div class="stats-item">
-          <span class="label">使用次数:</span>
-          <span class="value">{{ token.usage_stats.totalUses || 0 }}</span>
+          <span class="label">剩余次数:</span>
+          <span class="value">{{ parseFloat(token.usage_stats.credits_balance || 0) }} User Messages</span>
         </div>
-        
-        <div v-if="token.usage_stats.lastUsed" class="stats-item">
-          <span class="label">最后使用:</span>
-          <span class="value">{{ formatDate(token.usage_stats.lastUsed) }}</span>
+
+        <div v-if="token.usage_stats.last_updated" class="stats-item">
+          <span class="label">更新时间:</span>
+          <span class="value">{{ formatDate(token.usage_stats.last_updated) }}</span>
+        </div>
+      </div>
+
+      <!-- 编辑器切换区域 -->
+      <div v-if="hasLocalProxy" class="editor-switcher">
+        <div class="switcher-header">
+          <span class="label">快速切换到编辑器:</span>
+        </div>
+        <div class="editor-buttons">
+          <el-tooltip
+            v-for="editor in supportedEditors"
+            :key="editor.type"
+            :content="`切换到 ${editor.name}`"
+            placement="top"
+          >
+            <el-button
+              size="small"
+              :loading="switchingEditor === editor.type"
+              @click="handleEditorSwitch(editor.type)"
+              class="editor-btn"
+            >
+              <span class="editor-icon">{{ editor.icon }}</span>
+              <span class="editor-name">{{ editor.name }}</span>
+            </el-button>
+          </el-tooltip>
         </div>
       </div>
 
@@ -106,7 +131,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import {
   MoreFilled,
   Edit,
@@ -117,6 +142,8 @@ import {
   Refresh
 } from '@element-plus/icons-vue'
 import { useAugmentAuth } from '@/composables/useAugmentAuth'
+import { useLocalProxy } from '@/composables/useLocalProxy'
+import { ElMessage } from 'element-plus'
 
 // Props
 const props = defineProps({
@@ -137,7 +164,11 @@ const emit = defineEmits([
 ])
 
 // 使用组合式函数
-const { formatTokenStatus, getTokenDisplayName } = useAugmentAuth()
+const { formatTokenStatus, getTokenDisplayName, formatDate, formatUrl } = useAugmentAuth()
+const { proxyStatus, callProxyApi } = useLocalProxy()
+
+// 响应式数据
+const switchingEditor = ref(null)
 
 // 计算属性
 const displayName = computed(() => {
@@ -147,6 +178,21 @@ const displayName = computed(() => {
 const statusInfo = computed(() => {
   return formatTokenStatus(props.token.ban_status)
 })
+
+// 本地代理相关计算属性
+const hasLocalProxy = computed(() => {
+  return proxyStatus.isAvailable
+})
+
+// 支持的编辑器列表
+const supportedEditors = [
+  { type: 'vscode', name: 'VS Code', icon: '🔵' },
+  { type: 'cursor', name: 'Cursor', icon: '🔷' },
+  { type: 'windsurf', name: 'Windsurf', icon: '🌊' },
+  { type: 'trae', name: 'Trae', icon: '⚡' },
+  { type: 'qoder', name: 'Qoder', icon: '📝' },
+  { type: 'jetbrains', name: 'JetBrains', icon: '🔶' }
+]
 
 // 方法
 const handleCommand = (command) => {
@@ -172,24 +218,33 @@ const handleCommand = (command) => {
   }
 }
 
-const formatDate = (dateString) => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+// 编辑器切换方法
+const handleEditorSwitch = async (editorType) => {
+  if (!hasLocalProxy.value) {
+    ElMessage.warning('本地代理服务不可用，无法切换编辑器')
+    return
+  }
 
-const formatUrl = (url) => {
   try {
-    const urlObj = new URL(url)
-    return urlObj.hostname
-  } catch {
-    return url
+    switchingEditor.value = editorType
+
+    await callProxyApi('/switch-account', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        tokenData: props.token,
+        editorType: editorType
+      })
+    })
+
+    ElMessage.success(`已切换到 ${supportedEditors.find(e => e.type === editorType)?.name}`)
+  } catch (error) {
+    console.error('Editor switch failed:', error)
+    ElMessage.error(`切换失败: ${error.message}`)
+  } finally {
+    switchingEditor.value = null
   }
 }
 </script>
@@ -306,6 +361,54 @@ const formatUrl = (url) => {
 
 :deep(.danger-item:hover) {
   background-color: var(--el-color-danger-light-9);
+}
+
+/* 编辑器切换样式 */
+.editor-switcher {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+.switcher-header {
+  margin-bottom: 12px;
+}
+
+.switcher-header .label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+.editor-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.editor-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--el-border-color);
+  background: var(--el-bg-color);
+  transition: all 0.3s ease;
+}
+
+.editor-btn:hover {
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+.editor-icon {
+  font-size: 16px;
+}
+
+.editor-name {
+  font-size: 12px;
+  font-weight: 500;
 }
 
 /* 响应式设计 */

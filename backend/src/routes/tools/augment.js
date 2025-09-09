@@ -27,37 +27,34 @@ router.get('/download/:platform', async (req, res) => {
     const path = require('path');
     const fs = require('fs');
 
-    const localExePath = path.resolve(__dirname, '../../../augment-proxy/AugmentTokenManager.exe');
+    const localExePath = path.resolve(__dirname, '../../../../augment-proxy/AugmentTokenManager.exe');
     const hasLocalExe = fs.existsSync(localExePath);
+
+
 
     const downloadUrls = {
       windows: {
-        url: hasLocalExe ? `/static/AugmentTokenManager.exe` : 'https://github.com/agassiz/augment-token-mng/releases/latest/download/augment-token-manager-windows.exe',
+        url: hasLocalExe ? `/static/AugmentTokenManager.exe` : null,
         filename: 'AugmentTokenManager.exe',
         local: hasLocalExe
       },
       macos: {
-        url: 'https://github.com/agassiz/augment-token-mng/releases/latest/download/augment-token-manager-macos.dmg',
+        url: null,
         filename: 'Augment-Token-Manager-macOS.dmg',
         local: false
       },
       linux: {
-        url: 'https://github.com/agassiz/augment-token-mng/releases/latest/download/augment-token-manager-linux.AppImage',
+        url: null,
         filename: 'Augment-Token-Manager-Linux.AppImage',
-        local: false
-      },
-      source: {
-        url: 'https://github.com/agassiz/augment-token-mng',
-        filename: 'Augment-Token-Manager-Source',
         local: false
       }
     };
 
     const downloadInfo = downloadUrls[platform];
-    if (!downloadInfo) {
+    if (!downloadInfo || !downloadInfo.url) {
       return res.status(404).json({
         success: false,
-        message: '不支持的平台'
+        message: platform === 'windows' ? '本地文件不存在' : '暂不支持该平台'
       });
     }
 
@@ -73,7 +70,11 @@ router.get('/download/:platform', async (req, res) => {
           if (err) {
             logger.error(`Failed to send local file: ${err.message}`);
             if (!res.headersSent) {
-              res.redirect(downloadInfo.url);
+              res.status(500).json({
+                success: false,
+                message: '文件发送失败',
+                error: err.message
+              });
             }
           } else {
             logger.info(`Local file downloaded: ${localExePath}`);
@@ -82,7 +83,11 @@ router.get('/download/:platform', async (req, res) => {
         return;
       } catch (error) {
         logger.error(`Failed to send local file: ${error.message}`);
-        // 如果本地文件发送失败，回退到重定向
+        return res.status(500).json({
+          success: false,
+          message: '文件发送失败',
+          error: error.message
+        });
       }
     }
 
@@ -475,8 +480,8 @@ router.post('/tokens/:tokenId/refresh-portal-info', async (req, res) => {
       });
     }
 
-    // 刷新Portal信息
-    const portalInfo = await AugmentService.getCustomerInfo(decryptedToken, token.tenantUrl);
+    // 刷新Portal信息 - 使用portalUrl而不是tenantUrl
+    const portalInfo = await AugmentService.getCustomerInfo(decryptedToken, token.portalUrl);
 
     // 更新令牌Portal信息
     await token.updatePortalInfo(portalInfo);
@@ -537,7 +542,7 @@ router.post('/tokens/batch-refresh-portal-info', async (req, res) => {
             return { tokenId, success: false, error: '令牌解密失败' };
           }
 
-          const portalInfo = await AugmentService.getCustomerInfo(decryptedToken, token.tenantUrl);
+          const portalInfo = await AugmentService.getCustomerInfo(decryptedToken, token.portalUrl);
           await token.updatePortalInfo(portalInfo);
 
           return {

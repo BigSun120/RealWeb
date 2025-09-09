@@ -139,7 +139,38 @@ class AccountManager:
         self.logger.info(f"Account switched to {account_id} for {editor_type}")
         
         return result
-    
+
+    def switch_account_with_data(self, token_data: Dict, editor_type: str) -> Dict:
+        """使用令牌数据直接切换账号"""
+        editor_config = self.config.get_editor_config(editor_type)
+        if not editor_config:
+            raise ValueError(f"Unsupported editor: {editor_type}")
+
+        # 构造账号数据格式
+        account = {
+            'id': token_data.get('id', ''),
+            'email': token_data.get('email', ''),
+            'token': token_data.get('token', ''),
+            'created_at': token_data.get('created_at', ''),
+            'last_used': datetime.now().isoformat()
+        }
+
+        # 根据编辑器类型执行不同的切换逻辑
+        if editor_config['type'] == 'vscode':
+            result = self._switch_vscode_account(account, editor_config)
+        elif editor_config['type'] == 'jetbrains':
+            result = self._switch_jetbrains_account(account, editor_config)
+        else:
+            raise ValueError(f"Unknown editor type: {editor_config['type']}")
+
+        self.logger.info(f"Account switched with token data for {editor_type}")
+
+        return {
+            'token_id': account['id'],
+            'editor_type': editor_type,
+            'switched_at': datetime.now().isoformat()
+        }
+
     def _switch_vscode_account(self, account: Dict, editor_config: Dict) -> Dict:
         """切换VSCode系编辑器账号"""
         try:
@@ -161,8 +192,8 @@ class AccountManager:
             
             # 更新Augment配置
             settings.update({
-                'augment.accessToken': account['access_token'],
-                'augment.tenantUrl': account['tenant_url'],
+                'augment.accessToken': account['token'],
+                'augment.tenantUrl': account.get('tenant_url', ''),
                 'augment.portalUrl': account.get('portal_url', ''),
                 'augment.lastUpdated': datetime.now().isoformat()
             })
@@ -210,8 +241,8 @@ class AccountManager:
             xml_content = f'''<?xml version="1.0" encoding="UTF-8"?>
 <application>
   <component name="AugmentSettings">
-    <option name="accessToken" value="{account['access_token']}" />
-    <option name="tenantUrl" value="{account['tenant_url']}" />
+    <option name="accessToken" value="{account['token']}" />
+    <option name="tenantUrl" value="{account.get('tenant_url', '')}" />
     <option name="portalUrl" value="{account.get('portal_url', '')}" />
     <option name="lastUpdated" value="{datetime.now().isoformat()}" />
   </component>

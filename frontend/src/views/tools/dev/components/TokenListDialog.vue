@@ -187,6 +187,10 @@ const handleCheckStatus = async (token) => {
 const handleRefreshUsage = async (token) => {
   try {
     await refreshTokenUsage(token.id)
+    // 延迟2秒后重新加载令牌列表，确保数据库已更新
+    setTimeout(async () => {
+      await loadTokens()
+    }, 2000)
   } catch (error) {
     // 错误已在组合式函数中处理
   }
@@ -215,6 +219,10 @@ const batchRefreshUsage = async () => {
   try {
     const tokenIds = tokens.value.map(t => t.id)
     await batchRefreshTokenUsage(tokenIds)
+    // 延迟2秒后重新加载令牌列表，确保数据库已更新
+    setTimeout(async () => {
+      await loadTokens()
+    }, 2000)
   } catch (error) {
     // 错误已在组合式函数中处理
   }
@@ -258,7 +266,7 @@ const handleImportSuccess = () => {
   refreshTokens()
 }
 
-// 监听对话框打开，自动加载数据
+// 监听对话框打开，自动加载本地令牌数据
 watch(visible, (newValue) => {
   if (newValue) {
     loadTokens()

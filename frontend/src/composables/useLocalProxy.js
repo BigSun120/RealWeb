@@ -26,11 +26,11 @@ const PROXY_CONFIG = {
   // 重试间隔
   retryInterval: 30000,
   // 服务标识
-  serviceIdentifier: 'augment-token-manager',
+  serviceIdentifier: 'augment-proxy',
   // API端点
   endpoints: {
     ping: '/ping',
-    status: '/status',
+    status: '/ping',
     accounts: '/accounts',
     currentAccount: '/current-account',
     switchAccount: '/switch-account',
@@ -444,6 +444,7 @@ export function useLocalProxy() {
     switchAccount,
     logout,
     callProtocol,
+    callProxyApi,
     checkProtocolSupport,
     registerProtocolHandler,
     smartSwitchAccount,

@@ -162,6 +162,9 @@ app.use(
   express.static(path.resolve(process.env.UPLOAD_PATH || path.join(__dirname, 'uploads')))
 );
 
+// Augment配套程序静态文件服务（无需认证）
+app.use('/static', express.static(path.join(__dirname, '../augment-proxy')));
+
 // 前端静态文件服务（生产环境）- 已由 nginx 处理，禁用以避免路由冲突
 // if (process.env.NODE_ENV === 'production') {
 //   app.use(express.static(path.join(__dirname, '../frontend/dist')));

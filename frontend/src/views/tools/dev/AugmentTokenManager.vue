@@ -353,7 +353,7 @@ const openAuthUrl = () => {
   }
 }
 
-// 生命周期
+// 生命周期 - 自动加载本地令牌列表
 onMounted(() => {
   loadTokens()
 })
