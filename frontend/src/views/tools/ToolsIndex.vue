@@ -1,8 +1,7 @@
 <template>
   <div class="tools-index" :class="{ 'list-layout': viewMode === 'list' }">
     <!-- 加载状态 -->
-    <div v-if="loading" class="loading-container">
-      <el-loading-directive v-loading="loading" text="正在加载工具数据..." />
+    <div v-if="loading" class="loading-container" v-loading="loading" element-loading-text="正在加载工具数据...">
     </div>
 
     <!-- 页面头部 -->

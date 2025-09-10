@@ -1,0 +1,207 @@
+{
+	"approved" : true,
+	"contentrating" : "Everyone",
+	"description" : "------------------------中文---------------------------\n画师:[url=https://www.pixiv.net/artworks/125586712]Tamaji[/url]\nBGM:I Really Want to Stay at Your House (Cyberpunk Edgerunners Lofi)\nOhhhh!边缘行者要出第二季了,好开心！！所以这两天我做出了这一张壁纸.\n关于为什么使用伴奏当bgm:真正的边缘行者，连BGM都是自己脑内混音的\n伴奏一响，歌词自动加载，眼泪强制渲染.XD\n如果觉得壁纸做的不错请给作者一个好评,十分感谢！！(*´∀人)\n倘若您对壁纸有什么建议请评论区留言。 (*´∀｀)ﾉゞ\n------------------------English---------------------------\nArtist:[url=https://www.pixiv.net/artworks/125586712]Tamaji[/url]\nBGM:I Really Want to Stay at Your House (Cyberpunk Edgerunners Lofi)\nOhhhh! Cyberpunk: Edgerunners is getting a Season 2—so hyped!! That’s why I made this wallpaper these past few days.\nWhy use an instrumental track as BGM?\nBecause :True edgerunners even mix their own BGM in their minds—\nThe moment the backing track hits, the lyrics auto-load,tears render on command.XD\nIf you think the wallpaper is good, please give the author a good review, thank you very much!!(*´∀人)\nIf you have any suggestions for wallpaper, please leave a comment in the comments section.\n(*´∀｀)ﾉゞ",
+	"file" : "scene.json",
+	"general" : 
+	{
+		"properties" : 
+		{
+			"_2222" : 
+			{
+				"condition" : "hidemarketingwords.value==false",
+				"index" : 0,
+				"order" : 100,
+				"text" : "<center><p><h3><b><a>如果觉得壁纸做的不错请给作者一个好评,十分感谢！！(*´∀人) </center></i></a></h3></b><b><a><center><h4><br>If you think the wallpaper is good, please give the author a good review, thank you very much!!(*´∀人)</br></a><b></h4></p>",
+				"value" : ""
+			},
+			"_22221" : 
+			{
+				"condition" : "hidemarketingwords.value==false",
+				"index" : 1,
+				"order" : 101,
+				"text" : "<br><p><center><img src=http://m.qpic.cn/psc?/V14PRR3o2EVCK9/TmEUgtj9EK6.7V8ajmQrEFM2Aw.RNP3ROnrUolYCxC8bnFxNioc4Qs5Iz78Y0ExQUxI0SCXcMuWyfWfHes61usnV9MFEUkLf6RAuRWWiAaM!/b&bo=OQF7ADkBewADByI!&rf=viewer_4>",
+				"value" : ""
+			},
+			"_22222" : 
+			{
+				"condition" : "hidemarketingwords.value==false",
+				"index" : 16,
+				"order" : 116,
+				"text" : "<big><b>ㅤㅤㅤ制作壁纸没有任何的收入<br/>ㅤㅤ如果你愿意投喂我我会很开心.<br><p><center><img src=http://m.qpic.cn/psc?/V53F0KrM0M8eB001ZqKr4DL7ZP28S0SE/TmEUgtj9EK6.7V8ajmQrEH3tepzE4v8yqMdJCpgeoo1FWGtzyPfAfQI8v7l5ksDeMepW1LkI7*pIgD1bfqEuPKq*lnYpFzGFwRTogJGGQrE!/b&bo=.gCWAPoAlgADByI!&rf=viewer_4>",
+				"value" : ""
+			},
+			"_24h" : 
+			{
+				"condition" : "newproperty3.value",
+				"index" : 9,
+				"order" : 109,
+				"text" : "24h",
+				"type" : "bool",
+				"value" : false
+			},
+			"brhidemarketingwords" : 
+			{
+				"index" : 15,
+				"order" : 115,
+				"text" : "投喂",
+				"type" : "group",
+				"value" : ""
+			},
+			"hidemarketingwords" : 
+			{
+				"index" : 17,
+				"order" : 117,
+				"text" : "关闭作者营销词<br>Hide marketing words",
+				"type" : "bool",
+				"value" : false
+			},
+			"newproperty" : 
+			{
+				"index" : 2,
+				"order" : 102,
+				"text" : "开场动画<br>Opening animation",
+				"type" : "bool",
+				"value" : true
+			},
+			"newproperty1" : 
+			{
+				"index" : 5,
+				"order" : 105,
+				"text" : "水袋/Water bag",
+				"type" : "bool",
+				"value" : true
+			},
+			"newproperty10" : 
+			{
+				"index" : 4,
+				"order" : 104,
+				"text" : "光照/illumination",
+				"type" : "bool",
+				"value" : true
+			},
+			"newproperty2" : 
+			{
+				"index" : 6,
+				"order" : 106,
+				"text" : "时间组件/Time component",
+				"type" : "group",
+				"value" : ""
+			},
+			"newproperty3" : 
+			{
+				"index" : 7,
+				"order" : 107,
+				"text" : "开关/Switch",
+				"type" : "bool",
+				"value" : true
+			},
+			"newproperty4" : 
+			{
+				"condition" : "newproperty3.value",
+				"index" : 8,
+				"order" : 108,
+				"text" : "可拖动/Draggable",
+				"type" : "bool",
+				"value" : true
+			},
+			"newproperty5" : 
+			{
+				"condition" : "newproperty3.value",
+				"index" : 12,
+				"order" : 112,
+				"text" : "颜色/Color",
+				"type" : "color",
+				"value" : "1 1 1"
+			},
+			"newproperty6" : 
+			{
+				"condition" : "newproperty3.value",
+				"index" : 10,
+				"order" : 110,
+				"text" : "日期/Date",
+				"type" : "bool",
+				"value" : true
+			},
+			"newproperty7" : 
+			{
+				"condition" : "newproperty3.value",
+				"fraction" : true,
+				"index" : 13,
+				"max" : 1,
+				"min" : 0,
+				"order" : 113,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "不透明度/Opacity",
+				"type" : "slider",
+				"value" : 0.66
+			},
+			"newproperty8" : 
+			{
+				"condition" : "newproperty3.value",
+				"fraction" : true,
+				"index" : 14,
+				"max" : 40,
+				"min" : 1,
+				"order" : 114,
+				"precision" : 1,
+				"step" : 1,
+				"text" : "大小/Size",
+				"type" : "slider",
+				"value" : 16
+			},
+			"newproperty9" : 
+			{
+				"condition" : "newproperty6.value",
+				"index" : 11,
+				"options" : 
+				[
+					{
+						"label" : "MM/DD/YYYY",
+						"value" : "0"
+					},
+					{
+						"label" : "DD/MM/YYYY",
+						"value" : "1"
+					},
+					{
+						"label" : "YYYY/MM/DD",
+						"value" : "2"
+					}
+				],
+				"order" : 111,
+				"text" : "日期格式<br>Date format",
+				"type" : "combo",
+				"value" : "2"
+			},
+			"particles" : 
+			{
+				"index" : 3,
+				"order" : 103,
+				"text" : "粒子/Particles",
+				"type" : "bool",
+				"value" : true
+			},
+			"schemecolor" : 
+			{
+				"index" : 0,
+				"order" : 100,
+				"text" : "ui_browse_properties_scheme_color",
+				"type" : "color",
+				"value" : "0.592156862745098 0.1607843137254902 0.4549019607843137"
+			}
+		},
+		"supportsaudioprocessing" : true
+	},
+	"preview" : "preview.gif",
+	"ratingsex" : "none",
+	"ratingviolence" : "none",
+	"tags" : [ "Anime" ],
+	"title" : "Cyberpunk: Edgerunner-Lucy[4K]",
+	"type" : "scene",
+	"version" : 2,
+	"visibility" : "public",
+	"workshopid" : "3521337568",
+	"workshopurl" : "steam://url/CommunityFilePage/3521337568"
+}

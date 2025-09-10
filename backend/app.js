@@ -15,6 +15,7 @@ const { initAllData } = require('./src/utils/initData');
 const { initToolsData } = require('./src/utils/initTools');
 const analyticsScheduler = require('./src/utils/analyticsScheduler');
 const errorHandler = require('./src/middleware/errorHandler');
+const initPublicNoticeReadStatus = require('./src/scripts/initPublicNoticeReadStatus');
 
 // 路由导入
 const authRoutes = require('./src/routes/auth');
@@ -64,6 +65,14 @@ const initializeDatabase = async () => {
 
       // 初始化工具箱数据
       await initToolsData();
+
+      // 初始化公告阅读状态
+      try {
+        await initPublicNoticeReadStatus();
+        logger.info('公告阅读状态初始化完成');
+      } catch (error) {
+        logger.warn('公告阅读状态初始化失败:', error.message);
+      }
 
       // 启动工具箱分析调度器
       analyticsScheduler.start();
