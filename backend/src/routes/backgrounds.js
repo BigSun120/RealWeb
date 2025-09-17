@@ -455,4 +455,294 @@ router.delete('/admin/image/:filename', requireAuth, requireAdmin, async (req, r
 
 
 
+// ==================== 批量操作API ====================
+
+/**
+ * 批量创建背景配置
+ * POST /api/backgrounds/admin/batch/create
+ */
+router.post('/admin/batch/create', requireAdmin, [
+  body('configs').isArray().withMessage('configs必须是数组'),
+  body('configs.*.pathConfig.path').notEmpty().withMessage('路径不能为空'),
+  body('configs.*.pathConfig.matchType').isIn(['exact', 'prefix', 'wildcard', 'regex']).withMessage('匹配类型无效')
+], validateRequest, async (req, res) => {
+  try {
+    const { configs } = req.body;
+
+    const results = {
+      created: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (const configData of configs) {
+      try {
+        // 检查路径是否已存在
+        const existingConfig = await PageBackground.findOne({
+          'pathConfig.path': configData.pathConfig.path,
+          'pathConfig.matchType': configData.pathConfig.matchType
+        });
+
+        if (existingConfig) {
+          results.failed++;
+          results.errors.push(`路径 ${configData.pathConfig.path} 已存在`);
+          continue;
+        }
+
+        const newConfig = new PageBackground(configData);
+        await newConfig.save();
+        results.created++;
+      } catch (error) {
+        results.failed++;
+        results.errors.push(`创建配置失败 (${configData.pathConfig?.path || '未知路径'}): ${error.message}`);
+      }
+    }
+
+    const isSuccess = results.created > 0;
+    res.json({
+      success: isSuccess,
+      message: isSuccess
+        ? `批量创建完成，成功: ${results.created}，失败: ${results.failed}`
+        : `批量创建失败，所有 ${results.failed} 个配置都创建失败`,
+      data: results
+    });
+  } catch (error) {
+    console.error('批量创建配置失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '批量创建配置失败'
+    });
+  }
+});
+
+/**
+ * 批量更新背景配置
+ * PUT /api/backgrounds/admin/batch/update
+ */
+router.put('/admin/batch/update', requireAdmin, [
+  body('ids').isArray().withMessage('ids必须是数组'),
+  body('updateData').isObject().withMessage('updateData必须是对象')
+], validateRequest, async (req, res) => {
+  try {
+    const { ids, updateData } = req.body;
+
+    let updateQuery = {};
+
+    // 处理显示设置
+    if (updateData.displaySettings) {
+      Object.keys(updateData.displaySettings).forEach(key => {
+        updateQuery[`displaySettings.${key}`] = updateData.displaySettings[key];
+      });
+    }
+
+    // 处理布局设置
+    if (updateData.layoutSettings) {
+      Object.keys(updateData.layoutSettings).forEach(key => {
+        updateQuery[`layoutSettings.${key}`] = updateData.layoutSettings[key];
+      });
+    }
+
+    // 处理激活状态
+    if (updateData.isActive !== undefined) {
+      updateQuery.isActive = updateData.isActive;
+    }
+
+    // 处理优先级更新
+    if (updateData.priorityUpdate) {
+      const { action, value } = updateData.priorityUpdate;
+
+      if (action === 'set') {
+        updateQuery['pathConfig.priority'] = value;
+      } else if (action === 'increase') {
+        // 需要逐个更新以支持增加操作
+        for (const id of ids) {
+          await PageBackground.findByIdAndUpdate(id, {
+            $inc: { 'pathConfig.priority': value }
+          });
+        }
+      } else if (action === 'decrease') {
+        for (const id of ids) {
+          await PageBackground.findByIdAndUpdate(id, {
+            $inc: { 'pathConfig.priority': -value }
+          });
+        }
+      }
+    }
+
+    // 执行批量更新（除了优先级增减操作）
+    let result;
+    if (Object.keys(updateQuery).length > 0) {
+      result = await PageBackground.updateMany(
+        { _id: { $in: ids } },
+        { $set: updateQuery }
+      );
+    } else {
+      result = { modifiedCount: ids.length }; // 优先级操作已经完成
+    }
+
+    res.json({
+      success: true,
+      message: `批量更新完成，更新了 ${result.modifiedCount} 个配置`,
+      data: { updated: result.modifiedCount }
+    });
+  } catch (error) {
+    console.error('批量更新配置失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '批量更新配置失败'
+    });
+  }
+});
+
+/**
+ * 批量删除背景配置
+ * DELETE /api/backgrounds/admin/batch/delete
+ */
+router.delete('/admin/batch/delete', requireAdmin, [
+  body('ids').isArray().withMessage('ids必须是数组')
+], validateRequest, async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    const result = await PageBackground.deleteMany({
+      _id: { $in: ids }
+    });
+
+    res.json({
+      success: true,
+      message: `批量删除完成，删除了 ${result.deletedCount} 个配置`,
+      data: { deleted: result.deletedCount }
+    });
+  } catch (error) {
+    console.error('批量删除配置失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '批量删除配置失败'
+    });
+  }
+});
+
+/**
+ * 批量启用/禁用背景配置
+ * PUT /api/backgrounds/admin/batch/toggle
+ */
+router.put('/admin/batch/toggle', requireAdmin, [
+  body('ids').isArray().withMessage('ids必须是数组'),
+  body('isActive').isBoolean().withMessage('isActive必须是布尔值')
+], validateRequest, async (req, res) => {
+  try {
+    const { ids, isActive } = req.body;
+
+    const result = await PageBackground.updateMany(
+      { _id: { $in: ids } },
+      { $set: { isActive } }
+    );
+
+    res.json({
+      success: true,
+      message: `批量${isActive ? '启用' : '禁用'}完成，更新了 ${result.modifiedCount} 个配置`,
+      data: { updated: result.modifiedCount }
+    });
+  } catch (error) {
+    console.error('批量切换状态失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '批量切换状态失败'
+    });
+  }
+});
+
+/**
+ * 导入背景配置
+ * POST /api/backgrounds/admin/import
+ */
+router.post('/admin/import', requireAdmin, [
+  body('configs').isArray().withMessage('configs必须是数组'),
+  body('options').optional().isObject().withMessage('options必须是对象')
+], validateRequest, async (req, res) => {
+  try {
+    const { configs, options = {} } = req.body;
+    const { conflictAction = 'skip', defaultActive = true, priorityOffset = 0 } = options;
+
+    const results = {
+      created: 0,
+      skipped: 0,
+      updated: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (const configData of configs) {
+      try {
+        const path = configData.pathConfig.path;
+        const matchType = configData.pathConfig.matchType;
+
+        // 检查是否存在冲突
+        const existingConfig = await PageBackground.findOne({
+          'pathConfig.path': path,
+          'pathConfig.matchType': matchType
+        });
+
+        if (existingConfig) {
+          switch (conflictAction) {
+            case 'skip':
+              results.skipped++;
+              continue;
+            case 'update':
+              await PageBackground.findByIdAndUpdate(existingConfig._id, configData);
+              results.updated++;
+              continue;
+            case 'rename':
+              // 自动重命名路径
+              let counter = 1;
+              let newPath = `${path}-${counter}`;
+              while (await PageBackground.findOne({ 'pathConfig.path': newPath, 'pathConfig.matchType': matchType })) {
+                counter++;
+                newPath = `${path}-${counter}`;
+              }
+              configData.pathConfig.path = newPath;
+              break;
+          }
+        }
+
+        // 应用优先级偏移
+        if (priorityOffset !== 0) {
+          configData.pathConfig.priority = (configData.pathConfig.priority || 100) + priorityOffset;
+        }
+
+        // 应用默认激活状态
+        if (configData.isActive === undefined) {
+          configData.isActive = defaultActive;
+        }
+
+        const newConfig = new PageBackground(configData);
+        await newConfig.save();
+        results.created++;
+      } catch (error) {
+        results.failed++;
+        results.errors.push(`导入配置失败 (${configData.pathConfig?.path || '未知路径'}): ${error.message}`);
+      }
+    }
+
+    const isSuccess = results.created > 0 || results.updated > 0;
+    const totalProcessed = results.created + results.updated + results.skipped;
+
+    res.json({
+      success: isSuccess,
+      message: isSuccess
+        ? `导入完成，创建: ${results.created}，跳过: ${results.skipped}，更新: ${results.updated}，失败: ${results.failed}`
+        : totalProcessed > 0
+          ? `导入部分成功，跳过: ${results.skipped}，失败: ${results.failed}`
+          : `导入失败，所有 ${results.failed} 个配置都导入失败`,
+      data: results
+    });
+  } catch (error) {
+    console.error('导入配置失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '导入配置失败'
+    });
+  }
+});
+
 module.exports = router;

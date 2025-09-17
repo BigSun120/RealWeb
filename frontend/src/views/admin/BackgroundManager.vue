@@ -68,6 +68,30 @@
               <el-option label="停用" :value="false" />
             </el-select>
 
+            <el-dropdown @command="handleCreateCommand">
+              <el-button type="primary">
+                <el-icon><Plus /></el-icon>
+                新增配置
+                <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="single">
+                    <el-icon><Plus /></el-icon>
+                    单个新增
+                  </el-dropdown-item>
+                  <el-dropdown-item command="batch">
+                    <el-icon><DocumentAdd /></el-icon>
+                    批量新增
+                  </el-dropdown-item>
+                  <el-dropdown-item command="import">
+                    <el-icon><Upload /></el-icon>
+                    导入配置
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+
             <el-button @click="loadConfigs" :loading="loading">
               <el-icon><refresh /></el-icon>
               刷新
@@ -81,10 +105,20 @@
     <el-card class="table-card" shadow="hover">
       <template #header>
         <div class="table-header">
-          <span class="table-title">配置列表</span>
-          <el-tag v-if="configs.length > 0" type="info" size="small">
-            共 {{ total }} 条记录
-          </el-tag>
+          <div class="table-title-section">
+            <el-icon class="title-icon"><Grid /></el-icon>
+            <span class="table-title">配置列表</span>
+          </div>
+          <div class="table-stats">
+            <el-tag v-if="configs.length > 0" type="primary" size="small" effect="light">
+              <el-icon><Document /></el-icon>
+              共 {{ total }} 条记录
+            </el-tag>
+            <el-tag v-if="configs.filter(c => c.isActive).length > 0" type="success" size="small" effect="light">
+              <el-icon><Check /></el-icon>
+              {{ configs.filter(c => c.isActive).length }} 条启用
+            </el-tag>
+          </div>
         </div>
       </template>
 
@@ -95,88 +129,210 @@
         style="width: 100%"
         :empty-text="configs.length === 0 ? '暂无配置数据，点击新增配置开始使用' : '暂无数据'"
         class="config-table"
+        :row-class-name="getRowClassName"
+        @row-click="handleRowClick"
+        @selection-change="handleSelectionChange"
+        ref="tableRef"
       >
+        <!-- 选择列 -->
+        <el-table-column type="selection" width="55" :selectable="isRowSelectable" />
         
-        <el-table-column label="路径配置" min-width="200">
+        <el-table-column label="路径配置" min-width="220">
           <template #default="{ row }">
             <div class="path-config">
               <div class="path">
-                <el-tag :type="getMatchTypeTagType(row.pathConfig.matchType)" size="small">
+                <el-tag
+                  :type="getMatchTypeTagType(row.pathConfig.matchType)"
+                  size="small"
+                  effect="light"
+                  class="match-type-tag"
+                >
+                  <el-icon><Link /></el-icon>
                   {{ getMatchTypeLabel(row.pathConfig.matchType) }}
                 </el-tag>
                 <code class="path-text">{{ row.pathConfig.path }}</code>
               </div>
               <div class="description" v-if="row.pathConfig.description">
+                <el-icon class="desc-icon"><InfoFilled /></el-icon>
                 {{ row.pathConfig.description }}
               </div>
             </div>
           </template>
         </el-table-column>
         
-        <el-table-column label="背景图片" width="120">
+        <el-table-column label="背景图片" width="140">
           <template #default="{ row }">
             <div class="image-preview" v-if="row.backgroundImage?.url">
-              <el-image
-                :src="getImageUrl(row.backgroundImage.url)"
-                :preview-src-list="[getImageUrl(row.backgroundImage.url)]"
-                fit="cover"
-                style="width: 80px; height: 45px; border-radius: 4px"
-                :preview-teleported="true"
-              />
+              <div class="image-container">
+                <el-image
+                  :src="getImageUrl(row.backgroundImage.url)"
+                  :preview-src-list="[getImageUrl(row.backgroundImage.url)]"
+                  fit="cover"
+                  class="preview-image"
+                  :preview-teleported="true"
+                  loading="lazy"
+                />
+                <div class="image-overlay">
+                  <el-icon class="preview-icon"><ZoomIn /></el-icon>
+                </div>
+              </div>
             </div>
-            <span v-else class="no-image">无图片</span>
+            <div v-else class="no-image">
+              <el-icon><Picture /></el-icon>
+              <span>无图片</span>
+            </div>
           </template>
         </el-table-column>
         
-        <el-table-column label="优先级" width="80" sortable prop="pathConfig.priority">
+        <el-table-column label="优先级" width="100" sortable prop="pathConfig.priority">
           <template #default="{ row }">
-            <el-tag size="small">{{ row.pathConfig.priority }}</el-tag>
+            <div class="priority-cell">
+              <el-tag
+                :type="getPriorityTagType(row.pathConfig.priority)"
+                size="small"
+                effect="light"
+                class="priority-tag"
+              >
+                <el-icon><Sort /></el-icon>
+                {{ row.pathConfig.priority }}
+              </el-tag>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <div class="status-cell">
+              <el-switch
+                v-model="row.isActive"
+                @change="toggleActive(row)"
+                :loading="row._updating"
+                size="small"
+                :active-icon="Check"
+                :inactive-icon="Close"
+                active-color="#67c23a"
+                inactive-color="#f56c6c"
+              />
+              <span class="status-text" :class="{ active: row.isActive }">
+                {{ row.isActive ? '启用' : '禁用' }}
+              </span>
+            </div>
           </template>
         </el-table-column>
         
-        <el-table-column label="状态" width="80">
+        <el-table-column label="创建时间" width="180" sortable prop="createdAt">
           <template #default="{ row }">
-            <el-switch
-              v-model="row.isActive"
-              @change="toggleActive(row)"
-              :loading="row._updating"
-            />
+            <div class="time-cell">
+              <el-icon class="time-icon"><Clock /></el-icon>
+              <div class="time-info">
+                <div class="date">{{ formatDate(row.createdAt) }}</div>
+                <div class="relative-time">{{ getRelativeTime(row.createdAt) }}</div>
+              </div>
+            </div>
           </template>
         </el-table-column>
-        
-        <el-table-column label="创建时间" width="160" sortable prop="createdAt">
+
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            {{ formatDate(row.createdAt) }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" @click="editConfig(row)">
-              <el-icon><edit /></el-icon>
-              编辑
-            </el-button>
-            
-            <el-button size="small" type="info" @click="previewConfig(row)">
-              <el-icon><view /></el-icon>
-              预览
-            </el-button>
-            
-            <el-popconfirm
-              title="确定要删除这个配置吗？"
-              @confirm="deleteConfig(row._id)"
-            >
-              <template #reference>
-                <el-button size="small" type="danger">
-                  <el-icon><delete /></el-icon>
-                  删除
-                </el-button>
-              </template>
-            </el-popconfirm>
+            <div class="action-buttons">
+              <el-button size="small" type="primary" @click="editConfig(row)" class="action-btn">
+                <el-icon><Edit /></el-icon>
+                编辑
+              </el-button>
+
+              <el-button size="small" type="success" @click="previewConfig(row)" class="action-btn">
+                <el-icon><View /></el-icon>
+                预览
+              </el-button>
+
+              <el-popconfirm
+                title="确定要删除这个配置吗？"
+                @confirm="deleteConfig(row._id)"
+                confirm-button-text="确定删除"
+                cancel-button-text="取消"
+                confirm-button-type="danger"
+                :icon="WarningFilled"
+                icon-color="#f56c6c"
+              >
+                <template #reference>
+                  <el-button size="small" type="danger" class="action-btn">
+                    <el-icon><Delete /></el-icon>
+                    删除
+                  </el-button>
+                </template>
+              </el-popconfirm>
+            </div>
           </template>
         </el-table-column>
       </el-table>
-      
+
+      <!-- 批量操作工具栏 -->
+      <transition name="batch-toolbar-fade">
+        <div v-if="selectedConfigs.length > 0" class="batch-toolbar">
+          <div class="batch-info">
+            <div class="batch-icon-wrapper">
+              <el-icon class="batch-icon"><Select /></el-icon>
+            </div>
+            <div class="batch-text">
+              <span class="batch-label">已选择</span>
+              <strong class="batch-count">{{ selectedConfigs.length }}</strong>
+              <span class="batch-unit">项配置</span>
+            </div>
+          </div>
+
+          <div class="batch-actions">
+            <div class="action-group primary-actions">
+              <el-button
+                size="small"
+                @click="batchEnable"
+                :disabled="!canBatchEnable"
+                class="batch-btn enable-btn"
+              >
+                <el-icon><Check /></el-icon>
+                <span>启用</span>
+              </el-button>
+              <el-button
+                size="small"
+                @click="batchDisable"
+                :disabled="!canBatchDisable"
+                class="batch-btn disable-btn"
+              >
+                <el-icon><Close /></el-icon>
+                <span>禁用</span>
+              </el-button>
+              <el-button
+                size="small"
+                @click="openBatchEditDialog"
+                class="batch-btn edit-btn"
+              >
+                <el-icon><Edit /></el-icon>
+                <span>编辑</span>
+              </el-button>
+            </div>
+
+            <div class="action-group secondary-actions">
+              <el-button
+                size="small"
+                type="danger"
+                @click="batchDelete"
+                class="batch-btn delete-btn"
+              >
+                <el-icon><Delete /></el-icon>
+                <span>删除</span>
+              </el-button>
+              <el-button
+                size="small"
+                @click="clearSelection"
+                class="batch-btn cancel-btn"
+              >
+                <el-icon><RefreshLeft /></el-icon>
+                <span>取消</span>
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
       <!-- 分页 -->
       <div class="pagination-wrapper">
         <el-pagination
@@ -203,15 +359,38 @@
       v-model="showPreviewDialog"
       :config="previewingConfig"
     />
+
+    <!-- 批量编辑对话框 -->
+    <batch-edit-dialog
+      v-model="showBatchEditDialog"
+      :selected-configs="selectedConfigs"
+      @success="handleBatchEditSuccess"
+    />
+
+    <!-- 批量新增对话框 -->
+    <batch-create-dialog
+      v-model="showBatchCreateDialog"
+      @success="handleBatchCreateSuccess"
+    />
+
+    <!-- 导入配置对话框 -->
+    <import-config-dialog
+      v-model="showImportDialog"
+      @success="handleImportSuccess"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRoute } from 'vue-router';
 import {
-  Plus, Delete, Search, Refresh, Edit, View, Picture
+  Plus, Delete, Search, Refresh, Edit, View, Picture,
+  Grid, Document, Check, Link, InfoFilled, ZoomIn,
+  Sort, Close, Clock, WarningFilled, ArrowDown,
+  DocumentAdd, Upload, CopyDocument, Select, Download,
+  RefreshLeft
 } from '@element-plus/icons-vue';
 import {
   getBackgroundConfigs,
@@ -219,10 +398,15 @@ import {
   deleteBackgroundConfig,
   updateBackgroundConfig,
   getImageUrl,
-  getMatchTypeLabel
+  getMatchTypeLabel,
+  batchToggleBackgroundConfigs,
+  batchDeleteBackgroundConfigs
 } from '@/api/backgrounds';
 import BackgroundConfigDialog from '@/components/admin/BackgroundConfigDialog.vue';
 import BackgroundPreviewDialog from '@/components/admin/BackgroundPreviewDialog.vue';
+import BatchEditDialog from '@/components/admin/BatchEditDialog.vue';
+import BatchCreateDialog from '@/components/admin/BatchCreateDialog.vue';
+import ImportConfigDialog from '@/components/admin/ImportConfigDialog.vue';
 
 // 响应式数据
 const loading = ref(false);
@@ -239,6 +423,13 @@ const showPreviewDialog = ref(false);
 const editingConfig = ref(null);
 const previewingConfig = ref(null);
 
+// 批量操作相关
+const selectedConfigs = ref([]);
+const tableRef = ref(null);
+const showBatchEditDialog = ref(false);
+const showBatchCreateDialog = ref(false);
+const showImportDialog = ref(false);
+
 // 路由和测试
 const route = useRoute();
 const currentTestPath = computed(() => {
@@ -248,6 +439,15 @@ const currentTestPath = computed(() => {
 // 统计数据
 const activeCount = computed(() => {
   return configs.value.filter(config => config.isActive).length;
+});
+
+// 批量操作计算属性
+const canBatchEnable = computed(() => {
+  return selectedConfigs.value.some(config => !config.isActive);
+});
+
+const canBatchDisable = computed(() => {
+  return selectedConfigs.value.some(config => config.isActive);
 });
 
 // 搜索防抖
@@ -271,7 +471,6 @@ const loadConfigs = async () => {
       total.value = response.data.data.pagination.total;
     }
   } catch (error) {
-    console.error('加载配置列表失败:', error);
     ElMessage.error('加载配置列表失败');
   } finally {
     loading.value = false;
@@ -291,12 +490,24 @@ const handleSearch = () => {
 
 
 const editConfig = (config) => {
-  editingConfig.value = { ...config };
+  if (!config) {
+    ElMessage.error('配置数据无效');
+    return;
+  }
+
+  // 深拷贝配置对象，避免引用问题
+  editingConfig.value = JSON.parse(JSON.stringify(config));
   showCreateDialog.value = true;
 };
 
 const previewConfig = (config) => {
-  previewingConfig.value = config;
+  if (!config) {
+    ElMessage.error('配置数据无效');
+    return;
+  }
+
+  // 深拷贝配置对象，避免引用问题
+  previewingConfig.value = JSON.parse(JSON.stringify(config));
   showPreviewDialog.value = true;
 };
 
@@ -309,7 +520,6 @@ const toggleActive = async (config) => {
     
     ElMessage.success(`配置已${config.isActive ? '激活' : '停用'}`);
   } catch (error) {
-    console.error('更新配置状态失败:', error);
     config.isActive = !config.isActive; // 回滚状态
     ElMessage.error('更新配置状态失败');
   } finally {
@@ -323,7 +533,6 @@ const deleteConfig = async (id) => {
     ElMessage.success('配置删除成功');
     loadConfigs();
   } catch (error) {
-    console.error('删除配置失败:', error);
     ElMessage.error('删除配置失败');
   }
 };
@@ -337,7 +546,6 @@ const testCurrentPath = async () => {
       ElMessage.warning(`路径 "${currentTestPath.value}" 未匹配到任何配置`);
     }
   } catch (error) {
-    console.error('测试路径失败:', error);
     ElMessage.error('测试路径失败');
   }
 };
@@ -362,7 +570,175 @@ const getMatchTypeTagType = (matchType) => {
 };
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleString('zh-CN');
+  return new Date(date).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const getPriorityTagType = (priority) => {
+  if (priority >= 90) return 'danger';
+  if (priority >= 70) return 'warning';
+  if (priority >= 50) return 'primary';
+  return 'info';
+};
+
+const getRowClassName = ({ row }) => {
+  return row.isActive ? 'active-row' : 'inactive-row';
+};
+
+const handleRowClick = (row) => {
+  // 可以添加行点击事件，比如展开详情
+};
+
+const getRelativeTime = (date) => {
+  const now = new Date();
+  const target = new Date(date);
+  const diff = now - target;
+
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (days > 0) return `${days}天前`;
+  if (hours > 0) return `${hours}小时前`;
+  if (minutes > 0) return `${minutes}分钟前`;
+  return '刚刚';
+};
+
+// 批量操作方法
+const handleSelectionChange = (selection) => {
+  selectedConfigs.value = selection;
+};
+
+const isRowSelectable = (row) => {
+  return true; // 所有行都可选择
+};
+
+const clearSelection = () => {
+  if (tableRef.value) {
+    tableRef.value.clearSelection();
+  }
+  selectedConfigs.value = [];
+};
+
+const handleCreateCommand = (command) => {
+  switch (command) {
+    case 'single':
+      showCreateDialog.value = true;
+      editingConfig.value = null; // 确保是新增模式
+      break;
+    case 'batch':
+      showBatchCreateDialog.value = true;
+      break;
+    case 'import':
+      showImportDialog.value = true;
+      break;
+  }
+};
+
+const batchEnable = async () => {
+  const disabledConfigs = selectedConfigs.value.filter(config => !config.isActive);
+  if (disabledConfigs.length === 0) {
+    ElMessage.warning('没有需要启用的配置');
+    return;
+  }
+
+  try {
+    const ids = disabledConfigs.map(config => config._id);
+    const response = await batchToggleBackgroundConfigs(ids, true);
+
+    if (response.data.success) {
+      ElMessage.success(`已启用 ${response.data.data.updated} 个配置`);
+      loadConfigs();
+    } else {
+      ElMessage.error(response.data.message || '批量启用失败');
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '批量启用失败');
+  }
+};
+
+const batchDisable = async () => {
+  const enabledConfigs = selectedConfigs.value.filter(config => config.isActive);
+  if (enabledConfigs.length === 0) {
+    ElMessage.warning('没有需要禁用的配置');
+    return;
+  }
+
+  try {
+    const ids = enabledConfigs.map(config => config._id);
+    const response = await batchToggleBackgroundConfigs(ids, false);
+
+    if (response.data.success) {
+      ElMessage.success(`已禁用 ${response.data.data.updated} 个配置`);
+      loadConfigs();
+    } else {
+      ElMessage.error(response.data.message || '批量禁用失败');
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '批量禁用失败');
+  }
+};
+
+
+
+const batchDelete = async () => {
+  if (selectedConfigs.value.length === 0) return;
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedConfigs.value.length} 个配置吗？此操作不可恢复。`,
+      '批量删除确认',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    );
+
+    const ids = selectedConfigs.value.map(config => config._id);
+    const response = await batchDeleteBackgroundConfigs(ids);
+
+    if (response.data.success) {
+      ElMessage.success(`已删除 ${response.data.data.deleted} 个配置`);
+      loadConfigs();
+      clearSelection();
+    } else {
+      ElMessage.error(response.data.message || '批量删除失败');
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '批量删除失败');
+    }
+  }
+};
+
+const handleBatchEditSuccess = () => {
+  loadConfigs();
+  showBatchEditDialog.value = false;
+};
+
+const handleBatchCreateSuccess = () => {
+  loadConfigs();
+  showBatchCreateDialog.value = false;
+};
+
+const handleImportSuccess = () => {
+  loadConfigs();
+  showImportDialog.value = false;
+};
+
+const openBatchEditDialog = () => {
+  if (selectedConfigs.value.length === 0) {
+    ElMessage.warning('请先选择要编辑的配置');
+    return;
+  }
+  showBatchEditDialog.value = true;
 };
 
 // 生命周期
@@ -380,11 +756,13 @@ onMounted(() => {
 
 .page-header {
   margin-bottom: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #e55a4f 0%, #d2691e 100%);
   border-radius: 12px;
   padding: 32px;
   color: white;
-  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 32px rgba(229, 90, 79, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .header-content {
@@ -497,10 +875,27 @@ onMounted(() => {
   align-items: center;
 }
 
+.table-title-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title-icon {
+  color: #409eff;
+  font-size: 20px;
+}
+
 .table-title {
   font-size: 18px;
   font-weight: 600;
   color: #303133;
+}
+
+.table-stats {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .config-table {
@@ -508,24 +903,58 @@ onMounted(() => {
   overflow: hidden;
 }
 
+.config-table :deep(.el-table__row) {
+  transition: all 0.3s ease;
+}
+
+.config-table :deep(.el-table__row:hover) {
+  background-color: #f8f9ff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.config-table :deep(.active-row) {
+  background-color: #f0f9ff;
+}
+
+.config-table :deep(.inactive-row) {
+  background-color: #fafafa;
+  opacity: 0.8;
+}
+
 .path-config .path {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.match-type-tag {
+  font-weight: 500;
 }
 
 .path-text {
-  background: #f5f5f5;
-  padding: 2px 6px;
-  border-radius: 3px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 4px 8px;
+  border-radius: 6px;
   font-family: 'Courier New', monospace;
   font-size: 12px;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  font-weight: 500;
 }
 
 .description {
   font-size: 12px;
-  color: #666;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.desc-icon {
+  color: #6c757d;
+  font-size: 12px;
 }
 
 .image-preview {
@@ -533,14 +962,317 @@ onMounted(() => {
   justify-content: center;
 }
 
+.image-container {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.image-container:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.preview-image {
+  width: 90px;
+  height: 50px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-container:hover .image-overlay {
+  opacity: 1;
+}
+
+.preview-icon {
+  color: white;
+  font-size: 20px;
+}
+
 .no-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   color: #999;
   font-size: 12px;
+  padding: 16px 8px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+}
+
+.priority-cell {
+  display: flex;
+  justify-content: center;
+}
+
+.priority-tag {
+  font-weight: 600;
+}
+
+.status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-text {
+  font-size: 12px;
+  color: #909399;
+  transition: color 0.3s ease;
+}
+
+.status-text.active {
+  color: #67c23a;
+  font-weight: 500;
+}
+
+.time-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-icon {
+  color: #909399;
+  font-size: 14px;
+}
+
+.time-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date {
+  font-size: 13px;
+  color: #303133;
+  font-weight: 500;
+}
+
+.relative-time {
+  font-size: 11px;
+  color: #909399;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.action-btn {
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 批量操作栏动画 */
+.batch-toolbar-fade-enter-active,
+.batch-toolbar-fade-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.batch-toolbar-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+}
+
+.batch-toolbar-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+}
+
+.batch-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #e55a4f 0%, #d2691e 100%);
+  border-radius: 16px;
+  margin: 20px 0;
+  color: white;
+  box-shadow: 0 8px 32px rgba(229, 90, 79, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.batch-toolbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.batch-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.batch-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.batch-icon {
+  font-size: 20px;
+  color: white;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.batch-text {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 16px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.batch-label {
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.batch-count {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.batch-unit {
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.action-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.primary-actions {
+  padding-right: 16px;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.batch-btn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-weight: 500 !important;
+  border-radius: 10px !important;
+  padding: 8px 16px !important;
+  backdrop-filter: blur(10px) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  min-width: 80px !important;
+}
+
+.batch-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.batch-btn.is-disabled {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  transform: none !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+}
+
+.batch-btn .el-icon {
+  margin-right: 6px;
+}
+
+.enable-btn:hover {
+  background: rgba(103, 194, 58, 0.3) !important;
+  border-color: rgba(103, 194, 58, 0.5) !important;
+}
+
+.disable-btn:hover {
+  background: rgba(245, 108, 108, 0.3) !important;
+  border-color: rgba(245, 108, 108, 0.5) !important;
+}
+
+.edit-btn:hover {
+  background: rgba(64, 158, 255, 0.3) !important;
+  border-color: rgba(64, 158, 255, 0.5) !important;
+}
+
+.delete-btn {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.4) !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3) !important;
+}
+
+.cancel-btn:hover {
+  background: rgba(144, 147, 153, 0.3) !important;
+  border-color: rgba(144, 147, 153, 0.5) !important;
 }
 
 .pagination-wrapper {
-  margin-top: 20px;
+  margin-top: 24px;
   display: flex;
   justify-content: center;
+  padding: 16px 0;
+  background: #fafbfc;
+  border-radius: 8px;
+  margin-left: -24px;
+  margin-right: -24px;
 }
 </style>

@@ -141,6 +141,7 @@ export function useBackgroundManager(options = {}) {
       backgroundPosition: layout.backgroundPosition || 'center center',
       backgroundRepeat: layout.backgroundRepeat || 'no-repeat',
       backgroundAttachment: layout.backgroundAttachment || 'scroll',
+      zIndex: layout.zIndex !== undefined ? layout.zIndex : -1,
       opacity: display.opacity !== undefined ? display.opacity : 1,
       filter: filters.length > 0 ? filters.join(' ') : 'none'
     };
@@ -157,6 +158,7 @@ export function useBackgroundManager(options = {}) {
       '--bg-position': styles.backgroundPosition || 'center center',
       '--bg-repeat': styles.backgroundRepeat || 'no-repeat',
       '--bg-attachment': styles.backgroundAttachment || 'scroll',
+      '--bg-z-index': styles.zIndex || -1,
       '--bg-opacity': styles.opacity || 1,
       '--bg-filter': styles.filter || 'none'
     };
@@ -224,6 +226,7 @@ export function useBackgroundManager(options = {}) {
       '--bg-position',
       '--bg-repeat',
       '--bg-attachment',
+      '--bg-z-index',
       '--bg-opacity',
       '--bg-filter'
     ];

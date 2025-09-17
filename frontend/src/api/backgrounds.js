@@ -90,6 +90,54 @@ export const deleteBackgroundImage = (filename) => {
   return api.delete(`/backgrounds/admin/image/${filename}`);
 };
 
+// ==================== 批量操作API ====================
+
+/**
+ * 批量创建背景配置
+ * @param {Array} configsData - 配置数据数组
+ */
+export const batchCreateBackgroundConfigs = (configsData) => {
+  return api.post('/backgrounds/admin/batch/create', { configs: configsData });
+};
+
+/**
+ * 批量更新背景配置
+ * @param {Array} ids - 配置ID数组
+ * @param {Object} updateData - 更新数据
+ */
+export const batchUpdateBackgroundConfigs = (ids, updateData) => {
+  return api.put('/backgrounds/admin/batch/update', { ids, updateData });
+};
+
+/**
+ * 批量删除背景配置
+ * @param {Array} ids - 配置ID数组
+ */
+export const batchDeleteBackgroundConfigs = (ids) => {
+  return api.delete('/backgrounds/admin/batch/delete', { data: { ids } });
+};
+
+/**
+ * 批量启用/禁用背景配置
+ * @param {Array} ids - 配置ID数组
+ * @param {boolean} isActive - 是否激活
+ */
+export const batchToggleBackgroundConfigs = (ids, isActive) => {
+  return api.put('/backgrounds/admin/batch/toggle', { ids, isActive });
+};
+
+/**
+ * 导入背景配置
+ * @param {Array} configsData - 配置数据数组
+ * @param {Object} options - 导入选项
+ */
+export const importBackgroundConfigs = (configsData, options = {}) => {
+  return api.post('/backgrounds/admin/import', {
+    configs: configsData,
+    options
+  });
+};
+
 
 
 // ==================== 工具函数 ====================

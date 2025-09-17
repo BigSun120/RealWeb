@@ -532,7 +532,7 @@ const handleSubmit = async () => {
     form.responsiveSettings.enableOnMobile = responsiveDevices.value.includes('mobile');
 
     // 调试：打印提交的数据
-    console.log('提交的表单数据:', JSON.stringify(form, null, 2));
+    //  console.log('提交的表单数据:', JSON.stringify(form, null, 2)); 
 
     if (isEdit.value) {
       await updateBackgroundConfig(props.config._id, form);

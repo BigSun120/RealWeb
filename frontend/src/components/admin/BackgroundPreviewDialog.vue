@@ -190,6 +190,8 @@ const emit = defineEmits(['update:modelValue', 'edit']);
 
 // 响应式数据
 const previewDevice = ref('desktop');
+const testPath = ref('');
+const testResult = ref(null);
 
 // 计算属性
 const dialogVisible = computed({
