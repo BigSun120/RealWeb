@@ -79,7 +79,7 @@ const initializeDatabase = async () => {
       analyticsScheduler.start();
 
       // 记录系统启动事件
-      await ActivityLogger.logSystemEvent('系统启动', '个人网站系统成功启动', {
+      await ActivityLogger.logSystemEvent('系统启动', '网站系统成功启动', {
         environment: process.env.NODE_ENV || 'development',
         port: PORT,
         startTime: new Date()

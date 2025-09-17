@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# 个人网站部署脚本
+# 网站部署脚本
 
 set -e  # 遇到错误立即退出
 
-echo "🚀 开始部署个人网站..."
+echo "🚀 开始部署网站..."
 
 # 检查Node.js版本
 if ! command -v node &> /dev/null; then

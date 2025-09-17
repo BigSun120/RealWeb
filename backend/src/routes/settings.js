@@ -8,15 +8,15 @@ const router = express.Router();
 router.get('/site', async (req, res, next) => {
   try {
     const siteSettings = await Settings.getSetting('site');
-    
+
     // 只返回公开的设置信息
     const publicSettings = {
-      name: siteSettings.name || '个人网站',
+      name: siteSettings.name || '网站',
       description: siteSettings.description || '分享技术与生活',
       logo: siteSettings.logo || '',
       email: siteSettings.email || ''
     };
-    
+
     res.json({
       code: 200,
       message: '获取网站设置成功',
@@ -33,7 +33,7 @@ router.get('/site', async (req, res, next) => {
 router.get('/personal', async (req, res, next) => {
   try {
     const personalSettings = await Settings.getSetting('personal');
-    
+
     // 只返回公开的个人信息
     const publicInfo = {
       bio: personalSettings.bio || '',
@@ -41,7 +41,7 @@ router.get('/personal', async (req, res, next) => {
       weibo: personalSettings.weibo || '',
       email: personalSettings.email || ''
     };
-    
+
     res.json({
       code: 200,
       message: '获取个人信息成功',
@@ -58,7 +58,7 @@ router.get('/personal', async (req, res, next) => {
 router.get('/blog', async (req, res, next) => {
   try {
     const blogSettings = await Settings.getSetting('blog');
-    
+
     // 只返回公开的博客设置
     const publicSettings = {
       pageSize: blogSettings.pageSize || 10,
@@ -66,7 +66,7 @@ router.get('/blog', async (req, res, next) => {
       enableLikes: blogSettings.enableLikes !== false,
       enableShare: blogSettings.enableShare !== false
     };
-    
+
     res.json({
       code: 200,
       message: '获取博客设置成功',
@@ -87,10 +87,10 @@ router.get('/all', async (req, res, next) => {
       Settings.getSetting('personal'),
       Settings.getSetting('blog')
     ]);
-    
+
     const publicSettings = {
       site: {
-        name: siteSettings.name || '个人网站',
+        name: siteSettings.name || '网站',
         description: siteSettings.description || '分享技术与生活',
         logo: siteSettings.logo || '',
         email: siteSettings.email || ''
@@ -108,7 +108,7 @@ router.get('/all', async (req, res, next) => {
         enableShare: blogSettings.enableShare !== false
       }
     };
-    
+
     res.json({
       code: 200,
       message: '获取设置成功',

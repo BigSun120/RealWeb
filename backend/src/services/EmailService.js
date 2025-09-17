@@ -313,7 +313,7 @@ ${resetUrl}
    * 获取网站名称
    */
   getSiteName() {
-    return process.env.SITE_NAME || '个人网站';
+    return process.env.SITE_NAME || '网站';
   }
 
   /**
