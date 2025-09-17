@@ -19,7 +19,7 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="网站名称">
-                <el-input v-model="siteInfo.name" placeholder="我的个人网站" />
+                <el-input v-model="siteInfo.name" placeholder="我的网站" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -305,7 +305,7 @@ export default {
 
     // 网站基本信息
     const siteInfo = ref({
-      name: '我的个人网站',
+      name: '我的网站',
       description: '分享技术与生活的个人博客',
       email: 'admin@example.com',
       logo: ''
@@ -352,7 +352,7 @@ export default {
       try {
         // 处理数据，确保不发送空字符串
         const dataToSave = {
-          name: siteInfo.value.name || '我的个人网站',
+          name: siteInfo.value.name || '我的网站',
           description: siteInfo.value.description || '分享技术与生活的个人博客',
           email: siteInfo.value.email || '',
           logo: siteInfo.value.logo || ''

@@ -302,7 +302,7 @@ router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore();
 
   // 设置页面标题
-  document.title = to.meta.title ? `${to.meta.title} - 个人网站` : '个人网站';
+  document.title = to.meta.title ? `${to.meta.title} - 网站` : '网站';
 
   // 如果有token但没有用户信息，尝试获取用户信息
   if (userStore.token && !userStore.user) {
