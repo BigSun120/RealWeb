@@ -250,6 +250,12 @@ const routes = [
         name: 'AdminEmailManagement',
         component: () => import('@/views/admin/EmailManagement.vue'),
         meta: { title: '邮件管理', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'backgrounds',
+        name: 'BackgroundManager',
+        component: () => import('@/views/admin/BackgroundManager.vue'),
+        meta: { title: '背景管理', requiresAuth: true, requiresAdmin: true }
       }
     ]
   },

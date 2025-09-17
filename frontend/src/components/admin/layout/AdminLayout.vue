@@ -96,6 +96,17 @@
             </el-menu-item>
           </el-sub-menu>
 
+          <!-- 外观管理区 -->
+          <el-sub-menu index="appearance" class="sub-menu">
+            <template #title>
+              <el-icon class="menu-icon"><Picture /></el-icon>
+              <span class="menu-title">外观管理</span>
+            </template>
+            <el-menu-item index="/admin/backgrounds" class="sub-menu-item">
+              <span class="sub-menu-title">背景管理</span>
+            </el-menu-item>
+          </el-sub-menu>
+
           <!-- 系统管理区 -->
           <el-menu-item index="/admin/settings" class="menu-item">
             <el-icon class="menu-icon"><Setting /></el-icon>
@@ -218,7 +229,8 @@ import {
   House,
   Tools,
   Message,
-  List
+  List,
+  Picture
 } from '@element-plus/icons-vue';
 
 export default {
@@ -233,7 +245,8 @@ export default {
     ArrowDown,
     House,
     Tools,
-    Message
+    Message,
+    Picture
   },
   setup() {
     const route = useRoute();
@@ -267,6 +280,7 @@ export default {
         tools: '工具箱',
         'email-domains': '邮箱域名管理',
         'email-management': '邮件管理',
+        backgrounds: '背景管理',
         activity: '活动日志',
         settings: '系统设置'
       };

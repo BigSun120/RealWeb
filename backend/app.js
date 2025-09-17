@@ -156,6 +156,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(
   '/uploads',
   (req, res, next) => {
+    // 调试日志
+    const uploadPath = path.resolve(process.env.UPLOAD_PATH || path.join(__dirname, 'uploads'));
+    console.log(`[Static] 请求文件: ${req.url}, 服务路径: ${uploadPath}`);
+
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
@@ -175,8 +179,7 @@ app.use(
 // Augment配套程序静态文件服务（无需认证）
 app.use('/static', express.static(path.join(__dirname, '../augment-proxy')));
 
-// 背景图片静态文件服务（无需认证）
-app.use('/uploads/backgrounds', express.static(path.join(__dirname, 'uploads/backgrounds')));
+// 背景图片静态文件服务已由上面的 /uploads 路径处理，移除重复配置
 
 // 前端静态文件服务（生产环境）- 已由 nginx 处理，禁用以避免路由冲突
 // if (process.env.NODE_ENV === 'production') {

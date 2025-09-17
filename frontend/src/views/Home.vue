@@ -2,14 +2,41 @@
   <div class="home">
     <!-- 全页面背景 -->
     <div class="page-background">
-      <MillipedeBackground
-        :enabled="!prefersReducedMotion"
-        :count="millipedeCount"
-        :opacity="0.15"
-        :interaction="true"
-        :show-controls="isDev"
-      />
+      <!-- 背景管理器 -->
+      <BackgroundManager
+        :enabled="backgroundEnabled"
+        custom-path="/"
+        :responsive="true"
+      >
+        <!-- 动态背景（MillipedeBackground） -->
+        <div v-if="showDynamicBackground" class="dynamic-background">
+          <MillipedeBackground
+            :enabled="!prefersReducedMotion"
+            :count="millipedeCount"
+            :opacity="dynamicBackgroundOpacity"
+            :interaction="true"
+            :show-controls="isDev"
+          />
+        </div>
+      </BackgroundManager>
+
       <div class="page-gradient"></div>
+    </div>
+
+    <!-- 背景切换控制器（如果允许用户切换） -->
+    <div v-if="canUserSwitchBackground" class="background-controls">
+      <el-tooltip content="切换背景模式" placement="left">
+        <el-button
+          circle
+          :type="isDynamicMode ? 'primary' : 'default'"
+          @click="toggleBackgroundMode"
+          class="background-toggle"
+        >
+          <el-icon>
+            <component :is="isDynamicMode ? 'MagicStick' : 'Picture'" />
+          </el-icon>
+        </el-button>
+      </el-tooltip>
     </div>
 
     <!-- 英雄区域 - 突破容器限制实现全屏 -->
@@ -181,16 +208,22 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
+import { MagicStick, Picture } from '@element-plus/icons-vue';
 import api from '@/api';
 import { getAvatarStyle } from '@/utils/avatar';
 import MillipedeBackground from '@/components/MillipedeBackground.vue';
+import BackgroundManager from '@/components/BackgroundManager.vue';
+import { useHomeBackgroundManager } from '@/composables/useBackgroundManager';
 
 export default {
   name: 'Home',
   components: {
-    MillipedeBackground
+    MillipedeBackground,
+    BackgroundManager,
+    MagicStick,
+    Picture
   },
   setup() {
     const settingsStore = useSettingsStore();
@@ -199,10 +232,45 @@ export default {
     const articleCount = ref(0);
     const totalViews = ref(0);
 
+    // 背景管理器
+    const homeBackgroundManager = useHomeBackgroundManager();
+    const userBackgroundMode = ref(null); // 用户手动选择的模式
+
     // 千足虫背景相关
     const prefersReducedMotion = ref(false);
     const millipedeCount = ref(3);
     const isDev = process.env.NODE_ENV === 'development';
+
+    // 背景相关计算属性
+    const backgroundEnabled = computed(() => {
+      return homeBackgroundManager.hasBackground.value &&
+             homeBackgroundManager.homeConfig.value?.enableBackgroundSwitch;
+    });
+
+    const isDynamicMode = computed(() => {
+      // 如果用户手动选择了模式，使用用户选择
+      if (userBackgroundMode.value !== null) {
+        return userBackgroundMode.value === 'dynamic';
+      }
+      // 否则使用配置的默认模式
+      return homeBackgroundManager.isDynamicMode.value;
+    });
+
+    const showDynamicBackground = computed(() => {
+      // 如果没有启用背景管理器，总是显示动态背景
+      if (!backgroundEnabled.value) return true;
+      // 如果启用了背景管理器，根据模式决定
+      return isDynamicMode.value;
+    });
+
+    const canUserSwitchBackground = computed(() => {
+      return backgroundEnabled.value && homeBackgroundManager.canUserSwitch.value;
+    });
+
+    const dynamicBackgroundOpacity = computed(() => {
+      if (!backgroundEnabled.value) return 0.15;
+      return homeBackgroundManager.dynamicOpacity.value || 0.15;
+    });
 
     // 检测用户动画偏好
     const checkMotionPreference = () => {
@@ -277,6 +345,15 @@ export default {
       });
     };
 
+    // 背景模式切换
+    const toggleBackgroundMode = () => {
+      const newMode = isDynamicMode.value ? 'static' : 'dynamic';
+      userBackgroundMode.value = newMode;
+
+      // 保存用户偏好到本地存储
+      localStorage.setItem('homeBackgroundMode', newMode);
+    };
+
     // 根据作者头像URL生成背景图样式，加载失败时显示首字母
     const getAuthorAvatarStyle = avatarUrl => {
       return getAvatarStyle(avatarUrl);
@@ -315,6 +392,15 @@ export default {
         settingsStore.loadSettings();
       }
 
+      // 初始化背景管理器
+      homeBackgroundManager.loadBackgroundConfig();
+
+      // 恢复用户背景模式偏好
+      const savedMode = localStorage.getItem('homeBackgroundMode');
+      if (savedMode && ['dynamic', 'static'].includes(savedMode)) {
+        userBackgroundMode.value = savedMode;
+      }
+
       // 初始化千足虫背景
       checkMotionPreference();
       adjustMillipedeCount();
@@ -338,6 +424,13 @@ export default {
       getAuthorAvatarStyle,
       getFullImageUrl,
       handleImageError,
+      // 背景管理相关
+      backgroundEnabled,
+      isDynamicMode,
+      showDynamicBackground,
+      canUserSwitchBackground,
+      dynamicBackgroundOpacity,
+      toggleBackgroundMode,
       // 千足虫背景相关
       prefersReducedMotion,
       millipedeCount,
@@ -369,6 +462,15 @@ export default {
     width: 100%;
     height: 100vh;
 
+    .dynamic-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 5;
+    }
+
     .page-gradient {
       position: absolute;
       top: 0;
@@ -383,6 +485,49 @@ export default {
         rgba(71, 85, 105, 0.55) 100%
       );
       z-index: 10; /* 确保渐变在背景Canvas之上 */
+    }
+  }
+
+  // 背景切换控制器
+  .background-controls {
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    z-index: 1000;
+
+    .background-toggle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      &.el-button--primary {
+        background: rgba(64, 158, 255, 0.2);
+        border-color: rgba(64, 158, 255, 0.4);
+        color: #409eff;
+
+        &:hover {
+          background: rgba(64, 158, 255, 0.3);
+          border-color: rgba(64, 158, 255, 0.6);
+        }
+      }
+
+      .el-icon {
+        font-size: 20px;
+      }
     }
   }
 
@@ -983,6 +1128,20 @@ export default {
 
 @media (max-width: 768px) {
   .home {
+    // 移动端背景控制器调整
+    .background-controls {
+      right: 15px;
+
+      .background-toggle {
+        width: 44px;
+        height: 44px;
+
+        .el-icon {
+          font-size: 18px;
+        }
+      }
+    }
+
     .fullscreen-hero {
       min-height: 80vh;
       margin-top: -70px;

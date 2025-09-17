@@ -6,6 +6,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 
 import App from './App.vue';
 import router from './router';
+import backgroundManagerPlugin from './plugins/backgroundManager';
 
 // 全局样式 - 按顺序引入
 import './styles/variables.css';
@@ -51,6 +52,15 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 app.use(createPinia());
 app.use(router);
 app.use(ElementPlus);
+
+// 注册背景管理器插件
+app.use(backgroundManagerPlugin, {
+  autoEnable: true,
+  responsive: true,
+  autoLoadOnRouteChange: true,
+  applyCSSVariables: true,
+  debug: process.env.NODE_ENV === 'development'
+});
 
 // 等路由就绪再挂载，避免在 /admin 刷新时短暂渲染默认布局导致闪屏
 router.isReady().then(() => {

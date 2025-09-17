@@ -1,0 +1,1659 @@
+{
+	"camera" : 
+	{
+		"center" : "-5.81796 835.07703 -1.00000",
+		"eye" : "-5.81796 835.07703 0.00000",
+		"up" : "0.00000 1.00000 0.00000"
+	},
+	"general" : 
+	{
+		"ambientcolor" : "0.30000 0.30000 0.30000",
+		"bloom" : false,
+		"bloomhdrfeather" : 0.1,
+		"bloomhdriterations" : 8,
+		"bloomhdrscatter" : 1.619,
+		"bloomhdrstrength" : 2.0,
+		"bloomhdrthreshold" : 1.0,
+		"bloomstrength" : 2.0,
+		"bloomthreshold" : 0.64999998,
+		"bloomtint" : "1.00000 1.00000 1.00000",
+		"camerafade" : true,
+		"cameraparallax" : true,
+		"cameraparallaxamount" : 0.5,
+		"cameraparallaxdelay" : 0.44,
+		"cameraparallaxmouseinfluence" : 0.5,
+		"camerapreview" : false,
+		"camerashake" : false,
+		"camerashakeamplitude" : 0.5,
+		"camerashakeroughness" : 1.0,
+		"camerashakespeed" : 0.58999997,
+		"clearcolor" : "0.70000 0.70000 0.70000",
+		"clearenabled" : true,
+		"farz" : 10000.0,
+		"fov" : 50.0,
+		"gravitydirection" : "0.00000 -1.00000 0.00000",
+		"gravitystrength" : 1.0,
+		"hdr" : false,
+		"nearz" : 0.0099999998,
+		"orthogonalprojection" : 
+		{
+			"height" : 2160,
+			"width" : 3840
+		},
+		"perspectiveoverridefov" : 90.0,
+		"skylightcolor" : "0.30000 0.30000 0.30000",
+		"winddirection" : "0.70700 0.70700 0.00000",
+		"windenabled" : false,
+		"windstrength" : 1.0,
+		"zoom" : 1.0
+	},
+	"objects" : 
+	[
+		{
+			"castshadow" : false,
+			"color" : "0.00000 0.00000 0.00000",
+			"id" : 1823,
+			"image" : "models/util/solidlayer.json",
+			"name" : "纯色",
+			"origin" : "1929.91235 1878.05029 0.00000",
+			"parallaxDepth" : "0.00000 0.00000",
+			"scale" : "15.82789 16.68633 1.00000",
+			"size" : "256.00000 256.00000"
+		},
+		{
+			"angles" : "0.00000 -0.00000 -0.00000",
+			"camera" : "default",
+			"fov" : 50.0,
+			"id" : 1640,
+			"name" : "",
+			"origin" : 
+			{
+				"animation" : 
+				{
+					"c0" : 
+					[
+						{
+							"back" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : -1,
+								"y" : -0.0
+							},
+							"frame" : 0,
+							"front" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : 0.83333331,
+								"y" : 0
+							},
+							"lockangle" : true,
+							"locklength" : true,
+							"value" : 159.19997
+						},
+						{
+							"back" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : -0.83333331,
+								"y" : -0.0
+							},
+							"frame" : 36,
+							"front" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : 1,
+								"y" : 0
+							},
+							"lockangle" : true,
+							"locklength" : true,
+							"value" : 244.73788
+						}
+					],
+					"c1" : 
+					[
+						{
+							"back" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : -1,
+								"y" : -0.0
+							},
+							"frame" : 0,
+							"front" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : 0.83333331,
+								"y" : 0
+							},
+							"lockangle" : true,
+							"locklength" : true,
+							"value" : 1.59997
+						},
+						{
+							"back" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : -0.83333331,
+								"y" : -0.0
+							},
+							"frame" : 36,
+							"front" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : 1,
+								"y" : 0
+							},
+							"lockangle" : true,
+							"locklength" : true,
+							"value" : -1468.7415
+						}
+					],
+					"c2" : 
+					[
+						{
+							"back" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : -1,
+								"y" : -0.0
+							},
+							"frame" : 0,
+							"front" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : 0.83333331,
+								"y" : 0
+							},
+							"lockangle" : true,
+							"locklength" : true,
+							"value" : 0
+						},
+						{
+							"back" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : -0.83333331,
+								"y" : -0.0
+							},
+							"frame" : 36,
+							"front" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : 1,
+								"y" : 0
+							},
+							"lockangle" : true,
+							"locklength" : true,
+							"value" : 0
+						}
+					],
+					"options" : 
+					{
+						"fps" : 12,
+						"length" : 60,
+						"mode" : "single",
+						"parent" : 
+						{
+							"key" : "zoom"
+						},
+						"wraploop" : null
+					},
+					"relative" : true
+				},
+				"value" : "-244.73788 1468.74146 500.00000"
+			},
+			"path" : "scripts/camera_paths_1640.json",
+			"queuemode" : "random",
+			"visible" : 
+			{
+				"user" : "newproperty",
+				"value" : true
+			},
+			"zoom" : 
+			{
+				"animation" : 
+				{
+					"c0" : 
+					[
+						{
+							"back" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : -1,
+								"y" : -0.0
+							},
+							"frame" : 0,
+							"front" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : 0.83333331,
+								"y" : 0
+							},
+							"lockangle" : true,
+							"locklength" : true,
+							"value" : 3
+						},
+						{
+							"back" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : -0.83333331,
+								"y" : -0.0
+							},
+							"frame" : 36,
+							"front" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : 1,
+								"y" : 0
+							},
+							"lockangle" : true,
+							"locklength" : true,
+							"value" : 1
+						}
+					],
+					"options" : 
+					{
+						"children" : 
+						[
+							{
+								"key" : "origin"
+							}
+						],
+						"fps" : 12,
+						"length" : 60,
+						"mode" : "single",
+						"wraploop" : null
+					}
+				},
+				"value" : 3.0
+			}
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"id" : 119,
+			"image" : "models/h.json",
+			"name" : "bei'j",
+			"origin" : "1919.99988 1080.00000 0.00000",
+			"parallaxDepth" : "0.00000 0.00000",
+			"scale" : "1.01000 1.00000 1.00000",
+			"size" : "3840.00000 2160.00000"
+		},
+		{
+			"id" : 6101,
+			"name" : "",
+			"origin" : "1791.55615 1507.68738 0.00000",
+			"parallaxDepth" : "0.00000 0.00000"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.01300",
+			"id" : 132,
+			"instanceoverride" : 
+			{
+				"id" : 133
+			},
+			"name" : "Blinking Stars1",
+			"origin" : "122.29077 -57.61560 0.00000",
+			"parent" : 6101,
+			"particle" : "particles/star.json"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.01300",
+			"id" : 147,
+			"instanceoverride" : null,
+			"name" : "Blinking Stars2",
+			"origin" : "122.29077 -57.61560 0.00000",
+			"parent" : 6101,
+			"particle" : "particles/star2.json"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"id" : 158,
+			"instanceoverride" : 
+			{
+				"alpha" : 0.80000001,
+				"id" : 16
+			},
+			"name" : "Stars3",
+			"origin" : "10.12524 -114.01355 0.00000",
+			"parent" : 6101,
+			"particle" : "particles/十字星.json"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"id" : 159,
+			"instanceoverride" : 
+			{
+				"id" : 160
+			},
+			"name" : "流星长",
+			"origin" : "-24.29773 202.78479 0.00000",
+			"parent" : 6101,
+			"particle" : "particles/presets/shootingstar.json"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"id" : 2528,
+			"instanceoverride" : null,
+			"name" : "流星",
+			"origin" : "-24.29773 202.78479 0.00000",
+			"parent" : 6101,
+			"particle" : "particles/短.json"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"id" : 115,
+			"image" : "models/d.json",
+			"name" : "d",
+			"origin" : "1920.00000 473.00000 0.00000",
+			"parallaxDepth" : "-0.02000 -0.02000",
+			"scale" : "1.01000 1.00000 1.00000",
+			"size" : "3840.00000 972.00000"
+		},
+		{
+			"id" : 599,
+			"instanceoverride" : 
+			{
+				"colorn" : "1.00000 1.00000 1.00000",
+				"id" : 601,
+				"rate" : 
+				{
+					"script" : "'use strict';\n// Please note: Do not remove this line or asset references may break.\nexport let __workshopId = '2097947622';\n\n/**\n * Configure these to control smoothing and the frequency.\n */\nlet frequencyResolution = 16; // Must be 16, 32 or 64 per channel.\nlet sourceFrequency = 1; // Must be smaller than frequencyResolution. Lower values for bass, higher for treble.\nlet smoothingRate = 16;\nlet minimumValue = 0.1;\nlet maximumValue = 1.0;\n\n/**\n * This creates a permanent link to the audio response data.\n */\nlet audioBuffer = engine.registerAudioBuffers(frequencyResolution);\nvar smoothValue = 0;\nvar initialValue;\nconst valueDelta = maximumValue - minimumValue;\n\n/**\n */\nexport function update() {\n\tlet audioDelta = audioBuffer.average[sourceFrequency] - smoothValue;\n\t\n\tsmoothValue += audioDelta * engine.frametime * smoothingRate;\n\tsmoothValue = Math.min(1.0, smoothValue);\n\n\treturn initialValue * (smoothValue * valueDelta + minimumValue);\n}\n\n/**\n */\nexport function init(value) {\n\tinitialValue = value;\n}\n\n",
+					"value" : 1.0
+				}
+			},
+			"name" : "Particles - Perspective",
+			"origin" : "1920.00000 1080.00000 0.00000",
+			"parallaxDepth" : "0.00000 0.00000",
+			"particle" : "particles/workshop/2097947622/1.json",
+			"visible" : 
+			{
+				"user" : "particles",
+				"value" : true
+			}
+		},
+		{
+			"id" : 556,
+			"name" : "",
+			"origin" : "1374.60059 1870.06165 0.00000",
+			"parallaxDepth" : "0.00000 0.00000",
+			"scale" : "2.50000 2.50000 1.00000"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"id" : 424,
+			"image" : "models/workshop/2079971872/day.json",
+			"name" : "day mask (Hide)",
+			"origin" : "-213.02759 311.26251 0.00000",
+			"parent" : 556,
+			"size" : "1000.00000 1000.00000",
+			"visible" : false
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"id" : 426,
+			"image" : "models/workshop/2079971872/night1.json",
+			"name" : "night mask (Hide)",
+			"origin" : "-213.02759 311.26251 0.00000",
+			"parent" : 556,
+			"size" : "1000.00000 1000.00000",
+			"visible" : false
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"id" : 427,
+			"image" : "models/workshop/2079971872/planetmask.json",
+			"name" : "planet mask (Hide)",
+			"origin" : "-213.02759 311.26251 0.00000",
+			"parent" : 556,
+			"size" : "1000.00000 1000.00000",
+			"visible" : false
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"effects" : 
+			[
+				{
+					"file" : "effects/workshop/2079971872/transform/effect.json",
+					"id" : 428,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"combos" : 
+							{
+								"CLAMP" : 0
+							},
+							"constantshadervalues" : 
+							{
+								"angle" : 0,
+								"offset" : "0 0",
+								"scale" : "1 1"
+							},
+							"id" : 0
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/workshop/2079971872/scroll/effect.json",
+					"id" : 430,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"repeat" : "1 1",
+								"speedx" : -0.050999999,
+								"speedy" : 0
+							},
+							"id" : 431
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/workshop/2079971872/spin/effect.json",
+					"id" : 432,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"center" : "0.5 0.5",
+								"speed" : 0
+							},
+							"id" : 433
+						}
+					],
+					"visible" : true
+				}
+			],
+			"id" : 421,
+			"image" : "models/workshop/2079971872/Earth_Diffuse_6K.json",
+			"name" : "Earth texture (hide)",
+			"origin" : "-176.12061 -310.27451 0.00000",
+			"parent" : 556,
+			"scale" : "0.48500 0.48500 0.48500",
+			"size" : "4000.00000 2000.00000",
+			"visible" : false
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"colorBlendMode" : 1,
+			"effects" : 
+			[
+				{
+					"file" : "effects/workshop/2079971872/scroll/effect.json",
+					"id" : 436,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"repeat" : "1 1",
+								"speedx" : -0.050999999,
+								"speedy" : 0
+							},
+							"id" : 437
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/workshop/2718465779/pulse_/effect.json",
+					"id" : 589,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"amount" : 1.63,
+								"bounds" : "0 1",
+								"noiseamount" : 0.0,
+								"noisespeed" : 0.5,
+								"phase" : 0.0,
+								"power" : 1.0,
+								"speed" : 1.36,
+								"tinthigh" : "1.00000 1.00000 1.00000",
+								"tintlow" : "1 1 1"
+							},
+							"id" : 590
+						}
+					],
+					"visible" : true
+				}
+			],
+			"id" : 425,
+			"image" : "models/workshop/2079971872/Earth_Illumination_6K.json",
+			"name" : "Earth Darkside (hide)",
+			"origin" : "-176.12061 -312.49350 0.00000",
+			"parent" : 556,
+			"size" : "2000.00000 1000.00000",
+			"visible" : false
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"effects" : 
+			[
+				{
+					"file" : "effects/workshop/2079971872/scroll/effect.json",
+					"id" : 441,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"repeat" : "1 1",
+								"speedx" : -0.056409575,
+								"speedy" : 0
+							},
+							"id" : 442
+						}
+					],
+					"visible" : true
+				}
+			],
+			"id" : 423,
+			"image" : "models/workshop/2079971872/Earth_Clouds_6K.json",
+			"name" : "Earth clouds (hide)",
+			"origin" : "-176.12061 -312.49350 0.00000",
+			"parent" : 556,
+			"size" : "2000.00000 1000.00000",
+			"visible" : false
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.06900",
+			"castshadow" : false,
+			"config" : 
+			{
+				"passthrough" : true
+			},
+			"copybackground" : false,
+			"dependencies" : [ 421, 423, 424, 425, 426, 427 ],
+			"effects" : 
+			[
+				{
+					"file" : "effects/workshop/2079971872/tint/effect.json",
+					"id" : 450,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"combos" : 
+							{
+								"BLENDMODE" : 0
+							},
+							"constantshadervalues" : 
+							{
+								"alpha" : 1,
+								"color" : "0 0 0"
+							},
+							"id" : 451
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/workshop/2079971872/blend/effect.json",
+					"id" : 452,
+					"name" : "ground texture",
+					"passes" : 
+					[
+						{
+							"combos" : 
+							{
+								"BLENDMODE" : 0
+							},
+							"constantshadervalues" : 
+							{
+								"multiply" : 2.03
+							},
+							"id" : 453,
+							"textures" : 
+							[
+								null,
+								"_rt_imageLayerComposite_421_a",
+								"_rt_imageLayerComposite_424_a"
+							]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/workshop/2079971872/blend/effect.json",
+					"id" : 455,
+					"name" : "clouds texture",
+					"passes" : 
+					[
+						{
+							"combos" : 
+							{
+								"BLENDMODE" : 7
+							},
+							"constantshadervalues" : 
+							{
+								"multiply" : 0.52999997
+							},
+							"id" : 456,
+							"textures" : [ null, "_rt_imageLayerComposite_423_a" ]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/workshop/2079971872/blend/effect.json",
+					"id" : 457,
+					"name" : "Planet shadow",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"multiply" : 0.20999999
+							},
+							"id" : 458,
+							"textures" : [ null, "_rt_imageLayerComposite_424_a" ]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/workshop/2079971872/blend/effect.json",
+					"id" : 459,
+					"name" : "planet dark side",
+					"passes" : 
+					[
+						{
+							"combos" : 
+							{
+								"BLENDMODE" : 0
+							},
+							"constantshadervalues" : 
+							{
+								"multiply" : 0.86000001
+							},
+							"id" : 460,
+							"textures" : 
+							[
+								null,
+								"_rt_imageLayerComposite_425_a",
+								"_rt_imageLayerComposite_426_a"
+							]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/workshop/2079971872/transform/effect.json",
+					"id" : 462,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"angle" : 0,
+								"offset" : "0 0",
+								"scale" : "0.5 1"
+							},
+							"id" : 463
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/workshop/2079971872/fisheye/effect.json",
+					"id" : 464,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"center" : "0.5 0.5",
+								"distortion" : 0.52999997,
+								"size" : 0.89999998
+							},
+							"id" : 465
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/workshop/2079971872/opacity/effect.json",
+					"id" : 466,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"alpha" : 1
+							},
+							"id" : 467,
+							"textures" : [ null, "_rt_imageLayerComposite_427_a" ]
+						}
+					],
+					"visible" : true
+				}
+			],
+			"id" : 449,
+			"image" : "models/util/composelayer.json",
+			"name" : "earth composition (show)",
+			"origin" : "213.02747 310.95453 0.00000",
+			"parallaxDepth" : "0.50000 0.50000",
+			"parent" : 556,
+			"scale" : "0.60200 0.60200 0.00000",
+			"size" : "2000.00000 2000.00000"
+		},
+		{
+			"angles" : "0.00000 -0.00000 1.01699",
+			"castshadow" : false,
+			"colorBlendMode" : 7,
+			"id" : 471,
+			"image" : "models/workshop/2079971872/atmosphere.json",
+			"name" : "atmosphere overlay (show)",
+			"origin" : 
+			{
+				"script" : "'use strict';\n// Please note: Do not remove this line or asset references may break.\nexport let __workshopId = '2079971872';\n\n/**\n * @param {Vec3} value (for property 'origin')\n */\nexport function update(value) {\n\t\n\treturn value;\n}\n",
+				"value" : "206.97046 312.49353 0.00000"
+			},
+			"parallaxDepth" : "0.50000 0.50000",
+			"parent" : 556,
+			"scale" : "1.19700 1.19700 1.19700",
+			"size" : "1000.00000 1000.00000",
+			"visible" : 
+			{
+				"user" : "earth",
+				"value" : true
+			}
+		},
+		{
+			"animationlayers" : 
+			[
+				{
+					"additive" : true,
+					"animation" : 3764,
+					"blend" : 1.0,
+					"blendin" : false,
+					"blendout" : false,
+					"blendtime" : 0.5,
+					"id" : 3964,
+					"name" : "t",
+					"rate" : 1.0,
+					"visible" : 
+					{
+						"script" : "'use strict';\n\n// NEED NSL >= 1.2.2\n\nexport var scriptProperties = createScriptProperties()\n\t.addSlider({\n\t\tname: 'percentage',\n\t\tlabel: 'Initial progress',\n\t\tvalue: 1,\n\t\tmin: 0,\n\t\tmax: 1,\n\t\tinteger: false\n\t})\n\t.finish();\n\nexport function init(value) {\n\tshared.offsetedStartAni('addEndedCallback' in thisObject ? thisObject : thisObject.getAnimation(), scriptProperties.percentage)\n\treturn value;\n}\n",
+						"scriptproperties" : 
+						{
+							"percentage" : 0.40000001
+						},
+						"value" : true
+					}
+				},
+				{
+					"additive" : true,
+					"animation" : 403,
+					"blend" : 1.0,
+					"blendin" : false,
+					"blendout" : false,
+					"blendtime" : 0.5,
+					"id" : 3737,
+					"name" : "j",
+					"rate" : 1.0,
+					"visible" : 
+					{
+						"script" : "'use strict';\n\n// NEED NSL >= 1.2.2\n\nexport var scriptProperties = createScriptProperties()\n\t.addSlider({\n\t\tname: 'percentage',\n\t\tlabel: 'Initial progress',\n\t\tvalue: 1,\n\t\tmin: 0,\n\t\tmax: 1,\n\t\tinteger: false\n\t})\n\t.finish();\n\nexport function init(value) {\n\tshared.offsetedStartAni('addEndedCallback' in thisObject ? thisObject : thisObject.getAnimation(), scriptProperties.percentage)\n\treturn value;\n}\n",
+						"scriptproperties" : 
+						{
+							"percentage" : 0.34999999
+						},
+						"value" : true
+					}
+				},
+				{
+					"additive" : true,
+					"animation" : 4009,
+					"blend" : 1.0,
+					"blendin" : false,
+					"blendout" : false,
+					"blendtime" : 0.5,
+					"id" : 4417,
+					"name" : "x",
+					"rate" : 1.0,
+					"visible" : 
+					{
+						"script" : "'use strict';\n\n// NEED NSL >= 1.2.2\n\nexport var scriptProperties = createScriptProperties()\n\t.addSlider({\n\t\tname: 'percentage',\n\t\tlabel: 'Initial progress',\n\t\tvalue: 1,\n\t\tmin: 0,\n\t\tmax: 1,\n\t\tinteger: false\n\t})\n\t.finish();\n\nexport function init(value) {\n\tshared.offsetedStartAni('addEndedCallback' in thisObject ? thisObject : thisObject.getAnimation(), scriptProperties.percentage)\n\treturn value;\n}\n",
+						"scriptproperties" : 
+						{
+							"percentage" : 0.30000001
+						},
+						"value" : true
+					}
+				},
+				{
+					"additive" : true,
+					"animation" : 216,
+					"blend" : 1.0,
+					"blendin" : false,
+					"blendout" : false,
+					"blendtime" : 0.5,
+					"id" : 978,
+					"name" : "动画 4",
+					"rate" : 1.0,
+					"visible" : true
+				},
+				{
+					"additive" : true,
+					"animation" : 829,
+					"blend" : 1.0,
+					"blendin" : false,
+					"blendout" : false,
+					"blendtime" : 0.5,
+					"id" : 1253,
+					"name" : "动画 6",
+					"rate" : 1.0,
+					"visible" : 
+					{
+						"user" : "newproperty",
+						"value" : true
+					}
+				}
+			],
+			"castshadow" : false,
+			"effects" : 
+			[
+				{
+					"file" : "effects/shake/effect.json",
+					"id" : 1083,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"bounds" : "0 1",
+								"friction" : "1 1",
+								"speed" : 2,
+								"strength" : 0.032000002
+							},
+							"id" : 1084,
+							"textures" : [ null, "masks/shake_mask_1867d603" ]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/waterwaves/effect.json",
+					"id" : 4917,
+					"name" : "右下",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"direction" : 2.3601604,
+								"exponent" : 1.0,
+								"scale" : 18,
+								"speed" : 3,
+								"strength" : 0.1
+							},
+							"id" : 4918,
+							"textures" : 
+							[
+								null,
+								"masks/waterwaves_mask_887f0f68",
+								"masks/waterwaves_mask_76f38612"
+							]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/waterwaves/effect.json",
+					"id" : 7220,
+					"name" : "左下",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"direction" : -2.5201283,
+								"exponent" : 1.0,
+								"point0" : "-0.38285 -0.09924",
+								"point1" : "0.61715 -0.09924",
+								"point2" : "0.76457 0.78236",
+								"point3" : "-0.38285 0.90076",
+								"scale" : 28,
+								"speed" : 3,
+								"strength" : 0.1
+							},
+							"id" : 7221,
+							"textures" : [ null, "masks/waterwaves_mask_bae21a0c" ]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/waterwaves/effect.json",
+					"id" : 10926,
+					"name" : "左",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"direction" : -1.734727,
+								"exponent" : 1.0,
+								"scale" : 22.610001,
+								"speed" : 3.2,
+								"strength" : 0.1
+							},
+							"id" : 10927,
+							"textures" : [ null, "masks/waterwaves_mask_c0365eb5" ]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/opacity/effect.json",
+					"id" : 12929,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"alpha" : 1.0
+							},
+							"id" : 12930,
+							"textures" : [ null, "masks/opacity_mask_edbcc9f2" ]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/shine/effect.json",
+					"id" : 2674,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"noiseamount" : 1.1,
+								"noisescale" : 9.6000004,
+								"noisespeed" : 0.059999999,
+								"raythreshold" : 0.70999998
+							},
+							"id" : 2675,
+							"textures" : [ null, "masks/shine_downsample2_mask_305e6fc9", null ]
+						},
+						{
+							"combos" : 
+							{
+								"EDGES" : 3,
+								"SAMPLES" : 2
+							},
+							"constantshadervalues" : 
+							{
+								"color" : "0 1 1",
+								"direction" : 2.3473675,
+								"rayintensity" : 0.31999999,
+								"raylength" : 0.12,
+								"speed" : 0.059999999
+							},
+							"id" : 2677
+						},
+						{
+							"constantshadervalues" : 
+							{
+								"scale" : "1 1"
+							},
+							"id" : 2678
+						},
+						{
+							"combos" : 
+							{
+								"VERTICAL" : 1
+							},
+							"constantshadervalues" : 
+							{
+								"scale" : "1 1"
+							},
+							"id" : 2679
+						},
+						{
+							"id" : 2680
+						}
+					],
+					"visible" : 
+					{
+						"user" : "newproperty10",
+						"value" : true
+					}
+				}
+			],
+			"id" : 212,
+			"image" : "models/Lucy.json",
+			"name" : "Lucy",
+			"origin" : "2693.32275 1000.43762 0.00000",
+			"parallaxDepth" : "0.05000 -0.04000",
+			"perspective" : true,
+			"size" : "2371.00000 2160.00000"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"effects" : 
+			[
+				{
+					"file" : "effects/cloudmotion/effect.json",
+					"id" : 1107,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"ui_editor_properties_amount" : 0.1,
+								"ui_editor_properties_direction" : -2.9907677,
+								"ui_editor_properties_granularity" : 2,
+								"ui_editor_properties_granularity_horizontal" : 0.5,
+								"ui_editor_properties_speed" : 0.039999999
+							},
+							"id" : 1108,
+							"textures" : [ null, "masks/cloudmotion_mask_341d97c2", null ]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/shake/effect.json",
+					"id" : 1446,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"bounds" : "0 1",
+								"friction" : "1 1",
+								"speed" : 0.91000003,
+								"strength" : 0.105
+							},
+							"id" : 1447,
+							"textures" : [ null, "masks/shake_mask_540dc30b" ]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/waterwaves/effect.json",
+					"id" : 206,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"direction" : -1.8675023,
+								"exponent" : 1.0,
+								"scale" : 22.870001,
+								"speed" : 1,
+								"strength" : 0.1
+							},
+							"id" : 207,
+							"textures" : [ null, "masks/waterwaves_mask_db119f7a" ]
+						}
+					],
+					"visible" : true
+				},
+				{
+					"file" : "effects/shine/effect.json",
+					"id" : 334,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"noiseamount" : 0.63999999,
+								"noisescale" : 5.3800001,
+								"noisespeed" : 0.20999999,
+								"raythreshold" : 0.83999997
+							},
+							"id" : 335,
+							"textures" : [ null, "masks/shine_downsample2_mask_13a1ecf7", null ]
+						},
+						{
+							"constantshadervalues" : 
+							{
+								"color" : "1 1 1",
+								"direction" : -1.0562514,
+								"rayintensity" : 1.0,
+								"raylength" : 0.059999999,
+								"speed" : 0.19
+							},
+							"id" : 336
+						},
+						{
+							"constantshadervalues" : 
+							{
+								"scale" : "1 1"
+							},
+							"id" : 337
+						},
+						{
+							"combos" : 
+							{
+								"VERTICAL" : 1
+							},
+							"constantshadervalues" : 
+							{
+								"scale" : "1 1"
+							},
+							"id" : 338
+						},
+						{
+							"id" : 339
+						}
+					],
+					"visible" : 
+					{
+						"user" : "newproperty10",
+						"value" : true
+					}
+				}
+			],
+			"id" : 222,
+			"image" : "models/吊瓶.json",
+			"name" : "吊瓶",
+			"origin" : 
+			{
+				"script" : "export function update(value) {\n\tvalue.y = 992.82019 + (Math.sin(engine.runtime * 1) * 10);\n\treturn value;\n}",
+				"value" : "2122.76562 992.82019 0.00000"
+			},
+			"parallaxDepth" : "0.10000 0.05000",
+			"scale" : "1.05000 1.05000 1.00000",
+			"size" : "2714.00000 1050.00000",
+			"visible" : 
+			{
+				"user" : "newproperty1",
+				"value" : true
+			}
+		},
+		{
+			"alpha" : 0.43000001,
+			"castshadow" : false,
+			"colorBlendMode" : 12,
+			"id" : 239,
+			"image" : "models/图层 44.json",
+			"name" : "lingt",
+			"origin" : "2564.39771 1445.30933 0.00000",
+			"parallaxDepth" : "0.18000 0.18000",
+			"scale" : "1.40000 1.40000 1.00000",
+			"size" : "1939.00000 2160.00000"
+		},
+		{
+			"alpha" : 
+			{
+				"user" : "newproperty7",
+				"value" : 0.66000003
+			},
+			"anchor" : "none",
+			"backgroundbrightness" : 1.0,
+			"backgroundcolor" : "0.00000 0.00000 0.00000",
+			"blockalign" : false,
+			"castshadow" : false,
+			"color" : 
+			{
+				"user" : "newproperty5",
+				"value" : "1.00000 1.00000 1.00000"
+			},
+			"depthtest" : "enabled",
+			"effects" : 
+			[
+				{
+					"file" : "effects/workshop/2865559209/shine/effect.json",
+					"id" : 370,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"noiseamount" : 0.80000001,
+								"noisescale" : 4,
+								"noisespeed" : 0.079999998,
+								"raythreshold" : 0
+							},
+							"id" : 371
+						},
+						{
+							"constantshadervalues" : 
+							{
+								"color" : "1 1 1",
+								"direction" : 3.1415927,
+								"rayintensity" : 2,
+								"raylength" : 0.1,
+								"speed" : 0
+							},
+							"id" : 372
+						},
+						{
+							"constantshadervalues" : 
+							{
+								"scale" : "1 1"
+							},
+							"id" : 373
+						},
+						{
+							"combos" : 
+							{
+								"VERTICAL" : 1
+							},
+							"constantshadervalues" : 
+							{
+								"scale" : "1 1"
+							},
+							"id" : 374
+						},
+						{
+							"combos" : 
+							{
+								"BLENDMODE" : 22
+							},
+							"id" : 375
+						}
+					],
+					"visible" : true
+				}
+			],
+			"font" : "fonts/Monofur-PK7og.ttf",
+			"horizontalalign" : "center",
+			"id" : 369,
+			"limitrows" : false,
+			"limituseellipsis" : false,
+			"limitwidth" : false,
+			"maxrows" : 1,
+			"maxwidth" : 11.581055,
+			"name" : "Clock",
+			"opaquebackground" : false,
+			"origin" : 
+			{
+				"script" : "'use strict';\n\nexport var scriptProperties = createScriptProperties()\n    .addCheckbox({\n        name: 'isMovable',\n        label: 'Is movable/可拖动',\n        value: false\n    })\n    .finish();\n\nconst storageName = \"storedPosRoundMIC\";\nlet isDragging = false, dragOffset, timer;\n\n// 重置位置的函数\nexport function resetPosition() {\n    localStorage.remove(storageName); // 清除存储的位置\n    thisLayer.origin = thisLayer.originalOrigin; // 恢复初始位置\n}\n\nexport function cursorDown(event) {\n    if (!scriptProperties.isMovable || !shared.miDragable) return;\n    \n    timer = Date.now();\n    isDragging = true;\n    dragOffset = thisLayer.origin.subtract(event.worldPosition);\n}\n\nexport function cursorUp(event) {\n    isDragging = false;\n    if (scriptProperties.isMovable && shared.miDragable) {\n        localStorage.set(storageName, thisLayer.origin);\n    }\n}\n\nexport function cursorMove(event) {\n    if (!isDragging || !scriptProperties.isMovable || !shared.miDragable) return;\n    \n    const overClick = Date.now() - timer > 50;\n    if (!overClick) dragOffset = thisLayer.origin.subtract(event.worldPosition);\n    \n    thisLayer.origin = event.worldPosition.add(dragOffset);\n}\n\nexport function init() {\n    // 初始化拖动状态\n    shared.miDragable = localStorage.get(\"miDragable\") ?? scriptProperties.isMovable;\n    \n    // 尝试从存储中获取位置\n    const storedPos = localStorage.get(storageName);\n    \n    // 如果存储中有位置数据且启用了拖动，则应用存储的位置\n    if (shared.miDragable && storedPos) {\n        thisLayer.origin = storedPos;\n    }\n    \n    // 返回当前层的位置\n    return thisLayer.origin;\n}",
+				"scriptproperties" : 
+				{
+					"isMovable" : 
+					{
+						"user" : "newproperty4",
+						"value" : true
+					}
+				},
+				"value" : "551.89587 1497.59143 0.00000"
+			},
+			"padding" : 32,
+			"parallaxDepth" : "0.00000 0.00000",
+			"pointsize" : 
+			{
+				"user" : "newproperty8",
+				"value" : 16.0
+			},
+			"scale" : 
+			{
+				"script" : "'use strict';\n\nexport var scriptProperties = createScriptProperties()\n\t.addSlider({\n\t\tname: 'hoverScale',\n\t\tlabel: '悬浮缩放/Zoom size',\n\t\tvalue: 1.1,\n\t\tmin: 0,\n\t\tmax: 2,\n\t\tinteger: false\n\t})\n\t.addSlider({\n\t\tname: 'speed',\n\t\tlabel: '响应速度/Response speed',\n\t\tvalue: 20,\n\t\tmin: 0,\n\t\tmax: 30,\n\t\tinteger: false\n\t})\n\t.finish();\n\nlet targetScale = 1;\n\n/**\n * @param {CursorEvent} event\n */\nexport function cursorEnter(event) {\n\ttargetScale = scriptProperties.hoverScale\n}\n\n/**\n * @param {CursorEvent} event\n */\nexport function cursorLeave(event) {\n\ttargetScale = 1\n}\n\n/**\n * @param {Vec3} value - for property 'scale'\n * @return {Vec3} - update current property value\n */\nexport function update(value) {\n\treturn value.x + (targetScale - value.x) * scriptProperties.speed * engine.frametime;\n}\n",
+				"scriptproperties" : 
+				{
+					"hoverScale" : 1.1,
+					"speed" : 10
+				},
+				"value" : "1.00000 1.00000 1.00000"
+			},
+			"size" : "427.00000 199.00000",
+			"text" : 
+			{
+				"script" : "'use strict';\nexport let __workshopId = '2865559209';\n\nexport var scriptProperties = createScriptProperties()\n    // 时间格式选项\n    .addCheckbox({\n        name: 'use24hFormat',\n        label: '24小时制',\n        value: true\n    })\n    .addCheckbox({\n        name: 'showSeconds',\n        label: '显示秒数',\n        value: false\n    })\n    .addCheckbox({\n        name: 'displayDate',\n        label: '显示日期',\n        value: false\n    })\n    \n    // 日期格式选项（互斥）\n    .addCheckbox({\n        name: 'useMMDDYYYY',\n        label: '美式 (MM/DD/YYYY)',\n        value: false,\n        onChange: function() { toggleDateFormat('useMMDDYYYY'); }\n    })\n    .addCheckbox({\n        name: 'useDDMMYYYY',\n        label: '欧式 (DD/MM/YYYY)',\n        value: false,  // 默认改为 false\n        onChange: function() { toggleDateFormat('useDDMMYYYY'); }\n    })\n    .addCheckbox({\n        name: 'useYYYYMMDD',\n        label: '国际标准 (YYYY/MM/DD)',\n        value: true,  // 默认改为 true\n        onChange: function() { toggleDateFormat('useYYYYMMDD'); }\n    })\n    \n    .addText({\n        name: 'delimiter',\n        label: '时间分隔符',\n        value: ':'\n    })\n    .finish();\n\n// 互斥切换日期格式\nfunction toggleDateFormat(selectedFormat) {\n    if (scriptProperties[selectedFormat]) {\n        ['useMMDDYYYY', 'useDDMMYYYY', 'useYYYYMMDD'].forEach(format => {\n            if (format !== selectedFormat) scriptProperties[format] = false;\n        });\n    }\n}\n\nexport function update(value) {\n    const time = new Date();\n    const pad = num => num.toString().padStart(2, '0');\n    \n    // 时间部分\n    let hours = time.getHours();\n    let timePeriod = '';\n    \n    if (!scriptProperties.use24hFormat) {\n        timePeriod = hours >= 12 ? ' pm' : ' am';\n        hours = hours % 12 || 12; // 转换为12小时制\n    }\n    \n    value = [\n        pad(hours),\n        pad(time.getMinutes()),\n        scriptProperties.showSeconds ? pad(time.getSeconds()) : null\n    ].filter(Boolean).join(scriptProperties.delimiter) + timePeriod;\n\n    // 日期部分\n    if (scriptProperties.displayDate) {\n        const [day, month, year] = [\n            pad(time.getDate()),\n            pad(time.getMonth() + 1),\n            time.getFullYear()\n        ];\n        \n        let dateStr;\n        if (scriptProperties.useMMDDYYYY) {\n            dateStr = `${month}/${day}/${year}`;       // 美式\n        } else if (scriptProperties.useYYYYMMDD) {\n            dateStr = `${year}/${month}/${day}`;       // 国际标准（用/分隔）\n        } else {\n            dateStr = `${day}/${month}/${year}`;       // 默认欧式\n        }\n        \n        value += '\\n' + dateStr;\n    }\n    \n    return value;\n}",
+				"scriptproperties" : 
+				{
+					"delimiter" : ":",
+					"displayDate" : 
+					{
+						"user" : "newproperty6",
+						"value" : true
+					},
+					"showSeconds" : false,
+					"use24hFormat" : 
+					{
+						"user" : "_24h",
+						"value" : false
+					},
+					"useDDMMYYYY" : 
+					{
+						"user" : 
+						{
+							"condition" : "0",
+							"name" : "newproperty9"
+						},
+						"value" : false
+					},
+					"useMMDDYYYY" : 
+					{
+						"user" : 
+						{
+							"condition" : "0",
+							"name" : "newproperty9"
+						},
+						"value" : false
+					},
+					"useYYYYMMDD" : 
+					{
+						"user" : 
+						{
+							"condition" : "2",
+							"name" : "newproperty9"
+						},
+						"value" : true
+					}
+				},
+				"value" : "12:34:56 am\n00/00/0000"
+			},
+			"verticalalign" : "center",
+			"visible" : 
+			{
+				"user" : "newproperty3",
+				"value" : true
+			}
+		},
+		{
+			"id" : 2065,
+			"name" : "",
+			"origin" : "3726.84082 1726.88013 0.00000",
+			"parallaxDepth" : "0.12000 0.12000"
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.41952",
+			"castshadow" : false,
+			"effects" : 
+			[
+				{
+					"file" : "effects/lightshafts/effect.json",
+					"id" : 97,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"combos" : 
+							{
+								"DIRECTDRAW" : 1,
+								"RENDERING" : 1
+							},
+							"constantshadervalues" : 
+							{
+								"colorastart" : "1 1 1",
+								"colorend" : "0.43529411764705883 0.8862745098039215 1",
+								"colorwexponent" : 0.1,
+								"colorwintensity" : 3.45,
+								"noiseamount" : 0.33000001,
+								"noisescale" : 1.17,
+								"point0" : "0.4 0.25",
+								"point1" : "0.6 0.25",
+								"point2" : "0.94451 0.83623",
+								"point3" : "0.09498 0.88795",
+								"rayfeather" : "0.16 0.16",
+								"rayradius" : 0.14,
+								"rayscale" : "0.8 0.2",
+								"raysmoothness" : 0.5,
+								"rayspeed" : 0.38999999
+							},
+							"id" : 102,
+							"textures" : [ null, null, "gradient/gradient_ice" ]
+						}
+					],
+					"visible" : true
+				}
+			],
+			"id" : 96,
+			"name" : "光束 - 线性",
+			"origin" : "-3084.04297 -36.34729 0.00000",
+			"parent" : 2065,
+			"scale" : "3.00000 3.00000 1.00000",
+			"shape" : "quad"
+		},
+		{
+			"angles" : "0.00000 -0.00000 1.54700",
+			"castshadow" : false,
+			"effects" : 
+			[
+				{
+					"file" : "effects/lightshafts/effect.json",
+					"id" : 101,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"combos" : 
+							{
+								"DIRECTDRAW" : 1,
+								"RAYCORNER" : 1,
+								"RAYMODE" : 2,
+								"RENDERING" : 1
+							},
+							"constantshadervalues" : 
+							{
+								"colorastart" : "1 1 1",
+								"colorend" : "0.43529411764705883 0.8862745098039215 1",
+								"colorwexponent" : 1.12,
+								"colorwintensity" : 1.55,
+								"noiseamount" : 0.54000002,
+								"noisescale" : 0,
+								"point0" : "0.01303 0.05471",
+								"point1" : "0.78461 0.16239",
+								"point2" : "0.89259 0.83254",
+								"point3" : "0.15964 0.84691",
+								"rayfeather" : "0.3 0.12",
+								"rayradius" : 0.15000001,
+								"rayscale" : "0.4 0.61",
+								"raysmoothness" : 1.3,
+								"rayspeed" : 0.37
+							},
+							"id" : 104
+						}
+					],
+					"visible" : true
+				}
+			],
+			"id" : 100,
+			"name" : "光束 - 角",
+			"origin" : "-1890.86938 -316.49353 0.00000",
+			"parent" : 2065,
+			"scale" : "4.00000 4.00000 1.00000",
+			"shape" : "quad"
+		},
+		{
+			"castshadow" : false,
+			"color" : "0.00000 0.00000 0.00000",
+			"id" : 1570,
+			"image" : "models/util/solidlayer.json",
+			"name" : "纯色",
+			"origin" : "1924.27002 -130.70255 0.00000",
+			"parallaxDepth" : "0.00000 0.00000",
+			"scale" : "15.82789 1.00000 1.00000",
+			"size" : "256.00000 256.00000"
+		},
+		{
+			"castshadow" : false,
+			"effects" : 
+			[
+				{
+					"file" : "effects/filmgrain/effect.json",
+					"id" : 1959,
+					"name" : "",
+					"passes" : 
+					[
+						{
+							"constantshadervalues" : 
+							{
+								"exponent" : 5,
+								"scale" : 20,
+								"strength" : 0.22
+							},
+							"id" : 1960
+						}
+					],
+					"visible" : true
+				}
+			],
+			"id" : 1937,
+			"image" : "models/util/fullscreenlayer.json",
+			"name" : "后处理层",
+			"parallaxDepth" : "0.00000 0.00000"
+		},
+		{
+			"id" : 1037,
+			"name" : "",
+			"origin" : "1873.19934 1136.86523 0.00000",
+			"parallaxDepth" : "0.00000 0.00000",
+			"visible" : 
+			{
+				"script" : "/*\n\n\n\t简称NSL，创意工坊项目将保持仅好友的可见性\n\t由于 自学JS/代码屎山 等原因，不会公开发布\n\t若想要使用本脚本库，且已添加好友，欢迎直接私信询问使用方法\n\n\n\t旧公告 Old Announcement：\n\n\tNote to unpackers:\n\t- I am not a computer science major, and all my programming knowledge is completely self-taught!\n\t- The current Event Dispatcher, Animation Scheduler, and Transition Interpolator are all in an unfinished state, and may have a considerable number of unknown bugs.\n\t  Also the code at this stage may not be standardized.\n\t\t\t- noeru_desu\t2024.04.26\n\n\n\t解包者请注意：\n\t- 我不是计算机专业的学生，我的所有编程知识都是完全自学的！\n\t- 当前的事件分发器、动画调度器、过渡插值器均处于未完成状态，可能存在相当多的未知Bug。同时现阶段的代码可能不规范。\n\t\t\t- noeru_desu\t2024.04.26\n\n\n*/\n\n'use strict';\n\nconst editorInfo = [\n\t'Successfully loaded Noeru Script Library (NSL) v1.4.0',\n\t'Available components: Event Dispatcher | Timeline Animation Scheduler | Script Animation Scheduler | Simple Emoji Switcher | Swaying Animation Launcher | User Property Category Change Detector',\n\t'Debug Tip: A call source of “Unknown” means that the corresponding call was made before the layer was initialized.'\n]\n\nexport var scriptProperties = createScriptProperties()\n\t.addCheckbox({\n\t\tname: 'debugMode',\n\t\tlabel: 'Debug Mode',\n\t\tvalue: false\n\t})\n\t.addCheckbox({\n\t\tname: 'logInterrupts',\n\t\tlabel: 'Log Interrupts',\n\t\tvalue: false\n\t})\n\t.addCheckbox({\n\t\tname: 'tips',\n\t\tlabel: 'Log Tips',\n\t\tvalue: true\n\t})\n\t.addCheckbox({\n\t\tname: 'replayableByDefault',\n\t\tlabel: 'Replayable by Default',\n\t\tvalue: false\n\t})\n\t.addCheckbox({\n\t\tname: 'warningAutoReRegist',\n\t\tlabel: 'Warning for auto re-registrations',\n\t\tvalue: true\n\t})\n\t.finish();\n\nconst isRunningInEditor = engine.isRunningInEditor()\nlet debugMode, logInterrupts, tips, globalReplayable;\n\nif (!isRunningInEditor) {\n\tconsole.log = () => { }\n}\n\n/**\n * @param {Boolean} value - for property 'visible'\n * @return {Boolean} - update current property value\n */\nexport function init() {\n\tdebugMode = isRunningInEditor && scriptProperties.debugMode\n\tlogInterrupts = isRunningInEditor && scriptProperties.logInterrupts\n\ttips = isRunningInEditor && scriptProperties.tips\n\tglobalReplayable = scriptProperties.replayableByDefault\n\treturn false;\n}\n\n\nfunction getTargetName(obj) {\n\tif (obj === null) return 'Unknown'\n\tif (!obj.name) return 'Nameless'\n\treturn obj.name\n}\n\nfunction getCallSourceInfo() {\n\treturn '(Call from object [' + getTargetName(thisObject) + '] in layer [' + getTargetName(thisLayer) + '])'\n}\n\n\n/*\n\n\tCustom Events\n\n*/\n\nclass Event {\n\t/**\n\t* @param {Hashable} eventID\n\t* @param {ILayer} layer\n\t* @param {IObject} object\n\t* @param {any} eventData\n\t*/\n\tconstructor(eventID, eventData) {\n\t\tthis.srcLayer = thisLayer;\t// 由于类将在源脚本进行实例化，所以此处变量将指向调用源的父级对象\n\t\tthis.srcObject = thisObject;\n\t\tthis.id = eventID;\n\t\tthis.data = eventData;\n\t\tthis.interrupted = false;\n\t}\n\n\tinterruptDispatch() {\n\t\tif (debugMode || logInterrupts) {\n\t\t\tconsole.log('DEBUG: Event \"' + this.id + '\" dispatch has been interrupted.')\n\t\t}\n\t\tthis.interrupted = true\n\t}\n}\n\nclass Listener {\n\t/**\n\t* @param {Hashable} listenerID\n\t* @param {ILayer} layer\n\t* @param {IObject} object\n\t* @param {any} eventData\n\t*/\n\tconstructor(listenerID, callback, priority = 0, data = null) {\n\t\tthis.thisLayer = thisLayer\t// 由于类将在源脚本进行实例化，所以此处变量将指向调用源的父级对象\n\t\tthis.thisObject = thisObject\n\t\tthis.id = listenerID;\n\t\tthis.callback = callback;\n\t\tthis.priority = priority;\n\t\tthis.data = data\n\t}\n}\n\nclass EventType {\n\t/**\n\t* @param {Hashable} eventID\n\t* @param {string} eventName\n\t*/\n\tconstructor(eventID, eventName = null, skipDebug = false) {\n\t\tthis.id = eventID\n\t\tthis.debug = !skipDebug\n\t\tthis.name = eventName\n\t\tthis.listeners = new Map()\n\t\tthis.sortedListeners = [];\n\t\tthis.sorted = false;\n\t\tthis.hasListener = false\n\t}\n\n\t/**\n\t* @param {Hashable} listenerID\n\t* @param {function} callback\n\t* @param {Number} priority\n\t*/\n\taddListener(listenerID, callback, priority = 0, data = null) {\n\t\tif (this.listeners.has(listenerID)) {\n\t\t\tconsole.log('WARNING: Listener ID \"' + listenerID + '\" has been already registered. New Registration operation has been ignored. ' + getCallSourceInfo())\n\t\t\treturn\n\t\t}\n\t\tthis.listeners.set(listenerID, new Listener(listenerID, callback, priority, data))\n\t\tthis.sorted = false\n\t\tthis.hasListener = true\n\t}\n\n\tsortCallbacks() {\n\t\tif (this.sorted) {\n\t\t\treturn\n\t\t}\n\t\tthis.sortedListeners = Array(this.listeners.values())\n\t\tthis.sortedListeners.sort((a, b) => b.priority - a.priority)\n\t\tthis.sorted = true;\n\t}\n\n\ttryCallback(event, listener) {\n\t\ttry {\n\t\t\tlistener.callback(event, listener)\n\t\t} catch (err) {\n\t\t\tconsole.error('An error occurs when dispatching event \"' + event.id + '\" to listener \"' + listener.id + '\": ' + err)\n\t\t\tconsole.log('The listener is located in the object [' + (thisObject === null ? 'unknown' : thisObject.name) + '] in layer [' + (thisLayer === null ? 'unknown' : thisLayer.name) + '])')\n\t\t\tconsole.log('You can set the \"callbackWithoutTry\" property of the event dispatcher to \"true\" to prevent catching errors for debugging purposes.')\n\t\t}\n\t}\n\n\tcallback(event, listener) {\n\t\tlistener.callback(event, listener)\n\t}\n\n\t/**\n\t* @param {Event} event\n\t*/\n\tdispatchToAll(event) {\n\t\tif (!this.hasListener) {\n\t\t\treturn\n\t\t}\n\t\tthis.sortCallbacks()\n\t\tlet cbFunc = eventDispatcher.callbackWithoutTry ? this.callback : this.tryCallback\n\t\tif (debugMode && this.debug) {\n\t\t\tconsole.log('DEBUG: Dispatching event \"' + event.id + '\" to listeners [ ' + Array.from(this.listeners.keys()).toString() + ' ]')\n\t\t}\n\t\tfor (let listener of this.listeners.values()) {\n\t\t\tcbFunc(event, listener)\n\t\t\tif (event.interrupted) {\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t}\n\n\t/**\n\t* @param {Hashable} listenerID\n\t* @param {Event} event\n\t*/\n\tdispatchToListener(listenerID, event) {\n\t\tif (!this.hasListener) {\n\t\t\treturn\n\t\t}\n\t\tlet listener = this.listeners.get(listenerID)\n\t\tif (listener === undefined) {\n\t\t\tconsole.error('Listener ID \"' + listenerID + '\" does not exist. ' + getCallSourceInfo())\n\t\t\treturn\n\t\t}\n\t\tthis.sortCallbacks()\n\t\tlistener.callback(event, listener)\n\t}\n}\n\nclass EventDispatcher {\n\tconstructor() {\n\t\tthis.eventTypes = new Map()\n\t\tthis.dispatching = false\n\t\tthis.tasks = []\n\t\tthis.callbackWithoutTry = false\t\t// 调试时使用\n\t}\n\n\t/**\n\t* @param {Hashable} eventID\n\t* @param {string} eventName\n\t*/\n\tregisterEvent(eventID, eventName = null, skipDebug = false) {\n\t\tif (this.eventTypes.has(eventID)) {\n\t\t\treturn false\n\t\t}\n\t\tthis.eventTypes.set(eventID, new EventType(eventID, eventName, skipDebug))\n\t\treturn true\n\t}\n\n\t/**\n\t* @param {Hashable} eventID\n\t* @param {Hashable} listenerID\n\t* @param {function} callback\n\t* @param {Number} priority\n\t*/\n\tregisterListener(eventID, listenerID, callback, priority = 0, data = null) {\n\t\tlet eventType = this.eventTypes.get(eventID)\n\t\tif (eventType === undefined) {\n\t\t\tconsole.error('Event ID \"' + eventID + '\" does not exist. ' + getCallSourceInfo())\n\t\t\treturn false\n\t\t}\n\t\teventType.addListener(listenerID, callback, priority, data)\n\t\tif (debugMode && eventType.debug) {\n\t\t\tconsole.log('DEBUG: Registering listener \"' + listenerID + '\" to event \"' + eventID + '\". Current listener count: ' + eventType.listeners.size + '')\n\t\t}\n\t\treturn true\n\t}\n\n\t/**\n\t* @param {Event} event\n\t*/\n\tdispatchEventToAll(event, autoWait = true, log = true) {\n\t\tlet eventType = this.eventTypes.get(event.id)\n\t\tif (eventType === undefined) {\n\t\t\tif (log) {\n\t\t\t\tconsole.error('Event ID \"' + event.id + '\" does not exist. ' + getCallSourceInfo())\n\t\t\t}\n\t\t\treturn\n\t\t}\n\t\tif (autoWait) {\n\t\t\tif (this.dispatching) {\n\t\t\t\tthis.tasks.push([event])\n\t\t\t\treturn\n\t\t\t}\n\t\t\tthis.dispatching = true\n\t\t\teventType.dispatchToAll(event)\n\t\t\tthis.dispatching = false\n\t\t\tthis.nextTask()\n\t\t} else {\n\t\t\teventType.dispatchToAll(event)\n\t\t}\n\t}\n\n\t/**\n\t* @param {Hashable} listenerID\n\t* @param {Event} event\n\t*/\n\tdispatchEventToListener(listenerID, event, autoWait = true, log = true) {\n\t\tlet eventType = this.eventTypes.get(eventID)\n\t\tif (eventType === undefined) {\n\t\t\tif (log) {\n\t\t\t\tconsole.error('Event ID \"' + event.id + '\" does not exist. ' + getCallSourceInfo())\n\t\t\t}\n\t\t\treturn\n\t\t}\n\t\tif (autoWait) {\n\t\t\tif (this.dispatching) {\n\t\t\t\tthis.tasks.push([listenerID, event])\n\t\t\t\treturn\n\t\t\t}\n\t\t\tthis.dispatching = true\n\t\t\teventType.dispatchToListener(listenerID, event)\n\t\t\tthis.dispatching = false\n\t\t\tthis.nextTask()\n\t\t} else {\n\t\t\teventType.dispatchToListener(listenerID, event)\n\t\t}\n\t}\n\n\tnextTask() {\n\t\tif (this.dispatching || this.tasks.length === 0) {\n\t\t\treturn\n\t\t}\n\t\tlet task = this.tasks.shift()\n\t\tif (task.length === 1) {\n\t\t\tthis.dispatchEventToAll(task[0])\n\t\t} else {\n\t\t\tthis.dispatchEventToListener(task[0], task[1])\n\t\t}\n\t}\n}\n\nlet eventDispatcher = new EventDispatcher()\nshared.eventDispatcher = eventDispatcher\nshared.Event = Event\n\n\n/*\n\n\tAnimation System\n\n*/\n\n\nlet needToCalcInterpolator = false\n\n\nclass AnimationScheduler {\n\tconstructor() {\n\t\tthis.tidCount = -1\n\t\tthis.aidCount = -1\n\t\tthis.aniTasks = new Map()\n\t\tthis.needToMapAni = false\n\t\tthis.cAniMappers = new Map()\n\t\tthis.needToDelMapper = false\n\t\tthis.cAniMapperDelTasks = {}\t// 尚未使用，待修改为Map\n\t\tthis.cAniListeners = new Map()\n\t\tthis.tAniInterpolators = new Map()\n\t\tthis.globalEvents = new Set()\n\t}\n\n\t_getTid() {\n\t\tthis.tidCount += 1\n\t\treturn this.tidCount\n\t}\n\n\t_getAid() {\n\t\tthis.aidCount += 1\n\t\treturn this.aidCount\n\t}\n\n\tsetGlobalDispatching(eventName, enable = true) {\n\t\tif (enable) {\n\t\t\tif (!eventDispatcher.registerEvent(eventName)) {\n\t\t\t\tif (scriptProperties.warningAutoReRegist) console.log('WARNING: Event ID \"' + eventName + '\" has been registered in the global event dispatcher, so beware of incorrect event listeners! ' + getCallSourceInfo())\n\t\t\t}\n\t\t\tthis.globalEvents.add(eventName)\n\t\t} else {\n\t\t\tthis.globalEvents.delete(eventName)\n\t\t}\n\t}\n\n\tremoveInterpolator(aid, callback = true) {\n\t\tlet data = this.tAniInterpolators.get(aid)\n\t\tif (data === undefined) {\n\t\t\treturn\n\t\t}\n\t\tthis.tAniInterpolators.delete(aid)\n\t\tneedToCalcInterpolator = this.tAniInterpolators.size !== 0\n\t\tif (callback) {\n\t\t\tdata.srcAni.setEndSignal()\n\t\t}\n\t}\n\n\taddInterpolator(aid, data) {\n\t\t// 可用于替换\n\t\tthis.tAniInterpolators.set(aid, data)\n\t\tneedToCalcInterpolator = true\n\t}\n\n\tcalcInterpolators() {\n\t\tlet tAniData;\n\t\tlet frametime = engine.frametime\n\t\tfor (tAniData of this.tAniInterpolators.values()) {\n\t\t\tif (tAniData._addFrametime(frametime)) {\n\t\t\t\ttAniData._frameUpdate()\n\t\t\t} else {\n\t\t\t\ttAniData._frameUpdate()\n\t\t\t\tthis.removeInterpolator(tAniData.srcAni.aid)\n\t\t\t}\n\t\t}\n\t}\n\n\tmapAnis() {\n\t\treturn\n\t\tlet config, data;\n\t\tfor (config of this.cAniMappers.values()) {\n\t\t\tdata = mapper[2]\n\t\t\tconfig[1](data, config[0](data))\n\t\t}\n\t\tif (this.needToDelMapper) {\n\t\t\tthis.cAniMapperDelTasks.forEach((aid) => { if (this.cAniMapperDelTasks[aid] !== 0) { this.cAniMappers.delete(aid); delete this.cAniMapperDelTasks[aid] } else { this.cAniMapperDelTasks[aid] = 1 } })\n\t\t\tthis.needToMapAni = this.cAniMappers.size !== 0\n\t\t\tthis.needToDelMapper = Object.keys(this.cAniMapperDelTasks).length !== 0\n\t\t}\n\t}\n\n\tremoveAniMapper(aid) {\n\t\treturn\n\t\tthis.cAniMapperDelTasks[aid] = 0\n\t\tthis.needToDelMapper = true\n\t}\n\n\taddAniMapper(aid, config) {\n\t\tif (this.cAniMappers.has(aid)) {\n\t\t\treturn\n\t\t}\n\t\tthis.cAniMappers.set(aid, config)\n\t\tthis.needToMapAni = true\n\t}\n\n\taddTAniInterpolator(name, interpolator, deltaFunc, equalityChecker) {\n\t\tif (name in interpolators) {\n\t\t\tconsole.error('Interpolator \"' + name + '\" already exists. ' + getCallSourceInfo())\n\t\t\treturn\n\t\t}\n\t\tinterpolators[name] = interpolator\n\t\tdeltaFuncs[name] = deltaFunc\n\t\tequalityCheckers[name] = equalityChecker\n\t}\n\n\treportEventToAniList(eventName) {\n\t\tlet taskList;\n\t\tfor (taskList of this.aniTasks.values()) {\n\t\t\ttaskList.handleAnimationEvent(eventName)\n\t\t}\n\t\tif (this.globalEvents.has(eventName)) {\n\t\t\teventDispatcher.dispatchEventToAll(new Event(eventName), undefined, false)\n\t\t}\n\t}\n\n\t/**\n\t* @param {AnimationEvent} event - info about the event\n\t*/\n\treportAniEvent(event) {\n\t\tlet listener = this.cAniListeners.get(event.name)\n\t\tif (listener !== undefined) {\n\t\t\tlistener[0](listener[1])\n\t\t\tthis.cAniListeners.delete(event.name)\n\t\t}\n\t\tthis.reportEventToAniList(event.name)\n\t}\n\n\t/**\n\t* @param {String} eventName - name of event\n\t*/\n\treportAniEventName(eventName) {\n\t\tlet listener = this.cAniListeners.get(eventName)\n\t\tif (listener !== undefined) {\n\t\t\tlistener[0](listener[1])\n\t\t\tthis.cAniListeners.delete(eventName)\n\t\t}\n\t\tthis.reportEventToAniList(eventName)\n\t}\n}\n\nlet aniScheduler = new AnimationScheduler()\nshared.aniScheduler = aniScheduler\n\n\nfunction getAniEventInfo(name, frame = null) {\n\tif (frame === null) {\n\t\treturn name\n\t} else {\n\t\treturn name + String(frame)\n\t}\n}\n\n\nclass AnimationTaskList {\n\t/**\n\t* @param {String} trigEvent\n\t*/\n\tconstructor(name, backwardMode = false, globalEndCallbackEvent = null) {\n\t\t/*if (!(backwardMode.constructor === Bool)) {\n\t\t\tthrow 'The backwardMode parameter only accepts boolean types.'\n\t\t}*/\n\t\tthis.name = name\n\t\tthis.backwardTaskList = null\n\t\tthis.backwardMode = backwardMode\n\t\tthis.dEndEvent = globalEndCallbackEvent\n\t\tthis.startEvents = new Map()\n\t\tthis.endEvents = new Map()\n\t\tthis.runningAnis = new Map()\n\t\tthis.tid = null\n\t\tthis.active = false\n\t\tthis.anis = new Map()\n\t\tif (globalEndCallbackEvent !== null) {\n\t\t\tif (!eventDispatcher.registerEvent(globalEndCallbackEvent)) {\n\t\t\t\tif (scriptProperties.warningAutoReRegist) console.log('WARNING: Event ID \"' + globalEndCallbackEvent + '\" has been registered in the global event dispatcher, so beware of incorrect event listeners! ' + getCallSourceInfo())\n\t\t\t}\n\t\t}\n\t}\n\n\tsetGlobalEndCallbackEvent(eventName = null) {\n\t\tthis.dEndEvent = eventName\n\t\tif (eventName !== null) {\n\t\t\tif (!eventDispatcher.registerEvent(eventName)) {\n\t\t\t\tif (scriptProperties.warningAutoReRegist) console.log('WARNING: Event ID \"' + eventName + '\" has been registered in the global event dispatcher, so beware of incorrect event listeners! ' + getCallSourceInfo())\n\t\t\t}\n\t\t}\n\t}\n\n\tcheckActivity(includeSubList = true) {\n\t\tif (this.active) {\n\t\t\tif (debugMode) {\n\t\t\t\tconsole.log('DEBUG: AnimationTaskList ' + this.name + ' has ' + Array.from(this.runningAnis.values()).map((data) => { return data[0].ani.name }).toString() + ' animations in activity.')\n\t\t\t}\n\t\t\treturn true\n\t\t} else if (includeSubList && this.backwardTaskList !== null) {\n\t\t\treturn this.backwardTaskList.checkActivity(true)\n\t\t} else {\n\t\t\tif (debugMode) {\n\t\t\t\tconsole.log('DEBUG: AnimationTaskList ' + this.name + ' is inactive.')\n\t\t\t}\n\t\t\treturn false\n\t\t}\n\t}\n\n\t/**\n\t* @param {AnimationTaskList} taskList\n\t*/\n\tbindBackwardTaskList(taskList) {\n\t\tthis.backwardTaskList = taskList\n\t\tthis.backwardTaskList.runningAnis = this.runningAnis\n\t}\n\n\tcleanUpRunningAniList() {\n\t\tlet ani;\n\t\tfor ([ani] of this.runningAnis.values()) {\n\t\t\tif (ani.ended) {\n\t\t\t\tthis.runningAnis.delete(ani.aid)\n\t\t\t}\n\t\t}\n\t}\n\n\t/**\n\t* @param {String} trigEventInfo\n\t*/\n\tbackward(trigEventInfo) {\n\t\tif (this.backwardTaskList === null) {\n\t\t\tconsole.error('Please bind the backward AnimationTaskList first. ' + getCallSourceInfo())\n\t\t\treturn\n\t\t}\n\t\tthis.removeTask()\n\t\tthis.backwardTaskList.start(trigEventInfo)\n\t}\n\n\t/**\n\t* @param {String} trigEventInfo\n\t*/\n\tstart(trigEventInfo) {\n\t\tif (this.tid === null) {\n\t\t\tthis.tid = aniScheduler._getTid()\n\t\t} else if (aniScheduler.aniTasks.has(this.tid)) {\n\t\t\treturn\n\t\t}\n\t\tthis.active = true\n\t\tif (this.backwardTaskList !== null) {\n\t\t\tthis.backwardTaskList.removeTask()\n\t\t}\n\t\taniScheduler.aniTasks.set(this.tid, this)\n\t\tthis.cleanUpRunningAniList()\n\t\tif (this.runningAnis.size !== 0) {\n\t\t\tif (debugMode || logInterrupts) {\n\t\t\t\tconsole.log('DEBUG: ContinuousAnimation [' + Array.from(this.runningAnis.values()).map((data) => { return data[0].ani.name }).toString() + '] in AnimationTaskList ' + this.name + ' is interrupted.')\n\t\t\t}\n\t\t\tthis.runningAnis.forEach(this.playAni, this)\n\t\t} else if (trigEventInfo !== null) {\n\t\t\tif (debugMode) {\n\t\t\t\tconsole.log('DEBUG: AnimationTaskList ' + this.name + ' is activated.')\n\t\t\t}\n\t\t\tlet cbList = this.startEvents.get(trigEventInfo)\n\t\t\tif (cbList === undefined) {\n\t\t\t\tthrow 'Start event \"' + trigEventInfo + '\" does not exist, available events: ' + Array.from(this.startEvents.keys()).toString() + ' ' + getCallSourceInfo()\n\t\t\t}\n\t\t\tcbList.forEach(this.playAniEvent, this)\n\t\t\tif (this.runningAnis.size === 0) {\n\t\t\t\tthis.removeTask()\n\t\t\t\tthis._end()\n\t\t\t}\n\t\t}\n\t}\n\n\t/**\n\t* @param {ContinuousAnimation} ani\n\t* @param {String} startEventInfo\n\t* @param {String} endEventInfo\n\t*/\n\taddTask(ani, startEventName = null, aniReplayable = globalReplayable, rate = 1, conditionChecker = null, __check = true) {\n\t\tlet endEventName = ((this.backwardMode ? -1 : 1) * rate) <= 0 ? ani.firstEventArray[0] : ani.lastEventArray[0]\n\t\tif (__check && this.anis.has(ani.aid)) {\n\t\t\tconsole.log('WARNING: ContinuousAnimation \"' + ani.ani.name + '\" is re-added to AnimationTaskList \"' + this.name + '\". The old configuration will be discarded. ' + getCallSourceInfo())\n\t\t\tthis.updateTask(ani, startEventName, endEventName, aniReplayable, rate)\n\t\t\treturn\n\t\t}\n\t\tif (startEventName !== null) {\n\t\t\tif (startEventName.constructor === String) {\n\t\t\t\tif (!(this.startEvents.has(startEventName))) {\n\t\t\t\t\tthis.startEvents.set(startEventName, new Map())\n\t\t\t\t}\n\t\t\t\tthis.startEvents.get(startEventName).set(ani.aid, [ani, rate, aniReplayable, conditionChecker])\n\t\t\t\tstartEventName = [startEventName]\n\t\t\t} else {\n\t\t\t\tstartEventName.forEach((name) => {\n\t\t\t\t\tif (!(this.startEvents.has(name))) {\n\t\t\t\t\t\tthis.startEvents.set(name, new Map())\n\t\t\t\t\t}\n\t\t\t\t\tthis.startEvents.get(name).set(ani.aid, [ani, rate, aniReplayable, conditionChecker])\n\t\t\t\t\t// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 临时写法 !!!!!!!!!!!!!!!!!!!\n\t\t\t\t\tif (aniReplayable) {\n\t\t\t\t\t\taniReplayable = false\n\t\t\t\t\t}\n\t\t\t\t\t// ---------------------------------------------------------------------------------------------------------\n\t\t\t\t}, this)\n\t\t\t}\n\t\t}\n\t\tif (this.endEvents.has(endEventName)) {\n\t\t\tconsole.log('WARNING: The animation endpoint event \"' + endEventName + '\" already exists, please use a unique event name to prevent scheduling confusion. ' + getCallSourceInfo())\n\t\t}\n\t\tthis.endEvents.set(endEventName, ani)\n\t\t/*if (endEventName !== null) {\n\t\t\tif (!(this.endEvents.has(endEventName))) {\n\t\t\t\tthis.endEvents.set(endEventName, new Set())\n\t\t\t}\n\t\t\tthis.endEvents.get(endEventName).add(ani)\n\t\t}*/\n\t\tthis.anis.set(ani.aid, [startEventName, endEventName])\n\t}\n\n\t/**\n\t* @param {ContinuousAnimation} ani\n\t* @param {String} startEventInfo\n\t* @param {String} endEventInfo\n\t*/\n\tupdateTask(ani, startEventName = null, endEventName = null, aniReplayable = globalReplayable, rate = 1) {\n\t\tif (!this.anis.has(ani.aid)) {\n\t\t\tconsole.log('WARNING: ContinuousAnimation \"' + ani.ani.name + '\" does not exist in AnimationTaskList \"' + this.name + '\", it will be added automatically. ' + getCallSourceInfo())\n\t\t\tthis.addTask(ani, startEventName, endEventName, aniReplayable, rate)\n\t\t\treturn\n\t\t}\n\t\tlet oldStartEventName, oldEndEventName = this.anis.get(ani.aid)\n\t\tif (oldStartEventName !== null) {\n\t\t\toldStartEventName.forEach((name) => { this.startEvents.get(name).delete(ani.aid) }, this)\n\t\t}\n\t\t/*if (oldEndEventName !== null) {\n\t\t\tthis.endEvents.get(endEventName).delete(ani.aid)\n\t\t}*/\n\t\tthis.endEvents.delete(oldEndEventName)\n\t\tthis.addTask(ani, startEventName, endEventName, aniReplayable, rate, false)\n\t}\n\n\t/**\n\t* @param {Array} data\n\t* @param {Number} aid\n\t*/\n\tplayAni(data, aid) {\n\t\tlet ani, rate, replayable, started;\n\t\t[ani, rate, replayable] = data\n\t\tani.rate = rate\n\t\tif (this.backwardMode) {\n\t\t\tstarted = ani.backward(replayable)\n\t\t} else {\n\t\t\tstarted = ani.forward(replayable)\n\t\t}\n\t\tif (started) {\n\t\t\tif (debugMode) {\n\t\t\t\tconsole.log('DEBUG: Starting ContinuousAnimation ' + ani.ani.name)\n\t\t\t}\n\t\t\tthis.runningAnis.set(aid, data)\n\t\t}\n\t}\n\n\tplayAniEvent(data, aid) {\n\t\tlet checker = data[3]\n\t\tif (!(checker === null || checker())) {\n\t\t\treturn\n\t\t}\n\t\tthis.playAni(data, aid)\n\t}\n\n\tremoveTask() {\n\t\tif (this.active !== undefined) {\n\t\t\tthis.active = false\n\t\t}\n\t\taniScheduler.aniTasks.delete(this.tid)\n\t}\n\n\thandleAnimationEvent(eventName) {\n\t\tlet anis = this.startEvents.get(eventName)\n\t\tif (anis !== undefined) {\n\t\t\tthis._eName = eventName\n\t\t\tanis.forEach(this.playAniEvent, this)\n\t\t}\n\t\tanis = this.endEvents.get(eventName)\n\t\tif (anis !== undefined) {\n\t\t\tif (debugMode) {\n\t\t\t\tconsole.log('DEBUG: ContinuousAnimation ' + anis.ani.name + ' has ended. (' + eventName + ')')\n\t\t\t}\n\t\t\tthis.runningAnis.delete(anis.aid)\n\t\t\t/*let ani;\n\t\t\tfor (ani of anis) {\n\t\t\t\tani.stop();\n\t\t\t\tthis.runningAnis.delete(ani.aid)\n\t\t\t}*/\n\t\t}\n\t\tif (this.active && (this.runningAnis.size === 0)) {\n\t\t\tengine.setTimeout(this.removeTask, 20)\n\t\t\tthis._end()\n\t\t}\n\t}\n\n\t_end() {\n\t\tthis.active = false\n\t\tif (this.dEndEvent !== null) {\n\t\t\teventDispatcher.dispatchEventToAll(new Event(this.dEndEvent), undefined, false)\n\t\t}\n\t}\n\n\t// Debug Tools\n\n}\n\n\nclass CAniCallbacks {\n\tconstructor (forwardStartCallback = null, forwardEndCallback = null, backwardStartCallback = null, backwardEndCallback = null) {\n\t\tthis.forwardStartCallback = forwardStartCallback\n\t\tthis.forwardEndCallback = forwardEndCallback\n\t\tthis.backwardStartCallback = backwardStartCallback\n\t\tthis.backwardEndCallback = backwardEndCallback\n\t}\n}\n\n\nshared.CAniCallbacks = CAniCallbacks\n\n\nclass ContinuousAnimation {\n\t/**\n\t* @param {IAnimation} ani\n\t* @param {Object} events\n\t*/\n\tconstructor(ani, events, endCallback = null, startAtEnd = false, startFrame = 0, endFrame) {\n\t\tthis.cbData = [this.setEndSignal, this]\n\t\tthis.ani = ani\n\t\tthis.ended = true\n\t\tthis.rate = ani.rate\n\t\tthis.aid = aniScheduler._getAid()\n\t\tthis.startFrame = startFrame\n\t\tthis.endFrame = endFrame === undefined ? ani.frameCount : endFrame\n\t\tthis.ani.play()\n\t\tthis.stop()\n\t\tif ((this.rate * (startAtEnd ? -1 : 1)) < 0) {\n\t\t\tani.setFrame(this.endFrame - 0.01)\n\t\t} else {\n\t\t\tani.setFrame(this.startFrame)\n\t\t}\n\t\tif (events === undefined) {\n\t\t\tthrow \"Please provide the event settings for \" + ani.name + '. ' + getCallSourceInfo()\n\t\t} else if (!(this.startFrame in events)) {\n\t\t\tthrow \"An event needs to be bound to the first frame. \" + getCallSourceInfo()\n\t\t} else if (!(this.endFrame in events)) {\n\t\t\tthrow \"An event needs to be bound to the last frame. \" + getCallSourceInfo()\n\t\t}\n\t\tfor (let frame in events) {\n\t\t\tlet eventData = events[frame]\n\t\t\tif (!Array.isArray(eventData)) {\n\t\t\t\tevents[frame] = [eventData]\n\t\t\t}\n\t\t}\n\t\tthis.events = events\n\t\tthis.firstEventArray = events[this.startFrame]\n\t\tthis.lastEventArray = events[this.endFrame]\n\t\tthis.dForward = startAtEnd\n\t\tthis.mapperConfig = null\n\n\t\tif (endCallback === null) {\n\t\t\tthis.forwardEndCallback = null\n\t\t\tthis.backwardEndCallback = null\n\t\t\tthis.forwardStartCallback = null\n\t\t\tthis.backwardStartCallback = null\n\t\t} else if (endCallback.constructor === CAniCallbacks) {\n\t\t\tthis.forwardEndCallback = endCallback.forwardEndCallback\n\t\t\tthis.backwardEndCallback = endCallback.backwardEndCallback\n\t\t\tthis.forwardStartCallback = endCallback.forwardStartCallback\n\t\t\tthis.backwardStartCallback = endCallback.backwardStartCallback\n\t\t} else {\n\t\t\tthis.forwardEndCallback = endCallback\n\t\t\tthis.backwardEndCallback = endCallback\n\t\t\tthis.forwardStartCallback = null\n\t\t\tthis.backwardStartCallback = null\n\t\t}\n\t\tthis.listener = new Listener(this.aid + ani.name)\n\t}\n\n\tsetToStart(force = false) {\n\t\tif (!this.ani.cAniEnded) {\n\t\t\tif (force) {\n\t\t\t\tthis.ani.cAniObject.stop()\n\t\t\t} else {\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t\tthis.dForward = false\n\t\tthis.ani.setFrame(this.startFrame)\n\t}\n\n\tsetToEnd(force = false) {\n\t\tif (!this.ani.cAniEnded) {\n\t\t\tif (force) {\n\t\t\t\tthis.ani.cAniObject.stop()\n\t\t\t} else {\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t\tthis.dForward = true\n\t\tthis.ani.setFrame(this.endFrame - 0.01)\n\t}\n\n\tstop() {\n\t\tif (!this.ended) {\n\t\t\tif (this.dForward) {\n\t\t\t\tlastEventArray.forEach(this._deleteAniListener, this)\n\t\t\t} else {\n\t\t\t\tfirstEventArray.forEach(this._deleteAniListener, this)\n\t\t\t}\n\t\t}\n\t\tthis.ani.cAniEnded = true\n\t\tthis.ani.cAniObject = null\n\t\tif (this.mapperConfig === null) {\n\t\t\tthis.ani.pause()\n\t\t} else {\n\t\t\tthis.ani.stop()\n\t\t}\n\t}\n\n\tupdateStatus() {\n\t\t// 不可使用, 未对时间轴分割功能进行适配\n\t\tlet currentFrame = this.ani.getFrame()\n\t\tthis.ended = (currentFrame <= 1) || (currentFrame >= this.ani.frameCount - 1)\n\t}\n\n\t_deleteAniListener(eventName) {\n\t\taniScheduler.cAniListeners.delete(eventName)\n\t}\n\n\t_addAniListener(eventName) {\n\t\taniScheduler.cAniListeners.set(eventName, this.cbData)\n\t}\n\n\tforward(replayable = globalReplayable, override = false) {\n\t\tif (this.ended !== this.ani.cAniEnded) {\n\t\t\tif (override) {\n\t\t\t\tthis.ani.cAniObject.stop()\n\t\t\t} else {\n\t\t\t\tif (debugMode) {\n\t\t\t\t\tconsole.log('WARNING: The play action of ContinuousAnimation \"' + this.ani.name + '\"(' + this.startFrame + '~' + this.endFrame + ') has been skipped because ContinuousAnimation \"' + this.ani.name + '\"(' + this.ani.cAniObject.startFrame + '~' + this.ani.cAniObject.endFrame + ') is controlling this timeline. You can override the old scheduler by setting \"override\" to true.')\n\t\t\t\t}\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t\tlet firstEventArray, lastEventArray;\n\t\tif (this.rate > 0) {\n\t\t\tfirstEventArray = this.firstEventArray\n\t\t\tlastEventArray = this.lastEventArray\n\t\t} else {\n\t\t\tfirstEventArray = this.lastEventArray\n\t\t\tlastEventArray = this.firstEventArray\n\t\t}\n\t\tif (!this.ended) {\n\t\t\tfirstEventArray.forEach(this._deleteAniListener, this)\n\t\t} else if ((!replayable) && this.dForward) {\n\t\t\tif (debugMode) {\n\t\t\t\tconsole.log('DEBUG: Repeat forward playback of ContinuousAnimation ' + this.ani.name + ' has been blocked.')\n\t\t\t}\n\t\t\treturn false\n\t\t}\n\t\tthis.ani.rate = this.rate\n\t\tif (this.forwardStartCallback !== null) this.forwardStartCallback(this.listener)\n\t\tthis._play()\n\t\tlastEventArray.forEach(this._addAniListener, this)\n\t\treturn true\n\t}\n\n\tbackward(replayable = globalReplayable, override = false) {\n\t\tif (this.ended !== this.ani.cAniEnded) {\n\t\t\tif (override) {\n\t\t\t\tthis.ani.cAniObject.stop()\n\t\t\t} else {\n\t\t\t\tif (debugMode) {\n\t\t\t\t\tconsole.log('WARNING: The play action of ContinuousAnimation \"' + this.ani.name + '\"(' + this.startFrame + '~' + this.endFrame + ') has been skipped because ContinuousAnimation \"' + this.ani.name + '\"(' + this.ani.cAniObject.startFrame + '~' + this.ani.cAniObject.endFrame + ') is controlling this timeline. You can override the old scheduler by setting \"override\" to true.')\n\t\t\t\t}\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t\tlet firstEventArray, lastEventArray;\n\t\tif (this.rate > 0) {\n\t\t\tfirstEventArray = this.firstEventArray\n\t\t\tlastEventArray = this.lastEventArray\n\t\t} else {\n\t\t\tfirstEventArray = this.lastEventArray\n\t\t\tlastEventArray = this.firstEventArray\n\t\t}\n\t\tif (!this.ended) {\n\t\t\tlastEventArray.forEach(this._deleteAniListener, this)\n\t\t} else if ((!replayable) && !this.dForward) {\n\t\t\tif (debugMode) {\n\t\t\t\tconsole.log('DEBUG: Repeat backward playback of ContinuousAnimation ' + this.ani.name + ' has been blocked.')\n\t\t\t}\n\t\t\treturn false\n\t\t}\n\t\tthis.ani.rate = -this.rate\n\t\tif (this.backwardStartCallback !== null) this.backwardStartCallback(this.listener)\n\t\tthis._play(false)\n\t\tfirstEventArray.forEach(this._addAniListener, this)\n\t\treturn true\n\t}\n\n\t_play(forward = true) {\n\t\tthis.ani.play()\n\t\tthis._startAniMapper()\n\t\tif (this.ended) {\n\t\t\tthis.ani.cAniEnded = false\n\t\t\tthis.ani.cAniObject = this\n\t\t\tthis.dForward = forward\n\t\t\tthis.ended = false\n\t\t\tthis.ani.setFrame(this.ani.rate > 0 ? this.startFrame : this.endFrame - 0.01)\n\t\t} else if (this.dForward !== forward) {\n\t\t\tthis.dForward = forward\n\t\t\tlet aniFrame = this.ani.getFrame()\n\t\t\tif (this.rate * (forward ? 1 : -1) > 0) {\t// 向正\n\t\t\t\tObject.keys(this.events).forEach((eFrame) => {\n\t\t\t\t\tif (eFrame > aniFrame) {\n\t\t\t\t\t\treturn\n\t\t\t\t\t}\n\t\t\t\t\tthis.events[eFrame].forEach(aniScheduler.reportEventToAniList, aniScheduler)\n\t\t\t\t}, this)\n\t\t\t} else {\t// 向反\n\t\t\t\tObject.keys(this.events).forEach((eFrame) => {\n\t\t\t\t\tif (eFrame < aniFrame) {\n\t\t\t\t\t\treturn\n\t\t\t\t\t}\n\t\t\t\t\tthis.events[eFrame].forEach(aniScheduler.reportEventToAniList, aniScheduler)\n\t\t\t\t}, this)\n\t\t\t}\n\t\t}\n\t}\n\n\tsetEndSignal(self) {\n\t\tlet ended = self.ended\n\t\tself.ended = true\n\t\tself.stop()\n\t\tself._stopAniMapper()\n\t\tif (!ended) {\n\t\t\tif (self.dForward) {\n\t\t\t\tif (self.forwardEndCallback !== null) self.forwardEndCallback(self.listener)\n\t\t\t} else {\n\t\t\t\tif (self.backwardEndCallback !== null) self.backwardEndCallback(self.listener)\n\t\t\t}\n\t\t}\n\t}\n\n\t// Animation Mapper\n\tbindMapper(getter, setter, data) {\n\t\tthrow \"This feature is not yet available\"\n\t\t// setter(MapperData, getter())\n\t\tthis.mapperConfig = [getter, setter, new MapperData(data)]\n\t}\n\n\t_startAniMapper() {\n\t\tif (this.mapperConfig !== null) {\n\t\t\taniScheduler.addAniMapper(this.aid, this.mapperConfig)\n\t\t}\n\t}\n\n\t_stopAniMapper() {\n\t\tif (this.mapperConfig !== null) {\n\t\t\taniScheduler.removeAniMapper(this.aid)\n\t\t}\n\t}\n}\n\nclass MapperData {\n\tconstructor(data) {\n\t\tthis.data = data\n\t\tthis.thisLayer = thisLayer\n\t\tthis.thisObject = thisObject\n\t}\n}\n\nfunction easeInOutQuad(x) {\n\treturn x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;\n}\n\nclass CbData {\n\tconstructor() {\n\t\tthis.data;\n\t\tthis.thisLayer = thisLayer\n\t\tthis.thisObject = thisObject\n\t}\n}\n\nclass TAnimationData {\n\t/**\n\t* @param {TransitionAnimation} srcAni\n\t*/\n\tconstructor(srcAni, data = null, duration = 0, forward = true, startValue = 0, endValue = 1) {\n\t\tthis.srcAni = srcAni\n\t\tthis.data = data\n\t\tthis.rawFactor = forward ? 0 : 1\n\t\tthis.setDuration(duration)\n\t\tthis.time = forward ? 0 : duration\n\t\tthis.startValue = startValue\n\t\tthis.endValue = endValue\n\t\tthis.init = true\n\t\tthis.direction = forward\n\t\tthis.setDirection(forward)\n\t\tif (srcAni !== null) {\n\t\t\tthis.delta = srcAni.deltaFunc(startValue, endValue)\n\t\t\tthis.thisLayer = srcAni.thisLayer\n\t\t\tthis.thisObject = srcAni.thisObject\n\t\t}\n\t}\n\n\tsetDuration(duration) {\n\t\tthis.duration = duration\n\t\tthis.reciprocalDuration = 1 / duration\n\t}\n\n\tcalcFactor() {\n\t\treturn this.srcAni.easingFunc(this.rawFactor)\n\t}\n\n\tsetDirection(forward) {\n\t\tthis.direction = forward\n\t\tthis._addFrametime = forward ? this._addFactor : this._subtractFactor\n\t}\n\n\treverseDirection() {\n\t\tthis.setDirection(!this.direction)\n\t}\n\n\t_addFactor(frametime) {\n\t\tif (this.init) {\n\t\t\tthis.init = false\n\t\t\treturn true\n\t\t}\n\t\tthis.time += frametime\n\t\tthis.rawFactor = this.time * this.reciprocalDuration\n\t\tif (this.rawFactor < 1) {\n\t\t\treturn true\n\t\t} else {\n\t\t\tthis.rawFactor = 1\n\t\t\treturn false\n\t\t}\n\t}\n\n\t_subtractFactor(frametime) {\n\t\tif (this.init) {\n\t\t\tthis.init = false\n\t\t\treturn true\n\t\t}\n\t\tthis.time -= frametime\n\t\tthis.rawFactor = this.time * this.reciprocalDuration\n\t\tif (this.rawFactor > 0) {\n\t\t\treturn true\n\t\t} else {\n\t\t\tthis.rawFactor = 0\n\t\t\treturn false\n\t\t}\n\t}\n\n\t_frameUpdate() {\n\t\tthis.srcAni.setter(this, this.srcAni.interpolator(this))\n\t}\n}\n\nfunction numberDelta(a, b) {\n\treturn b - a\n}\n\nfunction vectorDelta(a, b) {\n\treturn b.subtract(a)\n}\n\nconst vecAxes = ['x', 'y', 'z', 'w']\n\nfunction vectorEquality(vecA, vecB) {\n\tlet typeA = vecA.constructor\n\tif (typeA !== vecB.constructor) {\n\t\treturn false\n\t}\n\tswitch (typeA) {\n\t\tcase Vec2: return _vectorEquality(vecA, vecB, 2)\n\t\tcase Vec3: return _vectorEquality(vecA, vecB, 3)\n\t\tcase Vec4: return _vectorEquality(vecA, vecB, 4)\n\t}\n}\n\nfunction _vectorEquality(vecA, vecB, axeNum) {\n\tlet axe;\n\tfor (let i = 0; i <= axeNum; i++) {\n\t\taxe = vecAxes[i]\n\t\tif (vecA[axe] !== vecB[axe]) {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}\n\n\n/**\n * @param {TAnimationData} data\n*/\nfunction numberInterpolator(data) {\n\treturn data.startValue + (data.delta * data.calcFactor())\n}\n\n/**\n * @param {TAnimationData} data\n*/\nfunction vectorInterpolator(data) {\n\treturn data.startValue.add(data.delta.multiply(data.calcFactor()))\n}\n\nconst interpolators = {\n\t'number': numberInterpolator,\n\t'vector': vectorInterpolator\n}\n\nconst deltaFuncs = {\n\t'number': numberDelta,\n\t'vector': vectorDelta\n}\n\nconst equalityCheckers = {\n\t'number': (a, b) => a === b,\n\t'vector': vectorEquality\n}\n\nclass TransitionAnimation {\n\t/**\n\t* @param {IAnimation} ani\n\t* @param {Object} events\n\t*/\n\tconstructor(interpolator = 'number', getter, setter, duration, events, endCallback = null, easingFunc = easeInOutQuad) {\n\t\tif (!(interpolator in interpolators)) {\n\t\t\tthrow 'No interpolator named \"' + interpolator + '\" is available. Available interpolators: [' + Object.keys(interpolators).toString() + ']'\n\t\t}\n\t\tthis.playing = false\n\t\tthis.ended = true\n\t\tthis.basicCbData = new CbData()\n\t\tthis.thisLayer = thisLayer\n\t\tthis.thisObject = thisObject\n\t\tthis.getter = getter\n\t\tthis.setter = setter\n\t\tthis.duration = duration\n\t\tthis.endCallback = endCallback\n\t\tthis.interpolator = interpolators[interpolator]\n\t\tthis.deltaFunc = deltaFuncs[interpolator]\n\t\tthis.isEqual = equalityCheckers[interpolator]\n\t\tthis.easingFunc = easingFunc\n\t\tthis.aid = aniScheduler._getAid()\n\t\tthis.events = events\n\t\tthis.transform = this.transition\n\t\tthis.trans = this.transition\n\t\tObject.keys(events).forEach((factor) => { if (factor !== 0 && factor !== 1) { console.log('WARNING: No support yet for handling animation events that are not endpoints. ' + getCallSourceInfo()) } })\n\t}\n\n\tsetDuration(duration, updateNow) {\n\t\tthis.duration = duration\n\t\tif (updateNow) {\n\t\t\tthis.lastData.setDuration(duration)\n\t\t}\n\t}\n\n\tstop() {\n\t\taniScheduler.removeInterpolator(this.aid)\n\t}\n\n\tcheckStatus() {\n\t\tthis.playing = (!this.ended) && (\n\t\t\t(this.lastData.direction && this.isEqual(this.lastData.startValue, targetValue))\n\t\t\t||\n\t\t\t((!this.lastData.direction) && this.isEqual(this.lastData.endValue, targetValue))\n\t\t)\n\t\tthis.ended = !this.playing\n\n\t}\n\n\ttransition(targetValue, data = null) {\n\t\t// this.checkStatus()\n\t\t// if (this.playing) {\n\t\t// \tthis.lastData.reverseDirection()\n\t\t// }\n\t\tthis.basicCbData.data = data\n\t\tif (this.isEqual(this.getter(this.basicCbData), targetValue)) {\n\t\t\tif (this.playing) {\n\t\t\t\taniScheduler.removeInterpolator(this.aid)\n\t\t\t}\n\t\t\treturn\n\t\t}\n\t\tthis.ended = false\n\t\tthis.playing = true\n\t\tthis.lastData = new TAnimationData(this, data, this.duration, true, this.getter(this.basicCbData), targetValue)\n\t\taniScheduler.addInterpolator(this.aid, this.lastData)\n\t\tthis._dispatchStartEvent()\n\t}\n\n\tbackward(targetValue, data = null) {\n\t\tthrow \"Method was deprecated\"\n\t\tif (tips) {\n\t\t\tconsole.log('Tip: It would seem pointless to use backward mode in transition animation.')\n\t\t}\n\t\tif (this.ended && !replayable && this.dForward === false) {\n\t\t\treturn\n\t\t}\n\t\tthis._play(targetValue, false, data)\n\t}\n\n\t_dispatchStartEvent() {\n\t\tlet eName = this.events[this.lastData.direction ? 0 : 1]\n\t\tif (eName !== undefined) {\n\t\t\taniScheduler.reportAniEventName(eName)\n\t\t}\n\t}\n\n\t_dispatchEndEvent() {\n\t\tlet eName = this.events[this.lastData.rawFactor]\n\t\tif (eName !== undefined) {\n\t\t\taniScheduler.reportAniEventName(eName)\n\t\t}\n\t}\n\n\tsetEndSignal() {\n\t\tif (this.playing && this.endCallback !== null) {\n\t\t\tthis.endCallback(this.basicCbData)\n\t\t}\n\t\tthis._dispatchEndEvent()\n\t\tthis.ended = true\n\t\tthis.playing = false\n\t}\n}\n\nclass NumberTransitionAnimation extends TransitionAnimation {\n\t// 用于快速创建一个独立的浮点数过渡动画\n\tconstructor(initialValue, duration, events, endCallback = null, easingFunc = easeInOutQuad) {\n\t\tsuper('number', undefined, undefined, duration, events, endCallback, easingFunc)\n\t\tthis.value = initialValue\n\t\tthis.frameCallback = null\n\t\tthis.getter = this.getterFunc\n\t\tthis.setter = this.setterWithoutCallback\n\t}\n\n\tremoveFrameCallback() {\n\t\tthis.frameCallback = null\n\t\tthis.setter = this.setterWithoutCallback\n\t}\n\n\tsetFrameCallback(func) {\n\t\t// 回调参数：当前值\n\t\tif (func === undefined) {\n\t\t\tthis.removeFrameCallback()\n\t\t} else {\n\t\t\tthis.frameCallback = func\n\t\t\tthis.setter = this.setterWithCallback\n\t\t}\n\t}\n\n\tgetterFunc() {\n\t\treturn this.value\n\t}\n\n\t// 为优化每帧性能，避免在每帧进行回调判断\n\tsetterWithoutCallback(aniData, x) {\n\t\tthis.value = x\n\t}\n\n\tsetterWithCallback(aniData, x) {\n\t\tthis.value = x\n\t\tthis.frameCallback(aniData, x)\n\t}\n}\n\nclass VecTransitionAnimation extends TransitionAnimation {\n\t// 用于快速创建一个独立的向量过渡动画\n\tconstructor(initialValue, duration, events, endCallback = null, easingFunc = easeInOutQuad) {\n\t\tif (initialValue.y.constructor !== Number) {\n\t\t\tthrow 'Initial value must be vectors.'\n\t\t}\n\t\tsuper('vector', undefined, undefined, duration, events, endCallback, easingFunc)\n\t\tthis.vecType = initialValue.constructor\n\t\tthis.value = initialValue\n\t\tthis.frameCallback = null\n\t\tthis.getter = this.getterFunc\n\t\tthis.setter = this.setterWithoutCallback\n\t}\n\n\tremoveFrameCallback() {\n\t\tthis.frameCallback = null\n\t\tthis.setter = this.setterWithoutCallback\n\t}\n\n\tsetFrameCallback(func) {\n\t\t// 回调参数：当前值\n\t\tif (func === undefined) {\n\t\t\tthis.removeFrameCallback()\n\t\t} else {\n\t\t\tthis.frameCallback = func\n\t\t\tthis.setter = this.setterWithCallback\n\t\t}\n\t}\n\n\tgetterFunc() {\n\t\treturn this.value\n\t}\n\n\t// 为优化每帧性能，避免在每帧进行回调判断\n\tsetterWithoutCallback(aniData, x) {\n\t\tthis.value = x\n\t}\n\n\tsetterWithCallback(aniData, x) {\n\t\tthis.value = x\n\t\tthis.frameCallback(x)\n\t}\n}\n\nshared.CAniClass = ContinuousAnimation\nshared.TAniClass = TransitionAnimation\nshared.NumTAniClass = NumberTransitionAnimation\nshared.VecTAniClass = VecTransitionAnimation\nshared.CAniTaskListClass = AnimationTaskList\n\n\nlet globalEmojiInstanceID = 0\n\nfunction getEmojiInstanceID() {\n\tglobalEmojiInstanceID++\n\treturn globalEmojiInstanceID\n}\n\n\nclass EmojiScheduler {\n\tconstructor (name, emojiAniListEndEvents) {\n\t\tthis.name = name\n\t\tthis.id = getEmojiInstanceID()\n\t\tthis.emojiAnis = {}\n\t\tthis.nextEmoji = null\n\t\tthis.recentEmoji = null;\n\t\tthis.recentEmojiAniList = null;\n\t\tthis.emojiForwardAniActive = false;\n\t\t[this.forwardEventName, this.backwardEventName] = emojiAniListEndEvents\n\t\teventDispatcher.registerListener(this.forwardEventName, this.name, this._emojiShown, undefined, this)\n\t\teventDispatcher.registerListener(this.backwardEventName, this.name, this._emojiHidden, undefined, this)\n\t}\n\n\taddEmoji(name, aniList, isDefault=false) {\n\t\tif (isDefault) {\n\t\t\tthis.recentEmojiAniList = aniList\n\t\t\tthis.recentEmoji = name\n\t\t}\n\t\tthis.emojiAnis[name] = aniList\n\t}\n\n\tswitchEmoji(name, wait=false) {\n\t\tif (this.recentEmoji == name) {\n\t\t\treturn\n\t\t}\n\t\tif (wait && this.emojiForwardAniActive) {\n\t\t\tthis.nextEmoji = name\n\t\t\treturn\n\t\t}\n\t\tthis.emojiForwardAniActive = true\n\t\tlet oldEmoji = this.recentEmojiAniList\n\t\tthis.nextEmoji = null\n\t\tthis.recentEmoji = name\n\t\tthis.recentEmojiAniList = this.emojiAnis[name]\n\t\tthis.recentEmojiAniList.start(null)\n\t\toldEmoji.backward('hideEmoji')\n\t}\n\n\t_emojiHidden(e, l) {\n\t\tlet self = l.data\n\t\tself.emojiForwardAniActive = false\n\t\taniScheduler.reportEventToAniList('prevEmojiHidden')\n\t}\n\n\t_emojiShown(e, l) {\n\t\tlet self = l.data\n\t\tself.emojiForwardAniActive = false\n\t\tif (self.nextEmoji !== null) {\n\t\t\tself.switchEmoji(self.nextEmoji)\n\t\t}\n\t}\n}\n\nshared.EmojiSchedulerClass = EmojiScheduler\n\n\n/**\n * @param {IAnimation} ani\n * @param {Number} delay\n * @return {Function} - Start immediately\n */\nfunction delayedStartAni(ani, delay) {\n\tani.pause()\n\tlet timeout = engine.setTimeout(() => {ani.play()}, delay)\n\tfunction startNow() {\n\t\ttimeout()\n\t\tani.play()\n\t}\n\treturn startNow\n}\n\nshared.delayedStartAni = delayedStartAni\n\n\n/**\n * @param {IAnimation} ani\n * @param {Number} delay\n * @return {Function} - Start immediately\n */\nfunction offsetedStartAni(ani, percentage=1) {\n\tani.play()\n\tani.setFrame(ani.frameCount * percentage)\n}\n\nshared.offsetedStartAni = offsetedStartAni\n\n\n/*\n\n\tAuto Sway\n\n*/\n\nlet SwayParamsRecord = new Map()\n\nclass SwayParams {\n\n\t/**\n\t * @param {Number} base\n\t * @param {Number} increment\n\t * @param {Number} exponentiation\n\t */\n\tconstructor (base, increment, exponentiation=1, recordName=null, replace=true) {\n\t\tthis.name = recordName\n\t\tif (recordName !== null) {\n\t\t\tif (replace || !SwayParamsRecord.has(this.name)){\n\t\t\t\tSwayParamsRecord.set(this.name, this)\n\t\t\t}\n\t\t}\n\t\tthis.base = base\n\t\tthis.increment = increment\n\t\tthis.exponentiation = exponentiation\n\t}\n\n\t/**\n\t * @param {Number} index\n\t * @param {Number} factor\n\t * @return {Number}\n\t */\n\tcalcNodeParam(index, factor = 1) {\n\t\treturn this.base + Math.pow(this.increment * index, this.exponentiation) * factor\n\t}\n}\n\nshared.SwayParamsClass = SwayParams\n\nlet delayGroups = new Map()\n\nclass SwayDelayGroup extends SwayParams{\n\n\t/**\n\t * @param {String} name\n\t * @param {Number} base\n\t * @param {Number} increment\n\t * @param {Number} exponentiation\n\t */\n\tconstructor (name, base, increment, exponentiation=1, replace=true) {\n\t\tsuper(base, increment, exponentiation)\n\t\tthis.name = name\n\t\tif (replace || !delayGroups.has(this.name)){\n\t\t\tdelayGroups.set(this.name, this)\n\t\t}\n\t}\n\n\t/**\n\t * @param {Number} index\n\t * @param {Number} factor\n\t */\n\tcalcDelay(index, factor=1) {\n\t\treturn this.calcNodeParam(index, factor)\n\t}\n}\n\nshared.SwayDelayGroupClass = SwayDelayGroup\n\n/**\n * @param {Number | [string] | null} aniLayers\n * @param {String} timeoffsetParamsName\n * @param {Number} timeoffsetFactor\n * @param {String} strengthParamsName\n * @param {Number} strengthFactor\n * @param {Number} rate\n * @param {String} delayGroupName\n * @param {Number} delayGroupIndex\n * @param {Number} delayFactor\n */\nfunction startSwayAniLayerListFromRecord(aniLayers=null, timeoffsetParamsName, timeoffsetFactor=1, strengthParamsName, strengthFactor=1, rate=1, delayGroupName=null, delayGroupIndex=1, delayFactor=1, initIndex=0, overrideAniCount=null) {\n\tlet timeoffsetParams = SwayParamsRecord.get(timeoffsetParamsName)\n\tif (timeoffsetParams === undefined) {\n\t\tthrow 'Preset sway parameter does not exist: ' + timeoffsetParamsName + '. ' + getCallSourceInfo()\n\t}\n\tlet strengthParams = SwayParamsRecord.get(strengthParamsName)\n\tif (strengthParams === undefined) {\n\t\tthrow 'Preset sway parameter does not exist: ' + strengthParamsName + '. ' + getCallSourceInfo()\n\t}\n\tstartSwayAniLayerList(aniLayers, timeoffsetParams, timeoffsetFactor, strengthParams, strengthFactor, rate, delayGroupName, delayGroupIndex, delayFactor, initIndex, overrideAniCount)\n}\n\nshared.startSwayAniLayerListFromRecord = startSwayAniLayerListFromRecord\n\n/**\n * @param {Number | [string] | null} aniLayers\n * @param {SwayParams} timeoffsetParams\n * @param {Number} timeoffsetFactor\n * @param {SwayParams} strengthParams\n * @param {Number} strengthFactor\n * @param {Number} rate\n * @param {String} delayGroupName\n * @param {Number} delayGroupIndex\n * @param {Number} delayFactor\n */\nfunction startSwayAniLayerList(aniLayers=null, timeoffsetParams, timeoffsetFactor=1, strengthParams, strengthFactor=1, rate=1, delayGroupName=null, delayGroupIndex=1, delayFactor=1, initIndex=0, overrideAniCount=null) {\n\tif (!'getAnimationLayer' in thisLayer) {\n\t\tthrow 'You can only use \"startSwayAniLayerList\" in image layers. ' + getCallSourceInfo()\n\t}\n\tlet basicDelay;\n\tif (delayGroupName === null) {\n\t\tbasicDelay = 0\n\t} else {\n\t\tlet delayGroup = delayGroups.get(delayGroupName)\n\t\tif (delayGroup === undefined) {\n\t\t\tif (tips) {\n\t\t\t\tconsole.log('TIP: The specified Delay Group \"' + delayGroupName + '\" does not exist. A linear incremental group has been created automatically. It is recommended to manually create the required Delay Group to manage the project more consistently. ' + getCallSourceInfo())\n\t\t\t}\n\t\t\tbasicDelay = new SwayDelayGroup(delayGroupName, 0, 1).calcDelay(delayGroupIndex, delayFactor)\n\t\t} else {\n\t\t\tbasicDelay = delayGroup.calcDelay(delayGroupIndex, delayFactor)\n\t\t}\n\t}\n\tif (aniLayers === null) {\n\t\tlet aniCount = overrideAniCount === null ? thisLayer.getAnimationLayerCount() : overrideAniCount\n\t\tfor (i = 0; i < aniCount; i++) {\n\t\t\tinitSwayAni(thisLayer.getAnimationLayer(i), timeoffsetParams, timeoffsetFactor, strengthParams, strengthFactor, aniCount, i + initIndex, rate, basicDelay)\n\t\t}\n\t} else if (aniLayers instanceof Array && aniLayers.length === 2) {\n\t\tlet aniCount = overrideAniCount === null ? aniLayers[1] - aniLayers[0] + 1 : overrideAniCount\n\t\tfor (i = aniLayers[0]; i <= aniLayers[1]; i++) {\n\t\t\tinitSwayAni(thisLayer.getAnimationLayer(String(i)), timeoffsetParams, timeoffsetFactor, strengthParams, strengthFactor, aniCount, i + initIndex, rate, basicDelay)\n\t\t}\n\t} else if (aniLayers instanceof Number) {\n\t\tfor (i = 0; i < aniLayers; i++) {\n\t\t\tinitSwayAni(thisLayer.getAnimationLayer(i), timeoffsetParams, timeoffsetFactor, strengthParams, strengthFactor, (overrideAniCount === null ? aniLayers : overrideAniCount), i + initIndex, rate, basicDelay)\n\t\t}\n\t} else if (aniLayers instanceof Array && aniLayers[0] instanceof String) {\n\t\tlet aniCount = overrideAniCount === null ? aniLayers.length() : overrideAniCount\n\t\tfor (i = 0; i < aniCount; i++) {\n\t\t\tinitSwayAni(thisLayer.getAnimationLayer(aniLayers[i]), timeoffsetParams, timeoffsetFactor, strengthParams, strengthFactor, aniCount, i + initIndex, rate, basicDelay)\n\t\t}\n\t} else {\n\t\tthrow 'Incorrect type of parameter \"aniLayers\". ' + getCallSourceInfo()\n\t}\n}\n\n\n/**\n * @param {IAnimationLayer} aniLayer\n * @param {SwayParams} timeoffsetParams\n * @param {Number} timeoffsetFactor\n * @param {SwayParams} strengthParams\n * @param {Number} strengthFactor\n * @param {Number} boneCount\n * @param {Number} index\n * @param {Number} rate\n */\nfunction initSwayAni(aniLayer, timeoffsetParams, timeoffsetFactor=1, strengthParams, strengthFactor=1, boneCount, index, rate, extraDelay=0) {\n\taniLayer.play()\n\taniLayer.setFrame(aniLayer.frameCount * -((timeoffsetParams.calcNodeParam(index, timeoffsetFactor / boneCount) + extraDelay) % 1))\n\taniLayer.blend = strengthParams.calcNodeParam(index, strengthFactor)\n\taniLayer.rate = rate\n\taniLayer.visible = true\n}\n\n\nshared.startSwayAniLayerList = startSwayAniLayerList\n\n\n/*\n\n\tUser properties change detection\n\n*/\n\n\nshared.userPropertyCategories = new Map()\n\nshared.STARTS_WITH = 0\nshared.END_WITH = 1\n\nconst matchMethods = [\n\t(propertyKey, targetText) => propertyKey.startsWith(targetText),\n\t(propertyKey, targetText) => propertyKey.endsWith(targetText)\n]\n\nlet boundUserProperties = {}\n\nfunction bindUserProperty(userProperty, category) {\n\tif (userProperty in boundUserProperties) {\n\t\tboundUserProperties[userProperty].push(category)\n\t} else {\n\t\tboundUserProperties[userProperty] = [category]\n\t}\n}\n\nclass UserPropertyCategory {\n\tconstructor(name, matcher, targetText) {\n\t\tthis.name = name\n\t\tthis.matcher = matcher\n\t\tthis.targetText = targetText\n\t\tthis.changedUserProperties = {}\n\t\tthis.userPropertyKeyList = []\n\t\tthis.changed = true\t\t// 初次载入时一律视为已变更\n\t\tthis._bindUserProperties()\n\t}\n\n\t_bindUserProperties() {\n\t\tObject.keys(engine.userProperties).forEach((userProperty) => {\n\t\t\tif (this.matcher(userProperty, this.targetText)) {\n\t\t\t\tthis.userPropertyKeyList.push(userProperty)\n\t\t\t\tbindUserProperty(userProperty, this)\n\t\t\t}\n\t\t})\n\t\tif (debugMode) {\n\t\t\tconsole.log('DEBUG: UserPropertyCategory \"' + this.name + '\" binds the following user properties: ' + this.userPropertyKeyList.toString())\n\t\t}\n\t}\n\n\taddChangedUserProperty(userProperty, value) {\n\t\tthis.changedUserProperties[userProperty] = value\n\t\tthis.changed = true\n\t}\n\n\tclearChangeRecord() {\n\t\tthis.changedUserProperties = {}\n\t\tthis.changed = false\n\t}\n}\n\n/**\n * @param {String} name\n * @param {Number} matchMethod\n * @param {String} targetText\n */\nfunction registerUserPropertyCategory(name, matchMethod, targetText) {\n\tif (shared.userPropertyCategories.has(name)) {\n\t\tthrow 'Duplicate UserPropertyCategory \"' + name + '\". ' + getCallSourceInfo()\n\t}\n\tlet userPropertyCategory = new UserPropertyCategory(name, matchMethods[matchMethod], targetText)\n\tshared.userPropertyCategories.set(name, userPropertyCategory)\n\treturn userPropertyCategory\n}\n\n/**\n * @param {String} name\n */\nfunction getUserPropertyCategory(name) {\n\tlet userPropertyCategory = shared.userPropertyCategories.get(name)\n\tif (userPropertyCategory === undefined) {\n\t\tthrow 'Non-existent UserPropertyCategory \"' + name + '\". ' + getCallSourceInfo()\n\t} else {\n\t\treturn userPropertyCategory\n\t}\n}\n\nshared.registerUserPropertyCategory = registerUserPropertyCategory\nshared.getUserPropertyCategory = getUserPropertyCategory\n\nfunction syncChangedUserProperties(changedUserProperties) {\n\tObject.keys(changedUserProperties).forEach((changedUserProperty) => {\n\t\tif (!(changedUserProperty in boundUserProperties)) return\n\t\tboundUserProperties[changedUserProperty].forEach(category => {\n\t\t\tcategory.addChangedUserProperty(changedUserProperty, changedUserProperties[changedUserProperty])\n\t\t})\n\t})\n\tif (debugMode) {\n\t\tshared.userPropertyCategories.forEach(category => {\n\t\t\tif (!category.changed) return\n\t\t\tconsole.log('DEBUG: UserPropertyCategory \"' + category.name + '\" has been updated.')\n\t\t})\n\t}\n}\n\nfunction clearChangedUserPropertyRecord() {\n\tshared.userPropertyCategories.forEach(category => {\n\t\tcategory.clearChangeRecord()\n\t})\n}\n\n\n/*\n\n\tWPE Events\n\n*/\n\n\nlet checkChangedUserProperties = false\n\n/**\n * @param {Object} changedUserProperties - only includes user properties that were recently changed!\n */\nexport function applyUserProperties(changedUserProperties) {\n\tif (!checkChangedUserProperties) {\n\t\tcheckChangedUserProperties = true\n\t\treturn\n\t}\n\tclearChangedUserPropertyRecord()\n\tsyncChangedUserProperties(changedUserProperties)\n}\n\n/**\n * @param {Boolean} value - for property 'visible'\n * @return {Boolean} - update current property value\n */\nexport function update() {\n\tif (needToCalcInterpolator) {\n\t\taniScheduler.calcInterpolators()\n\t}\n\t/*\n\tif (aniScheduler.needToMapAni) {\n\t\taniScheduler.mapAnis()\n\t}\n\t*/\n\treturn\n}\n\n// Initalize\nshared.eventDispatcher.registerEvent('initCompleted')\n\nif (isRunningInEditor) {\n\tfor (var i of editorInfo) {\n\t\tconsole.log(i)\n\t}\n}",
+				"scriptproperties" : 
+				{
+					"debugMode" : false,
+					"logInterrupts" : false,
+					"replayableByDefault" : false,
+					"tips" : true,
+					"warningAutoReRegist" : true
+				},
+				"value" : true
+			}
+		},
+		{
+			"id" : 720,
+			"maxtime" : 5.0,
+			"mintime" : 1.0,
+			"muteineditor" : true,
+			"name" : "I Really Want to Stay at Your House (Cyberpunk Edgerunners Lofi).mp3",
+			"playbackmode" : "loop",
+			"sound" : 
+			[
+				"sounds/I Really Want to Stay at Your House (Cyberpunk Edgerunners Lofi).mp3"
+			],
+			"startsilent" : false,
+			"volume" : 
+			{
+				"animation" : 
+				{
+					"c0" : 
+					[
+						{
+							"back" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : -1,
+								"y" : -0.0
+							},
+							"frame" : 0,
+							"front" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : 0.78947365,
+								"y" : 0
+							},
+							"lockangle" : true,
+							"locklength" : true,
+							"value" : 0.5
+						},
+						{
+							"back" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : -0.78947365,
+								"y" : -0.0
+							},
+							"frame" : 38,
+							"front" : 
+							{
+								"enabled" : true,
+								"magic" : true,
+								"x" : 1,
+								"y" : 0
+							},
+							"lockangle" : true,
+							"locklength" : true,
+							"value" : 0.80000001
+						}
+					],
+					"options" : 
+					{
+						"fps" : 12,
+						"length" : 60,
+						"mode" : "single",
+						"wraploop" : null
+					}
+				},
+				"value" : 1.0
+			}
+		},
+		{
+			"angles" : "0.00000 -0.00000 0.00000",
+			"castshadow" : false,
+			"id" : 1342,
+			"image" : "models/workshop/3502639183/dingwei.json",
+			"name" : "定位/positioning/x,y",
+			"origin" : 
+			{
+				"script" : "// Please note: Do not remove this line or asset references may break.\nexport let __workshopId = '3502639183';\n// 使用严格模式\n'use strict';\n\n// 创建脚本属性\nexport var scriptProperties = createScriptProperties ()\n  // 添加 X 坐标的滑块属性\n  .addSlider ( {\n    name: 'x', // 属性名称\n    label: 'X', // 属性标签\n    value: 0, // 属性默认值\n    min: -1, // 滑块最小值\n    max: 1, // 滑块最大值\n    integer: false // 是否使用整数\n  })\n  // 添加 Y 坐标的滑块属性\n  .addSlider ( {\n    name: 'y', // 属性名称\n    label: 'Y', // 属性标签\n    value: 0, // 属性默认值\n    min: -1, // 滑块最小值\n    max: 1, // 滑块最大值\n    integer: false // 是否使用整数\n  })\n  // 完成脚本属性的创建\n  .finish ();\n\n/**\n * 更新组件的坐标值\n * @param {Vec3} value - 组件的原始坐标值\n * @return {Vec3} - 更新后的坐标值\n */\nexport function update (value) {\n  // 将 X 坐标乘以画布的宽度\n  value.x = scriptProperties.x * engine.canvasSize.x;\n  // 将 Y 坐标乘以画布的高度\n  value.y = scriptProperties.y * engine.canvasSize.y;\n  // 返回更新后的坐标值\n  return value;\n}\n",
+				"scriptproperties" : 
+				{
+					"x" : 
+					{
+						"user" : "newproperty",
+						"value" : -0.52999997
+					},
+					"y" : 
+					{
+						"user" : "newproperty1",
+						"value" : 0
+					}
+				},
+				"value" : "1920.00000 1080.00000 0.00000"
+			},
+			"size" : "1.00000 1.00000"
+		}
+	],
+	"version" : 5
+}

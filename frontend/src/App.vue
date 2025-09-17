@@ -1,24 +1,34 @@
 <template>
   <div id="app" class="page-container">
-    <!-- 管理员页面和认证页面使用独立布局 -->
-    <template v-if="isAdminRoute || isAuthRoute">
+    <!-- 管理员页面使用独立布局 -->
+    <template v-if="isAdminRoute">
       <router-view />
+    </template>
+
+    <!-- 认证页面使用背景管理器但无头尾 -->
+    <template v-else-if="isAuthRoute">
+      <GlobalBackgroundManager>
+        <router-view />
+      </GlobalBackgroundManager>
     </template>
 
     <!-- 普通页面使用默认布局 -->
     <template v-else>
-      <AppHeader />
-      <!-- 公告横幅（显示位置由管理端设置控制，默认展示） -->
-      <PublicNoticeBanner :placements="uiPlacements" />
-      <!-- 邮箱验证横幅 -->
-      <EmailVerificationBanner />
-      <main class="main-content content-wrapper">
-        <router-view />
-      </main>
-      <!-- 公告预览大弹窗（全局） -->
-      <PublicNoticeViewer />
+      <!-- 全局背景管理器 -->
+      <GlobalBackgroundManager>
+        <AppHeader />
+        <!-- 公告横幅（显示位置由管理端设置控制，默认展示） -->
+        <PublicNoticeBanner :placements="uiPlacements" />
+        <!-- 邮箱验证横幅 -->
+        <EmailVerificationBanner />
+        <main class="main-content content-wrapper">
+          <router-view />
+        </main>
+        <!-- 公告预览大弹窗（全局） -->
+        <PublicNoticeViewer />
 
-      <AppFooter />
+        <AppFooter />
+      </GlobalBackgroundManager>
     </template>
   </div>
 </template>
@@ -31,6 +41,7 @@ import AppFooter from '@/components/layout/AppFooter.vue';
 import EmailVerificationBanner from '@/components/EmailVerificationBanner.vue';
 import PublicNoticeBanner from '@/components/PublicNoticeBanner.vue';
 import PublicNoticeViewer from '@/components/PublicNoticeViewer.vue';
+import GlobalBackgroundManager from '@/components/GlobalBackgroundManager.vue';
 
 export default {
   name: 'App',
@@ -39,7 +50,8 @@ export default {
     AppFooter,
     EmailVerificationBanner,
     PublicNoticeBanner,
-    PublicNoticeViewer
+    PublicNoticeViewer,
+    GlobalBackgroundManager
   },
   setup() {
     const route = useRoute();
