@@ -16,7 +16,7 @@ class SecurityLogger {
    */
   static logEmailVerificationTokenGenerated(userId, email, req) {
     const clientInfo = this.getClientInfo(req);
-    
+
     logger.info('Email verification token generated', {
       event: 'EMAIL_VERIFICATION_TOKEN_GENERATED',
       userId,
@@ -34,7 +34,7 @@ class SecurityLogger {
    */
   static logEmailVerificationSuccess(userId, email, req) {
     const clientInfo = this.getClientInfo(req);
-    
+
     logger.info('Email verification successful', {
       event: 'EMAIL_VERIFICATION_SUCCESS',
       userId,
@@ -52,7 +52,7 @@ class SecurityLogger {
    */
   static logEmailVerificationFailure(token, reason, req) {
     const clientInfo = this.getClientInfo(req);
-    
+
     logger.warn('Email verification failed', {
       event: 'EMAIL_VERIFICATION_FAILED',
       tokenPrefix: token ? token.substring(0, 8) + '...' : 'null',
@@ -71,7 +71,7 @@ class SecurityLogger {
    */
   static logVerificationEmailSent(userId, email, type, req) {
     const clientInfo = this.getClientInfo(req);
-    
+
     logger.info('Verification email sent', {
       event: 'VERIFICATION_EMAIL_SENT',
       userId,
@@ -91,7 +91,7 @@ class SecurityLogger {
    */
   static logVerificationEmailFailure(userId, email, error, req) {
     const clientInfo = this.getClientInfo(req);
-    
+
     logger.error('Verification email send failed', {
       event: 'VERIFICATION_EMAIL_FAILED',
       userId,
@@ -111,7 +111,7 @@ class SecurityLogger {
    */
   static logRateLimitTriggered(userId, email, action, req) {
     const clientInfo = this.getClientInfo(req);
-    
+
     logger.warn('Rate limit triggered', {
       event: 'RATE_LIMIT_TRIGGERED',
       userId,
@@ -130,7 +130,7 @@ class SecurityLogger {
    */
   static logSuspiciousActivity(activity, details, req) {
     const clientInfo = this.getClientInfo(req);
-    
+
     logger.warn('Suspicious activity detected', {
       event: 'SUSPICIOUS_ACTIVITY',
       activity,
@@ -172,13 +172,13 @@ class SecurityLogger {
    * @returns {string} IP地址
    */
   static getClientIP(req) {
-    return req.ip || 
-           req.connection?.remoteAddress || 
-           req.socket?.remoteAddress || 
-           req.connection?.socket?.remoteAddress ||
-           req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-           req.headers['x-real-ip'] ||
-           'Unknown';
+    return req.ip ||
+      req.connection?.remoteAddress ||
+      req.socket?.remoteAddress ||
+      req.connection?.socket?.remoteAddress ||
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      'Unknown';
   }
 
   /**
@@ -190,12 +190,12 @@ class SecurityLogger {
     return (req, res, next) => {
       // 记录请求开始
       const startTime = Date.now();
-      
+
       // 监听响应结束
       res.on('finish', () => {
         const duration = Date.now() - startTime;
         const clientInfo = this.getClientInfo(req);
-        
+
         logger.info(`Security event: ${eventType}`, {
           event: eventType,
           method: req.method,
@@ -207,7 +207,7 @@ class SecurityLogger {
           timestamp: new Date().toISOString()
         });
       });
-      
+
       next();
     };
   }
@@ -219,14 +219,72 @@ class SecurityLogger {
    */
   static checkAnomalousAccess(req, userId) {
     const clientInfo = this.getClientInfo(req);
-    
+
     // 检查是否来自新的IP地址
     // 这里可以实现更复杂的异常检测逻辑
-    
+
     // 记录访问信息用于后续分析
     logger.info('Access pattern recorded', {
       event: 'ACCESS_PATTERN',
       userId,
+      ...clientInfo,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * 记录密码重置请求
+   * @param {string} userId - 用户ID（可能为null）
+   * @param {string} email - 邮箱地址
+   * @param {string} status - 状态（success, user_not_found, email_failed等）
+   * @param {Object} req - 请求对象
+   */
+  static logPasswordResetRequest(userId, email, status, req) {
+    const clientInfo = this.getClientInfo(req);
+
+    const logLevel = status === 'success' ? 'info' : 'warn';
+
+    logger[logLevel]('Password reset requested', {
+      event: 'PASSWORD_RESET_REQUEST',
+      userId,
+      email,
+      status,
+      ...clientInfo,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * 记录密码重置成功
+   * @param {string} userId - 用户ID
+   * @param {string} email - 邮箱地址
+   * @param {Object} req - 请求对象
+   */
+  static logPasswordResetSuccess(userId, email, req) {
+    const clientInfo = this.getClientInfo(req);
+
+    logger.info('Password reset successful', {
+      event: 'PASSWORD_RESET_SUCCESS',
+      userId,
+      email,
+      ...clientInfo,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * 记录密码重置失败
+   * @param {string} token - 重置令牌（部分）
+   * @param {string} reason - 失败原因
+   * @param {Object} req - 请求对象
+   */
+  static logPasswordResetFailure(token, reason, req) {
+    const clientInfo = this.getClientInfo(req);
+
+    logger.warn('Password reset failed', {
+      event: 'PASSWORD_RESET_FAILURE',
+      token: token ? token.substring(0, 8) + '...' : null, // 只记录令牌的前8位
+      reason,
       ...clientInfo,
       timestamp: new Date().toISOString()
     });

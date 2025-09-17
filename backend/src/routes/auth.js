@@ -88,9 +88,8 @@ router.post(
 
       // 发送验证邮件
       try {
-        const verificationUrl = `${
-          process.env.FRONTEND_URL || 'https://godaug.fun'
-        }/auth/verify-email/${verificationToken}`;
+        const verificationUrl = `${process.env.FRONTEND_URL || 'https://godaug.fun'
+          }/auth/verify-email/${verificationToken}`;
         await emailService.sendVerificationEmail(user, verificationUrl);
 
         // 记录邮件发送成功
@@ -351,9 +350,8 @@ router.post('/resend-verification', async (req, res, next) => {
 
     // 发送验证邮件
     try {
-      const verificationUrl = `${
-        process.env.FRONTEND_URL || 'https://godaug.fun'
-      }/auth/verify-email/${verificationToken}`;
+      const verificationUrl = `${process.env.FRONTEND_URL || 'https://godaug.fun'
+        }/auth/verify-email/${verificationToken}`;
       await emailService.sendVerificationEmail(user, verificationUrl);
 
       // 记录邮件发送成功
@@ -414,6 +412,203 @@ router.get('/verification-status/:email', async (req, res, next) => {
       }
     });
   } catch (error) {
+    next(error);
+  }
+});
+
+// 请求密码重置
+router.post('/forgot-password', [
+  body('email')
+    .isEmail()
+    .withMessage('邮箱格式不正确')
+    .normalizeEmail()
+], async (req, res, next) => {
+  try {
+    // 验证输入
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        code: 400,
+        message: '输入验证失败',
+        errors: errors.array()
+      });
+    }
+
+    const { email } = req.body;
+
+    // 查找用户（无论用户是否存在都返回相同响应，防止邮箱枚举攻击）
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (user) {
+      // 检查是否可以请求密码重置（频率限制）
+      if (!user.canRequestPasswordReset()) {
+        // 即使在冷却期内，也返回成功消息（安全考虑）
+        return res.json({
+          code: 200,
+          message: '如果该邮箱已注册，您将收到密码重置邮件'
+        });
+      }
+
+      // 生成密码重置令牌
+      const resetToken = user.generatePasswordResetToken();
+      await user.save();
+
+      // 发送密码重置邮件
+      try {
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password/${resetToken}`;
+        await emailService.sendPasswordResetEmail(user, resetUrl);
+
+        // 记录密码重置请求成功
+        SecurityLogger.logPasswordResetRequest(user._id, email, 'success', req);
+        logger.info('Password reset email sent', { userId: user._id, email });
+      } catch (emailError) {
+        // 记录邮件发送失败
+        SecurityLogger.logPasswordResetRequest(user._id, email, 'email_failed', req);
+        logger.error('Failed to send password reset email', {
+          userId: user._id,
+          email,
+          error: emailError.message
+        });
+
+        // 清除令牌（因为邮件发送失败）
+        user.clearPasswordResetToken();
+        await user.save();
+
+        return res.status(500).json({
+          code: 500,
+          message: '邮件发送失败，请稍后重试'
+        });
+      }
+    } else {
+      // 用户不存在，记录尝试
+      SecurityLogger.logPasswordResetRequest(null, email, 'user_not_found', req);
+      logger.warn('Password reset requested for non-existent email', { email });
+    }
+
+    // 无论用户是否存在都返回相同的成功消息
+    res.json({
+      code: 200,
+      message: '如果该邮箱已注册，您将收到密码重置邮件'
+    });
+  } catch (error) {
+    logger.error('Password reset request failed', { error: error.message });
+    next(error);
+  }
+});
+
+// 验证密码重置令牌
+router.get('/verify-reset-token/:token', async (req, res, next) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({
+        code: 400,
+        message: '重置令牌不能为空'
+      });
+    }
+
+    // 查找用户
+    const user = await User.findByPasswordResetToken(token);
+    if (!user) {
+      // 记录验证失败
+      SecurityLogger.logPasswordResetFailure(token, 'Token not found or expired', req);
+      return res.status(400).json({
+        code: 400,
+        message: '重置令牌无效或已过期'
+      });
+    }
+
+    // 验证令牌
+    if (!user.verifyPasswordResetToken(token)) {
+      // 记录验证失败
+      SecurityLogger.logPasswordResetFailure(token, 'Token verification failed', req);
+      return res.status(400).json({
+        code: 400,
+        message: '重置令牌无效或已过期'
+      });
+    }
+
+    // 返回令牌验证成功信息（不包含敏感信息）
+    res.json({
+      code: 200,
+      message: '令牌验证成功',
+      data: {
+        email: user.email.replace(/(.{2}).*(@.*)/, '$1***$2'), // 脱敏邮箱
+        tokenValid: true,
+        expiresAt: user.passwordResetExpires
+      }
+    });
+  } catch (error) {
+    logger.error('Token verification failed', { error: error.message });
+    next(error);
+  }
+});
+
+// 执行密码重置
+router.post('/reset-password', [
+  body('token')
+    .notEmpty()
+    .withMessage('重置令牌不能为空'),
+  body('newPassword')
+    .isLength({ min: 6, max: 50 })
+    .withMessage('新密码长度必须在6-50个字符之间'),
+  body('confirmPassword')
+    .custom((value, { req }) => {
+      if (value !== req.body.newPassword) {
+        throw new Error('确认密码与新密码不匹配');
+      }
+      return true;
+    })
+], async (req, res, next) => {
+  try {
+    // 验证输入
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        code: 400,
+        message: '输入验证失败',
+        errors: errors.array()
+      });
+    }
+
+    const { token, newPassword } = req.body;
+
+    // 查找用户
+    const user = await User.findByPasswordResetToken(token).select('+passwordResetToken');
+    if (!user) {
+      // 记录重置失败
+      SecurityLogger.logPasswordResetFailure(token, 'Token not found or expired', req);
+      return res.status(400).json({
+        code: 400,
+        message: '重置令牌无效或已过期'
+      });
+    }
+
+    // 验证令牌
+    if (!user.verifyPasswordResetToken(token)) {
+      // 记录重置失败
+      SecurityLogger.logPasswordResetFailure(token, 'Token verification failed', req);
+      return res.status(400).json({
+        code: 400,
+        message: '重置令牌无效或已过期'
+      });
+    }
+
+    // 执行密码重置
+    await user.resetPassword(newPassword);
+    await user.save();
+
+    // 记录密码重置成功
+    SecurityLogger.logPasswordResetSuccess(user._id, user.email, req);
+    logger.info('Password reset successful', { userId: user._id, email: user.email });
+
+    res.json({
+      code: 200,
+      message: '密码重置成功，请使用新密码登录'
+    });
+  } catch (error) {
+    logger.error('Password reset failed', { error: error.message });
     next(error);
   }
 });

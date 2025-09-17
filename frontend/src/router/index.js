@@ -43,6 +43,18 @@ const routes = [
     meta: { title: '注册', guest: true }
   },
   {
+    path: '/auth/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/auth/ForgotPassword.vue'),
+    meta: { title: '忘记密码', guest: true }
+  },
+  {
+    path: '/auth/reset-password/:token',
+    name: 'ResetPassword',
+    component: () => import('@/views/auth/ResetPassword.vue'),
+    meta: { title: '重置密码', guest: true }
+  },
+  {
     path: '/auth/verification-pending',
     name: 'VerificationPending',
     component: () => import('@/views/auth/VerificationPending.vue'),

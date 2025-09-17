@@ -107,6 +107,28 @@ const userSchema = new mongoose.Schema(
     // 重发验证邮件的限制
     lastVerificationEmailSent: {
       type: Date
+    },
+
+    // 密码重置相关字段
+    passwordResetToken: {
+      type: String,
+      index: true,
+      sparse: true,
+      select: false // 默认查询时不返回重置令牌
+    },
+    passwordResetExpires: {
+      type: Date,
+      index: true
+    },
+    passwordResetRequestedAt: {
+      type: Date
+    },
+    passwordResetCount: {
+      type: Number,
+      default: 0
+    },
+    lastPasswordResetAt: {
+      type: Date
     }
   },
   {
@@ -372,6 +394,86 @@ userSchema.methods.markVerificationEmailSent = function () {
   return this;
 };
 
+// 实例方法：生成密码重置令牌
+userSchema.methods.generatePasswordResetToken = function () {
+  const crypto = require('crypto');
+
+  // 生成更安全的随机令牌（64字节）
+  const token = crypto.randomBytes(64).toString('hex');
+
+  // 创建令牌哈希（存储哈希值而不是原始令牌）
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  // 设置令牌哈希和过期时间（1小时）
+  this.passwordResetToken = tokenHash;
+  this.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1小时后过期
+  this.passwordResetRequestedAt = new Date();
+
+  // 返回原始令牌（用于发送邮件）
+  return token;
+};
+
+// 实例方法：验证密码重置令牌
+userSchema.methods.verifyPasswordResetToken = function (token) {
+  const crypto = require('crypto');
+
+  if (!token || !this.passwordResetToken) {
+    return false;
+  }
+
+  // 检查令牌是否过期
+  if (this.passwordResetExpires && this.passwordResetExpires < new Date()) {
+    return false;
+  }
+
+  // 创建令牌哈希并与存储的哈希比较
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  // 使用时间安全的比较方法
+  return crypto.timingSafeEqual(
+    Buffer.from(this.passwordResetToken, 'hex'),
+    Buffer.from(tokenHash, 'hex')
+  );
+};
+
+// 实例方法：检查是否可以请求密码重置
+userSchema.methods.canRequestPasswordReset = function () {
+  // 检查是否在冷却期内（5分钟）
+  if (this.passwordResetRequestedAt) {
+    const cooldownPeriod = 5 * 60 * 1000; // 5分钟
+    const timeSinceLastRequest = Date.now() - this.passwordResetRequestedAt.getTime();
+    if (timeSinceLastRequest < cooldownPeriod) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+// 实例方法：执行密码重置
+userSchema.methods.resetPassword = async function (newPassword) {
+  const bcrypt = require('bcryptjs');
+
+  // 加密新密码
+  const saltRounds = 12;
+  this.password = await bcrypt.hash(newPassword, saltRounds);
+
+  // 清除重置令牌
+  this.passwordResetToken = undefined;
+  this.passwordResetExpires = undefined;
+  this.passwordResetCount = (this.passwordResetCount || 0) + 1;
+  this.lastPasswordResetAt = new Date();
+
+  return this;
+};
+
+// 实例方法：清除密码重置令牌
+userSchema.methods.clearPasswordResetToken = function () {
+  this.passwordResetToken = undefined;
+  this.passwordResetExpires = undefined;
+  return this;
+};
+
 // 自定义toJSON方法
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
@@ -434,6 +536,19 @@ userSchema.statics.findByVerificationToken = function (token) {
     emailVerificationToken: tokenHash,
     emailVerificationExpires: { $gt: new Date() }
   }).select('+emailVerificationToken');
+};
+
+// 静态方法：通过密码重置令牌查找用户
+userSchema.statics.findByPasswordResetToken = function (token) {
+  const crypto = require('crypto');
+
+  // 创建令牌哈希
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  return this.findOne({
+    passwordResetToken: tokenHash,
+    passwordResetExpires: { $gt: new Date() }
+  }).select('+passwordResetToken');
 };
 
 // 静态方法：清理过期的验证令牌

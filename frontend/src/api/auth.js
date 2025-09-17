@@ -69,16 +69,6 @@ export const sendPasswordResetEmail = (email) => {
 };
 
 /**
- * 重置密码
- * @param {Object} data - 重置数据
- * @param {string} data.token - 重置令牌
- * @param {string} data.password - 新密码
- */
-export const resetPassword = (data) => {
-  return request.post('/auth/reset-password', data);
-};
-
-/**
  * 刷新令牌
  */
 export const refreshToken = () => {
@@ -99,4 +89,31 @@ export const checkUsernameAvailability = (username) => {
  */
 export const checkEmailAvailability = (email) => {
   return request.get(`/auth/check-email/${encodeURIComponent(email)}`);
+};
+
+/**
+ * 请求密码重置
+ * @param {string} email - 邮箱地址
+ */
+export const forgotPassword = (email) => {
+  return request.post('/auth/forgot-password', { email });
+};
+
+/**
+ * 验证密码重置令牌
+ * @param {string} token - 重置令牌
+ */
+export const verifyResetToken = (token) => {
+  return request.get(`/auth/verify-reset-token/${token}`);
+};
+
+/**
+ * 执行密码重置
+ * @param {Object} data - 重置数据
+ * @param {string} data.token - 重置令牌
+ * @param {string} data.newPassword - 新密码
+ * @param {string} data.confirmPassword - 确认密码
+ */
+export const resetPassword = (data) => {
+  return request.post('/auth/reset-password', data);
 };
