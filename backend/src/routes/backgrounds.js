@@ -357,7 +357,7 @@ router.post('/admin/upload', requireAuth, requireAdmin, (req, res, next) => {
 
     const imageData = {
       url: `${baseUrl}/${filename}`,
-      filename: file.originalname,
+      filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
       size: file.size,
       dimensions: {
         width: metadata.width,
