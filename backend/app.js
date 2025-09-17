@@ -38,6 +38,7 @@ const tempEmailRoutes = require('./src/routes/tempEmail');
 const publicNoticesRoutes = require('./src/routes/publicNotices');
 const adminPublicNoticesRoutes = require('./src/routes/admin/publicNotices');
 const bookmarkRoutes = require('./src/routes/bookmarks');
+const backgroundRoutes = require('./src/routes/backgrounds');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -174,6 +175,9 @@ app.use(
 // Augment配套程序静态文件服务（无需认证）
 app.use('/static', express.static(path.join(__dirname, '../augment-proxy')));
 
+// 背景图片静态文件服务（无需认证）
+app.use('/uploads/backgrounds', express.static(path.join(__dirname, 'uploads/backgrounds')));
+
 // 前端静态文件服务（生产环境）- 已由 nginx 处理，禁用以避免路由冲突
 // if (process.env.NODE_ENV === 'production') {
 //   app.use(express.static(path.join(__dirname, '../frontend/dist')));
@@ -200,6 +204,7 @@ app.use('/api/temp-email', tempEmailRoutes);
 app.use('/api/public-notices', publicNoticesRoutes);
 app.use('/api/admin/public-notices', adminPublicNoticesRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
+app.use('/api/backgrounds', backgroundRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {
