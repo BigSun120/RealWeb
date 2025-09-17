@@ -130,7 +130,7 @@ export default {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: transparent; /* 改为透明，让背景图片显示 */
 }
 
 .container {
@@ -141,11 +141,13 @@ export default {
 
 /* 头部样式 */
 .tools-header {
-  background: #fff;
-  border-bottom: 1px solid #e4e7ed;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -193,10 +195,12 @@ export default {
 
 /* 底部样式 */
 .tools-footer {
-  background: #fff;
-  border-top: 1px solid #e4e7ed;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
   padding: 20px 0;
   margin-top: auto;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .footer-content {

@@ -1,9 +1,12 @@
 <template>
   <div class="blog-detail-page">
     <div v-loading="loading" class="page-container">
-      <div v-if="article" class="blog-layout">
-        <!-- 主要内容 -->
-        <main class="main-content">
+      <div v-if="article" class="blog-detail-layout">
+        <!-- 主要内容容器 -->
+        <div class="main-container">
+          <div class="unified-container">
+            <!-- 主要内容 -->
+            <main class="main-content">
           <!-- 文章头部 -->
           <header class="article-header card">
             <div class="card-body">
@@ -131,10 +134,20 @@
             />
           </section>
         </main>
+          </div>
+        </div>
 
-        <!-- 侧边栏 -->
-        <aside class="sidebar">
-          <!-- 目录 -->
+        <!-- 浮动侧边栏 -->
+        <aside class="floating-sidebar" :class="{ 'sidebar-hidden': sidebarHidden }">
+          <!-- 侧边栏切换按钮 -->
+          <button class="sidebar-toggle" @click="toggleSidebar" :title="sidebarHidden ? '显示侧边栏' : '隐藏侧边栏'">
+            <span v-if="sidebarHidden">📖</span>
+            <span v-else>✕</span>
+          </button>
+
+          <!-- 侧边栏内容 -->
+          <div class="sidebar-content">
+            <!-- 目录 -->
           <div v-if="tableOfContents.length > 0" class="toc-card card">
             <div class="card-header">
               <h4>目录</h4>
@@ -178,8 +191,12 @@
               </div>
             </div>
           </div>
+          </div>
         </aside>
       </div>
+
+      <!-- 确保页面有足够高度显示Footer -->
+      <div style="height: 100px;"></div>
     </div>
   </div>
 </template>
@@ -217,6 +234,7 @@ export default {
     const targetPage = ref(1);
     const tableOfContents = ref([]);
     const relatedArticles = ref([]);
+    const sidebarHidden = ref(false);
 
     // 配置marked
     const renderer = new marked.Renderer();
@@ -463,6 +481,87 @@ export default {
       { immediate: true, deep: true }
     );
 
+    // 窗口大小变化时重新调整布局
+    const handleResize = () => {
+      const unifiedContainer = document.querySelector('.unified-container');
+      if (unifiedContainer && window.innerWidth > 1200) {
+        if (sidebarHidden.value) {
+          unifiedContainer.style.setProperty('--js-margin-right', '0px');
+          unifiedContainer.style.setProperty('--js-max-width', '1000px');
+          unifiedContainer.classList.add('js-layout-controlled');
+        } else {
+          // 动态计算边距：侧边栏宽度 + 间距
+          const sidebarWidth = window.innerWidth > 1600 ? 280 : 240; // 提高阈值，更多情况下使用较小宽度
+          const spacing = 15; // 进一步减少间距：侧边栏右侧15px
+          const marginRight = sidebarWidth + spacing;
+
+          // 基于视窗宽度的直接计算方法
+          const viewportWidth = window.innerWidth;
+          // page-container的左右padding: var(--spacing-4) = 16px
+          const pageContainerPadding = 16;
+
+          // 方法1：基于页面容器实际宽度
+          const pageContainer = document.querySelector('.page-container');
+          const containerWidth = pageContainer ? pageContainer.offsetWidth : Math.min(viewportWidth - pageContainerPadding * 2, 1200);
+
+          // 方法2：基于视窗宽度直接计算（更准确）
+          const maxContainerWidth = 1200; // page-container的max-width
+          const effectiveContainerWidth = Math.min(viewportWidth - pageContainerPadding * 2, maxContainerWidth);
+
+          // 使用更准确的容器宽度
+          const finalContainerWidth = Math.max(containerWidth, effectiveContainerWidth);
+          const availableContentWidth = finalContainerWidth - marginRight;
+
+          // 最激进的空间利用策略：
+          // 1. 使用可用宽度的95%（最大化利用空间，留少量边距）
+          // 2. 在超宽屏时适当限制，但允许更宽的内容
+          // 3. 最小600px（保证可读性）
+          let maxWidth;
+          if (availableContentWidth > 1600) {
+            // 超超宽屏（>1600px可用宽度）：使用94%利用率
+            maxWidth = availableContentWidth * 0.94;
+          } else if (availableContentWidth > 1400) {
+            // 超宽屏（1400-1600px可用宽度）：使用92%利用率
+            maxWidth = availableContentWidth * 0.92;
+          } else {
+            // 普通宽屏：使用95%的可用宽度
+            maxWidth = availableContentWidth * 0.95;
+          }
+          maxWidth = Math.max(maxWidth, 600);
+
+          // 特殊处理：如果剩余空白超过120px，进一步增加内容宽度
+          const rightSpace = availableContentWidth - maxWidth;
+          if (rightSpace > 120) {
+            maxWidth = availableContentWidth - 100; // 只留100px空白
+          }
+
+
+
+          // 使用CSS变量 + CSS类的方式来强制应用样式
+          unifiedContainer.style.setProperty('--js-margin-right', `${marginRight}px`);
+          unifiedContainer.style.setProperty('--js-max-width', `${maxWidth}px`);
+
+          // 添加CSS类来强制应用样式
+          unifiedContainer.classList.add('js-layout-controlled');
+
+          // 确保父容器没有限制
+          const mainContainer = unifiedContainer.parentElement;
+          if (mainContainer && mainContainer.classList.contains('main-container')) {
+            mainContainer.style.setProperty('max-width', 'none', 'important');
+            mainContainer.style.setProperty('width', '100%', 'important');
+          }
+
+          // 强制重新计算布局
+          unifiedContainer.offsetHeight; // 触发重排
+        }
+      } else if (unifiedContainer && window.innerWidth <= 1200) {
+        // 小屏幕时重置样式
+        unifiedContainer.classList.remove('js-layout-controlled');
+        unifiedContainer.style.removeProperty('--js-margin-right');
+        unifiedContainer.style.removeProperty('--js-max-width');
+      }
+    };
+
     onMounted(() => {
       fetchArticle();
 
@@ -473,17 +572,23 @@ export default {
 
       nextTick(() => {
         window.scrollTo({ top: 0, behavior: 'auto' });
+        // 初始化布局（延迟一点确保DOM完全渲染）
+        setTimeout(handleResize, 100);
       });
 
       // 添加滚动监听器
       window.addEventListener('scroll', updateActiveHeading);
+      window.addEventListener('resize', handleResize);
       // 初始化激活状态
       updateActiveHeading();
     });
 
+
+
     onUnmounted(() => {
       // 清理滚动监听器
       window.removeEventListener('scroll', updateActiveHeading);
+      window.removeEventListener('resize', handleResize);
     });
 
     // 当路由文章ID变化时，重新获取并滚动到顶部
@@ -503,6 +608,18 @@ export default {
         router.push(`/user/${article.value.author._id}`);
       }
     };
+
+    // 切换侧边栏显示/隐藏
+    const toggleSidebar = () => {
+      sidebarHidden.value = !sidebarHidden.value;
+
+      // 动态调整主内容宽度
+      nextTick(() => {
+        handleResize();
+      });
+    };
+
+
 
     // 处理关注状态变化
     const handleFollowChange = (data) => {
@@ -544,7 +661,9 @@ export default {
       goToUserProfile,
       handleFollowChange,
       handleLikeChange,
-      handleBookmarkChange
+      handleBookmarkChange,
+      sidebarHidden,
+      toggleSidebar
     };
   }
 };
@@ -552,8 +671,8 @@ export default {
 
 <style scoped>
 .blog-detail-page {
-  background-color: var(--color-bg-secondary);
   min-height: 100vh;
+  position: relative;
 }
 
 .page-container {
@@ -562,28 +681,104 @@ export default {
   padding: var(--spacing-6) var(--spacing-4);
 }
 
+/* 统一容器样式 */
+.unified-container {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  padding: var(--spacing-6);
+}
+
+/* JavaScript控制的布局样式 */
+.unified-container.js-layout-controlled {
+  margin: 0 !important;
+  margin-right: var(--js-margin-right, 295px) !important;
+  max-width: var(--js-max-width, 1489px) !important;
+  width: auto !important;
+  box-sizing: border-box !important;
+}
+
 /* 布局 */
-.blog-layout {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: var(--spacing-8);
+.blog-detail-layout {
+  position: relative;
+  width: 100%;
+}
+
+.main-container {
+  width: 100%;
+  max-width: 100%;
 }
 
 .main-content {
   min-width: 0;
 }
 
-.sidebar {
-  position: sticky;
-  top: calc(var(--header-height) + var(--spacing-6)); /* 导航栏高度 + 间距 */
-  height: fit-content;
-  max-height: calc(100vh - var(--header-height) - var(--spacing-12)); /* 限制最大高度 */
-  overflow-y: auto; /* 内容过多时可滚动 */
+/* 浮动侧边栏 */
+.floating-sidebar {
+  position: fixed;
+  top: 120px;
+  right: 20px;
+  width: 280px;
+  max-height: calc(100vh - 140px);
+  overflow: visible; /* 改为visible，让按钮可以显示在容器外 */
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: var(--spacing-4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* 侧边栏内容区域，单独处理滚动 */
+.floating-sidebar .sidebar-content {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+/* 确保主内容不被侧边栏遮挡，同时优化阅读宽度 */
+@media (min-width: 1201px) {
+  .unified-container {
+    /* 宽度和边距由JavaScript动态控制 */
+    transition: margin-right 0.3s ease, max-width 0.3s ease;
+  }
+
+  /* 当屏幕很宽时，内容居中显示 */
+  .main-container {
+    display: flex;
+    justify-content: center;
+  }
 }
 
 /* 面包屑 */
 .breadcrumb {
   margin-bottom: var(--spacing-6);
+}
+
+.breadcrumb .btn {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #2c3e50;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.breadcrumb .btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #3498db;
+  color: #2c3e50;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
 }
 
 /* 文章头部 */
@@ -594,13 +789,14 @@ export default {
 .article-title {
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
+  color: #2c3e50;
   line-height: var(--line-height-tight);
   margin-bottom: var(--spacing-6);
   word-wrap: break-word;
   word-break: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .article-meta {
@@ -609,7 +805,7 @@ export default {
   align-items: center;
   margin-bottom: var(--spacing-6);
   padding-bottom: var(--spacing-6);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .author-section {
@@ -654,13 +850,14 @@ export default {
 .author-name {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
+  color: #2c3e50;
   cursor: pointer;
   transition: color 0.2s ease;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .author-name:hover {
-  color: var(--color-primary);
+  color: #3498db;
 }
 
 .author-actions {
@@ -674,11 +871,13 @@ export default {
   align-items: center;
   gap: var(--spacing-2);
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: #34495e;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .divider {
-  color: var(--color-text-tertiary);
+  color: #7f8c8d;
 }
 
 .article-stats {
@@ -713,7 +912,19 @@ export default {
 
 /* 目录 */
 .toc-card {
-  margin-bottom: var(--spacing-6);
+  margin-bottom: var(--spacing-4);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: var(--spacing-3);
+  backdrop-filter: blur(10px);
+}
+
+.floating-sidebar .toc-card {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: var(--spacing-4);
 }
 
 .table-of-contents {
@@ -747,21 +958,23 @@ export default {
 .toc-link {
   display: block;
   padding: var(--spacing-2) var(--spacing-3);
-  color: var(--color-text-secondary);
+  color: #34495e;
   text-decoration: none;
   border-radius: var(--radius-base);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
   transition: all var(--transition-fast);
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .toc-link:hover {
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #2c3e50;
 }
 
 .toc-link.active {
-  background-color: var(--color-primary);
+  background-color: #3498db;
   color: white;
   font-weight: var(--font-weight-medium);
 }
@@ -781,7 +994,99 @@ export default {
 
 /* 相关文章 */
 .related-articles {
-  margin-bottom: var(--spacing-6);
+  margin-bottom: var(--spacing-4);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: var(--spacing-3);
+  backdrop-filter: blur(10px);
+}
+
+.floating-sidebar .related-articles {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+/* 浮动侧边栏标题 */
+.floating-sidebar .card-header h4 {
+  color: #2c3e50;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  margin-bottom: var(--spacing-3);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  padding-bottom: var(--spacing-2);
+}
+
+/* 浮动侧边栏滚动条美化 */
+.floating-sidebar .sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.floating-sidebar .sidebar-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.floating-sidebar .sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.floating-sidebar .sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* 侧边栏切换按钮 */
+.sidebar-toggle {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 101;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 侧边栏隐藏状态 */
+.floating-sidebar.sidebar-hidden {
+  transform: translateX(calc(100% - 32px)); /* 只隐藏内容，保留按钮可见 */
+}
+
+.floating-sidebar.sidebar-hidden .sidebar-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 隐藏状态下的切换按钮 */
+.floating-sidebar.sidebar-hidden .sidebar-toggle {
+  background: rgba(52, 152, 219, 0.9);
+  color: white;
+  border-color: rgba(52, 152, 219, 0.8);
+  transform: scale(1.1);
+}
+
+.floating-sidebar.sidebar-hidden .sidebar-toggle:hover {
+  background: rgba(52, 152, 219, 1);
+  transform: scale(1.2);
 }
 
 .related-list {
@@ -795,17 +1100,20 @@ export default {
   padding: var(--spacing-3);
   border-radius: var(--radius-base);
   text-decoration: none;
-  transition: background-color var(--transition-fast);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .related-item:hover {
-  background-color: var(--color-bg-tertiary);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .related-title {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
+  color: #2c3e50;
   margin-bottom: var(--spacing-1);
   line-height: var(--line-height-tight);
   display: -webkit-box;
@@ -814,33 +1122,75 @@ export default {
   overflow: hidden;
   word-wrap: break-word;
   word-break: break-word;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .related-date {
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: #7f8c8d;
+  font-weight: 500;
 }
 
 /* 响应式设计 */
-@media (max-width: 1024px) {
-  .blog-layout {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-6);
+@media (min-width: 1201px) and (max-width: 1600px) {
+  .floating-sidebar {
+    width: 240px;
+    right: 10px;
   }
 
-  .sidebar {
+  /* 宽度和边距由JavaScript动态控制 */
+}
+
+@media (max-width: 1200px) {
+  .unified-container {
+    margin-right: 0; /* 移除右边距 */
+  }
+
+  .floating-sidebar {
     position: static;
-    order: -1;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    margin-top: var(--spacing-6);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .floating-sidebar .toc-card,
+  .floating-sidebar .related-articles {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
   }
 
   .article-title {
     font-size: var(--font-size-3xl);
+  }
+
+  .unified-container {
+    border-radius: 16px;
+    padding: var(--spacing-4);
   }
 }
 
 @media (max-width: 768px) {
   .page-container {
     padding: var(--spacing-4) var(--spacing-3);
+  }
+
+  .unified-container {
+    border-radius: 12px;
+    padding: var(--spacing-3);
+    margin-left: var(--spacing-2);
+    margin-right: var(--spacing-2);
+  }
+
+  .floating-sidebar {
+    border-radius: 12px;
+    padding: var(--spacing-3);
+    margin: var(--spacing-4) var(--spacing-2) 0;
   }
 
   .article-meta {
@@ -854,12 +1204,21 @@ export default {
     line-height: 1.3;
     margin-bottom: var(--spacing-4);
   }
+
+  .markdown-content {
+    padding: var(--spacing-4);
+  }
 }
 
 /* Markdown内容样式 */
 .markdown-content {
   line-height: var(--line-height-relaxed);
-  color: var(--color-text-secondary);
+  color: #2c3e50;
+  background: rgba(255, 255, 255, 0.05);
+  padding: var(--spacing-6);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: var(--spacing-6);
 }
 
 .markdown-content h1,

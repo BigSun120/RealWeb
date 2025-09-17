@@ -4,7 +4,7 @@
     <div class="page-background">
       <!-- 背景管理器 -->
       <BackgroundManager
-        :enabled="backgroundEnabled"
+        :enabled="hasStaticBackground"
         custom-path="/"
         :responsive="true"
       >
@@ -242,33 +242,41 @@ export default {
     const isDev = process.env.NODE_ENV === 'development';
 
     // 背景相关计算属性
-    const backgroundEnabled = computed(() => {
-      return homeBackgroundManager.hasBackground.value &&
+    const hasStaticBackground = computed(() => {
+      return homeBackgroundManager.hasBackground.value;
+    });
+
+    const backgroundSwitchEnabled = computed(() => {
+      return hasStaticBackground.value &&
              homeBackgroundManager.homeConfig.value?.enableBackgroundSwitch;
     });
 
     const isDynamicMode = computed(() => {
+      // 如果没有静态背景配置，总是使用动态背景
+      if (!hasStaticBackground.value) return true;
+
+      // 如果有静态背景但没有启用切换，使用静态背景
+      if (!backgroundSwitchEnabled.value) return false;
+
       // 如果用户手动选择了模式，使用用户选择
       if (userBackgroundMode.value !== null) {
         return userBackgroundMode.value === 'dynamic';
       }
+
       // 否则使用配置的默认模式
       return homeBackgroundManager.isDynamicMode.value;
     });
 
     const showDynamicBackground = computed(() => {
-      // 如果没有启用背景管理器，总是显示动态背景
-      if (!backgroundEnabled.value) return true;
-      // 如果启用了背景管理器，根据模式决定
       return isDynamicMode.value;
     });
 
     const canUserSwitchBackground = computed(() => {
-      return backgroundEnabled.value && homeBackgroundManager.canUserSwitch.value;
+      return backgroundSwitchEnabled.value && homeBackgroundManager.canUserSwitch.value;
     });
 
     const dynamicBackgroundOpacity = computed(() => {
-      if (!backgroundEnabled.value) return 0.15;
+      if (!backgroundSwitchEnabled.value) return 0.15;
       return homeBackgroundManager.dynamicOpacity.value || 0.15;
     });
 
@@ -425,7 +433,8 @@ export default {
       getFullImageUrl,
       handleImageError,
       // 背景管理相关
-      backgroundEnabled,
+      hasStaticBackground,
+      backgroundSwitchEnabled,
       isDynamicMode,
       showDynamicBackground,
       canUserSwitchBackground,

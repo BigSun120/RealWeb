@@ -394,6 +394,7 @@
 
 <script>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { Search, Star } from '@element-plus/icons-vue';
 import ToolCard from '@/components/tools/ToolCard.vue';
 import toolsService from '@/services/toolsService';
@@ -406,6 +407,7 @@ export default {
     ToolCard
   },
   setup() {
+    const router = useRouter();
     const searchKeyword = ref('');
     const selectedCategory = ref('all');
     const selectedStatus = ref('all');
@@ -577,19 +579,43 @@ export default {
     // 跳转到工具页面
     const goToTool = tool => {
       if (tool.status !== 'active') {
+        console.info('工具状态不可用:', tool.status);
         return;
       }
 
-      // 静态工具使用路由跳转
-      if (tool.isStatic && tool.route) {
-        // 使用Vue Router进行内部跳转
-        window.open(tool.route, '_blank');
-        return;
-      }
+      try {
+        // 优先级1: 静态工具使用路由跳转
+        if (tool.isStatic && tool.route) {
+          router.push(tool.route);
+          return;
+        }
 
-      // API工具使用path字段跳转
-      if (tool.path) {
-        window.open(tool.path, '_blank');
+        // 优先级2: API工具使用path字段跳转（新窗口）
+        if (tool.path) {
+          window.open(tool.path, '_blank');
+          return;
+        }
+
+        // 优先级3: 兜底方案 - 使用route字段
+        if (tool.route) {
+          // 判断是内部路由还是外部链接
+          if (tool.route.startsWith('/')) {
+            // 内部路由，使用Vue Router跳转
+            router.push(tool.route);
+          } else if (tool.route.startsWith('http://') || tool.route.startsWith('https://')) {
+            // 外部链接，在新窗口打开
+            window.open(tool.route, '_blank');
+          } else {
+            // 相对路径，当作内部路由处理
+            router.push(tool.route);
+          }
+          return;
+        }
+
+        // 如果都没有，显示警告
+        console.warn('工具缺少有效的跳转配置:', tool);
+      } catch (error) {
+        console.error('跳转工具页面失败:', error, tool);
       }
     };
 
@@ -800,6 +826,42 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  position: relative;
+}
+
+/* 为工具箱页面覆盖父容器的背景色 - 已在App.vue中处理 */
+
+/* 为工具箱页面添加背景，确保毛玻璃效果可见 */
+.tools-index::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(168, 85, 247, 0.1) 25%,
+    rgba(236, 72, 153, 0.1) 50%,
+    rgba(251, 146, 60, 0.1) 75%,
+    rgba(34, 197, 94, 0.1) 100%);
+  z-index: -2;
+  pointer-events: none;
+}
+
+/* 添加纹理背景增强毛玻璃效果 */
+.tools-index::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  z-index: -1;
+  pointer-events: none;
 }
 
 .loading-container {
@@ -816,48 +878,69 @@ export default {
 
 .header-content {
   text-align: center;
-  padding: 2rem 0;
-  background: linear-gradient(135deg, #ff6b9d 0%, #c44569 50%, #f8b500 100%);
-  border-radius: 12px;
-  margin-bottom: 2rem;
-  color: white;
+  padding: 1.5rem 2rem;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
 }
 
 .page-title {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
-  color: white;
+  color: #2c3e50;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .page-subtitle {
-  font-size: 1.1rem;
-  margin: 0 0 2rem 0;
-  opacity: 0.9;
-  color: #f5f7fa;
+  font-size: 1rem;
+  margin: 0 0 1.5rem 0;
+  opacity: 1;
+  color: #1e293b;
+  font-weight: 500;
 }
 
 .hero-stats {
   display: flex;
   justify-content: center;
-  gap: 2rem;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
 }
 
 .stat-item {
   text-align: center;
+  padding: 0.75rem 1.25rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .stat-number {
   display: block;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: white;
+  color: #2c3e50;
+  margin-bottom: 0.125rem;
 }
 
 .stat-label {
-  font-size: 0.875rem;
-  opacity: 0.8;
-  color: #f5f7fa;
+  font-size: 0.8rem;
+  opacity: 1;
+  color: #334155;
+  font-weight: 500;
 }
 
 /* 筛选区域 */
@@ -867,6 +950,18 @@ export default {
   align-items: center;
   gap: 1rem;
   margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.filters:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
 .search-section {
@@ -881,15 +976,27 @@ export default {
 .search-input {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
   font-size: 1rem;
-  transition: border-color 0.2s;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-input::placeholder {
+  color: #475569;
+  font-weight: 400;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
 .clear-search-btn {
@@ -897,11 +1004,24 @@ export default {
   right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  background: none;
+  width: 20px;
+  height: 20px;
   border: none;
-  color: #6b7280;
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
   cursor: pointer;
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.clear-search-btn:hover {
+  background: rgba(255, 0, 0, 0.3);
+  color: white;
+  transform: translateY(-50%) scale(1.1);
 }
 
 .toolbar {
@@ -912,44 +1032,53 @@ export default {
 
 .view-controls {
   display: flex;
-  background: #f3f4f6;
-  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
   padding: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn {
   padding: 0.5rem 1rem;
   border: none;
-  border-radius: 0.375rem;
+  border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-ghost {
+  transition: all 0.3s ease;
   background: transparent;
-  color: #6b7280;
+  color: #1e293b;
 }
 
 .btn-ghost:hover {
-  background: #e5e7eb;
-  color: #374151;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  transform: translateY(-1px);
 }
 
 .btn-ghost.active {
-  background: white;
-  color: #3b82f6;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  background: rgba(59, 130, 246, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .btn-primary {
-  background: #3b82f6;
+  background: rgba(59, 130, 246, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
   color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .btn-primary:hover {
-  background: #2563eb;
+  background: rgba(37, 99, 235, 0.9);
+  border-color: rgba(37, 99, 235, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
 .btn-sm {
@@ -969,12 +1098,21 @@ export default {
 
 /* 侧边栏筛选 */
 .sidebar-filters {
-  background: #f9fafb;
-  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
   padding: 1.5rem;
   height: fit-content;
   position: sticky;
   top: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.sidebar-filters:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
 .filter-group {
@@ -988,9 +1126,10 @@ export default {
 .filter-label {
   display: block;
   font-weight: 600;
-  color: #374151;
+  color: #2c3e50;
   margin-bottom: 0.75rem;
   font-size: 0.875rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .filter-options.vertical {
@@ -1049,10 +1188,13 @@ export default {
 
 /* 列表项样式 */
 .list-item {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
   padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -1075,8 +1217,10 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
-  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
   flex-shrink: 0;
 }
 
@@ -1093,9 +1237,10 @@ export default {
 }
 
 .list-description {
-  color: #6b7280;
+  color: #334155;
   margin: 0 0 0.75rem 0;
   line-height: 1.5;
+  font-weight: 400;
 }
 
 .list-meta {
@@ -1103,7 +1248,8 @@ export default {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: #475569;
+  font-weight: 500;
 }
 
 .list-meta .category {
@@ -1120,7 +1266,8 @@ export default {
 }
 
 .separator {
-  color: #d1d5db;
+  color: #64748b;
+  font-weight: 400;
 }
 
 .tool-actions-list {
@@ -1132,6 +1279,26 @@ export default {
 .categories-section,
 .tools-container {
   margin-bottom: 3rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.list-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.tools-section:hover,
+.categories-section:hover,
+.tools-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .category-section {
@@ -1155,8 +1322,9 @@ export default {
 
 .section-description {
   margin: 0;
-  color: #6b7280;
+  color: #334155;
   font-size: 0.875rem;
+  font-weight: 400;
 }
 
 .view-more {
@@ -1178,18 +1346,21 @@ export default {
 .empty-result {
   text-align: center;
   padding: 4rem 1.5rem;
-  background: white;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 /* 分页器 - 博客风格 */
 .bottom-pagination {
   margin-top: 3rem;
   padding: 2rem 0;
-  border-top: 1px solid #e5e7eb;
-  background: #fafafa;
-  border-radius: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
 }
 
 .pagination-info {
@@ -1204,12 +1375,13 @@ export default {
 
 .total-info {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #334155;
+  font-weight: 500;
 }
 
 .total-info strong {
-  color: #374151;
-  font-weight: 600;
+  color: #1e293b;
+  font-weight: 700;
 }
 
 .page-size-control {
@@ -1217,27 +1389,34 @@ export default {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #334155;
+  font-weight: 500;
 }
 
 .page-size-select {
   padding: 0.25rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  background: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  color: #2c3e50;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .page-size-select:hover {
-  border-color: #3b82f6;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .page-size-select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 /* 分页控件 */
@@ -1256,38 +1435,44 @@ export default {
   min-width: 40px;
   height: 40px;
   padding: 0 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  background: white;
-  color: #374151;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  color: #1e293b;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   user-select: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .pagination-btn:hover:not(:disabled) {
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .pagination-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
-  color: #9ca3af;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .pagination-btn.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.8);
+  border-color: rgba(59, 130, 246, 0.3);
   color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .pagination-btn.active:hover {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.9);
+  border-color: rgba(37, 99, 235, 0.4);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
 .pagination-icon {
@@ -1301,8 +1486,8 @@ export default {
   justify-content: center;
   min-width: 40px;
   height: 40px;
-  color: #9ca3af;
-  font-weight: 500;
+  color: #475569;
+  font-weight: 600;
   user-select: none;
 }
 
@@ -1318,7 +1503,8 @@ export default {
   gap: 0.5rem;
   margin-left: 1rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #334155;
+  font-weight: 500;
 }
 
 .page-jump-input {

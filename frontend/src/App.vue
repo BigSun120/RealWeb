@@ -21,7 +21,7 @@
         <PublicNoticeBanner :placements="uiPlacements" />
         <!-- 邮箱验证横幅 -->
         <EmailVerificationBanner />
-        <main class="main-content content-wrapper">
+        <main class="main-content content-wrapper" :class="{ 'tools-page': isToolsRoute }">
           <router-view />
         </main>
         <!-- 公告预览大弹窗（全局） -->
@@ -60,6 +60,8 @@ export default {
     const isAdminRoute = computed(() => route.path.startsWith('/admin'));
     // 判断是否为认证路由（登录、注册、验证等页面）
     const isAuthRoute = computed(() => route.path.startsWith('/auth'));
+    // 判断是否为工具页面
+    const isToolsRoute = computed(() => route.path.startsWith('/tools'));
 
     // 公告展示位置设置（公开读接口）
     const uiPlacements = computed(() => window.__PUBLIC_NOTICE_PLACEMENTS__ || ['banner','dropdown']);
@@ -67,6 +69,7 @@ export default {
     return {
       isAdminRoute,
       isAuthRoute,
+      isToolsRoute,
       uiPlacements
     };
   }
@@ -83,6 +86,16 @@ export default {
 .main-content {
   flex: 1;
   width: 100%;
+}
+
+/* 工具页面特殊样式 - 确保背景透明以显示毛玻璃效果 */
+.main-content.tools-page {
+  background: transparent !important;
+}
+
+/* 工具页面的页面容器也要透明 */
+.page-container:has(.tools-page) {
+  background: transparent !important;
 }
 
 // Profile页面特殊样式

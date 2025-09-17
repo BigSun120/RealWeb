@@ -66,8 +66,9 @@
 </template>
 
 <script>
-import { onMounted } from 'vue';
+import { onMounted, nextTick } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
+import AOS from 'aos';
 
 export default {
   name: 'AppFooter',
@@ -79,6 +80,11 @@ export default {
       if (!settingsStore.isLoaded) {
         settingsStore.loadSettings();
       }
+
+      // 确保AOS动画正确初始化
+      nextTick(() => {
+        AOS.refresh();
+      });
     });
 
     // 提取GitHub用户名
@@ -162,6 +168,8 @@ export default {
     display: flex !important;
     justify-content: space-between;
     padding: 60px 20px 40px;
+    opacity: 1 !important; /* 确保内容可见 */
+    visibility: visible !important; /* 确保内容可见 */
 
     .footer-info {
       flex: 1;

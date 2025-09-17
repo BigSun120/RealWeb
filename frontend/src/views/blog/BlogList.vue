@@ -1,13 +1,16 @@
 <template>
-  <div class="blog-list-page" :class="{ 'list-layout': viewMode === 'list' }">
+  <div class="blog-list-page">
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-content">
         <h1 class="page-title">博客文章</h1>
       </div>
+    </div>
 
-      <!-- 工具栏 -->
-      <div class="main-toolbar">
+    <!-- 统一的内容容器 -->
+    <div class="unified-container">
+      <!-- 工具栏区域 -->
+      <div class="toolbar-section-wrapper">
         <!-- 第一行：搜索和功能 -->
         <div class="toolbar-row">
           <!-- 搜索区域 -->
@@ -98,15 +101,16 @@
         </div>
       </div>
 
-    </div>
+      <!-- 内容分隔线 -->
+      <div class="content-divider"></div>
 
-    <!-- 主内容区域 -->
-    <div class="main-content">
+      <!-- 主内容区域 -->
       <!-- 文章列表容器 -->
       <div class="articles-container">
-        <!-- 加载状态 -->
+        <!-- 加载状态 - 根据当前布局模式显示对应的骨架屏 -->
         <div v-if="loading" class="loading-container">
-          <div class="grid grid-cols-2">
+          <!-- 网格模式骨架屏 -->
+          <div v-if="isGridMode" class="grid grid-cols-2">
             <div v-for="i in 6" :key="i" class="card">
               <div class="skeleton skeleton-title"></div>
               <div class="skeleton skeleton-text"></div>
@@ -115,6 +119,14 @@
                 <div class="skeleton skeleton-avatar"></div>
                 <div class="skeleton skeleton-text" style="width: 100px"></div>
               </div>
+            </div>
+          </div>
+
+          <!-- 列表模式骨架屏 -->
+          <div v-else-if="isListMode" class="list-loading">
+            <div v-for="i in 8" :key="i" class="list-skeleton">
+              <div class="skeleton skeleton-list-title"></div>
+              <div class="skeleton skeleton-list-meta"></div>
             </div>
           </div>
         </div>
@@ -127,10 +139,9 @@
           <button v-if="searchQuery" class="btn btn-primary" @click="clearSearch">清除搜索</button>
         </div>
 
-        <!-- 文章网格/列表 -->
-        <div v-else :class="['articles-grid', viewMode === 'grid' ? 'grid grid-cols-2' : 'list']">
+        <!-- 文章网格模式 -->
+        <div v-else-if="isGridMode" class="articles-grid grid grid-cols-2">
           <!-- 网格模式 -->
-          <template v-if="viewMode === 'grid'">
             <article
               v-for="article in filteredArticles"
               :key="article._id"
@@ -208,11 +219,11 @@
                 </div>
               </div>
             </article>
-          </template>
+        </div>
 
-          <!-- 列表模式 - 表格样式 -->
-          <template v-else>
-            <div class="table-list">
+        <!-- 文章列表模式 -->
+        <div v-else-if="isListMode" class="articles-grid list">
+          <div class="table-list">
               <div
                 class="table-row"
                 v-for="article in filteredArticles"
@@ -250,7 +261,7 @@
                 </div>
               </div>
             </div>
-          </template>
+          </div>
         </div>
       </div>
 
@@ -356,7 +367,6 @@
         </div>
       </div>
     </div>
-  </div>
 </template>
 
 <script>
@@ -383,7 +393,25 @@ export default {
     const jumpPage = ref(1);
 
     // 从本地存储加载布局偏好，默认为列表布局
-    const viewMode = ref(localStorage.getItem('blog-view-mode') || 'list');
+    // 确保viewMode在初始化时就有明确的值，避免渲染时的不确定性
+    const savedViewMode = localStorage.getItem('blog-view-mode');
+    const viewMode = ref(savedViewMode === 'grid' ? 'grid' : 'list');
+
+    // 布局锁定机制，防止在数据获取过程中布局模式发生变化
+    const layoutLocked = ref(false);
+    const lockedViewMode = ref(viewMode.value);
+
+    // 使用计算属性确保布局模式的稳定性
+    const isGridMode = computed(() => {
+      const mode = layoutLocked.value ? lockedViewMode.value : viewMode.value;
+      return mode === 'grid';
+    });
+    const isListMode = computed(() => {
+      const mode = layoutLocked.value ? lockedViewMode.value : viewMode.value;
+      return mode === 'list';
+    });
+
+
     const pageSizeLocal = ref(parseInt(localStorage.getItem('blog-page-size')) || 12);
 
     // 规范化每页数量（避免本地存了无效值导致下拉无选项、分页异常）
@@ -423,6 +451,10 @@ export default {
 
     // 方法
     const fetchArticles = async () => {
+      // 锁定当前布局模式，防止在数据获取过程中发生变化
+      layoutLocked.value = true;
+      lockedViewMode.value = viewMode.value;
+
       loading.value = true;
       try {
         const params = {
@@ -452,6 +484,8 @@ export default {
         articles.value = [];
       } finally {
         loading.value = false;
+        // 解锁布局模式
+        layoutLocked.value = false;
       }
     };
 
@@ -545,6 +579,8 @@ export default {
       // 保存到本地存储
       localStorage.setItem('blog-page-size', pageSizeLocal.value.toString());
       currentPage.value = 1;
+
+      // fetchArticles会自动锁定布局模式
       fetchArticles();
     };
 
@@ -722,6 +758,8 @@ export default {
       filterOptions,
       filteredArticles,
       hasActiveFilters,
+      isGridMode,
+      isListMode,
       formatDate,
       getExcerpt,
       handleSearch,
@@ -754,9 +792,27 @@ export default {
 
 <style scoped>
 .blog-list-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.blog-list-page > * {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--spacing-6) var(--spacing-4);
+  padding: 0 var(--spacing-4);
+  width: 100%;
+}
+
+.blog-list-page > .page-header {
+  padding-top: var(--spacing-6);
+}
+
+.blog-list-page > .unified-container {
+  flex: 1;
+  margin-top: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
 }
 
 /* 页面头部 */
@@ -807,16 +863,54 @@ export default {
   }
 }
 
-/* 主工具栏样式 */
-.main-toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-3);
+/* 统一容器样式 */
+.unified-container {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  margin-bottom: var(--spacing-8); /* 增加底部间距 */
+}
+
+/* 工具栏区域 */
+.toolbar-section-wrapper {
   padding: var(--spacing-4);
-  background: white;
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: var(--spacing-6);
+}
+
+/* 内容分隔线 */
+.content-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.2) 80%,
+    transparent 100%
+  );
+  margin: 0 var(--spacing-4);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .unified-container {
+    border-radius: 16px;
+    margin: 0 var(--spacing-2);
+  }
+
+  .toolbar-section-wrapper {
+    padding: var(--spacing-3);
+  }
+
+  .articles-container {
+    padding: var(--spacing-3);
+  }
+
+  .bottom-pagination {
+    padding: var(--spacing-3);
+  }
 }
 
 .toolbar-row {
@@ -828,8 +922,9 @@ export default {
 
 .filter-row {
   justify-content: flex-start;
-  padding-top: var(--spacing-2);
-  border-top: 1px solid var(--color-border-light);
+  padding-top: var(--spacing-4); /* 增加顶部间距 */
+  margin-top: var(--spacing-3); /* 增加顶部外边距 */
+  border-top: 1px solid rgba(255, 255, 255, 0.2); /* 使用半透明边框 */
 }
 
 .filter-container {
@@ -878,77 +973,106 @@ export default {
 
 .search-input {
   width: 100%;
-  padding: var(--spacing-2) var(--spacing-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  font-size: 0.9rem;
-  transition: border-color 0.2s;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  color: #2c3e50;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.search-input::placeholder {
+  color: #34495e;
+  font-weight: 400;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+  border-color: rgba(52, 152, 219, 0.6);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 20px rgba(52, 152, 219, 0.2), 0 0 0 3px rgba(52, 152, 219, 0.1);
+  transform: translateY(-1px);
 }
 
 .clear-search-btn {
   position: absolute;
-  right: var(--spacing-2);
+  right: var(--spacing-3);
   top: 50%;
   transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--color-text-tertiary);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #34495e;
   cursor: pointer;
   padding: 2px;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
 .clear-search-btn:hover {
-  background: var(--color-bg-soft);
-  color: var(--color-text-secondary);
+  background: rgba(231, 76, 60, 0.9);
+  border-color: rgba(231, 76, 60, 0.6);
+  color: white;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
 }
 
 /* 筛选区域 */
 .filter-label {
   font-size: 0.9rem;
-  color: var(--color-text-secondary);
-  font-weight: 500;
+  color: #2c3e50;
+  font-weight: 600;
   white-space: nowrap;
   min-width: 40px;
   line-height: 1.5;
   display: flex;
   align-items: center;
   height: 100%;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .filter-item {
   font-size: 0.85rem;
-  color: var(--color-text-secondary);
+  color: #34495e;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   white-space: nowrap;
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
-  height: 24px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  font-weight: 500;
 }
 
 .filter-item:hover {
-  color: #ff6b9d;
-  background: rgba(255, 107, 157, 0.1);
+  color: #2c3e50;
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #3498db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
 }
 
 .filter-item.active {
-  color: #ff6b9d;
+  color: #ffffff;
   font-weight: 600;
-  background: rgba(255, 107, 157, 0.15);
+  background: #3498db;
+  border-color: #2980b9;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
 /* 功能区域 */
@@ -970,27 +1094,34 @@ export default {
 
 .view-btn {
   padding: var(--spacing-1) var(--spacing-2);
-  border: none;
-  background: white;
-  color: var(--color-text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.7);
+  color: #34495e;
   cursor: pointer;
   font-size: 1rem;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   min-width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+  font-weight: 500;
 }
 
 .view-btn:hover {
-  background: var(--color-bg-soft);
-  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.9);
+  color: #2c3e50;
+  border-color: #3498db;
+  transform: translateY(-1px);
 }
 
 .view-btn.active {
-  background: var(--color-primary);
+  background: #3498db;
   color: white;
+  border-color: #2980b9;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
 /* 响应式设计 */
@@ -1177,18 +1308,86 @@ export default {
 
 /* 文章网格 */
 .articles-container {
-  margin-bottom: var(--spacing-12);
+  padding: var(--spacing-4);
+  padding-top: var(--spacing-6);
+  min-height: 400px; /* 确保有最小高度 */
+}
+
+/* 防止初始渲染闪烁 */
+.articles-grid {
+  opacity: 1;
+  transition: none; /* 移除可能导致闪烁的过渡效果 */
+}
+
+/* 骨架屏样式 */
+.loading-container {
+  padding: var(--spacing-4);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-title {
+  height: 20px;
+  margin-bottom: var(--spacing-2);
+}
+
+.skeleton-text {
+  height: 14px;
+  margin-bottom: var(--spacing-1);
+}
+
+.skeleton-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+/* 列表模式骨架屏 */
+.list-loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.list-skeleton {
+  padding: var(--spacing-3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.skeleton-list-title {
+  height: 18px;
+  width: 70%;
+  margin-bottom: var(--spacing-2);
+}
+
+.skeleton-list-meta {
+  height: 14px;
+  width: 40%;
 }
 
 .articles-grid {
   margin-bottom: var(--spacing-8);
 }
 
-/* 列表布局样式 */
-.blog-list-page.list-layout .main-content {
-  display: block;
-  width: 100%;
-}
+
+
+
 
 .blog-list-page.list-layout .main-content.with-sidebar {
   display: block;
@@ -1302,18 +1501,20 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   overflow: hidden;
-  background: white;
+  background: rgba(255, 255, 255, 0.03);
+  margin: var(--spacing-4);
 }
 
 .table-row {
   padding: var(--spacing-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: white;
+  transition: all 0.3s ease;
+  background: transparent;
+  color: #2c3e50;
 }
 
 .table-row:last-child {
@@ -1321,9 +1522,10 @@ export default {
 }
 
 .table-row:hover {
-  background: linear-gradient(135deg, rgba(255, 107, 157, 0.05), rgba(196, 69, 105, 0.05));
-  transform: translateX(2px);
-  box-shadow: inset 3px 0 0 #ff6b9d;
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(4px);
+  box-shadow: inset 4px 0 0 rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .row-title {
@@ -1491,15 +1693,15 @@ export default {
 
 /* 底部分页 */
 .bottom-pagination {
-  margin-top: var(--spacing-6);
-  padding: var(--spacing-4) 0;
-  border-top: 1px solid var(--color-border);
+  padding: var(--spacing-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: var(--spacing-4);
   display: block !important;
   visibility: visible !important;
 }
 
 .bottom-pagination.list-mode {
-  background: var(--color-bg-primary);
+  background: transparent;
 }
 
 /* 在列表布局下，分页器正常显示 */
@@ -1513,7 +1715,9 @@ export default {
   align-items: center;
   margin-bottom: var(--spacing-4);
   font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+  color: #2c3e50;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .total-info {
@@ -1538,25 +1742,27 @@ export default {
 
 .page-size-select {
   padding: 6px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-base);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
   font-size: var(--text-sm);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.9);
+  color: #2c3e50;
   cursor: pointer;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  font-weight: 500;
 }
 
 .page-size-select:hover {
-  border-color: var(--color-primary);
+  border-color: #3498db;
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .page-size-select:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+  border-color: #3498db;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
 }
 
 /* 分页控件 */
@@ -1575,38 +1781,44 @@ export default {
   min-width: 40px;
   height: 40px;
   padding: 0 var(--spacing-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-base);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #2c3e50;
   font-size: var(--text-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   user-select: none;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .pagination-btn:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: rgba(var(--color-primary-rgb), 0.05);
+  border-color: rgba(52, 152, 219, 0.6);
+  color: #2c3e50;
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.2);
 }
 
 .pagination-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
-  color: var(--color-text-tertiary);
+  color: #7f8c8d;
 }
 
 .pagination-btn-page.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  background: #3498db;
+  border-color: #2980b9;
   color: white;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
 .pagination-btn-page.active:hover {
-  background: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
+  background: #2980b9;
+  border-color: #21618c;
   color: white;
 }
 
@@ -1662,25 +1874,36 @@ export default {
   width: 60px;
   height: 32px;
   padding: 0 var(--spacing-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-base);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
   text-align: center;
   font-size: var(--text-sm);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  background: rgba(255, 255, 255, 0.15);
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(20px);
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.page-jump-input::placeholder {
+  color: #34495e;
 }
 
 .page-jump-input:hover {
-  border-color: var(--color-primary);
+  border-color: rgba(52, 152, 219, 0.6);
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
 }
 
 .page-jump-input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+  border-color: rgba(52, 152, 219, 0.6);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 16px rgba(52, 152, 219, 0.2), 0 0 0 3px rgba(52, 152, 219, 0.1);
+  transform: translateY(-1px);
 }
 
 /* 响应式 */
@@ -1738,15 +1961,19 @@ export default {
 
 .article-card {
   cursor: pointer;
-  transition:
-    transform var(--transition-base),
-    box-shadow var(--transition-base);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
 .article-card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 /* 文章封面 */
@@ -1891,22 +2118,31 @@ export default {
 .empty-state {
   text-align: center;
   padding: var(--spacing-16) var(--spacing-4);
+  margin: var(--spacing-4);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
 }
 
 .empty-icon {
   font-size: 4rem;
   margin-bottom: var(--spacing-4);
+  opacity: 0.8;
 }
 
 .empty-state h3 {
   font-size: var(--font-size-xl);
-  color: var(--color-text-primary);
+  color: #2c3e50;
   margin-bottom: var(--spacing-3);
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .empty-state p {
-  color: var(--color-text-secondary);
+  color: #34495e;
   margin-bottom: var(--spacing-6);
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 /* 加载状态 */

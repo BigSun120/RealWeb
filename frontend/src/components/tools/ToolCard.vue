@@ -168,21 +168,41 @@ export default {
         return
       }
 
-      // 静态工具使用路由跳转
-      if (props.tool.isStatic && props.tool.route) {
-        router.push(props.tool.route)
-        return
-      }
+      try {
+        // 优先级1: 静态工具使用路由跳转
+        if (props.tool.isStatic && props.tool.route) {
+          router.push(props.tool.route)
+          return
+        }
 
-      // API工具使用path字段跳转
-      if (props.tool.path) {
-        window.open(props.tool.path, '_blank')
-        return
-      }
+        // 优先级2: API工具使用path字段跳转（新窗口）
+        if (props.tool.path) {
+          window.open(props.tool.path, '_blank')
+          return
+        }
 
-      // 兜底：使用route字段
-      if (props.tool.route) {
-        router.push(props.tool.route)
+        // 优先级3: 兜底方案 - 使用route字段
+        if (props.tool.route) {
+          // 判断是内部路由还是外部链接
+          if (props.tool.route.startsWith('/')) {
+            // 内部路由，使用Vue Router跳转
+            router.push(props.tool.route)
+          } else if (props.tool.route.startsWith('http://') || props.tool.route.startsWith('https://')) {
+            // 外部链接，在新窗口打开
+            window.open(props.tool.route, '_blank')
+          } else {
+            // 相对路径，当作内部路由处理
+            router.push(props.tool.route)
+          }
+          return
+        }
+
+        // 如果都没有，显示警告
+        console.warn('工具缺少有效的跳转配置:', props.tool)
+        ElMessage.warning('该工具配置有误，无法跳转')
+      } catch (error) {
+        console.error('跳转工具页面失败:', error, props.tool)
+        ElMessage.error('跳转失败，请稍后重试')
       }
     }
 
