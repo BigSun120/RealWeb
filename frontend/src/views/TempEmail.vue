@@ -61,11 +61,11 @@
         </el-row>
       </div>
 
-      <!-- 服务状态 -->
+      <!-- 服务状态 请运行 npm run email:start 启动邮箱服务-->
       <el-alert
         v-if="!serviceOnline"
         title="邮箱服务未启动"
-        description="请运行 npm run email:start 启动邮箱服务"
+        description="嗷呜！"
         type="warning"
         :closable="false"
         class="status-alert"

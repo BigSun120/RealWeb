@@ -85,18 +85,7 @@
             <router-link to="/tools">
               <el-button type="primary" text>工具箱</el-button>
             </router-link>
-            <!-- 小彩蛋：长按触发，或连点 3 次显示 -->
-            <el-popover placement="top" :width="200" trigger="click" v-if="easterEggVisible">
-              <template #reference>
-                <el-button type="info" link @click="goTemp">站点彩蛋</el-button>
-              </template>
-              <div style="text-align: center">
-                <p>🎉 找到彩蛋啦！</p>
-                <el-button type="primary" size="small" @click="$router.push('/temp-email')"
-                  >临时邮箱</el-button
-                >
-              </div>
-            </el-popover>
+
           </div>
         </el-card>
       </el-col>

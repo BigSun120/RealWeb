@@ -36,6 +36,10 @@
               <el-icon><Tools /></el-icon>
               工具箱
             </el-menu-item>
+            <el-menu-item index="/temp-email">
+              <el-icon><Message /></el-icon>
+              临时邮箱
+            </el-menu-item>
             <el-menu-item index="/about">关于</el-menu-item>
             <el-menu-item
               v-if="userStore.isAdmin || (userStore.user && userStore.user.canPublishBlog)"
@@ -108,6 +112,7 @@
         <router-link to="/" @click="showMobileMenu = false">首页</router-link>
         <router-link to="/blog" @click="showMobileMenu = false">博客</router-link>
         <router-link to="/tools" @click="showMobileMenu = false">工具箱</router-link>
+        <router-link to="/temp-email" @click="showMobileMenu = false">临时邮箱</router-link>
         <router-link to="/about" @click="showMobileMenu = false">关于</router-link>
         <div class="mobile-user-actions">
           <template v-if="userStore.isLoggedIn">

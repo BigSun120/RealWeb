@@ -93,6 +93,13 @@
             <i class="btn-icon">🧰</i>
             前往工具箱
           </button>
+          <button
+            class="btn btn-accent btn-lg animate__animated animate__pulse"
+            @click="$router.push('/temp-email')"
+          >
+            <i class="btn-icon">📧</i>
+            临时邮箱
+          </button>
         </div>
 
         <div class="hero-social">
