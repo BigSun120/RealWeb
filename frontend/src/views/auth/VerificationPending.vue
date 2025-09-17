@@ -1,85 +1,66 @@
 <template>
-  <div class="verification-pending-page">
-    <!-- 背景装饰 -->
-    <div class="bg-decoration">
-      <div class="floating-shape shape-1"></div>
-      <div class="floating-shape shape-2"></div>
-      <div class="floating-shape shape-3"></div>
-      <div class="floating-shape shape-4"></div>
-    </div>
-
-    <div class="pending-container">
-      <!-- 左侧装饰区域 -->
-      <div class="decoration-section">
-        <div class="decoration-content">
+  <div class="verification-pending-container" :style="containerBackgroundStyle">
+    <div class="verification-pending-wrapper">
+      <div class="verification-pending-card">
+        <div class="pending-header">
           <div class="pending-icon">
-            <i class="fas fa-envelope-open-text"></i>
+            <i class="el-icon-message"></i>
           </div>
-          <h2 class="decoration-title">邮箱验证</h2>
-          <p class="decoration-subtitle">安全验证，保护您的账户</p>
+          <h3>请验证您的邮箱</h3>
+          <p>我们已向您的邮箱发送验证链接</p>
+        </div>
+
+        <div class="pending-content">
+          <div class="email-info">
+            <p>验证邮件已发送至：</p>
+            <div class="email-highlight">{{ email }}</div>
+            <p>请检查您的邮箱（包括垃圾邮件文件夹），并点击邮件中的验证链接来激活您的账户</p>
+          </div>
 
           <div class="features-list">
             <div class="feature-item">
-              <i class="fas fa-shield-alt"></i>
+              <i class="el-icon-shield"></i>
               <span>账户安全保护</span>
             </div>
             <div class="feature-item">
-              <i class="fas fa-check-circle"></i>
+              <i class="el-icon-check"></i>
               <span>快速验证流程</span>
             </div>
             <div class="feature-item">
-              <i class="fas fa-envelope"></i>
+              <i class="el-icon-message"></i>
               <span>邮件通知服务</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- 右侧内容区域 -->
-      <div class="content-section">
-        <div class="content-container">
-          <div class="content-header">
-            <h2 class="content-title">请验证您的邮箱</h2>
-            <p class="content-subtitle">我们已向您的邮箱发送验证链接</p>
-          </div>
-
-          <div class="pending-message">
-            <p>验证邮件已发送至：</p>
-            <div class="email-highlight">{{ email }}</div>
-            <p>请检查您的邮箱（包括垃圾邮件文件夹），并点击邮件中的验证链接来激活您的账户。</p>
-          </div>
 
           <div class="verification-steps">
-            <h3>验证步骤：</h3>
+            <h4>验证步骤：</h4>
             <ol>
               <li>
-                <i class="fas fa-inbox"></i>
+                <i class="el-icon-folder-opened"></i>
                 <span>打开您的邮箱应用或网页版邮箱</span>
               </li>
               <li>
-                <i class="fas fa-search"></i>
+                <i class="el-icon-search"></i>
                 <span>查找来自我们的验证邮件（检查垃圾邮件文件夹）</span>
               </li>
               <li>
-                <i class="fas fa-mouse-pointer"></i>
+                <i class="el-icon-mouse"></i>
                 <span>点击邮件中的"验证邮箱"按钮</span>
               </li>
               <li>
-                <i class="fas fa-check-circle"></i>
+                <i class="el-icon-check"></i>
                 <span>完成验证，开始使用完整功能</span>
               </li>
             </ol>
           </div>
 
-          <div class="pending-actions">
+          <div class="action-buttons">
             <el-button
-              class="resend-button"
-              size="large"
+              type="primary"
               :loading="resending"
               :disabled="!canResend"
               @click="handleResendVerification"
             >
-              <i class="fas fa-paper-plane"></i>
               {{ resendButtonText }}
             </el-button>
 
@@ -87,16 +68,15 @@
               <span>稍后验证？</span>
               <router-link to="/auth/login" class="link">
                 先登录
-                <i class="fas fa-arrow-right"></i>
               </router-link>
             </div>
           </div>
 
           <div class="help-section">
             <el-collapse>
-              <el-collapse-item title="🤔 没有收到邮件？" name="help">
+              <el-collapse-item title="没有收到邮件？" name="help">
                 <div class="help-content">
-                  <h4>请尝试以下解决方案：</h4>
+                  <h5>请尝试以下解决方案：</h5>
                   <ul>
                     <li><strong>检查垃圾邮件文件夹</strong> - 验证邮件可能被误判为垃圾邮件</li>
                     <li><strong>检查邮箱地址</strong> - 确认注册时填写的邮箱地址正确</li>
@@ -109,10 +89,10 @@
             </el-collapse>
           </div>
 
-          <div class="email-info">
-            <p class="info-text">
-              <i class="fas fa-info-circle"></i>
-              验证链接有效期为 24 小时，请尽快完成验证。
+          <div class="info-notice">
+            <p>
+              <i class="el-icon-info"></i>
+              验证链接有效期为 24 小时，请尽快完成验证
             </p>
           </div>
         </div>
@@ -122,10 +102,53 @@
 </template>
 
 <script>
+import { computed, onMounted, onUnmounted } from 'vue';
 import { resendVerificationEmail } from '@/api/auth';
+import { useGlobalBackgroundManager } from '@/composables/useBackgroundManager';
 
 export default {
   name: 'VerificationPending',
+  setup() {
+    // 背景管理
+    const globalManager = useGlobalBackgroundManager();
+
+    // 背景样式
+    const containerBackgroundStyle = computed(() => {
+      if (globalManager.hasBackground.value && globalManager.backgroundImage.value) {
+        return {
+          backgroundImage: `url(${globalManager.backgroundImage.value})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed'
+        };
+      }
+      return {
+        background: 'linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)'
+      };
+    });
+
+    // 页面生命周期
+    onMounted(() => {
+      // 禁用页面滚动
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingTop = '0';
+      document.body.style.margin = '0';
+      document.documentElement.style.overflow = 'hidden';
+    });
+
+    onUnmounted(() => {
+      // 恢复页面滚动
+      document.body.style.overflow = '';
+      document.body.style.paddingTop = '';
+      document.body.style.margin = '';
+      document.documentElement.style.overflow = '';
+    });
+
+    return {
+      containerBackgroundStyle
+    };
+  },
   data() {
     return {
       resending: false,
@@ -210,260 +233,162 @@ export default {
 </script>
 
 <style scoped>
-.verification-pending-page {
-  min-height: 100vh;
-  height: 100vh;
-  width: 100vw;
-  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+.verification-pending-container {
   position: fixed;
   top: 0;
   left: 0;
-  overflow: hidden;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 100vh;
+  z-index: 1;
+}
+
+.verification-pending-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
   padding: 20px;
   box-sizing: border-box;
 }
 
-/* 背景装饰 */
-.bg-decoration {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.floating-shape {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  animation: float 6s ease-in-out infinite;
-}
-
-.shape-1 {
-  width: 80px;
-  height: 80px;
-  top: 20%;
-  left: 10%;
-  animation-delay: 0s;
-}
-
-.shape-2 {
-  width: 120px;
-  height: 120px;
-  top: 60%;
-  right: 15%;
-  animation-delay: 2s;
-}
-
-.shape-3 {
-  width: 60px;
-  height: 60px;
-  bottom: 30%;
-  left: 20%;
-  animation-delay: 4s;
-}
-
-.shape-4 {
-  width: 100px;
-  height: 100px;
-  top: 10%;
-  right: 30%;
-  animation-delay: 1s;
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-20px) rotate(180deg);
-  }
-}
-
-.pending-container {
-  background: rgba(255, 255, 255, 0.95);
+.verification-pending-card {
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
-  border-radius: 24px;
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 520px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  max-width: 1000px;
-  width: 100%;
-  display: flex;
-  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   position: relative;
-}
-
-/* 左侧装饰区域 */
-.decoration-section {
-  flex: 1;
-  background: linear-gradient(135deg, #e17055 0%, #d63031 100%);
-  color: white;
-  padding: 60px 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.decoration-content {
+  z-index: 2;
   text-align: center;
-  width: 100%;
+}
+
+/* 页面头部 */
+.pending-header {
+  margin-bottom: 32px;
 }
 
 .pending-icon {
-  font-size: 64px;
-  color: white;
-  margin-bottom: 20px;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.decoration-title {
-  font-size: 36px;
-  font-weight: 700;
-  margin-bottom: 16px;
-  color: white;
-}
-
-.decoration-subtitle {
-  font-size: 18px;
-  margin-bottom: 40px;
-  opacity: 0.9;
-}
-
-.features-list {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-top: 40px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 32px;
+  color: white;
+  box-shadow: 0 8px 16px rgba(255, 126, 95, 0.3);
+}
+
+.pending-header h3 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 16px 0;
+}
+
+.pending-header p {
+  color: #7f8c8d;
+  font-size: 14px;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+/* 内容区域 */
+.pending-content {
+  text-align: left;
+}
+
+.email-info {
+  background: rgba(255, 126, 95, 0.1);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.email-info p {
+  color: #7f8c8d;
+  font-size: 14px;
+  margin: 0 0 8px 0;
+}
+
+.email-highlight {
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  margin: 8px 0;
+  display: inline-block;
+}
+
+/* 功能列表 */
+.features-list {
+  margin: 24px 0;
 }
 
 .feature-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 16px;
-  opacity: 0.9;
+  gap: 12px;
+  padding: 12px 0;
+  color: #2c3e50;
+  font-size: 14px;
 }
 
 .feature-item i {
-  font-size: 20px;
-  width: 24px;
-  text-align: center;
-}
-
-/* 右侧内容区域 */
-.content-section {
-  flex: 1;
-  background: white;
-  padding: 60px 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.content-container {
-  width: 100%;
-  max-width: 480px;
-  padding: 0 15px;
-}
-
-.content-header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.content-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 8px;
-}
-
-.content-subtitle {
-  color: #ffffff;
   font-size: 16px;
-  margin: 0;
+  color: #ff7e5f;
+  width: 20px;
 }
 
-.pending-message {
-  margin-bottom: 30px;
-  line-height: 1.6;
-  text-align: center;
-}
-
-.pending-message p {
-  color: #6b7280;
-  margin-bottom: 12px;
-  font-size: 16px;
-}
-
-.email-highlight {
-  display: inline-block;
-  color: #e17055;
-  background: rgba(225, 112, 85, 0.1);
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 600;
-  margin: 8px 0;
-  border: 2px solid rgba(225, 112, 85, 0.2);
-}
-
+/* 验证步骤 */
 .verification-steps {
-  text-align: left;
-  background: #f8fafb;
-  border-radius: 12px;
-  padding: 25px;
-  margin: 30px 0;
-  border: 1px solid #e5e7eb;
+  background: rgba(52, 152, 219, 0.1);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 24px 0;
 }
 
-.verification-steps h3 {
-  color: #1f2937;
-  margin-bottom: 20px;
-  text-align: center;
-  font-size: 18px;
+.verification-steps h4 {
+  font-size: 16px;
   font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 16px 0;
+  text-align: center;
 }
 
 .verification-steps ol {
   list-style: none;
   padding: 0;
+  margin: 0;
   counter-reset: step-counter;
 }
 
 .verification-steps li {
-  counter-increment: step-counter;
-  margin-bottom: 15px;
   display: flex;
   align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  color: #2c3e50;
+  font-size: 14px;
+  counter-increment: step-counter;
   position: relative;
-  padding-left: 40px;
 }
 
 .verification-steps li::before {
   content: counter(step-counter);
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #e17055;
+  background: linear-gradient(135deg, #3498db, #5dade2);
   color: white;
   width: 24px;
   height: 24px;
@@ -472,207 +397,145 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .verification-steps li i {
-  color: #e17055;
-  margin-right: 10px;
-  width: 16px;
-}
-
-.verification-steps li span {
-  color: #4b5563;
-  font-size: 14px;
-}
-
-.pending-actions {
-  margin: 30px 0;
-  text-align: center;
-}
-
-.resend-button {
-  width: 100%;
-  height: 50px;
-  border-radius: 12px;
+  color: #3498db;
   font-size: 16px;
-  font-weight: 600;
-  background: linear-gradient(135deg, #e17055 0%, #d63031 100%);
-  border: none;
-  color: white;
-  box-shadow: 0 4px 12px rgba(225, 112, 85, 0.3);
-  transition: all 0.3s ease;
-  margin-bottom: 20px;
+  width: 20px;
 }
 
-.resend-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(225, 112, 85, 0.4);
+/* 按钮和链接 */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 24px 0;
 }
 
-.resend-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
+.action-buttons .el-button {
+  width: 100%;
 }
 
 .login-link {
   text-align: center;
-  color: #6b7280;
+  margin-top: 16px;
+}
+
+.login-link span {
+  color: #7f8c8d;
   font-size: 14px;
+  margin-right: 8px;
 }
 
 .login-link .link {
-  color: #e17055;
+  color: #ff7e5f;
   text-decoration: none;
   font-weight: 600;
-  margin-left: 4px;
-  transition: all 0.3s ease;
+  font-size: 14px;
+  transition: color 0.3s ease;
 }
 
 .login-link .link:hover {
-  color: #d63031;
-  text-decoration: underline;
+  color: #e55a4f;
 }
 
+/* 帮助部分 */
 .help-section {
-  margin: 30px 0;
-  text-align: left;
+  margin: 24px 0;
 }
 
-.help-content h4 {
-  color: #e17055;
-  margin-bottom: 15px;
-  font-size: 16px;
+.help-content h5 {
+  color: #2c3e50;
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .help-content ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .help-content li {
   padding: 8px 0;
-  color: #4b5563;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 14px;
-}
-
-.help-content li:last-child {
-  border-bottom: none;
+  color: #7f8c8d;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .help-content strong {
-  color: #e17055;
+  color: #ff7e5f;
 }
 
-.email-info {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
+/* 信息提示 */
+.info-notice {
+  background: rgba(52, 152, 219, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 24px;
   text-align: center;
 }
 
-.info-text {
-  color: #6b7280;
-  font-size: 14px;
+.info-notice p {
+  color: #3498db;
+  font-size: 13px;
   margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-.info-text i {
-  color: #e17055;
+.info-notice i {
+  font-size: 14px;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .verification-pending-page {
-    padding: 15px;
+  .verification-pending-card {
+    padding: 32px 24px;
+    margin: 16px;
+    max-width: none;
   }
 
-  .pending-container {
-    flex-direction: column;
-    margin: 0;
-    border-radius: 16px;
-    max-height: calc(100vh - 30px);
-    overflow-y: auto;
-  }
-
-  .decoration-section {
-    padding: 30px 20px;
-    min-height: auto;
-    flex: none;
-  }
-
-  .decoration-title {
-    font-size: 28px;
-  }
-
-  .decoration-subtitle {
-    font-size: 16px;
-  }
-
-  .content-section {
-    padding: 30px 20px;
-    flex: none;
-  }
-
-  .content-title {
+  .pending-icon {
+    width: 60px;
+    height: 60px;
     font-size: 24px;
   }
 
-  .features-list {
-    display: none;
-  }
-
-  .content-container {
-    max-width: 100%;
-    padding: 0;
-  }
-
-  .verification-steps {
-    padding: 20px;
-  }
-
-  .verification-steps li {
-    padding-left: 35px;
+  .pending-header h3 {
+    font-size: 20px;
   }
 }
 
 @media (max-width: 480px) {
-  .verification-pending-page {
-    padding: 10px;
-    height: 100vh;
-    overflow: hidden;
+  .verification-pending-card {
+    padding: 24px 20px;
+    margin: 12px;
   }
 
-  .pending-container {
-    margin: 0;
-    border-radius: 12px;
-    max-height: calc(100vh - 20px);
-  }
-
-  .decoration-section {
-    padding: 25px 15px;
-  }
-
-  .content-section {
-    padding: 25px 15px;
-  }
-
-  .decoration-title {
-    font-size: 24px;
-  }
-
-  .content-title {
-    font-size: 22px;
+  .action-buttons {
+    gap: 12px;
   }
 
   .verification-steps {
-    padding: 15px;
+    padding: 16px;
+  }
+
+  .verification-steps li {
+    padding: 8px 0;
+    font-size: 13px;
+  }
+
+  .verification-steps li::before {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
   }
 }
 </style>

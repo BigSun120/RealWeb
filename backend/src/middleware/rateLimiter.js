@@ -24,15 +24,15 @@ const createMongoStore = () => {
 
 /**
  * 验证邮件发送频率限制
- * 限制：每个IP每5分钟最多发送3次验证邮件
+ * 限制：每个IP每3分钟最多发送5次验证邮件
  */
 const verificationEmailRateLimit = rateLimit({
   store: createMongoStore(),
-  windowMs: 5 * 60 * 1000, // 5分钟窗口
-  max: 3, // 最多3次请求
+  windowMs: 3 * 60 * 1000, // 3分钟窗口（从5分钟减少到3分钟）
+  max: 5, // 最多5次请求（从3次增加到5次）
   message: {
     code: 429,
-    message: '验证邮件发送过于频繁，请5分钟后再试'
+    message: '验证邮件发送过于频繁，请3分钟后再试'
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -45,11 +45,11 @@ const verificationEmailRateLimit = rateLimit({
   onLimitReached: (req, res) => {
     const email = req.body.email || req.user?.email || '';
     const userId = req.user?.id || null;
-    
+
     SecurityLogger.logRateLimitTriggered(
-      userId, 
-      email, 
-      'verification_email_send', 
+      userId,
+      email,
+      'verification_email_send',
       req
     );
   }
@@ -57,12 +57,12 @@ const verificationEmailRateLimit = rateLimit({
 
 /**
  * 邮箱验证尝试频率限制
- * 限制：每个IP每小时最多尝试验证10次
+ * 限制：每个IP每小时最多尝试验证20次
  */
 const emailVerificationRateLimit = rateLimit({
   store: createMongoStore(),
   windowMs: 60 * 60 * 1000, // 1小时窗口
-  max: 10, // 最多10次尝试
+  max: 20, // 最多20次尝试（从10次增加到20次）
   message: {
     code: 429,
     message: '邮箱验证尝试过于频繁，请1小时后再试'
@@ -75,14 +75,14 @@ const emailVerificationRateLimit = rateLimit({
   },
   onLimitReached: (req, res) => {
     const token = req.params.token || '';
-    
+
     SecurityLogger.logRateLimitTriggered(
-      null, 
-      null, 
-      'email_verification_attempt', 
+      null,
+      null,
+      'email_verification_attempt',
       req
     );
-    
+
     SecurityLogger.logSuspiciousActivity(
       'Excessive email verification attempts',
       { tokenPrefix: token.substring(0, 8) + '...' },
@@ -93,12 +93,12 @@ const emailVerificationRateLimit = rateLimit({
 
 /**
  * 注册频率限制
- * 限制：每个IP每小时最多注册5个账户
+ * 限制：每个IP每小时最多注册10个账户
  */
 const registrationRateLimit = rateLimit({
   store: createMongoStore(),
   windowMs: 60 * 60 * 1000, // 1小时窗口
-  max: 5, // 最多5次注册
+  max: 10, // 最多10次注册（从5次增加到10次）
   message: {
     code: 429,
     message: '注册过于频繁，请1小时后再试'
@@ -111,14 +111,14 @@ const registrationRateLimit = rateLimit({
   },
   onLimitReached: (req, res) => {
     const email = req.body.email || '';
-    
+
     SecurityLogger.logRateLimitTriggered(
-      null, 
-      email, 
-      'registration_attempt', 
+      null,
+      email,
+      'registration_attempt',
       req
     );
-    
+
     SecurityLogger.logSuspiciousActivity(
       'Excessive registration attempts',
       { email },
@@ -129,12 +129,12 @@ const registrationRateLimit = rateLimit({
 
 /**
  * 登录频率限制
- * 限制：每个IP每15分钟最多尝试登录10次
+ * 限制：每个IP每15分钟最多尝试登录20次
  */
 const loginRateLimit = rateLimit({
   store: createMongoStore(),
   windowMs: 15 * 60 * 1000, // 15分钟窗口
-  max: 10, // 最多10次尝试
+  max: 20, // 最多20次尝试（从10次增加到20次）
   message: {
     code: 429,
     message: '登录尝试过于频繁，请15分钟后再试'
@@ -148,14 +148,14 @@ const loginRateLimit = rateLimit({
   },
   onLimitReached: (req, res) => {
     const identifier = req.body.identifier || '';
-    
+
     SecurityLogger.logRateLimitTriggered(
-      null, 
-      identifier, 
-      'login_attempt', 
+      null,
+      identifier,
+      'login_attempt',
       req
     );
-    
+
     SecurityLogger.logSuspiciousActivity(
       'Excessive login attempts',
       { identifier },

@@ -117,7 +117,7 @@ const checkCommentFrequency = async (req, res, next) => {
       isDeleted: false
     });
 
-    if (recentCommentsCount >= 3) {
+    if (recentCommentsCount >= 5) { // 从3条增加到5条
       return res.status(429).json({
         code: 429,
         message: '评论发布过于频繁，请稍后再试'

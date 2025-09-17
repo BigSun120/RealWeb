@@ -438,9 +438,9 @@ userSchema.methods.verifyPasswordResetToken = function (token) {
 
 // 实例方法：检查是否可以请求密码重置
 userSchema.methods.canRequestPasswordReset = function () {
-  // 检查是否在冷却期内（5分钟）
+  // 检查是否在冷却期内（2分钟）
   if (this.passwordResetRequestedAt) {
-    const cooldownPeriod = 5 * 60 * 1000; // 5分钟
+    const cooldownPeriod = 2 * 60 * 1000; // 2分钟（从5分钟减少到2分钟）
     const timeSinceLastRequest = Date.now() - this.passwordResetRequestedAt.getTime();
     if (timeSinceLastRequest < cooldownPeriod) {
       return false;

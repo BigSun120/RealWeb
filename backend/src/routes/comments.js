@@ -22,7 +22,7 @@ const { autoModeration } = require('../middleware/commentModeration');
 // 评论发布频率限制
 const commentRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1分钟
-  max: 3, // 最多3条评论
+  max: 5, // 最多5条评论（从3条增加到5条）
   message: {
     code: 429,
     message: '评论发布过于频繁，请稍后再试'

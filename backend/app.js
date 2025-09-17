@@ -123,7 +123,7 @@ app.use(
 if (process.env.NODE_ENV === 'production') {
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15分钟
-    max: 100, // 限制每个IP 100次请求
+    max: 300, // 限制每个IP 300次请求（从100增加到300）
     message: {
       code: 429,
       message: '请求过于频繁，请稍后再试'
@@ -134,7 +134,7 @@ if (process.env.NODE_ENV === 'production') {
   // 登录接口特殊限流
   const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5,
+    max: 15, // 从5次增加到15次
     skipSuccessfulRequests: true,
     message: {
       code: 429,

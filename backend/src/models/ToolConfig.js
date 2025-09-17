@@ -223,7 +223,7 @@ toolConfigSchema.statics.initializeDefaults = async function () {
     },
     {
       key: 'security.rateLimitMax',
-      value: 100,
+      value: 200, // 从100增加到200
       type: 'number',
       group: 'security',
       description: '频率限制最大请求数'
