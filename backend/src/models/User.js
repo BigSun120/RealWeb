@@ -452,11 +452,8 @@ userSchema.methods.canRequestPasswordReset = function () {
 
 // 实例方法：执行密码重置
 userSchema.methods.resetPassword = async function (newPassword) {
-  const bcrypt = require('bcryptjs');
-
-  // 加密新密码
-  const saltRounds = 12;
-  this.password = await bcrypt.hash(newPassword, saltRounds);
+  // 直接设置新密码，让pre('save')中间件处理加密
+  this.password = newPassword;
 
   // 清除重置令牌
   this.passwordResetToken = undefined;
