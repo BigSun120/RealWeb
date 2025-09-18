@@ -477,6 +477,7 @@ router.post('/upload-image', auth, (req, res, next) => {
 
     const imageUrl = `/uploads/articles/${req.file.filename}`;
 
+    logger.info(`[UploadArticle] saved: path=${req.file.path}, dest=${req.file.destination}, filename=${req.file.filename}, size=${req.file.size}`);
     logger.info(`用户 ${req.user.username} 上传文章图片成功: ${imageUrl}`);
 
     res.json({
