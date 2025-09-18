@@ -4,7 +4,7 @@ const baseUploadDir = path.resolve(
   process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads')
 );
 const { auth } = require('../middleware/auth');
-const { uploadAvatar, handleUploadError, deleteFile } = require('../middleware/upload');
+const { uploadAvatar, handleUploadError, deleteFile, createUpload } = require('../middleware/upload');
 const SecurityConfig = require('../models/SecurityConfig');
 const User = require('../models/User');
 const logger = require('../utils/logger');
@@ -221,54 +221,66 @@ router.put('/profile', auth, async (req, res, next) => {
 });
 
 // 上传头像
-router.post('/avatar', auth, (req, res, next) => {
-  uploadAvatar(req, res, async err => {
-    if (err) {
-      return handleUploadError(err, req, res, next);
-    }
+router.post('/avatar', auth, async (req, res, next) => {
+  try {
+    // 使用动态配置创建上传实例
+    const dynamicUpload = await createUpload();
+    const dynamicUploadAvatar = dynamicUpload.single('avatar');
 
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          code: 400,
-          message: '请选择要上传的头像文件'
-        });
+    dynamicUploadAvatar(req, res, async err => {
+      if (err) {
+        return handleUploadError(err, req, res, next);
       }
 
-      const user = req.user;
-      const oldAvatar = user.avatar;
-
-      // 构建新头像URL
-      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
-
-      // 更新用户头像
-      user.avatar = avatarUrl;
-      await user.save();
-
-      // 删除旧头像文件（如果存在且不是默认头像）
-      if (oldAvatar && oldAvatar.startsWith('/uploads/')) {
-        const oldAvatarPath = path.join(baseUploadDir, oldAvatar.replace(/^\/uploads\//, ''));
-        deleteFile(oldAvatarPath);
-      }
-
-      logger.info(`用户 ${user.username} 上传头像成功: ${avatarUrl}`);
-
-      res.json({
-        code: 200,
-        message: '头像上传成功',
-        data: {
-          avatar: avatarUrl,
-          user: user.getPublicProfile()
+      try {
+        if (!req.file) {
+          return res.status(400).json({
+            code: 400,
+            message: '请选择要上传的头像文件'
+          });
         }
-      });
-    } catch (error) {
-      // 如果保存失败，删除已上传的文件
-      if (req.file) {
-        deleteFile(req.file.path);
+
+        const user = req.user;
+        const oldAvatar = user.avatar;
+
+        // 构建新头像URL
+        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+        // 更新用户头像
+        user.avatar = avatarUrl;
+        await user.save();
+
+        // 删除旧头像文件（如果存在且不是默认头像）
+        if (oldAvatar && oldAvatar.startsWith('/uploads/')) {
+          const oldAvatarPath = path.join(baseUploadDir, oldAvatar.replace(/^\/uploads\//, ''));
+          deleteFile(oldAvatarPath);
+        }
+
+        logger.info(`用户 ${user.username} 上传头像成功: ${avatarUrl}`);
+
+        res.json({
+          code: 200,
+          message: '头像上传成功',
+          data: {
+            avatar: avatarUrl,
+            user: user.getPublicProfile()
+          }
+        });
+      } catch (error) {
+        // 如果保存失败，删除已上传的文件
+        if (req.file) {
+          deleteFile(req.file.path);
+        }
+        next(error);
       }
-      next(error);
-    }
-  });
+    });
+  } catch (error) {
+    console.error('创建头像上传配置失败:', error);
+    res.status(500).json({
+      code: 500,
+      message: '服务器内部错误'
+    });
+  }
 });
 
 // 删除头像

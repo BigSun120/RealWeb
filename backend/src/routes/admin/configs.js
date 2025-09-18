@@ -1,5 +1,5 @@
 const express = require('express');
-const { auth } = require('../../middleware/auth');
+const { auth, adminAuth } = require('../../middleware/auth');
 const ToolConfig = require('../../models/ToolConfig');
 const ActivityLogger = require('../../middleware/activityLogger');
 const ToolsPermission = require('../../middleware/toolsPermission');
@@ -7,12 +7,49 @@ const logger = require('../../utils/logger');
 
 const router = express.Router();
 
-// 应用权限验证
+// 应用权限验证 - 恢复原来的结构，但添加系统配置的特殊处理
 router.use(auth);
-router.use(ToolsPermission.requireAdmin);
+
+// 系统配置相关路由（upload.* 等）使用标准管理员权限
+const isSystemConfig = (key) => {
+  return key && (key.startsWith('upload.') || key.startsWith('system.'));
+};
+
+// 权限检查中间件
+const checkConfigPermission = (req, res, next) => {
+  try {
+    // 检查用户是否为管理员
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({
+        code: 403,
+        message: '需要管理员权限'
+      });
+    }
+
+    // 对于批量配置，检查所有配置项
+    if (req.body.configs && Array.isArray(req.body.configs)) {
+      for (const config of req.body.configs) {
+        if (!config.key) {
+          return res.status(400).json({
+            code: 400,
+            message: '配置项缺少key字段'
+          });
+        }
+      }
+    }
+
+    next();
+  } catch (error) {
+    console.error('权限检查失败:', error);
+    res.status(500).json({
+      code: 500,
+      message: '权限检查失败'
+    });
+  }
+};
 
 // 获取配置列表
-router.get('/', async (req, res) => {
+router.get('/', checkConfigPermission, async (req, res) => {
   try {
     const { group, includeSystem = false } = req.query;
 
@@ -66,7 +103,7 @@ router.get('/groups', async (req, res) => {
 });
 
 // 获取单个配置
-router.get('/:key', async (req, res) => {
+router.get('/:key', checkConfigPermission, async (req, res) => {
   try {
     const config = await ToolConfig.findOne({ key: req.params.key });
 
@@ -100,7 +137,7 @@ router.get('/:key', async (req, res) => {
 });
 
 // 设置配置值
-router.put('/:key', async (req, res) => {
+router.put('/:key', checkConfigPermission, async (req, res) => {
   try {
     const { value, description, group = 'general', isSensitive = false } = req.body;
 
@@ -152,7 +189,7 @@ router.put('/:key', async (req, res) => {
 });
 
 // 批量设置配置
-router.post('/batch', async (req, res) => {
+router.post('/batch', checkConfigPermission, async (req, res) => {
   try {
     const { configs } = req.body;
 
@@ -166,7 +203,9 @@ router.post('/batch', async (req, res) => {
     // 验证权限
     for (const config of configs) {
       const existingConfig = await ToolConfig.findOne({ key: config.key });
-      if (existingConfig && existingConfig.isSystem && !req.user.isSuperAdmin) {
+
+      // 对于系统配置，普通管理员也可以修改（不需要超级管理员权限）
+      if (existingConfig && existingConfig.isSystem && !req.user.isAdmin) {
         return res.status(403).json({
           code: 403,
           message: `没有权限修改系统配置: ${config.key}`
@@ -198,7 +237,7 @@ router.post('/batch', async (req, res) => {
     logger.error('批量设置配置失败:', error);
     res.status(500).json({
       code: 500,
-      message: '批量设置失败'
+      message: '批量设置失败: ' + error.message
     });
   }
 });

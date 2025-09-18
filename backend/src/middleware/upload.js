@@ -2,6 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const logger = require('../utils/logger');
+const ToolConfig = require('../models/ToolConfig');
 
 // 基础上传目录：优先使用环境变量 UPLOAD_PATH，否则回退到 backend/uploads
 const baseUploadDir = path.resolve(
@@ -64,11 +65,36 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// 创建multer实例
+// 获取动态文件大小限制
+const getFileSizeLimit = async () => {
+  try {
+    const config = await ToolConfig.findOne({ key: 'upload.maxFileSize' });
+    const sizeMB = config ? config.value : 10; // 默认10MB
+    return sizeMB * 1024 * 1024; // 转换为字节
+  } catch (error) {
+    logger.error('获取文件大小限制失败:', error);
+    return 10 * 1024 * 1024; // 默认10MB
+  }
+};
+
+// 创建动态multer实例
+const createUpload = async () => {
+  const fileSize = await getFileSizeLimit();
+  return multer({
+    storage: storage,
+    limits: {
+      fileSize: fileSize,
+      files: 1 // 单次只能上传一个文件
+    },
+    fileFilter: fileFilter
+  });
+};
+
+// 默认upload实例（向后兼容）
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB限制
+    fileSize: 10 * 1024 * 1024, // 默认10MB限制
     files: 1 // 单次只能上传一个文件
   },
   fileFilter: fileFilter
@@ -126,7 +152,39 @@ const deleteFile = filePath => {
   }
 };
 
-// 文章图片上传配置
+// 创建动态文章图片上传配置
+const createArticleImageUpload = async () => {
+  const fileSize = await getFileSizeLimit();
+  return multer({
+    storage: multer.diskStorage({
+      destination: function (req, file, cb) {
+        const uploadPath = articlesDir;
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        console.log('[UploadArticle] destination resolved:', uploadPath);
+        cb(null, uploadPath);
+      },
+      filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const ext = path.extname(file.originalname);
+        cb(null, 'article-' + uniqueSuffix + ext);
+      }
+    }),
+    fileFilter: function (req, file, cb) {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('只能上传图片文件'), false);
+      }
+    },
+    limits: {
+      fileSize: fileSize
+    }
+  }).single('image');
+};
+
+// 默认文章图片上传配置（向后兼容）
 const uploadArticleImage = multer({
   storage: multer.diskStorage({
     destination: function (req, file, cb) {
@@ -151,7 +209,7 @@ const uploadArticleImage = multer({
     }
   },
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB
+    fileSize: 10 * 1024 * 1024 // 默认10MB
   }
 }).single('image');
 
@@ -159,5 +217,8 @@ module.exports = {
   uploadAvatar,
   uploadArticleImage,
   handleUploadError,
-  deleteFile
+  deleteFile,
+  createUpload,
+  createArticleImageUpload,
+  getFileSizeLimit
 };

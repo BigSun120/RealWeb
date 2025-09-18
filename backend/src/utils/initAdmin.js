@@ -34,7 +34,7 @@ const createNewAdmin = async () => {
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123456';
-    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const adminUsername = process.env.ADMIN_USERNAME || 'ad666';
 
     const admin = new User({
       username: adminUsername,
@@ -58,20 +58,43 @@ const forceResetAdminPassword = async () => {
   try {
     const newPassword = process.env.ADMIN_PASSWORD || 'admin123456';
 
-    // 查找所有管理员账户并重置密码
-    const admins = await User.find({ isAdmin: true });
+    // 只重置指定的管理员账户密码，避免重置不需要的账户
+    const targetAdminUsername = process.env.ADMIN_USERNAME || 'ad666';
+    const admin = await User.findOne({
+      username: targetAdminUsername,
+      isAdmin: true
+    });
 
-    for (const admin of admins) {
+    if (admin) {
       admin.password = newPassword;
       await admin.save();
       logger.info(`管理员 ${admin.username} 密码已强制重置为: ${newPassword}`);
-    }
-
-    if (admins.length === 0) {
-      logger.warn('未找到任何管理员账户');
+    } else {
+      logger.warn(`未找到指定的管理员账户: ${targetAdminUsername}`);
     }
   } catch (error) {
     logger.error('重置管理员密码失败:', error);
+  }
+};
+
+/**
+ * 清理不需要的管理员账户（每次启动都执行）
+ */
+const cleanupUnwantedAdmins = async () => {
+  try {
+    const targetAdminUsername = process.env.ADMIN_USERNAME || 'ad666';
+
+    // 删除除了目标管理员之外的其他管理员账户
+    const result = await User.deleteMany({
+      isAdmin: true,
+      username: { $ne: targetAdminUsername }
+    });
+
+    if (result.deletedCount > 0) {
+      logger.info(`已清理 ${result.deletedCount} 个不需要的管理员账户`);
+    }
+  } catch (error) {
+    logger.error('清理管理员账户失败:', error);
   }
 };
 
@@ -80,6 +103,9 @@ const forceResetAdminPassword = async () => {
  */
 const initDefaultAdmin = async () => {
   try {
+    // 清理不需要的管理员账户（一次性执行）
+    await cleanupUnwantedAdmins();
+
     // 检查并创建管理员账户（仅在不存在时创建）
     await ensureAdminExists();
 

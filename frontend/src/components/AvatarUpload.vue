@@ -80,6 +80,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { User, Camera, Upload, Delete, InfoFilled } from '@element-plus/icons-vue';
 import { getFullAvatarUrl } from '@/utils/avatar';
 import api from '@/api';
+import configsApi from '@/api/admin/configs';
 
 export default {
   name: 'AvatarUpload',
@@ -117,6 +118,17 @@ export default {
       return getFullAvatarUrl(props.avatar);
     });
 
+    // 获取最大文件大小配置
+    const getMaxFileSize = async () => {
+      try {
+        const config = await configsApi.getConfig('upload.maxFileSize');
+        return config.data?.data?.value || 10; // 默认10MB
+      } catch (error) {
+        console.error('获取文件大小限制失败:', error);
+        return 10; // 默认10MB
+      }
+    };
+
     const triggerUpload = () => {
       fileInput.value?.click();
     };
@@ -131,9 +143,10 @@ export default {
         return;
       }
 
-      // 验证文件大小（5MB）
-      if (file.size > 5 * 1024 * 1024) {
-        ElMessage.error('图片大小不能超过5MB');
+      // 验证文件大小（从配置获取）
+      const maxSizeMB = await getMaxFileSize();
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        ElMessage.error(`图片大小不能超过${maxSizeMB}MB`);
         return;
       }
 

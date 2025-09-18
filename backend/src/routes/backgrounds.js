@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const sharp = require('sharp');
 const PageBackground = require('../models/PageBackground');
+const ToolConfig = require('../models/ToolConfig');
 const { auth: requireAuth, adminAuth: requireAdmin } = require('../middleware/auth');
 const { validateRequest } = require('../middleware/validation');
 const { body, param, query } = require('express-validator');
@@ -33,10 +34,42 @@ const storage = multer.diskStorage({
   }
 });
 
+// 获取动态文件大小限制
+const getFileSizeLimit = async () => {
+  try {
+    const config = await ToolConfig.findOne({ key: 'upload.maxFileSize' });
+    const sizeMB = config ? config.value : 10; // 默认10MB
+    return sizeMB * 1024 * 1024; // 转换为字节
+  } catch (error) {
+    console.error('获取文件大小限制失败:', error);
+    return 10 * 1024 * 1024; // 默认10MB
+  }
+};
+
+// 创建动态上传配置
+const createDynamicUpload = async () => {
+  const fileSize = await getFileSizeLimit();
+  return multer({
+    storage,
+    limits: {
+      fileSize: fileSize,
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('只支持 JPG、PNG、WebP 格式的图片'));
+      }
+    }
+  });
+};
+
+// 默认上传配置（向后兼容）
 const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 10 * 1024 * 1024, // 默认10MB
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -306,18 +339,28 @@ router.delete('/admin/configs/:id', requireAuth, requireAdmin, [
  * 上传背景图片
  * POST /api/admin/backgrounds/upload
  */
-router.post('/admin/upload', requireAuth, requireAdmin, (req, res, next) => {
-  upload.single('file')(req, res, (err) => {
-    if (err) {
-      console.error('Multer error:', err);
-      return res.status(400).json({
-        success: false,
-        message: err.message || '文件上传失败',
-        error: err.code || 'UPLOAD_ERROR'
-      });
-    }
-    next();
-  });
+router.post('/admin/upload', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    // 使用动态配置创建上传实例
+    const dynamicUpload = await createDynamicUpload();
+    dynamicUpload.single('file')(req, res, (err) => {
+      if (err) {
+        console.error('Multer error:', err);
+        return res.status(400).json({
+          success: false,
+          message: err.message || '文件上传失败',
+          error: err.code || 'UPLOAD_ERROR'
+        });
+      }
+      next();
+    });
+  } catch (error) {
+    console.error('创建上传配置失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '服务器内部错误'
+    });
+  }
 }, async (req, res) => {
   try {
     console.log('Upload request received:', {

@@ -114,7 +114,7 @@
                   <el-icon class="upload-icon"><upload-filled /></el-icon>
                   <div class="upload-text">
                     <p>点击或拖拽图片到此处上传</p>
-                    <p class="upload-tip">支持 JPG、PNG、WebP 格式，建议大小不超过 5MB</p>
+                    <p class="upload-tip">支持 JPG、PNG、WebP 格式，建议大小不超过 {{ maxFileSize }}MB</p>
                   </div>
                 </div>
               </el-upload>
@@ -344,6 +344,7 @@ import {
   getPathMatchExamples
 } from '@/api/backgrounds';
 import { useUserStore } from '@/stores/user';
+import configsApi from '@/api/admin/configs';
 
 // Props
 const props = defineProps({
@@ -388,6 +389,9 @@ const uploadAction = computed(() => {
 const uploadHeaders = computed(() => ({
   'Authorization': `Bearer ${userStore.token}`
 }));
+
+// 最大文件大小
+const maxFileSize = ref(10);
 
 const uploadData = computed(() => ({
   generateMobile: generateMobile.value
@@ -476,14 +480,14 @@ const updatePathExamples = () => {
 
 const beforeUpload = (file) => {
   const isValidType = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type);
-  const isValidSize = file.size / 1024 / 1024 < 5;
+  const isValidSize = file.size / 1024 / 1024 < maxFileSize.value;
 
   if (!isValidType) {
     ElMessage.error('只支持 JPG、PNG、WebP 格式的图片');
     return false;
   }
   if (!isValidSize) {
-    ElMessage.error('图片大小不能超过 5MB');
+    ElMessage.error(`图片大小不能超过 ${maxFileSize.value}MB`);
     return false;
   }
 
@@ -594,9 +598,18 @@ watch(() => props.config, (newConfig) => {
 }, { immediate: true });
 
 // 监听对话框显示状态
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, async (visible) => {
   if (!visible) {
     resetForm();
+  } else {
+    // 对话框打开时获取最大文件大小配置
+    try {
+      const config = await configsApi.getConfig('upload.maxFileSize');
+      maxFileSize.value = config.data?.data?.value || 10;
+    } catch (error) {
+      console.error('获取文件大小限制失败:', error);
+      maxFileSize.value = 10;
+    }
   }
 });
 </script>

@@ -43,11 +43,11 @@ export const setConfig = (key, data) => {
 };
 
 // 批量设置配置
-export const setBatchConfigs = configs => {
+export const setBatchConfigs = data => {
   return request({
     url: '/admin/configs/batch',
     method: 'post',
-    data: { configs }
+    data
   });
 };
 
@@ -137,7 +137,7 @@ export const saveToolsSettings = async settings => {
       });
     });
 
-    return await setBatchConfigs(configs);
+    return await setBatchConfigs({ configs });
   } catch (error) {
     throw error;
   }

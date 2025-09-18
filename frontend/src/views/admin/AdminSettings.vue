@@ -1,5 +1,32 @@
 <template>
   <div class="admin-settings">
+    <!-- 右侧浮窗目录 -->
+    <div class="settings-nav-float" v-show="showFloatNav">
+      <div class="nav-header">
+        <span>快捷导航</span>
+        <el-icon class="close-btn" @click="showFloatNav = false"><Close /></el-icon>
+      </div>
+      <div class="nav-list">
+        <div
+          v-for="section in navSections"
+          :key="section.id"
+          class="nav-item"
+          :class="{ active: activeSection === section.id }"
+          @click="scrollToSection(section.id)"
+        >
+          <el-icon>
+            <component :is="section.icon" />
+          </el-icon>
+          <span>{{ section.title }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 浮窗切换按钮 -->
+    <div class="float-nav-toggle" @click="showFloatNav = !showFloatNav">
+      <el-icon><Menu /></el-icon>
+    </div>
+
     <div class="settings-header">
       <h1>系统设置</h1>
       <p>管理网站的基本配置和个人信息</p>
@@ -7,7 +34,7 @@
 
     <div class="settings-content">
       <!-- 网站基本信息 -->
-      <el-card class="settings-card">
+      <el-card id="site-info" class="settings-card">
         <template #header>
           <div class="card-header">
             <el-icon><Setting /></el-icon>
@@ -91,7 +118,7 @@
       </el-card>
 
       <!-- 个人信息 -->
-      <el-card class="settings-card">
+      <el-card id="personal-info" class="settings-card">
         <template #header>
           <div class="card-header">
             <el-icon><User /></el-icon>
@@ -141,7 +168,7 @@
       </el-card>
 
       <!-- 博客设置 -->
-      <el-card class="settings-card">
+      <el-card id="blog-settings" class="settings-card">
         <template #header>
           <div class="card-header">
             <el-icon><Document /></el-icon>
@@ -197,8 +224,55 @@
         </el-form>
       </el-card>
 
+      <!-- 文件上传设置 -->
+      <el-card id="upload-settings" class="settings-card">
+        <template #header>
+          <div class="card-header">
+            <el-icon><Upload /></el-icon>
+            <span>文件上传设置</span>
+          </div>
+        </template>
+
+        <el-form label-width="120px" class="settings-form">
+          <el-form-item label="最大文件大小">
+            <el-input-number
+              v-model="uploadSettings.maxFileSize"
+              :min="1"
+              :max="100"
+              style="width: 200px"
+            />
+            <span style="margin-left: 8px">MB</span>
+            <div class="field-tip">单个文件的最大上传大小，影响头像、文章图片、背景图片等所有上传功能</div>
+          </el-form-item>
+
+          <el-form-item label="允许的文件类型">
+            <el-select
+              v-model="uploadSettings.allowedTypes"
+              multiple
+              placeholder="选择允许的文件类型"
+              style="width: 100%"
+            >
+              <el-option label="图片 (JPEG)" value="image/jpeg" />
+              <el-option label="图片 (PNG)" value="image/png" />
+              <el-option label="图片 (GIF)" value="image/gif" />
+              <el-option label="图片 (WebP)" value="image/webp" />
+              <el-option label="文本文件" value="text/plain" />
+              <el-option label="JSON文件" value="application/json" />
+              <el-option label="PDF文件" value="application/pdf" />
+            </el-select>
+            <div class="field-tip">选择允许上传的文件类型</div>
+          </el-form-item>
+
+          <el-form-item>
+            <el-button type="primary" @click="saveUploadSettings" :loading="savingUpload">
+              保存上传设置
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </el-card>
+
       <!-- 用户注册默认配置 -->
-      <el-card class="settings-card">
+      <el-card id="user-defaults" class="settings-card">
         <template #header>
           <div class="card-header">
             <el-icon><UserFilled /></el-icon>
@@ -252,10 +326,11 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Setting, User, Document, Plus, Link, UserFilled } from '@element-plus/icons-vue';
+import { Setting, User, Document, Plus, Link, UserFilled, Upload, Menu, Close } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import { useSettingsStore } from '@/stores/settings';
 import api from '@/api';
+import configsApi from '@/api/admin/configs';
 
 export default {
   name: 'AdminSettings',
@@ -265,12 +340,48 @@ export default {
     Document,
     Plus,
     Link,
-    UserFilled
+    UserFilled,
+    Upload,
+    Menu,
+    Close
   },
   setup() {
     const userStore = useUserStore();
     const settingsStore = useSettingsStore();
     const saving = ref(false);
+    const savingUpload = ref(false);
+
+    // 浮窗导航相关
+    const showFloatNav = ref(false);
+    const activeSection = ref('site-info');
+
+    // 导航栏目
+    const navSections = ref([
+      { id: 'site-info', title: '网站信息', icon: 'Setting' },
+      { id: 'personal-info', title: '个人信息', icon: 'User' },
+      { id: 'blog-settings', title: '博客设置', icon: 'Document' },
+      { id: 'upload-settings', title: '上传设置', icon: 'Upload' },
+      { id: 'user-defaults', title: '用户配置', icon: 'UserFilled' }
+    ]);
+
+    // 滚动到指定区域
+    const scrollToSection = (sectionId) => {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+        activeSection.value = sectionId;
+        showFloatNav.value = false;
+      }
+    };
+
+    // 文件上传设置
+    const uploadSettings = ref({
+      maxFileSize: 10,
+      allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    });
 
     // 公告展示设置
     const noticePlacements = ref(['banner','dropdown']);
@@ -496,6 +607,66 @@ export default {
       }
     };
 
+    // 保存文件上传设置
+    const saveUploadSettings = async () => {
+      savingUpload.value = true;
+      try {
+        // 准备配置数据
+        const configs = [
+          {
+            key: 'upload.maxFileSize',
+            value: uploadSettings.value.maxFileSize * 1024 * 1024, // 转换为字节
+            type: 'number',
+            group: 'upload',
+            description: '最大文件上传大小（字节）'
+          },
+          {
+            key: 'upload.allowedTypes',
+            value: uploadSettings.value.allowedTypes,
+            type: 'array',
+            group: 'upload',
+            description: '允许的文件类型'
+          }
+        ];
+
+        // 批量保存配置
+        await configsApi.setBatchConfigs({ configs });
+
+        ElMessage.success('文件上传设置保存成功');
+      } catch (error) {
+        console.error('保存文件上传设置失败:', error);
+        ElMessage.error('保存文件上传设置失败：' + (error.response?.data?.message || error.message));
+      } finally {
+        savingUpload.value = false;
+      }
+    };
+
+    // 加载文件上传设置
+    const loadUploadSettings = async () => {
+      try {
+        const [maxSizeRes, typesRes] = await Promise.allSettled([
+          configsApi.getConfig('upload.maxFileSize'),
+          configsApi.getConfig('upload.allowedTypes')
+        ]);
+
+        if (maxSizeRes.status === 'fulfilled' && maxSizeRes.value.data?.value !== undefined) {
+          const sizeInBytes = maxSizeRes.value.data.value;
+          // 从字节转换为MB
+          uploadSettings.value.maxFileSize = Math.round(sizeInBytes / (1024 * 1024));
+        } else {
+          uploadSettings.value.maxFileSize = 10; // 默认10MB
+        }
+
+        if (typesRes.status === 'fulfilled' && typesRes.value.data?.value) {
+          uploadSettings.value.allowedTypes = typesRes.value.data.value;
+        } else {
+          uploadSettings.value.allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']; // 默认类型
+        }
+      } catch (error) {
+        console.error('加载文件上传设置失败:', error);
+      }
+    };
+
     // Logo上传成功
     const handleLogoSuccess = response => {
       if (response.code === 200) {
@@ -559,6 +730,7 @@ export default {
       loadNewUserDefaults();
       loadPermissionsOptions();
       loadPlacements();
+      loadUploadSettings();
     });
 
     return {
@@ -582,17 +754,130 @@ export default {
       // 公告展示设置
       noticePlacements,
       savingPlacements,
-      savePlacements
+      savePlacements,
+
+      // 文件上传设置
+      uploadSettings,
+      savingUpload,
+      saveUploadSettings,
+
+      // 浮窗导航
+      showFloatNav,
+      activeSection,
+      navSections,
+      scrollToSection
     };
   }
 };
 </script>
 
 <style scoped>
+/* 浮窗导航样式 */
+.settings-nav-float {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  width: 200px;
+  max-height: 80vh; /* 限制最大高度 */
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e5e7eb;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: auto; /* 确保可以交互 */
+}
+
+.nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.close-btn {
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #ef4444;
+}
+
+.nav-list {
+  padding: 8px 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.nav-item:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.nav-item.active {
+  background: #ecfdf5;
+  color: #059669;
+  border-right: 3px solid #10b981;
+}
+
+.nav-item .el-icon {
+  font-size: 16px;
+}
+
+/* 浮窗切换按钮 */
+.float-nav-toggle {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  background: #10b981;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+  z-index: 999;
+  transition: all 0.3s;
+  pointer-events: auto; /* 确保可以交互 */
+}
+
+.float-nav-toggle:hover {
+  background: #059669;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.float-nav-toggle .el-icon {
+  color: white;
+  font-size: 20px;
+}
+
+/* 主体样式 */
 .admin-settings {
   min-height: 100vh;
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   padding: 20px;
+  position: relative;
+  overflow-x: hidden; /* 防止水平滚动条 */
 }
 
 .settings-header {
@@ -601,40 +886,82 @@ export default {
 }
 
 .settings-header h1 {
-  margin: 0 0 8px 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: #2c3e50;
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
 }
 
 .settings-header p {
-  margin: 0;
-  color: #7f8c8d;
   font-size: 16px;
+  color: #64748b;
+  margin: 0;
 }
 
 .settings-content {
-  max-width: 1000px;
+  max-width: calc(100% - 100px); /* 为浮窗留出空间 */
+  width: 100%;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .settings-card {
-  margin-bottom: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  background: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.settings-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .card-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  font-size: 18px;
   font-weight: 600;
-  font-size: 16px;
-  color: #2c3e50;
+  color: #1e293b;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.card-header .el-icon {
+  font-size: 22px;
+  color: #10b981;
 }
 
 .settings-form {
-  padding: 8px 0;
+  padding: 24px;
+}
+
+.settings-form .el-form-item {
+  margin-bottom: 24px;
+}
+
+.settings-form .el-button--primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.settings-form .el-button--primary:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
 }
 
 /* Logo上传样式 */
@@ -689,34 +1016,52 @@ export default {
 .social-links {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .social-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.social-item .el-icon {
+  color: #10b981;
+  font-size: 18px;
 }
 
 .social-label {
-  min-width: 60px;
+  min-width: 80px;
   font-size: 14px;
-  color: #666;
+  color: #374151;
+  font-weight: 500;
 }
 
 /* 功能开关样式 */
 .feature-switches {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+}
+
+.feature-switches .el-switch {
+  --el-switch-on-color: #10b981;
 }
 
 /* 字段提示样式 */
 .field-tip {
   font-size: 12px;
-  color: #999;
-  margin-top: 4px;
-  line-height: 1.4;
+  color: #64748b;
+  margin-top: 6px;
+  line-height: 1.5;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #10b981;
 }
 
 .admin-info {
@@ -737,27 +1082,73 @@ export default {
 
 .stat-item {
   text-align: center;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e1e8ed;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .stat-number {
   font-size: 32px;
-  font-weight: 600;
-  color: #667eea;
+  font-weight: 700;
+  color: #10b981;
   margin-bottom: 8px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #7f8c8d;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .settings-content {
+    max-width: calc(100% - 80px);
+  }
+
+  .settings-nav-float {
+    width: 180px;
+  }
 }
 
 @media (max-width: 768px) {
   .admin-settings {
     padding: 16px;
+  }
+
+  .settings-content {
+    max-width: 100%;
+  }
+
+  .settings-nav-float {
+    right: 10px;
+    width: 160px;
+  }
+
+  .float-nav-toggle {
+    right: 10px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .settings-header h1 {
+    font-size: 28px;
+  }
+
+  .card-header {
+    padding: 16px 20px;
+    font-size: 16px;
+  }
+
+  .settings-form {
+    padding: 20px;
   }
 
   .stats-grid {
@@ -767,6 +1158,10 @@ export default {
 
   .stat-number {
     font-size: 24px;
+  }
+
+  .stat-item {
+    padding: 20px;
   }
 }
 </style>
