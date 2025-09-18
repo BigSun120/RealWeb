@@ -248,13 +248,13 @@
                     (article.author && (article.author.displayName || article.author.username)) ||
                     '匿名'
                   }}</span>
-                  <span class="meta-separator">*</span>
+                  <span class="meta-separator">  </span>
                   <span class="meta-item date">{{ formatDate(article.createdAt) }}</span>
-                  <span class="meta-separator">*</span>
+                  <span class="meta-separator">  </span>
                   <span class="meta-item stats">
                     👁 {{ article.viewCount || 0 }}
                   </span>
-                  <span class="meta-separator">*</span>
+                  <span class="meta-separator">  </span>
                   <span class="meta-item stats">
                     💬 {{ article.commentCount || 0 }}
                   </span>

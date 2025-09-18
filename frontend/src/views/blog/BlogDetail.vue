@@ -91,8 +91,8 @@
                       v-if="article._id"
                       target-type="article"
                       :target-id="article._id"
-                      :initial-bookmarked="false"
-                      :initial-bookmark-count="0"
+                      :initial-bookmarked="initialBookmarked"
+                      :initial-bookmark-count="initialBookmarkCount"
                       size="small"
                       :show-text="false"
                       @bookmark-changed="handleBookmarkChange"
@@ -213,7 +213,9 @@ import FollowButton from '@/components/social/FollowButton.vue';
 import BookmarkButton from '@/components/social/BookmarkButton.vue';
 import ArticleLikeButton from '@/components/social/ArticleLikeButton.vue';
 import { useSettingsStore } from '@/stores/settings';
+import { useUserStore } from '@/stores/user';
 import { getAvatarStyle } from '@/utils/avatar';
+import { checkBookmarkStatus, getContentBookmarkStats } from '@/api/bookmarks';
 
 export default {
   name: 'BlogDetail',
@@ -235,6 +237,10 @@ export default {
     const tableOfContents = ref([]);
     const relatedArticles = ref([]);
     const sidebarHidden = ref(false);
+
+    // 收藏初始状态（用于刷新后保持状态）
+    const initialBookmarked = ref(false);
+    const initialBookmarkCount = ref(0);
 
     // 配置marked
     const renderer = new marked.Renderer();
@@ -389,10 +395,54 @@ export default {
       try {
         const response = await api.get(`/articles/${route.params.id}`);
         article.value = response.data.data;
+
+        // 刷新收藏状态与数量（并行获取）
+        if (article.value && article.value._id) {
+          await refreshBookmarkState(article.value._id);
+        } else {
+          initialBookmarked.value = false;
+          initialBookmarkCount.value = 0;
+        }
       } catch (error) {
         console.error('获取文章失败:', error);
       } finally {
         loading.value = false;
+      }
+    };
+
+
+    // 刷新收藏初始状态与数量（用于页面加载和路由切换后）
+    const refreshBookmarkState = async (id) => {
+      try {
+        // 只有登录用户才检查收藏状态
+        const userStore = useUserStore();
+        if (!userStore.isLoggedIn) {
+          initialBookmarked.value = false;
+          initialBookmarkCount.value = 0;
+          return;
+        }
+
+        const [countRes, statusRes] = await Promise.allSettled([
+          getContentBookmarkStats('article', id),
+          checkBookmarkStatus([{ type: 'article', id }])
+        ]);
+
+        if (countRes.status === 'fulfilled') {
+          initialBookmarkCount.value = countRes.value?.data?.data?.count || 0;
+        } else {
+          initialBookmarkCount.value = 0;
+        }
+
+        if (statusRes.status === 'fulfilled') {
+          const key = `article_${id}`;
+          initialBookmarked.value = !!statusRes.value?.data?.data?.[key];
+        } else {
+          initialBookmarked.value = false;
+        }
+      } catch (e) {
+        console.error('获取收藏状态失败:', e);
+        initialBookmarked.value = false;
+        initialBookmarkCount.value = 0;
       }
     };
 
@@ -639,13 +689,18 @@ export default {
 
     // 处理收藏状态变化
     const handleBookmarkChange = (data) => {
-      console.log('收藏状态变化:', data);
-      // 这里可以添加一些UI反馈或者更新文章信息
+      // 同步父组件中用于初始渲染的值，保证刷新/路由切换后一致
+      initialBookmarked.value = !!data.bookmarked;
+      if (typeof data.bookmarkCount === 'number') {
+        initialBookmarkCount.value = data.bookmarkCount;
+      }
     };
 
     return {
       settingsStore,
       article,
+      initialBookmarked,
+      initialBookmarkCount,
       loading,
       highlightCommentId,
       targetPage,
@@ -737,6 +792,8 @@ export default {
 .floating-sidebar .sidebar-content {
   max-height: calc(100vh - 200px);
   overflow-y: auto;
+  padding: 10px; /* 增加内边距，确保边框不被裁剪 */
+  box-sizing: border-box;
 }
 
 /* 确保主内容不被侧边栏遮挡，同时优化阅读宽度 */
@@ -934,6 +991,7 @@ export default {
   max-height: 400px;
   overflow-y: auto;
   padding-right: var(--spacing-2);
+  padding-left: var(--spacing-2);
 }
 
 /* 目录滚动条样式 */
@@ -977,6 +1035,17 @@ export default {
   background-color: #3498db;
   color: white;
   font-weight: var(--font-weight-medium);
+  border: 2px solid #2980b9; /* 选中时额外蓝色边框，使用更深的蓝色 */
+  box-shadow: 0 0 0 1px #3498db; /* 外层阴影模拟边框，确保可见 */
+}
+
+/* 防止目录项高亮或聚焦描边被裁剪 */
+.toc-link {
+  border-radius: 8px;
+  outline-offset: 2px;
+  margin: 4px 2px; /* 增加上下外边距，为边框和阴影留出更多空间 */
+  box-sizing: border-box;
+  position: relative; /* 为阴影定位 */
 }
 
 .toc-level-1 {

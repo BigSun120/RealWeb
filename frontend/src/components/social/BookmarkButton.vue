@@ -9,8 +9,8 @@
     class="bookmark-button"
   >
     <el-icon class="bookmark-icon">
-      <Star v-if="bookmarked" />
-      <StarFilled v-else />
+      <StarFilled v-if="bookmarked" />
+      <Star v-else />
     </el-icon>
     <span v-if="showText" class="bookmark-text">
       {{ bookmarked ? '已收藏' : '收藏' }}
@@ -91,11 +91,11 @@ const isLoggedIn = computed(() => userStore.isLoggedIn);
 // 监听初始状态变化
 watch(() => props.initialBookmarked, (newValue) => {
   bookmarked.value = newValue;
-});
+}, { immediate: true });
 
 watch(() => props.initialBookmarkCount, (newValue) => {
   bookmarkCount.value = newValue;
-});
+}, { immediate: true });
 
 // 格式化数量显示
 const formatCount = (count) => {
