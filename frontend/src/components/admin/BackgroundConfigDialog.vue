@@ -345,6 +345,7 @@ import {
 } from '@/api/backgrounds';
 import { useUserStore } from '@/stores/user';
 import configsApi from '@/api/admin/configs';
+import api from '@/api/index';
 
 // Props
 const props = defineProps({
@@ -382,8 +383,8 @@ const dialogVisible = computed({
 const isEdit = computed(() => !!props.config);
 
 const uploadAction = computed(() => {
-  const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-  return `${baseURL}/backgrounds/admin/upload`;
+  // 使用统一的API配置
+  return `${api.defaults.baseURL}/backgrounds/admin/upload`;
 });
 
 const uploadHeaders = computed(() => ({
