@@ -5,11 +5,26 @@
     :style="backgroundStyles"
   >
     <!-- 背景层 -->
-    <div 
-      v-if="hasBackground"
-      class="background-layer"
-      :style="backgroundLayerStyles"
-    ></div>
+    <div v-if="hasBackground" class="background-layer">
+      <!-- 视频背景 -->
+      <video
+        v-if="isVideoBackground"
+        class="background-video"
+        :src="backgroundUrl"
+        :style="backgroundLayerStyles"
+        autoplay
+        muted
+        loop
+        playsinline
+      ></video>
+
+      <!-- 图片背景 -->
+      <div
+        v-else
+        class="background-image"
+        :style="backgroundLayerStyles"
+      ></div>
+    </div>
     
     <!-- 内容插槽 -->
     <div class="content-layer">
@@ -69,12 +84,20 @@ const deviceType = computed(() => {
   return currentDevice.value;
 });
 
-const backgroundImage = computed(() => {
-  if (!backgroundConfig.value?.backgroundImage) return null;
-  
+// 判断是否为视频背景
+const isVideoBackground = computed(() => {
+  if (!backgroundConfig.value?.backgroundImage) return false;
   const config = backgroundConfig.value.backgroundImage;
-  
-  // 根据设备类型选择合适的图片
+  return config.type === 'video' || (config.mimetype && config.mimetype.startsWith('video/'));
+});
+
+// 获取背景URL（图片或视频）
+const backgroundUrl = computed(() => {
+  if (!backgroundConfig.value?.backgroundImage) return null;
+
+  const config = backgroundConfig.value.backgroundImage;
+
+  // 根据设备类型选择合适的文件
   switch (deviceType.value) {
     case 'mobile':
       return config.mobileUrl ? getImageUrl(config.mobileUrl) : getImageUrl(config.url);
@@ -83,6 +106,11 @@ const backgroundImage = computed(() => {
     default:
       return getImageUrl(config.url);
   }
+});
+
+// 保持向后兼容的backgroundImage计算属性
+const backgroundImage = computed(() => {
+  return isVideoBackground.value ? null : backgroundUrl.value;
 });
 
 const backgroundStyles = computed(() => {
@@ -135,22 +163,35 @@ const backgroundLayerStyles = computed(() => {
     filters.push(`saturate(${display.saturation})`);
   }
   
-  return {
+  const baseStyles = {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     zIndex: layout.zIndex || -1,
-    backgroundImage: `url(${backgroundImage.value})`,
-    backgroundSize: layout.backgroundSize || 'cover',
-    backgroundPosition: layout.backgroundPosition || 'center center',
-    backgroundRepeat: layout.backgroundRepeat || 'no-repeat',
-    backgroundAttachment: layout.backgroundAttachment || 'scroll',
     opacity: display.opacity !== undefined ? display.opacity : 1,
     filter: filters.length > 0 ? filters.join(' ') : 'none',
     pointerEvents: 'none'
   };
+
+  // 对于图片背景，添加background相关样式
+  if (!isVideoBackground.value && backgroundImage.value) {
+    baseStyles.backgroundImage = `url(${backgroundImage.value})`;
+    baseStyles.backgroundSize = layout.backgroundSize || 'cover';
+    baseStyles.backgroundPosition = layout.backgroundPosition || 'center center';
+    baseStyles.backgroundRepeat = layout.backgroundRepeat || 'no-repeat';
+    baseStyles.backgroundAttachment = layout.backgroundAttachment || 'scroll';
+  }
+
+  // 对于视频背景，添加视频相关样式
+  if (isVideoBackground.value) {
+    baseStyles.width = '100%';
+    baseStyles.height = '100%';
+    baseStyles.objectFit = layout.backgroundSize === 'contain' ? 'contain' : 'cover';
+  }
+
+  return baseStyles;
 });
 
 // 方法
@@ -268,6 +309,28 @@ defineExpose({
   bottom: 0;
   z-index: -1;
   pointer-events: none;
+  overflow: hidden;
+}
+
+.background-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  z-index: -1;
+}
+
+.background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
 }
 
 .content-layer {

@@ -55,11 +55,14 @@ const createDynamicUpload = async () => {
       fileSize: fileSize,
     },
     fileFilter: (req, file, cb) => {
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      const allowedTypes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+        'video/mp4', 'video/webm', 'video/ogg'
+      ];
       if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
       } else {
-        cb(new Error('只支持 JPG、PNG、WebP 格式的图片'));
+        cb(new Error('只支持 JPG、PNG、WebP 图片格式和 MP4、WebM、OGG 视频格式'));
       }
     }
   });
@@ -72,11 +75,14 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 默认10MB
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+      'video/mp4', 'video/webm', 'video/ogg'
+    ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('只支持 JPG、PNG、WebP 格式的图片'));
+      cb(new Error('只支持 JPG、PNG、WebP 图片格式和 MP4、WebM、OGG 视频格式'));
     }
   }
 });
@@ -377,22 +383,37 @@ router.post('/admin/upload', requireAuth, requireAdmin, async (req, res, next) =
     }
 
     const file = req.file;
-    const imagePath = file.path;
+    const filePath = file.path;
+    const isVideo = file.mimetype.startsWith('video/');
 
-    // 获取图片信息
-    const metadata = await sharp(imagePath).metadata();
+    let metadata = {};
+
+    if (isVideo) {
+      // 对于视频文件，获取基本信息
+      const fs = require('fs');
+      const stats = fs.statSync(filePath);
+      metadata = {
+        format: file.mimetype.split('/')[1],
+        size: stats.size,
+        width: null, // 视频尺寸需要其他库获取，这里暂时设为null
+        height: null
+      };
+    } else {
+      // 对于图片文件，使用Sharp获取详细信息
+      metadata = await sharp(filePath).metadata();
+    }
 
     // 生成不同尺寸的图片（可选）
     const baseUrl = '/uploads/backgrounds';
     const filename = file.filename;
 
-    // 生成移动端图片（可选）
+    // 生成移动端图片（仅对图片文件）
     let mobileUrl = null;
-    if (req.body.generateMobile === 'true') {
+    if (!isVideo && req.body.generateMobile === 'true') {
       const mobileFilename = `mobile-${filename}`;
-      const mobilePath = path.join(path.dirname(imagePath), mobileFilename);
+      const mobilePath = path.join(path.dirname(filePath), mobileFilename);
 
-      await sharp(imagePath)
+      await sharp(filePath)
         .resize(800, null, {
           withoutEnlargement: true,
           fit: 'inside'
@@ -403,7 +424,7 @@ router.post('/admin/upload', requireAuth, requireAdmin, async (req, res, next) =
       mobileUrl = `${baseUrl}/${mobileFilename}`;
     }
 
-    const imageData = {
+    const fileData = {
       url: `${baseUrl}/${filename}`,
       filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
       size: file.size,
@@ -412,13 +433,15 @@ router.post('/admin/upload', requireAuth, requireAdmin, async (req, res, next) =
         height: metadata.height
       },
       format: metadata.format,
-      mobileUrl
+      mobileUrl,
+      type: isVideo ? 'video' : 'image',
+      mimetype: file.mimetype
     };
 
     res.json({
       success: true,
-      data: imageData,
-      message: '图片上传成功'
+      data: fileData,
+      message: isVideo ? '视频上传成功' : '图片上传成功'
     });
   } catch (error) {
     console.error('图片上传失败:', error);

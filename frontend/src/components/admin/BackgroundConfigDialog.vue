@@ -479,15 +479,17 @@ const updatePathExamples = () => {
 };
 
 const beforeUpload = (file) => {
-  const isValidType = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type);
+  const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+  const isValidType = [...validImageTypes, ...validVideoTypes].includes(file.type);
   const isValidSize = file.size / 1024 / 1024 < maxFileSize.value;
 
   if (!isValidType) {
-    ElMessage.error('只支持 JPG、PNG、WebP 格式的图片');
+    ElMessage.error('只支持 JPG、PNG、WebP 图片格式和 MP4、WebM、OGG 视频格式');
     return false;
   }
   if (!isValidSize) {
-    ElMessage.error(`图片大小不能超过 ${maxFileSize.value}MB`);
+    ElMessage.error(`文件大小不能超过 ${maxFileSize.value}MB`);
     return false;
   }
 
