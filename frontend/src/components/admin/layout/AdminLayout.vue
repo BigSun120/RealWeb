@@ -94,6 +94,9 @@
             <el-menu-item index="/admin/email-management" class="sub-menu-item">
               <span class="sub-menu-title">邮件管理</span>
             </el-menu-item>
+            <el-menu-item index="/admin/temp-email-activation-codes" class="sub-menu-item">
+              <span class="sub-menu-title">验证码管理</span>
+            </el-menu-item>
           </el-sub-menu>
 
           <!-- 外观管理区 -->
@@ -280,6 +283,7 @@ export default {
         tools: '工具箱',
         'email-domains': '邮箱域名管理',
         'email-management': '邮件管理',
+        'temp-email-activation-codes': '验证码管理',
         backgrounds: '背景管理',
         activity: '活动日志',
         settings: '系统设置'

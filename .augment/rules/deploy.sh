@@ -76,5 +76,5 @@ esac
 echo ""
 echo "🎉 部署完成！"
 echo "📱 前端访问: http://localhost:3000"
-echo "🔗 API访问: http://localhost:8000"
-echo "📊 健康检查: http://localhost:8000/health"
+echo "🔗 API访问: http://localhost:8001"
+echo "📊 健康检查: http://localhost:8001/health"

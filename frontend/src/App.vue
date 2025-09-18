@@ -16,6 +16,8 @@
     <template v-else>
       <!-- 全局背景管理器 -->
       <GlobalBackgroundManager>
+        <!-- 认证状态监控 -->
+        <AuthGuard />
         <AppHeader />
         <!-- 公告横幅（显示位置由管理端设置控制，默认展示） -->
         <PublicNoticeBanner :placements="uiPlacements" />
@@ -42,6 +44,7 @@ import EmailVerificationBanner from '@/components/EmailVerificationBanner.vue';
 import PublicNoticeBanner from '@/components/PublicNoticeBanner.vue';
 import PublicNoticeViewer from '@/components/PublicNoticeViewer.vue';
 import GlobalBackgroundManager from '@/components/GlobalBackgroundManager.vue';
+import AuthGuard from '@/components/AuthGuard.vue';
 
 export default {
   name: 'App',
@@ -51,7 +54,8 @@ export default {
     EmailVerificationBanner,
     PublicNoticeBanner,
     PublicNoticeViewer,
-    GlobalBackgroundManager
+    GlobalBackgroundManager,
+    AuthGuard
   },
   setup() {
     const route = useRoute();

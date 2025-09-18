@@ -264,6 +264,12 @@ const routes = [
         meta: { title: '邮件管理', requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'temp-email-activation-codes',
+        name: 'AdminTempEmailActivationCodes',
+        component: () => import('@/views/admin/TempEmailActivationCodes.vue'),
+        meta: { title: '临时邮箱验证码管理', requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'backgrounds',
         name: 'BackgroundManager',
         component: () => import('@/views/admin/BackgroundManager.vue'),

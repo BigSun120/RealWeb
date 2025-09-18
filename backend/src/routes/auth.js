@@ -176,6 +176,15 @@ router.post(
       // 生成token
       const token = user.generateAuthToken();
 
+      // 记录会话创建
+      const sessionManager = require('../utils/sessionManager');
+      sessionManager.recordSessionCreation(
+        user._id,
+        token,
+        req.get('User-Agent'),
+        req.ip
+      );
+
       // 更新登录信息
       await user.updateLoginInfo();
 

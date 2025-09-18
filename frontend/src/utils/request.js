@@ -2,6 +2,56 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '@/stores/user';
 
+// 防止重复登出的标志
+let isLoggingOut = false;
+
+// 统一处理401未授权错误
+const handleUnauthorized = (data) => {
+  if (isLoggingOut) return;
+
+  isLoggingOut = true;
+
+  const userStore = useUserStore();
+  const errorType = data?.errorType;
+
+  // 根据错误类型显示不同的消息
+  let message = '登录已过期，请重新登录';
+  switch (errorType) {
+    case 'TOKEN_EXPIRED':
+      message = 'Token已过期，请重新登录';
+      break;
+    case 'INVALID_TOKEN':
+      message = '登录信息无效，请重新登录';
+      break;
+    case 'USER_NOT_FOUND':
+      message = '用户不存在，请重新登录';
+      break;
+    case 'ACCOUNT_DISABLED':
+      message = '账户已被禁用，请联系管理员';
+      break;
+    case 'NO_TOKEN':
+      message = '请先登录';
+      break;
+    default:
+      message = data?.message || '登录已过期，请重新登录';
+  }
+
+  // 清除用户状态
+  userStore.logout();
+
+  // 显示错误消息
+  ElMessage.error(message);
+
+  // 延迟跳转，避免并发问题
+  setTimeout(() => {
+    // 如果当前不在登录页，则跳转到登录页
+    if (!window.location.pathname.includes('/auth/login')) {
+      window.location.href = '/auth/login';
+    }
+    isLoggingOut = false;
+  }, 100);
+};
+
 // 创建axios实例
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api', // 基础URL
@@ -44,10 +94,7 @@ request.interceptors.response.use(
         return data;
       } else if (data.code === 401) {
         // 未授权，清除token并跳转到登录页
-        const userStore = useUserStore();
-        userStore.logout();
-        ElMessage.error('登录已过期，请重新登录');
-        window.location.href = '/login';
+        handleUnauthorized(data);
         return Promise.reject(new Error(data.message || '未授权'));
       } else if (data.code === 403) {
         ElMessage.error('没有权限访问');
@@ -76,14 +123,16 @@ request.interceptors.response.use(
           message = data.message || '请求参数错误';
           break;
         case 401: {
-          message = '未授权，请登录';
-          const userStore = useUserStore();
-          userStore.logout();
-          window.location.href = '/login';
+          message = data?.message || '未授权，请登录';
+          handleUnauthorized(data);
           break;
         }
         case 403:
-          message = '没有权限访问';
+          message = data?.message || '没有权限访问';
+          // 如果是临时邮箱权限问题，不要强制退出登录
+          if (data?.code !== 'TEMP_EMAIL_ACCESS_REQUIRED') {
+            // 其他403错误可能需要重新登录
+          }
           break;
         case 404:
           message = '请求的资源不存在';
@@ -109,7 +158,8 @@ request.interceptors.response.use(
       message = error.message || '请求配置错误';
     }
 
-    ElMessage.error(message);
+    // 不在这里显示错误消息，让组件自己处理
+    // ElMessage.error(message);
     return Promise.reject(error);
   }
 );

@@ -1,20 +1,105 @@
 <template>
   <div class="temp-email-container">
-    <el-card class="main-card">
-      <template #header>
-        <div class="card-header">
-          <h2>📧 临时邮箱</h2>
-          <div class="header-actions">
-            <el-button
-              type="primary"
-              @click="generateEmail"
-              :loading="generating"
-            >
-              生成新邮箱
-            </el-button>
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container">
+      <el-loading :loading="true" :element-loading-text="loadingText">
+        <div style="height: 200px;"></div>
+      </el-loading>
+    </div>
+
+    <!-- 未登录状态 -->
+    <div v-else-if="!isLoggedIn" class="login-required">
+      <el-result
+        icon="warning"
+        title="需要登录"
+        sub-title="使用临时邮箱功能需要先登录账户"
+      >
+        <template #extra>
+          <el-button type="primary" @click="goToLogin">
+            <el-icon><User /></el-icon>
+            立即登录
+          </el-button>
+        </template>
+      </el-result>
+    </div>
+
+    <!-- 权限检查和激活流程 -->
+    <div v-else-if="!accessStatus.hasAccess" class="permission-required">
+      <!-- 显示激活界面 -->
+      <TempEmailActivation
+        v-if="showActivation"
+        @success="handleActivationSuccess"
+        @cancel="showActivation = false"
+      />
+
+      <!-- 显示权限状态 -->
+      <TempEmailStatusBar
+        v-else
+        :access-status="accessStatus"
+        @show-activation="showActivation = true"
+      />
+    </div>
+
+    <!-- 主功能界面 -->
+    <div v-else class="temp-email-main">
+      <!-- 简化的权限状态显示 -->
+      <TempEmailStatusBar
+        :access-status="accessStatus"
+        @show-activation="showActivation = true"
+      />
+
+
+
+      <!-- 激活界面弹窗（已激活用户也可以使用） -->
+      <el-dialog
+        v-model="showActivation"
+        title="激活临时邮箱权限"
+        width="680px"
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+        :lock-scroll="true"
+        :modal="true"
+        :append-to-body="true"
+        class="activation-dialog"
+        destroy-on-close
+      >
+        <template #header>
+          <div class="dialog-header">
+            <div class="header-icon">
+              <el-icon size="24" color="#48bb78">
+                <Key />
+              </el-icon>
+            </div>
+            <div class="header-content">
+              <h3>激活临时邮箱权限</h3>
+              <p>请输入激活码来获取临时邮箱使用权限</p>
+            </div>
           </div>
+        </template>
+
+        <div class="activation-content">
+          <TempEmailActivation
+            @success="handleActivationSuccess"
+            @cancel="showActivation = false"
+          />
         </div>
-      </template>
+      </el-dialog>
+
+      <el-card class="main-card">
+        <template #header>
+          <div class="card-header">
+            <h2>📧 临时邮箱</h2>
+            <div class="header-actions">
+              <el-button
+                type="primary"
+                @click="generateEmail"
+                :loading="generating"
+              >
+                生成新邮箱
+              </el-button>
+            </div>
+          </div>
+        </template>
 
       <!-- 邮箱生成配置 -->
       <div class="email-config">
@@ -268,19 +353,42 @@
         </div>
       </div>
     </el-dialog>
-  </div>
+      </div>
+    </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { User, Key } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import { tempEmailApi } from '@/api/tempEmail'
+import { tempEmailAuthApi } from '@/api/tempEmailAuth'
+import TempEmailActivation from '@/components/TempEmailActivation.vue'
+import TempEmailStatusBar from '@/components/TempEmailStatusBar.vue'
 
-// 响应式数据
+// 路由和用户状态
+const router = useRouter()
+const userStore = useUserStore()
+
+// 权限控制相关
+const loading = ref(true)
+const loadingText = ref('检查权限状态...')
+const isLoggedIn = computed(() => userStore.isLoggedIn)
+const accessStatus = ref({
+  hasAccess: false,
+  isAdmin: false,
+  tempEmailAccess: null,
+  remainingTime: null
+})
+const showActivation = ref(false)
+
+// 原有的响应式数据
 const serviceOnline = ref(true)
 const currentEmail = ref('')
 const messages = ref([])
-const loading = ref(false)
+const functionalLoading = ref(false) // 重命名避免冲突
 const generating = ref(false)
 const sendingTest = ref(false)
 const messageDialogVisible = ref(false)
@@ -303,6 +411,69 @@ const allMessages = ref([])
 // 计算属性：显示的邮件列表（默认显示全部）
 const displayMessages = computed(() => allMessages.value)
 
+// 权限控制相关方法
+const checkAccessStatus = async () => {
+  try {
+    if (!isLoggedIn.value) {
+      loading.value = false
+      return
+    }
+
+    const response = await tempEmailAuthApi.checkAccessStatus()
+
+    if (response.success) {
+      const oldHasAccess = accessStatus.value.hasAccess
+      accessStatus.value = response.data
+
+      // 如果权限状态从有变为无，清除相关数据
+      if (oldHasAccess && !response.data.hasAccess) {
+        // 清除邮件数据
+        allMessages.value = []
+        currentEmail.value = ''
+        selectedDomain.value = ''
+      }
+    }
+  } catch (error) {
+    console.error('检查权限状态失败:', error)
+
+    // 如果是401错误，可能是登录过期
+    if (error.response?.status === 401) {
+      ElMessage.warning('登录状态已过期，请重新登录')
+      router.push('/auth/login')
+    } else {
+      ElMessage.error('检查权限状态失败')
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+const goToLogin = () => {
+  router.push('/auth/login')
+}
+
+const handleActivationSuccess = async (data) => {
+  ElMessage.success('权限激活成功！')
+  showActivation.value = false
+
+  // 重新检查权限状态
+  await checkAccessStatus()
+
+  // 如果激活成功，加载相关数据并触发页面重新渲染
+  if (accessStatus.value.hasAccess) {
+    await checkServiceStatus()
+    await loadAvailableDomains()
+
+    // 使用nextTick确保DOM更新后再触发重新布局
+    await nextTick()
+
+    // 强制触发页面重新计算高度
+    window.dispatchEvent(new Event('resize'))
+  }
+}
+
+
+
 // 生成随机前缀
 const generateRandomPrefix = () => {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -318,6 +489,13 @@ const generateEmail = async () => {
   try {
     generating.value = true
     console.log('🚀 开始生成邮箱...')
+
+    // 先检查权限状态
+    await checkAccessStatus()
+    if (!accessStatus.value.hasAccess) {
+      ElMessage.warning('权限已失效，请重新激活')
+      return
+    }
 
     // 验证输入
     if (!selectedDomain.value) {
@@ -377,7 +555,7 @@ const refreshMessages = async () => {
   if (!currentEmail.value) return
 
   try {
-    loading.value = true
+    functionalLoading.value = true
     const response = await tempEmailApi.getMessages(currentEmail.value)
 
     if (response.data.success) {
@@ -386,21 +564,28 @@ const refreshMessages = async () => {
   } catch (error) {
     ElMessage.error('获取邮件列表失败')
   } finally {
-    loading.value = false
+    functionalLoading.value = false
   }
 }
 
 // 刷新全部邮件（并补充最近5封的正文验证码）
 const refreshAllMessages = async () => {
   try {
-    loading.value = true
+    functionalLoading.value = true
+
+    // 先检查权限状态
+    await checkAccessStatus()
+    if (!accessStatus.value.hasAccess) {
+      ElMessage.warning('权限已失效，请重新激活')
+      return
+    }
 
     const response = await tempEmailApi.getAllEmails()
-    if (response.data.success) {
+    if (response.success) {
       allMessages.value = []
 
       // 将所有邮箱的邮件合并到一个列表中
-      response.data.data.emailBoxes.forEach(emailBox => {
+      response.data.emailBoxes.forEach(emailBox => {
         emailBox.messages.forEach(message => {
           allMessages.value.push({
             ...message,
@@ -418,9 +603,20 @@ const refreshAllMessages = async () => {
       ElMessage.success(`已加载 ${allMessages.value.length} 封邮件`)
     }
   } catch (error) {
-    ElMessage.error('获取全部邮件失败')
+    console.error('获取全部邮件失败:', error)
+
+    // 检查是否是权限问题
+    if (error.response?.status === 403 && error.response?.data?.code === 'TEMP_EMAIL_ACCESS_REQUIRED') {
+      ElMessage.warning('需要激活临时邮箱权限')
+      // 重新检查权限状态，可能需要显示激活界面
+      checkAccessStatus()
+    } else if (error.response?.status === 401) {
+      ElMessage.error('登录状态已过期，请重新登录')
+    } else {
+      ElMessage.error('获取全部邮件失败')
+    }
   } finally {
-    loading.value = false
+    functionalLoading.value = false
   }
 }
 
@@ -610,11 +806,78 @@ const checkServiceStatus = async () => {
   }
 }
 
+// 定期权限检查
+let accessCheckInterval = null
+
+// 全面的验证码状态检查
+const performFullAccessCheck = async () => {
+  try {
+    loadingText.value = '检查权限状态...'
+
+    // 1. 首先检查基本权限状态
+    await checkAccessStatus()
+
+    // 2. 如果显示有权限，进行深度验证
+    if (accessStatus.value.hasAccess && accessStatus.value.tempEmailAccess) {
+      loadingText.value = '验证激活码状态...'
+
+      // 3. 使用专门的验证API进行深度检查
+      try {
+        const validateResponse = await tempEmailAuthApi.validateActivationCodes()
+        if (validateResponse.success) {
+          const validation = validateResponse.data
+
+          // 如果验证结果与当前状态不一致，更新状态
+          if (validation.hasAccess !== accessStatus.value.hasAccess) {
+            await checkAccessStatus()
+          }
+        }
+      } catch (error) {
+        if (error.response?.status === 403) {
+          await checkAccessStatus()
+        }
+      }
+    }
+
+    loadingText.value = '权限验证完成'
+
+  } catch (error) {
+    console.error('权限检查失败:', error)
+    loadingText.value = '权限检查失败'
+  }
+}
+
 // 组件挂载时初始化
-onMounted(() => {
-  checkServiceStatus()
-  loadAvailableDomains()
-  refreshAllMessages()
+onMounted(async () => {
+  // 进行全面的验证码状态检查
+  await performFullAccessCheck()
+
+  // 如果有权限，再加载其他数据
+  if (accessStatus.value.hasAccess) {
+    checkServiceStatus()
+    loadAvailableDomains()
+    refreshAllMessages()
+  }
+
+  // 设置定期权限检查（每10秒检查一次，更快发现权限变化）
+  accessCheckInterval = setInterval(async () => {
+    if (isLoggedIn.value) {
+      const oldHasAccess = accessStatus.value.hasAccess
+      await checkAccessStatus()
+
+      // 如果权限状态发生变化，给用户提示
+      if (oldHasAccess && !accessStatus.value.hasAccess) {
+        ElMessage.warning('您的临时邮箱权限已失效，请重新激活')
+      }
+    }
+  }, 10000)
+})
+
+// 组件卸载时清理
+onUnmounted(() => {
+  if (accessCheckInterval) {
+    clearInterval(accessCheckInterval)
+  }
 })
 </script>
 
@@ -623,7 +886,37 @@ onMounted(() => {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  min-height: calc(100vh - 120px); /* 确保页面有足够高度显示footer */
 }
+
+/* 权限控制相关样式 */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.login-required {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: 40px 20px;
+}
+
+.permission-required {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.temp-email-main {
+  width: 100%;
+}
+
+
 
 .main-card {
   margin-bottom: 20px;
@@ -747,5 +1040,73 @@ onMounted(() => {
 .no-emails {
   text-align: center;
   padding: 40px;
+}
+
+/* 激活弹窗样式 */
+:deep(.activation-dialog) {
+  .el-dialog {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .el-dialog__header {
+    padding: 0;
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+  }
+
+  .el-dialog__body {
+    padding: 0;
+  }
+
+  .el-dialog__close {
+    color: white;
+    font-size: 18px;
+    top: 20px;
+    right: 20px;
+  }
+
+  .el-dialog__close:hover {
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  padding: 24px 32px;
+  gap: 16px;
+}
+
+.header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.header-content h3 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+.header-content p {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 0.9;
+}
+
+.activation-content {
+  padding: 32px;
+  background: #fafafa;
+  min-height: 200px;
 }
 </style>

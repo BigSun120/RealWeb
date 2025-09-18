@@ -35,8 +35,11 @@ const adminCategoriesRoutes = require('./src/routes/admin/categories');
 const adminConfigsRoutes = require('./src/routes/admin/configs');
 const adminEmailDomainsRoutes = require('./src/routes/admin/emailDomains');
 const tempEmailRoutes = require('./src/routes/tempEmail');
+const tempEmailAuthRoutes = require('./src/routes/tempEmailAuth');
 const publicNoticesRoutes = require('./src/routes/publicNotices');
 const adminPublicNoticesRoutes = require('./src/routes/admin/publicNotices');
+const adminTempEmailActivationCodesRoutes = require('./src/routes/admin/tempEmailActivationCodes');
+const adminSessionsRoutes = require('./src/routes/admin/sessions');
 const bookmarkRoutes = require('./src/routes/bookmarks');
 const backgroundRoutes = require('./src/routes/backgrounds');
 
@@ -204,8 +207,11 @@ app.use('/api/admin/categories', adminCategoriesRoutes);
 app.use('/api/admin/configs', adminConfigsRoutes);
 app.use('/api/admin/email-domains', adminEmailDomainsRoutes);
 app.use('/api/temp-email', tempEmailRoutes);
+app.use('/api/temp-email-auth', tempEmailAuthRoutes);
 app.use('/api/public-notices', publicNoticesRoutes);
 app.use('/api/admin/public-notices', adminPublicNoticesRoutes);
+app.use('/api/admin/temp-email-activation-codes', adminTempEmailActivationCodesRoutes);
+app.use('/api/admin/sessions', adminSessionsRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/backgrounds', backgroundRoutes);
 

@@ -45,20 +45,20 @@ function checkInbucketRunning() {
 function startInbucket() {
   return new Promise((resolve, reject) => {
     log('🚀 启动Inbucket邮箱服务...', 'cyan');
-    
+
     const dockerCmd = [
       'run', '--rm', '--name', 'inbucket-dev',
       '-p', '9000:9000',
-      '-p', '2500:2500', 
+      '-p', '2500:2500',
       '-p', '1100:1100',
       '-e', 'INBUCKET_SMTP_DOMAIN=localhost,test.local,dev.local,example.com,tempmail.dev',
       '-e', 'INBUCKET_WEB_CORSORIGIN=http://localhost:3000,http://localhost:5173',
       '-d',
       'inbucket/inbucket:latest'
     ];
-    
+
     const docker = spawn('docker', dockerCmd);
-    
+
     docker.on('close', (code) => {
       if (code === 0) {
         log('✅ Inbucket邮箱服务启动成功', 'green');
@@ -76,7 +76,7 @@ function startInbucket() {
 async function main() {
   try {
     log('🔍 检查开发环境...', 'yellow');
-    
+
     // 检查Docker
     const dockerInstalled = await checkDocker();
     if (!dockerInstalled) {
@@ -85,7 +85,7 @@ async function main() {
       process.exit(1);
     }
     log('✅ Docker已安装', 'green');
-    
+
     // 检查Inbucket是否已运行
     const inbucketRunning = await checkInbucketRunning();
     if (inbucketRunning) {
@@ -93,19 +93,19 @@ async function main() {
     } else {
       await startInbucket();
     }
-    
+
     // 等待服务启动
     log('⏳ 等待服务启动...', 'yellow');
     await new Promise(resolve => setTimeout(resolve, 3000));
-    
+
     log('🎉 所有服务启动完成！', 'green');
     log('', 'reset');
     log('📱 前端: http://localhost:3000 (或 5173)', 'blue');
-    log('🔗 后端API: http://localhost:8000', 'blue');
+    log('🔗 后端API: http://localhost:8001', 'blue');
     log('📧 邮箱服务: http://localhost:9000', 'blue');
     log('', 'reset');
     log('💡 使用 Ctrl+C 停止所有服务', 'yellow');
-    
+
   } catch (error) {
     log(`❌ 启动失败: ${error.message}`, 'red');
     process.exit(1);

@@ -129,6 +129,32 @@ const userSchema = new mongoose.Schema(
     },
     lastPasswordResetAt: {
       type: Date
+    },
+
+    // 临时邮箱权限控制
+    tempEmailAccess: {
+      enabled: {
+        type: Boolean,
+        default: false,
+        index: true
+      },
+      activatedAt: {
+        type: Date,
+        default: null
+      },
+      activatedBy: {
+        type: String,
+        default: null // 使用的激活码
+      },
+      expiresAt: {
+        type: Date,
+        default: null,
+        index: true
+      },
+      lastUsedAt: {
+        type: Date,
+        default: null
+      }
     }
   },
   {
@@ -210,9 +236,31 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 // 实例方法：生成JWT token
-userSchema.methods.generateAuthToken = function () {
+userSchema.methods.generateAuthToken = function (options = {}) {
   const jwt = require('jsonwebtoken');
-  return jwt.sign({ userId: this._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+  // 默认配置
+  const defaultOptions = {
+    expiresIn: '7d', // 延长到7天，减少频繁过期
+    issuer: 'personal-website',
+    audience: 'web-client'
+  };
+
+  // 合并选项
+  const tokenOptions = { ...defaultOptions, ...options };
+
+  // Token payload
+  const payload = {
+    userId: this._id,
+    username: this.username,
+    email: this.email,
+    isAdmin: this.isAdmin,
+    iat: Math.floor(Date.now() / 1000), // 签发时间
+    // 添加一些额外信息用于调试
+    version: '1.0'
+  };
+
+  return jwt.sign(payload, process.env.JWT_SECRET, tokenOptions);
 };
 
 // 实例方法：更新登录信息
@@ -461,6 +509,154 @@ userSchema.methods.resetPassword = async function (newPassword) {
   this.passwordResetCount = (this.passwordResetCount || 0) + 1;
   this.lastPasswordResetAt = new Date();
 
+  return this;
+};
+
+// 实例方法：检查临时邮箱权限
+userSchema.methods.hasTempEmailAccess = async function () {
+  // 管理员拥有所有权限
+  if (this.isAdmin) {
+    return true;
+  }
+
+  // 检查激活码是否仍然有效（实时检查）
+  const TempEmailActivationCode = require('./TempEmailActivationCode');
+  let codesToCheck = [];
+
+  // 收集需要检查的激活码
+  if (this.tempEmailAccess) {
+    if (this.tempEmailAccess.activationCodes && this.tempEmailAccess.activationCodes.length > 0) {
+      codesToCheck = this.tempEmailAccess.activationCodes;
+    } else if (this.tempEmailAccess.activatedBy) {
+      // 兼容旧数据，只有activatedBy字段的情况
+      codesToCheck = [this.tempEmailAccess.activatedBy];
+    }
+
+    // 检查是否过期
+    if (this.tempEmailAccess.expiresAt && this.tempEmailAccess.expiresAt < new Date()) {
+      return false;
+    }
+  }
+
+  if (codesToCheck.length > 0) {
+    // 检查是否有任何一个激活码仍然有效
+    const validCodes = await TempEmailActivationCode.find({
+      code: { $in: codesToCheck },
+      isActive: true
+    });
+
+    const allCodes = await TempEmailActivationCode.find({
+      code: { $in: codesToCheck }
+    });
+
+
+
+    // 如果没有有效的激活码，撤销权限
+    if (validCodes.length === 0) {
+      if (this.tempEmailAccess) {
+        this.tempEmailAccess.enabled = false;
+        await this.save();
+      }
+      return false;
+    } else {
+      // 确保用户有tempEmailAccess对象
+      if (!this.tempEmailAccess) {
+        // 如果没有tempEmailAccess对象，创建一个
+        const firstValidCode = validCodes[0];
+        this.tempEmailAccess = {
+          enabled: true,
+          activatedAt: new Date(),
+          activatedBy: firstValidCode.code,
+          activationCodes: codesToCheck,
+          expiresAt: firstValidCode.expiresAt,
+          lastUsedAt: null
+        };
+        await this.save();
+      } else if (!this.tempEmailAccess.enabled) {
+        // 如果有有效激活码但权限被禁用，重新启用权限
+        this.tempEmailAccess.enabled = true;
+        await this.save();
+      }
+
+      return true;
+    }
+  } else {
+    // 没有激活码可检查，但检查是否有曾经使用过的有效激活码
+    const usedCodes = await TempEmailActivationCode.find({
+      lastUsedBy: this._id,
+      isActive: true
+    });
+
+    if (usedCodes.length > 0) {
+      // 恢复权限对象
+      const firstCode = usedCodes[0];
+      this.tempEmailAccess = {
+        enabled: true,
+        activatedAt: new Date(),
+        activatedBy: firstCode.code,
+        activationCodes: usedCodes.map(c => c.code),
+        expiresAt: firstCode.expiresAt,
+        lastUsedAt: null
+      };
+
+      await this.save();
+      return true;
+    }
+
+    return false;
+  }
+};
+
+// 实例方法：激活临时邮箱权限
+userSchema.methods.activateTempEmailAccess = function (activationCode, expiresAt = null) {
+  const now = new Date();
+
+  // 如果用户已经有权限，更新激活码列表和过期时间
+  if (this.tempEmailAccess && this.tempEmailAccess.enabled) {
+    // 添加新的激活码到列表中
+    if (!this.tempEmailAccess.activationCodes) {
+      this.tempEmailAccess.activationCodes = [this.tempEmailAccess.activatedBy];
+    }
+    this.tempEmailAccess.activationCodes.push(activationCode);
+
+    // 时间不叠加，取最长的过期时间
+    if (expiresAt) {
+      if (!this.tempEmailAccess.expiresAt || expiresAt > this.tempEmailAccess.expiresAt) {
+        this.tempEmailAccess.expiresAt = expiresAt;
+      }
+    }
+  } else {
+    // 首次激活
+    this.tempEmailAccess = {
+      enabled: true,
+      activatedAt: now,
+      activatedBy: activationCode,
+      activationCodes: [activationCode],
+      expiresAt: expiresAt,
+      lastUsedAt: null
+    };
+  }
+
+  return this;
+};
+
+// 实例方法：撤销临时邮箱权限
+userSchema.methods.revokeTempEmailAccess = function () {
+  this.tempEmailAccess = {
+    enabled: false,
+    activatedAt: null,
+    activatedBy: null,
+    expiresAt: null,
+    lastUsedAt: null
+  };
+  return this;
+};
+
+// 实例方法：更新临时邮箱使用时间
+userSchema.methods.updateTempEmailUsage = function () {
+  if (this.tempEmailAccess) {
+    this.tempEmailAccess.lastUsedAt = new Date();
+  }
   return this;
 };
 

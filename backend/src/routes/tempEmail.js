@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
-const { adminAuth } = require('../middleware/auth');
+const { auth, adminAuth, requireTempEmailAccess } = require('../middleware/auth');
+const TempEmailUsageLog = require('../models/TempEmailUsageLog');
 const router = express.Router();
 
 // Inbucket API配置
@@ -40,7 +41,7 @@ function generateRandomString(length = 8) {
  * 生成临时邮箱地址
  * POST /api/temp-email/generate
  */
-router.post('/generate', async (req, res) => {
+router.post('/generate', auth, requireTempEmailAccess, async (req, res) => {
   try {
     const { domain, customName } = req.body;
 
@@ -56,6 +57,25 @@ router.post('/generate', async (req, res) => {
 
     // 记录生成的邮箱
     generatedEmails.add(email);
+
+    // 记录使用日志
+    try {
+      await TempEmailUsageLog.logAction({
+        userId: req.user._id,
+        action: 'generate',
+        email,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        result: 'success',
+        details: {
+          domain: selectedDomain,
+          username,
+          customName: !!customName
+        }
+      });
+    } catch (logError) {
+      console.error('记录生成邮箱日志失败:', logError);
+    }
 
     res.json({
       success: true,
@@ -81,7 +101,7 @@ router.post('/generate', async (req, res) => {
  * 获取邮箱邮件列表
  * GET /api/temp-email/:email/messages
  */
-router.get('/:email/messages', async (req, res) => {
+router.get('/:email/messages', auth, requireTempEmailAccess, async (req, res) => {
   try {
     const { email } = req.params;
 
@@ -100,6 +120,23 @@ router.get('/:email/messages', async (req, res) => {
     });
 
     const messages = response.data || [];
+
+    // 记录查看邮件日志
+    try {
+      await TempEmailUsageLog.logAction({
+        userId: req.user._id,
+        action: 'view',
+        email,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        result: 'success',
+        details: {
+          messageCount: messages.length
+        }
+      });
+    } catch (logError) {
+      console.error('记录查看邮件日志失败:', logError);
+    }
 
     res.json({
       success: true,
@@ -147,7 +184,7 @@ router.get('/:email/messages', async (req, res) => {
  * 获取邮件详情
  * GET /api/temp-email/:email/messages/:messageId
  */
-router.get('/:email/messages/:messageId', async (req, res) => {
+router.get('/:email/messages/:messageId', auth, requireTempEmailAccess, async (req, res) => {
   try {
     const { email, messageId } = req.params;
 
@@ -237,7 +274,7 @@ router.get('/domains', (req, res) => {
  * 获取所有邮箱的邮件概览
  * GET /api/temp-email/all-emails
  */
-router.get('/all-emails', async (req, res) => {
+router.get('/all-emails', auth, requireTempEmailAccess, async (req, res) => {
   try {
     const allEmails = [];
 
@@ -308,6 +345,7 @@ router.get('/all-emails', async (req, res) => {
     }
 
     res.json({
+      code: 200,
       success: true,
       data: {
         emailBoxes: allEmails,
@@ -328,7 +366,7 @@ router.get('/all-emails', async (req, res) => {
  * 发送测试邮件
  * POST /api/temp-email/:email/send-test
  */
-router.post('/:email/send-test', async (req, res) => {
+router.post('/:email/send-test', auth, requireTempEmailAccess, async (req, res) => {
   try {
     const { email } = req.params;
     const nodemailer = require('nodemailer');
@@ -396,7 +434,7 @@ router.post('/:email/send-test', async (req, res) => {
  * 清空指定邮箱的所有邮件
  * DELETE /api/temp-email/:email/clear
  */
-router.delete('/:email/clear', async (req, res) => {
+router.delete('/:email/clear', auth, requireTempEmailAccess, async (req, res) => {
   try {
     const { email } = req.params;
 

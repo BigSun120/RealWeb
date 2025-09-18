@@ -26,7 +26,7 @@ else
 fi
 
 # 检查后端API
-if curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/temp-email/status | grep -q "200"; then
+if curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/api/temp-email/status | grep -q "200"; then
     echo "✅ 后端API正常"
 else
     echo "❌ 后端API异常"
@@ -49,7 +49,7 @@ fi
 echo ""
 echo "📧 邮件统计:"
 # 这里可以添加邮件数量统计
-TOTAL_EMAILS=$(curl -s http://localhost:5000/api/temp-email/all-emails | jq '.data.totalMessages' 2>/dev/null || echo "N/A")
+TOTAL_EMAILS=$(curl -s http://localhost:8001/api/temp-email/all-emails | jq '.data.totalMessages' 2>/dev/null || echo "N/A")
 echo "总邮件数: $TOTAL_EMAILS"
 
 echo ""

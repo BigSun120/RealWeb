@@ -54,7 +54,7 @@ export const useUserStore = defineStore('user', () => {
   };
 
   const fetchUserInfo = async () => {
-    if (!token.value) return;
+    if (!token.value) return false;
 
     try {
       const response = await api.get('/users/profile');
@@ -66,6 +66,38 @@ export const useUserStore = defineStore('user', () => {
       if (error.response?.status === 401) {
         logout();
       }
+      return false;
+    }
+  };
+
+  // 检查token有效性
+  const checkTokenValidity = () => {
+    if (!token.value) return false;
+
+    try {
+      // 解析JWT token获取过期时间
+      const payload = JSON.parse(atob(token.value.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+
+      // 如果token在5分钟内过期，返回false以便刷新
+      return payload.exp > currentTime + 300;
+    } catch (error) {
+      console.error('解析token失败:', error);
+      return false;
+    }
+  };
+
+  // 静默刷新用户信息
+  const silentRefresh = async () => {
+    if (!token.value || !checkTokenValidity()) {
+      return false;
+    }
+
+    try {
+      await fetchUserInfo();
+      return true;
+    } catch (error) {
+      console.error('静默刷新失败:', error);
       return false;
     }
   };
@@ -94,6 +126,16 @@ export const useUserStore = defineStore('user', () => {
     fetchUserInfo();
   }
 
+  // 定期检查token有效性（每5分钟）
+  if (typeof window !== 'undefined') {
+    setInterval(() => {
+      if (token.value && !checkTokenValidity()) {
+        console.warn('Token即将过期，建议重新登录');
+        // 可以在这里实现自动刷新token的逻辑
+      }
+    }, 5 * 60 * 1000);
+  }
+
   return {
     user,
     token,
@@ -104,6 +146,8 @@ export const useUserStore = defineStore('user', () => {
     logout,
     fetchUserInfo,
     updateProfile,
-    updateUser
+    updateUser,
+    checkTokenValidity,
+    silentRefresh
   };
 });
