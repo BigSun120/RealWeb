@@ -107,10 +107,29 @@ const uploadAvatar = upload.single('avatar');
 const handleUploadError = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({
-        code: 400,
-        message: '文件大小不能超过5MB'
+      // 动态获取文件大小限制用于错误信息
+      const getErrorMessage = async () => {
+        try {
+          const config = await ToolConfig.findOne({ key: 'upload.maxFileSize' });
+          const sizeMB = config ? Math.round(config.value / (1024 * 1024)) : 10;
+          return `文件大小不能超过${sizeMB}MB`;
+        } catch (err) {
+          return '文件大小超过限制';
+        }
+      };
+
+      getErrorMessage().then(message => {
+        return res.status(400).json({
+          code: 400,
+          message
+        });
+      }).catch(() => {
+        return res.status(400).json({
+          code: 400,
+          message: '文件大小超过限制'
+        });
       });
+      return;
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
       return res.status(400).json({

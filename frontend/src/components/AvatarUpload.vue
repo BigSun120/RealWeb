@@ -118,11 +118,15 @@ export default {
       return getFullAvatarUrl(props.avatar);
     });
 
-    // 获取最大文件大小配置
+    // 获取最大文件大小配置（返回MB）
     const getMaxFileSize = async () => {
       try {
         const config = await configsApi.getConfig('upload.maxFileSize');
-        return config.data?.data?.value || 10; // 默认10MB
+        if (config.data?.data?.value) {
+          // 配置值是字节数，转换为MB
+          return Math.round(config.data.data.value / (1024 * 1024));
+        }
+        return 10; // 默认10MB
       } catch (error) {
         console.error('获取文件大小限制失败:', error);
         return 10; // 默认10MB
@@ -133,7 +137,7 @@ export default {
       fileInput.value?.click();
     };
 
-    const handleFileSelect = event => {
+    const handleFileSelect = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
 
@@ -144,10 +148,19 @@ export default {
       }
 
       // 验证文件大小（从配置获取）
-      const maxSizeMB = await getMaxFileSize();
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        ElMessage.error(`图片大小不能超过${maxSizeMB}MB`);
-        return;
+      try {
+        const maxSizeMB = await getMaxFileSize();
+        if (file.size > maxSizeMB * 1024 * 1024) {
+          ElMessage.error(`图片大小不能超过${maxSizeMB}MB`);
+          return;
+        }
+      } catch (error) {
+        console.error('获取文件大小限制失败:', error);
+        // 使用默认值10MB
+        if (file.size > 10 * 1024 * 1024) {
+          ElMessage.error('图片大小不能超过10MB');
+          return;
+        }
       }
 
       selectedFile.value = file;

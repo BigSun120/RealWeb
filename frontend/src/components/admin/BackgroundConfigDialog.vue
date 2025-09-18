@@ -607,10 +607,15 @@ watch(dialogVisible, async (visible) => {
     // 对话框打开时获取最大文件大小配置
     try {
       const config = await configsApi.getConfig('upload.maxFileSize');
-      maxFileSize.value = config.data?.data?.value || 10;
+      if (config.data?.data?.value) {
+        // 配置值是字节数，转换为MB
+        maxFileSize.value = Math.round(config.data.data.value / (1024 * 1024));
+      } else {
+        maxFileSize.value = 10; // 默认10MB
+      }
     } catch (error) {
       console.error('获取文件大小限制失败:', error);
-      maxFileSize.value = 10;
+      maxFileSize.value = 10; // 默认10MB
     }
   }
 });
