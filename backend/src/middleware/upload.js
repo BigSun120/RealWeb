@@ -69,11 +69,15 @@ const fileFilter = (req, file, cb) => {
 const getFileSizeLimit = async () => {
   try {
     const config = await ToolConfig.findOne({ key: 'upload.maxFileSize' });
-    const sizeMB = config ? config.value : 10; // 默认10MB
-    return sizeMB * 1024 * 1024; // 转换为字节
+    if (config && config.value) {
+      // 配置值已经是字节数，直接返回
+      return config.value;
+    }
+    // 默认20MB
+    return 20 * 1024 * 1024;
   } catch (error) {
     logger.error('获取文件大小限制失败:', error);
-    return 10 * 1024 * 1024; // 默认10MB
+    return 20 * 1024 * 1024; // 默认20MB
   }
 };
 

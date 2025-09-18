@@ -107,7 +107,7 @@
                 :on-error="handleUploadError"
                 :on-progress="handleUploadProgress"
                 :show-file-list="false"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
+                accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/ogg"
                 drag
               >
                 <div class="upload-content">
@@ -607,9 +607,9 @@ watch(dialogVisible, async (visible) => {
     // 对话框打开时获取最大文件大小配置
     try {
       const config = await configsApi.getConfig('upload.maxFileSize');
-      if (config.data?.data?.value) {
+      if (config.data?.value !== undefined) {
         // 配置值是字节数，转换为MB
-        maxFileSize.value = Math.round(config.data.data.value / (1024 * 1024));
+        maxFileSize.value = Math.round(config.data.value / (1024 * 1024));
       } else {
         maxFileSize.value = 10; // 默认10MB
       }
