@@ -8,19 +8,50 @@
     </div>
 
     <!-- 未登录状态 -->
-    <div v-else-if="!isLoggedIn" class="login-required">
-      <el-result
-        icon="warning"
-        title="需要登录"
-        sub-title="使用临时邮箱功能需要先登录账户"
-      >
-        <template #extra>
-          <el-button type="primary" @click="goToLogin">
-            <el-icon><User /></el-icon>
-            立即登录
-          </el-button>
-        </template>
-      </el-result>
+    <div v-else-if="!isLoggedIn" class="intro-layout">
+      <div class="intro-container">
+        <!-- 左侧：服务介绍 -->
+        <div class="intro-left">
+          <div class="service-intro">
+            <h2>临时邮箱 - 纯净体验，安心使用</h2>
+            <p class="subtitle">为您提供最可靠的临时邮箱服务</p>
+
+            <div class="why-choose">
+              <h3>为什么选择我们？</h3>
+              <ul class="feature-list">
+                <li>持续优化 - 不定期更新纯净邮箱域名，保证最佳使用体验</li>
+                <li>极速响应 - 邮件实时到达，验证码接收无延迟</li>
+                <li>长期有效 - 邮箱地址长期保持有效，可作为专用邮箱使用</li>
+                <li>隐私至上 - 无需个人信息，完美保护您的真实身份</li>
+                <li>专业可靠 - 精选高质量域名，确保邮件正常收发</li>
+                <li>简单易用 - 一键生成，即刻使用，操作零门槛</li>
+              </ul>
+            </div>
+
+            <div class="usage-tip">
+              <strong>使用建议：</strong> 可作为专用邮箱长期使用，特别适合注册验证和隐私保护场景
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧：登录功能 -->
+        <div class="intro-right">
+          <div class="action-panel">
+            <el-result
+              icon="warning"
+              title="需要登录"
+              sub-title="使用临时邮箱功能需要先登录账户"
+            >
+              <template #extra>
+                <el-button type="primary" size="large" @click="goToLogin">
+                  <el-icon><User /></el-icon>
+                  立即登录
+                </el-button>
+              </template>
+            </el-result>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 权限检查和激活流程 -->
@@ -32,12 +63,44 @@
         @cancel="showActivation = false"
       />
 
-      <!-- 显示权限状态 -->
-      <TempEmailStatusBar
-        v-else
-        :access-status="accessStatus"
-        @show-activation="showActivation = true"
-      />
+      <!-- 未激活状态显示介绍 -->
+      <div v-else class="intro-layout">
+        <div class="intro-container">
+          <!-- 左侧：服务介绍 -->
+          <div class="intro-left">
+            <div class="service-intro">
+              <h2>临时邮箱 - 纯净体验，安心使用</h2>
+              <p class="subtitle">为您提供最可靠的临时邮箱服务</p>
+
+              <div class="why-choose">
+                <h3>为什么选择我们？</h3>
+                <ul class="feature-list">
+                  <li>持续优化 - 不定期更新纯净邮箱域名，保证最佳使用体验</li>
+                  <li>极速响应 - 邮件实时到达，验证码接收无延迟</li>
+                  <li>长期有效 - 邮箱地址长期保持有效，可作为专用邮箱使用</li>
+                  <li>隐私至上 - 无需个人信息，完美保护您的真实身份</li>
+                  <li>专业可靠 - 精选高质量域名，确保邮件正常收发</li>
+                  <li>简单易用 - 一键生成，即刻使用，操作零门槛</li>
+                </ul>
+              </div>
+
+              <div class="usage-tip">
+                <strong>使用建议：</strong> 可作为专用邮箱长期使用，特别适合注册验证和隐私保护场景
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧：激活功能 -->
+          <div class="intro-right">
+            <div class="action-panel">
+              <TempEmailStatusBar
+                :access-status="accessStatus"
+                @show-activation="showActivation = true"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 主功能界面 -->
@@ -1108,5 +1171,271 @@ onUnmounted(() => {
   padding: 32px;
   background: #fafafa;
   min-height: 200px;
+}
+
+/* 左右分栏布局 */
+.intro-layout {
+  min-height: calc(100vh - 140px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.intro-container {
+  display: flex;
+  width: 100%;
+  max-width: 1400px;
+  min-height: 600px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* 左侧介绍区域 */
+.intro-left {
+  flex: 1;
+  padding: 48px 40px;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+}
+
+.service-intro {
+  width: 100%;
+}
+
+.service-intro h2 {
+  margin: 0 0 16px 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2d3748;
+  text-align: center;
+}
+
+.service-intro .subtitle {
+  margin: 0 0 36px 0;
+  font-size: 18px;
+  color: #4a5568;
+  text-align: center;
+  font-weight: 500;
+}
+
+.why-choose h3 {
+  margin: 0 0 24px 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #2d3748;
+  text-align: center;
+}
+
+.feature-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.feature-list li {
+  margin: 0;
+  padding: 16px 20px;
+  color: #2d3748;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  border-left: 4px solid #48bb78;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+.feature-list li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.usage-tip {
+  margin-top: 28px;
+  padding: 18px 24px;
+  background: rgba(72, 187, 120, 0.15);
+  border-radius: 12px;
+  border: 1px solid rgba(72, 187, 120, 0.3);
+  text-align: center;
+  font-size: 14px;
+  color: #2d3748;
+  backdrop-filter: blur(5px);
+}
+
+.usage-tip strong {
+  color: #48bb78;
+  font-weight: 600;
+}
+
+/* 右侧操作区域 */
+.intro-right {
+  flex: 0 0 400px;
+  padding: 48px 40px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
+  backdrop-filter: blur(15px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.action-panel {
+  width: 100%;
+  text-align: center;
+}
+
+/* 右侧面板中的状态栏样式优化 */
+.intro-right .temp-email-status-bar {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.intro-right .temp-email-status-bar .status-info {
+  margin-bottom: 24px;
+}
+
+.intro-right .temp-email-status-bar .activation-action {
+  text-align: center;
+}
+
+.intro-right .temp-email-status-bar .activation-action .el-button {
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+  transition: all 0.3s ease;
+}
+
+.intro-right .temp-email-status-bar .activation-action .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+}
+
+/* 登录按钮样式优化 */
+.intro-right .el-result .el-button {
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+  transition: all 0.3s ease;
+}
+
+.intro-right .el-result .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .intro-container {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .intro-left {
+    flex: none;
+    padding: 32px 24px;
+  }
+
+  .intro-right {
+    flex: none;
+    padding: 32px 24px;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .service-intro h2 {
+    font-size: 28px;
+  }
+
+  .why-choose h3 {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .intro-layout {
+    padding: 16px;
+    min-height: calc(100vh - 120px);
+  }
+
+  .intro-container {
+    border-radius: 16px;
+  }
+
+  .intro-left,
+  .intro-right {
+    padding: 24px 20px;
+  }
+
+  .service-intro h2 {
+    font-size: 24px;
+  }
+
+  .service-intro .subtitle {
+    font-size: 16px;
+    margin-bottom: 28px;
+  }
+
+  .why-choose h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  .feature-list li {
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+
+  .usage-tip {
+    padding: 16px 20px;
+    font-size: 13px;
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .intro-layout {
+    padding: 12px;
+  }
+
+  .intro-left,
+  .intro-right {
+    padding: 20px 16px;
+  }
+
+  .service-intro h2 {
+    font-size: 22px;
+  }
+
+  .service-intro .subtitle {
+    font-size: 15px;
+  }
+
+  .why-choose h3 {
+    font-size: 17px;
+  }
 }
 </style>

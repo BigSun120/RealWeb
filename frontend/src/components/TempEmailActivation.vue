@@ -3,22 +3,26 @@
     <div class="activation-content">
         <!-- 说明信息 -->
         <div class="info-section">
-          <el-alert
-            title="权限说明"
-            type="info"
-            :closable="false"
-            show-icon
-          >
-            <template #default>
-              <p>临时邮箱功能需要激活后才能使用。请输入管理员提供的激活验证码。</p>
+          <div class="service-intro">
+            <h3>临时邮箱 - 纯净体验，安心使用</h3>
+            <p class="subtitle">为您提供最可靠的临时邮箱服务</p>
+
+            <div class="why-choose">
+              <h4>为什么选择我们？</h4>
               <ul class="feature-list">
-                <li>✅ 生成临时邮箱地址</li>
-                <li>✅ 接收和查看邮件</li>
-                <li>✅ 管理邮箱和邮件</li>
-                <li>✅ 发送测试邮件</li>
+                <li>持续优化 - 不定期更新纯净邮箱域名，保证最佳使用体验</li>
+                <li>极速响应 - 邮件实时到达，验证码接收无延迟</li>
+                <li>长期有效 - 邮箱地址长期保持有效，可作为专用邮箱使用</li>
+                <li>隐私至上 - 无需个人信息，完美保护您的真实身份</li>
+                <li>专业可靠 - 精选高质量域名，确保邮件正常收发</li>
+                <li>简单易用 - 一键生成，即刻使用，操作零门槛</li>
               </ul>
-            </template>
-          </el-alert>
+            </div>
+
+            <div class="usage-tip">
+              <strong>使用建议：</strong> 可作为专用邮箱长期使用，特别适合注册验证和隐私保护场景
+            </div>
+          </div>
         </div>
 
         <!-- 激活码输入 -->
@@ -194,24 +198,78 @@ const handleActivate = async () => {
   margin-bottom: 32px;
 }
 
+.service-intro {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 32px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.service-intro h3 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #2d3748;
+  text-align: center;
+}
+
+.subtitle {
+  margin: 0 0 24px 0;
+  font-size: 16px;
+  color: #4a5568;
+  text-align: center;
+  font-weight: 500;
+}
+
+.why-choose h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d3748;
+  text-align: center;
+}
+
 .feature-list {
-  margin: 16px 0 0 0;
+  margin: 0;
   padding-left: 0;
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
 }
 
 .feature-list li {
   margin: 0;
-  padding: 12px 16px;
-  color: #48bb78;
+  padding: 16px 20px;
+  color: #2d3748;
   font-size: 14px;
-  background: rgba(72, 187, 120, 0.1);
-  border-radius: 8px;
-  border-left: 3px solid #48bb78;
+  background: white;
+  border-radius: 12px;
+  border-left: 4px solid #48bb78;
   font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.feature-list li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.usage-tip {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: rgba(72, 187, 120, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(72, 187, 120, 0.2);
+  text-align: center;
+  font-size: 14px;
+  color: #2d3748;
+}
+
+.usage-tip strong {
+  color: #48bb78;
+  font-weight: 600;
 }
 
 .activation-form {
