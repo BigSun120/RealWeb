@@ -10,10 +10,15 @@ const { body, param, query } = require('express-validator');
 
 const router = express.Router();
 
+
+// 统一上传根目录（优先使用 UPLOAD_PATH）
+const baseUploadDir = path.resolve(process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads'));
+const backgroundsDir = path.join(baseUploadDir, 'backgrounds');
+
 // 配置文件上传
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads/backgrounds');
+    const uploadDir = backgroundsDir;
     try {
       await fs.mkdir(uploadDir, { recursive: true });
       cb(null, uploadDir);
@@ -275,7 +280,7 @@ router.delete('/admin/configs/:id', requireAuth, requireAdmin, [
     // 删除关联的图片文件
     if (config.backgroundImage?.url) {
       try {
-        const imagePath = path.join(__dirname, '../../uploads/backgrounds', path.basename(config.backgroundImage.url));
+        const imagePath = path.join(backgroundsDir, path.basename(config.backgroundImage.url));
         await fs.unlink(imagePath);
       } catch (error) {
         console.warn('删除图片文件失败:', error.message);
@@ -398,7 +403,7 @@ router.post('/admin/upload', requireAuth, requireAdmin, (req, res, next) => {
 router.delete('/admin/image/:filename', requireAuth, requireAdmin, async (req, res) => {
   try {
     const filename = req.params.filename;
-    const imagePath = path.join(__dirname, '../../uploads/backgrounds', filename);
+    const imagePath = path.join(backgroundsDir, filename);
 
     // 检查文件是否存在
     try {
@@ -431,7 +436,7 @@ router.delete('/admin/image/:filename', requireAuth, requireAdmin, async (req, r
 
     // 同时删除可能的移动端版本
     const mobileFilename = `mobile-${filename}`;
-    const mobilePath = path.join(__dirname, '../../uploads/backgrounds', mobileFilename);
+    const mobilePath = path.join(backgroundsDir, mobileFilename);
     try {
       await fs.unlink(mobilePath);
     } catch (error) {
