@@ -242,16 +242,6 @@
           <h3>📬 所有邮件</h3>
           <div class="list-actions">
             <el-button
-              v-if="currentEmail"
-              @click="sendTestEmail"
-              :loading="sendingTest"
-              type="success"
-              size="small"
-              icon="Promotion"
-            >
-              发送测试邮件
-            </el-button>
-            <el-button
               @click="refreshAllMessages"
               :loading="loading"
               icon="Refresh"
@@ -260,7 +250,6 @@
             >
               刷新全部
             </el-button>
-
           </div>
         </div>
 
@@ -453,7 +442,6 @@ const currentEmail = ref('')
 const messages = ref([])
 const functionalLoading = ref(false) // 重命名避免冲突
 const generating = ref(false)
-const sendingTest = ref(false)
 const messageDialogVisible = ref(false)
 const currentMessage = ref(null)
 const isFullscreen = ref(false)
@@ -591,27 +579,7 @@ const generateEmail = async () => {
   }
 }
 
-// 发送测试邮件
-const sendTestEmail = async () => {
-  if (!currentEmail.value) return
 
-  try {
-    sendingTest.value = true
-    const response = await tempEmailApi.sendTestEmail(currentEmail.value)
-
-    if (response.data.success) {
-      ElMessage.success('测试邮件发送成功，请稍等片刻后刷新')
-      // 3秒后自动刷新
-      setTimeout(() => {
-        refreshMessages()
-      }, 3000)
-    }
-  } catch (error) {
-    ElMessage.error('发送测试邮件失败')
-  } finally {
-    sendingTest.value = false
-  }
-}
 
 // 刷新邮件列表
 const refreshMessages = async () => {
@@ -644,11 +612,11 @@ const refreshAllMessages = async () => {
     }
 
     const response = await tempEmailApi.getAllEmails()
-    if (response.success) {
+    if (response.data.success) {
       allMessages.value = []
 
       // 将所有邮箱的邮件合并到一个列表中
-      response.data.emailBoxes.forEach(emailBox => {
+      response.data.data.emailBoxes.forEach(emailBox => {
         emailBox.messages.forEach(message => {
           allMessages.value.push({
             ...message,

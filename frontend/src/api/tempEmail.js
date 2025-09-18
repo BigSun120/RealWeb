@@ -54,13 +54,7 @@ export const tempEmailApi = {
     return request.get('/temp-email/status')
   },
 
-  /**
-   * 发送测试邮件
-   * @param {string} email - 邮箱地址
-   */
-  sendTestEmail(email) {
-    return request.post(`/temp-email/${email}/send-test`)
-  },
+
 
   /**
    * 获取所有邮箱的邮件概览

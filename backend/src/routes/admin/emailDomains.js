@@ -1,16 +1,54 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const { adminAuth } = require('../../middleware/auth');
 const router = express.Router();
 
-// 内存存储域名配置（生产环境建议使用数据库）
-let domainConfig = {
+// 域名配置文件路径
+const CONFIG_FILE = path.join(__dirname, '../../config/email-domains.json');
+
+// 默认域名配置
+const DEFAULT_CONFIG = {
   domains: [
     'godaug.fun',
-    'localhost',
-    'test.local'
+    // 'localhost',
+    // 'test.local'
   ],
   lastUpdated: new Date()
 };
+
+// 确保配置目录存在
+const configDir = path.dirname(CONFIG_FILE);
+if (!fs.existsSync(configDir)) {
+  fs.mkdirSync(configDir, { recursive: true });
+}
+
+// 加载域名配置
+function loadDomainConfig() {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      const data = fs.readFileSync(CONFIG_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('加载域名配置失败:', error);
+  }
+  return DEFAULT_CONFIG;
+}
+
+// 保存域名配置
+function saveDomainConfig(config) {
+  try {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+    return true;
+  } catch (error) {
+    console.error('保存域名配置失败:', error);
+    return false;
+  }
+}
+
+// 初始化域名配置
+let domainConfig = loadDomainConfig();
 
 /**
  * 获取域名配置
@@ -30,7 +68,7 @@ router.get('/', adminAuth, (req, res) => {
 router.post('/', adminAuth, async (req, res) => {
   try {
     const { domains } = req.body;
-    
+
     // 验证输入
     if (!Array.isArray(domains)) {
       return res.status(400).json({
@@ -38,27 +76,35 @@ router.post('/', adminAuth, async (req, res) => {
         message: '域名列表必须是数组格式'
       });
     }
-    
+
     // 验证域名格式
     const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     const invalidDomains = domains.filter(domain => !domainRegex.test(domain));
-    
+
     if (invalidDomains.length > 0) {
       return res.status(400).json({
         success: false,
         message: `无效的域名格式: ${invalidDomains.join(', ')}`
       });
     }
-    
+
     // 更新配置
     domainConfig = {
       domains: [...new Set(domains)], // 去重
       lastUpdated: new Date()
     };
-    
+
+    // 保存到文件
+    if (!saveDomainConfig(domainConfig)) {
+      return res.status(500).json({
+        success: false,
+        message: '保存域名配置失败'
+      });
+    }
+
     // 更新tempEmail路由中的域名列表
     updateTempEmailDomains(domainConfig.domains);
-    
+
     res.json({
       success: true,
       data: domainConfig,
@@ -80,14 +126,14 @@ router.post('/', adminAuth, async (req, res) => {
 router.post('/add', adminAuth, (req, res) => {
   try {
     const { domain } = req.body;
-    
+
     if (!domain) {
       return res.status(400).json({
         success: false,
         message: '域名不能为空'
       });
     }
-    
+
     // 验证域名格式
     const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!domainRegex.test(domain)) {
@@ -96,7 +142,7 @@ router.post('/add', adminAuth, (req, res) => {
         message: '无效的域名格式'
       });
     }
-    
+
     // 检查是否已存在
     if (domainConfig.domains.includes(domain)) {
       return res.status(400).json({
@@ -104,14 +150,22 @@ router.post('/add', adminAuth, (req, res) => {
         message: '域名已存在'
       });
     }
-    
+
     // 添加域名
     domainConfig.domains.push(domain);
     domainConfig.lastUpdated = new Date();
-    
+
+    // 保存到文件
+    if (!saveDomainConfig(domainConfig)) {
+      return res.status(500).json({
+        success: false,
+        message: '保存域名配置失败'
+      });
+    }
+
     // 更新tempEmail路由中的域名列表
     updateTempEmailDomains(domainConfig.domains);
-    
+
     res.json({
       success: true,
       data: domainConfig,
@@ -133,7 +187,7 @@ router.post('/add', adminAuth, (req, res) => {
 router.delete('/:domain', adminAuth, (req, res) => {
   try {
     const { domain } = req.params;
-    
+
     const index = domainConfig.domains.indexOf(domain);
     if (index === -1) {
       return res.status(404).json({
@@ -141,14 +195,22 @@ router.delete('/:domain', adminAuth, (req, res) => {
         message: '域名不存在'
       });
     }
-    
+
     // 删除域名
     domainConfig.domains.splice(index, 1);
     domainConfig.lastUpdated = new Date();
-    
+
+    // 保存到文件
+    if (!saveDomainConfig(domainConfig)) {
+      return res.status(500).json({
+        success: false,
+        message: '保存域名配置失败'
+      });
+    }
+
     // 更新tempEmail路由中的域名列表
     updateTempEmailDomains(domainConfig.domains);
-    
+
     res.json({
       success: true,
       data: domainConfig,
@@ -170,14 +232,14 @@ router.delete('/:domain', adminAuth, (req, res) => {
 router.post('/reorder', adminAuth, (req, res) => {
   try {
     const { domains } = req.body;
-    
+
     if (!Array.isArray(domains)) {
       return res.status(400).json({
         success: false,
         message: '域名列表必须是数组格式'
       });
     }
-    
+
     // 验证所有域名都存在
     const missingDomains = domains.filter(domain => !domainConfig.domains.includes(domain));
     if (missingDomains.length > 0) {
@@ -186,14 +248,22 @@ router.post('/reorder', adminAuth, (req, res) => {
         message: `域名不存在: ${missingDomains.join(', ')}`
       });
     }
-    
+
     // 更新排序
     domainConfig.domains = domains;
     domainConfig.lastUpdated = new Date();
-    
+
+    // 保存到文件
+    if (!saveDomainConfig(domainConfig)) {
+      return res.status(500).json({
+        success: false,
+        message: '保存域名配置失败'
+      });
+    }
+
     // 更新tempEmail路由中的域名列表
     updateTempEmailDomains(domainConfig.domains);
-    
+
     res.json({
       success: true,
       data: domainConfig,

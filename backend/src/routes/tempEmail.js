@@ -362,73 +362,7 @@ router.get('/all-emails', auth, requireTempEmailAccess, async (req, res) => {
   }
 });
 
-/**
- * 发送测试邮件
- * POST /api/temp-email/:email/send-test
- */
-router.post('/:email/send-test', auth, requireTempEmailAccess, async (req, res) => {
-  try {
-    const { email } = req.params;
-    const nodemailer = require('nodemailer');
 
-    console.log('尝试发送测试邮件到:', email);
-
-    // 创建SMTP传输器（连接到Inbucket）
-    const transporter = nodemailer.createTransport({
-      host: 'localhost',
-      port: 2500,
-      secure: false,
-      ignoreTLS: true,
-      requireTLS: false,
-      auth: false,
-      connectionTimeout: 10000,
-      greetingTimeout: 5000,
-      socketTimeout: 10000
-    });
-
-    // 验证SMTP连接
-    console.log('验证SMTP连接...');
-    await transporter.verify();
-    console.log('SMTP连接验证成功');
-
-    const mailOptions = {
-      from: 'test@system.local',
-      to: email,
-      subject: '🎉 测试邮件 - 临时邮箱功能验证',
-      text: `这是一封测试邮件，用于验证临时邮箱功能是否正常工作。\n\n收件人: ${email}\n发送时间: ${new Date().toLocaleString()}\n\n如果您能看到这封邮件，说明临时邮箱功能工作正常！`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #409eff;">🎉 测试邮件成功！</h2>
-          <p>这是一封测试邮件，用于验证临时邮箱功能。</p>
-          <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p><strong>收件人:</strong> ${email}</p>
-            <p><strong>发送时间:</strong> ${new Date().toLocaleString()}</p>
-          </div>
-          <p style="color: #67c23a;">✅ 如果您能看到这封邮件，说明临时邮箱功能工作正常！</p>
-          <hr style="margin: 20px 0;">
-          <p style="color: #666; font-size: 12px;">此邮件由临时邮箱系统自动发送</p>
-        </div>
-      `
-    };
-
-    console.log('发送邮件...');
-    const info = await transporter.sendMail(mailOptions);
-    console.log('邮件发送成功:', info.messageId);
-
-    res.json({
-      success: true,
-      message: '测试邮件发送成功',
-      messageId: info.messageId
-    });
-  } catch (error) {
-    console.error('发送测试邮件失败:', error.message);
-    console.error('错误详情:', error);
-    res.status(500).json({
-      success: false,
-      message: '发送测试邮件失败: ' + error.message
-    });
-  }
-});
 
 /**
  * 清空指定邮箱的所有邮件
