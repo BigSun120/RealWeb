@@ -4,6 +4,9 @@ const path = require('path');
 const { adminAuth } = require('../../middleware/auth');
 const router = express.Router();
 
+// 导入Postfix同步脚本
+const { syncPostfixDomains } = require('../../scripts/sync-postfix-domains');
+
 // 域名配置文件路径
 const CONFIG_FILE = path.join(__dirname, '../../config/email-domains.json');
 
@@ -279,17 +282,73 @@ router.post('/reorder', adminAuth, (req, res) => {
 });
 
 /**
- * 更新tempEmail路由中的域名列表
+ * 更新tempEmail路由中的域名列表并同步Postfix配置
  */
 function updateTempEmailDomains(domains) {
   try {
-    // 这里可以通过事件或直接修改来更新tempEmail路由的域名列表
-    // 为了简单起见，我们将在tempEmail路由中添加一个获取动态域名的方法
+    // 更新全局域名列表
     global.emailDomains = domains;
+    console.log('✅ 全局域名列表已更新:', domains);
+
+    // 异步同步Postfix配置（不阻塞主流程）
+    setImmediate(() => {
+      try {
+        // 只在Linux环境中执行同步
+        if (process.platform === 'linux') {
+          syncPostfixDomains();
+          console.log('✅ Postfix域名配置同步成功');
+        } else {
+          console.log('ℹ️  非Linux环境，跳过Postfix配置同步');
+        }
+      } catch (syncError) {
+        console.error('❌ Postfix域名配置同步失败:', syncError.message);
+      }
+    });
   } catch (error) {
     console.error('更新tempEmail域名列表失败:', error);
   }
 }
+
+/**
+ * 手动同步Postfix配置
+ * POST /api/admin/email-domains/sync-postfix
+ */
+router.post('/sync-postfix', adminAuth, (req, res) => {
+  try {
+    console.log('🔄 手动触发Postfix配置同步...');
+
+    // 检查环境
+    if (process.platform !== 'linux') {
+      return res.json({
+        success: true,
+        message: '非Linux环境，无需同步Postfix配置',
+        data: {
+          domains: domainConfig.domains,
+          syncTime: new Date(),
+          platform: process.platform
+        }
+      });
+    }
+
+    // 执行同步
+    syncPostfixDomains();
+
+    res.json({
+      success: true,
+      message: 'Postfix配置同步成功',
+      data: {
+        domains: domainConfig.domains,
+        syncTime: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('手动同步Postfix配置失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '同步Postfix配置失败: ' + error.message
+    });
+  }
+});
 
 // 导出域名配置获取函数
 function getDomains() {

@@ -4,9 +4,20 @@
       <template #header>
         <div class="card-header">
           <h2>📧 邮箱域名管理</h2>
-          <el-button type="primary" @click="showAddDialog">
-            添加域名
-          </el-button>
+          <div class="header-actions">
+            <el-button type="primary" @click="showAddDialog">
+              添加域名
+            </el-button>
+            <el-button
+              type="success"
+              @click="syncPostfixConfig"
+              :loading="syncing"
+              plain
+            >
+              <el-icon><Refresh /></el-icon>
+              同步Postfix配置
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -190,6 +201,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Refresh } from '@element-plus/icons-vue'
 import request from '@/api/index'
 
 // 响应式数据
@@ -198,6 +210,7 @@ const domains = ref([])
 const lastUpdated = ref('')
 const addDialogVisible = ref(false)
 const adding = ref(false)
+const syncing = ref(false)
 
 const newDomain = ref({
   domain: ''
@@ -400,6 +413,27 @@ const formatDate = (dateString) => {
   return date.toLocaleString('zh-CN')
 }
 
+// 同步Postfix配置
+const syncPostfixConfig = async () => {
+  try {
+    syncing.value = true
+    const response = await request.post('/admin/email-domains/sync-postfix')
+
+    if (response.data.success) {
+      if (response.data.data.platform && response.data.data.platform !== 'linux') {
+        ElMessage.info('当前为开发环境，无需同步Postfix配置')
+      } else {
+        ElMessage.success('Postfix配置同步成功')
+      }
+    }
+  } catch (error) {
+    console.error('同步Postfix配置失败:', error)
+    ElMessage.error('同步Postfix配置失败')
+  } finally {
+    syncing.value = false
+  }
+}
+
 // 组件挂载时加载数据
 onMounted(() => {
   loadDomains()
@@ -415,6 +449,11 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
 }
 
 .card-header h2 {

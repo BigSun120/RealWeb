@@ -256,6 +256,14 @@ app.listen(PORT, () => {
     tokenCleanup.start();
     logger.info('Token cleanup scheduler started');
   }
+
+  // 初始化Postfix域名配置同步
+  try {
+    const { initPostfixSync } = require('./src/scripts/init-postfix-sync');
+    initPostfixSync();
+  } catch (error) {
+    logger.error('初始化Postfix同步失败:', error.message);
+  }
 });
 
 // 优雅关闭
