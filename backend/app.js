@@ -257,6 +257,18 @@ app.listen(PORT, () => {
     logger.info('Token cleanup scheduler started');
   }
 
+  // 初始化全局域名配置
+  try {
+    const { getDomains } = require('./src/routes/admin/emailDomains');
+    global.emailDomains = getDomains();
+    logger.info(`✅ 全局域名配置已初始化: ${global.emailDomains.join(', ')}`);
+  } catch (error) {
+    logger.error('初始化全局域名配置失败:', error.message);
+    // 使用默认域名
+    global.emailDomains = ['godaug.fun', 'localhost', 'test.local'];
+    logger.info(`使用默认域名配置: ${global.emailDomains.join(', ')}`);
+  }
+
   // 初始化Postfix域名配置同步
   try {
     const { initPostfixSync } = require('./src/scripts/init-postfix-sync');

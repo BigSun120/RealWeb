@@ -10,6 +10,15 @@ const baseUploadDir = path.resolve(
 const avatarDir = path.join(baseUploadDir, 'avatars');
 const articlesDir = path.join(baseUploadDir, 'articles');
 
+// 启动时打印一次关键路径，便于定位（生产可临时开启）
+console.log('[UploadInit]', {
+  UPLOAD_PATH: process.env.UPLOAD_PATH || '',
+  baseUploadDir,
+  articlesDir,
+  cwd: process.cwd(),
+  __dirname
+});
+
 // 确保上传目录存在
 [baseUploadDir, avatarDir, articlesDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
@@ -27,6 +36,8 @@ const storage = multer.diskStorage({
       uploadPath = avatarDir;
     }
 
+    // 打印一次头像上传目的地
+    console.log('[UploadAvatar] destination resolved:', uploadPath);
     cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
@@ -123,6 +134,7 @@ const uploadArticleImage = multer({
       if (!fs.existsSync(uploadPath)) {
         fs.mkdirSync(uploadPath, { recursive: true });
       }
+      console.log('[UploadArticle] destination resolved:', uploadPath);
       cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
