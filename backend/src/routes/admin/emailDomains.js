@@ -288,24 +288,74 @@ function updateTempEmailDomains(domains) {
   try {
     // 更新全局域名列表
     global.emailDomains = domains;
-    console.log('✅ 全局域名列表已更新:', domains);
 
-    // 异步同步Postfix配置（不阻塞主流程）
+    // 异步同步Postfix和Inbucket配置（不阻塞主流程）
     setImmediate(() => {
       try {
         // 只在Linux环境中执行同步
         if (process.platform === 'linux') {
           syncPostfixDomains();
-          console.log('✅ Postfix域名配置同步成功');
-        } else {
-          console.log('ℹ️  非Linux环境，跳过Postfix配置同步');
+          syncInbucketDomains(domains);
         }
       } catch (syncError) {
-        console.error('❌ Postfix域名配置同步失败:', syncError.message);
+        console.error('配置同步失败:', syncError.message);
       }
     });
   } catch (error) {
     console.error('更新tempEmail域名列表失败:', error);
+  }
+}
+
+/**
+ * 同步Inbucket域名配置
+ */
+function syncInbucketDomains(domains) {
+  try {
+    const { execSync } = require('child_process');
+
+    // 检查当前Inbucket容器
+    try {
+      const containerInfo = execSync('docker inspect inbucket-temp --format="{{.State.Running}}"', { encoding: 'utf8' }).trim();
+
+      if (containerInfo !== 'true') {
+        return;
+      }
+    } catch (error) {
+      return;
+    }
+
+    // 构建新的域名列表（包含默认域名）
+    const allDomains = [...new Set([...domains, 'localhost', 'test.local'])];
+    const domainString = allDomains.join(',');
+
+    // 重启Inbucket容器并更新域名配置
+    const restartScript = `
+      # 停止当前容器
+      docker stop inbucket-temp
+
+      # 启动新容器，包含更新的域名
+      docker run -d --name inbucket-temp-new \\
+        -p 9000:9000 -p 2500:2500 -p 1100:1100 \\
+        -e INBUCKET_SMTP_DOMAIN="${domainString}" \\
+        -e INBUCKET_SMTP_ADDR=0.0.0.0:2500 \\
+        -e INBUCKET_WEB_ADDR=0.0.0.0:9000 \\
+        -e INBUCKET_STORAGE_TYPE=memory \\
+        -e INBUCKET_STORAGE_RETENTIONPERIOD=24h \\
+        inbucket/inbucket:latest
+
+      # 删除旧容器
+      docker rm inbucket-temp
+
+      # 重命名新容器
+      docker rename inbucket-temp-new inbucket-temp
+    `;
+
+    // 执行重启脚本
+    execSync(restartScript, { encoding: 'utf8' });
+
+  } catch (error) {
+    console.error('Inbucket域名配置同步失败:', error.message);
+    // 不抛出错误，避免影响主流程
   }
 }
 
@@ -315,8 +365,6 @@ function updateTempEmailDomains(domains) {
  */
 router.post('/sync-postfix', adminAuth, (req, res) => {
   try {
-    console.log('🔄 手动触发Postfix配置同步...');
-
     // 检查环境
     if (process.platform !== 'linux') {
       return res.json({
@@ -342,10 +390,89 @@ router.post('/sync-postfix', adminAuth, (req, res) => {
       }
     });
   } catch (error) {
-    console.error('手动同步Postfix配置失败:', error);
+    console.error('同步Postfix配置失败:', error);
     res.status(500).json({
       success: false,
       message: '同步Postfix配置失败: ' + error.message
+    });
+  }
+});
+
+/**
+ * 手动同步Inbucket配置
+ * POST /api/admin/email-domains/sync-inbucket
+ */
+router.post('/sync-inbucket', adminAuth, (req, res) => {
+  try {
+    // 检查环境
+    if (process.platform !== 'linux') {
+      return res.json({
+        success: true,
+        message: '非Linux环境，无需同步Inbucket配置',
+        data: {
+          domains: domainConfig.domains,
+          syncTime: new Date(),
+          platform: process.platform
+        }
+      });
+    }
+
+    // 执行同步
+    syncInbucketDomains(domainConfig.domains);
+
+    res.json({
+      success: true,
+      message: 'Inbucket配置同步成功',
+      data: {
+        domains: domainConfig.domains,
+        syncTime: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('同步Inbucket配置失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '同步Inbucket配置失败: ' + error.message
+    });
+  }
+});
+
+/**
+ * 同步所有配置（Postfix + Inbucket）
+ * POST /api/admin/email-domains/sync-all
+ */
+router.post('/sync-all', adminAuth, (req, res) => {
+  try {
+    // 检查环境
+    if (process.platform !== 'linux') {
+      return res.json({
+        success: true,
+        message: '非Linux环境，无需同步配置',
+        data: {
+          domains: domainConfig.domains,
+          syncTime: new Date(),
+          platform: process.platform
+        }
+      });
+    }
+
+    // 执行同步
+    syncPostfixDomains();
+    syncInbucketDomains(domainConfig.domains);
+
+    res.json({
+      success: true,
+      message: '所有配置同步成功',
+      data: {
+        domains: domainConfig.domains,
+        syncTime: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('同步配置失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '同步配置失败: ' + error.message
     });
   }
 });

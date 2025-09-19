@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const { auth, adminAuth, requireTempEmailAccess } = require('../middleware/auth');
 const TempEmailUsageLog = require('../models/TempEmailUsageLog');
+const ToolConfig = require('../models/ToolConfig');
 const router = express.Router();
 
 // Inbucket API配置
@@ -499,6 +500,47 @@ router.get('/status', async (req, res) => {
         status: 'offline',
         message: '邮箱服务未启动，请运行: npm run email:start'
       }
+    });
+  }
+});
+
+/**
+ * 获取临时邮箱页面公告配置
+ * GET /api/temp-email/notice
+ */
+router.get('/notice', async (req, res) => {
+  try {
+    // 获取页面公告配置
+    const noticeConfig = await ToolConfig.getValue('tempEmail.notice', {
+      enabled: false,
+      title: '',
+      content: '',
+      type: 'info',
+      closable: true
+    });
+
+    // 只返回启用的公告
+    if (!noticeConfig.enabled || !noticeConfig.content) {
+      return res.json({
+        code: 200,
+        success: true,
+        data: null,
+        message: '无公告信息'
+      });
+    }
+
+    res.json({
+      code: 200,
+      success: true,
+      data: noticeConfig,
+      message: '获取公告成功'
+    });
+
+  } catch (error) {
+    console.error('获取临时邮箱公告失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取公告失败'
     });
   }
 });

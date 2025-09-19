@@ -76,6 +76,13 @@ export const tempEmailApi = {
    */
   clearAllEmails() {
     return request.delete('/temp-email/clear-all')
+  },
+
+  /**
+   * 获取临时邮箱页面公告
+   */
+  getNotice() {
+    return request.get('/temp-email/notice')
   }
 }
 

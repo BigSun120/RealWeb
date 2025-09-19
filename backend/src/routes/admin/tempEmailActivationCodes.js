@@ -3,9 +3,90 @@ const mongoose = require('mongoose');
 const { adminAuth } = require('../../middleware/auth');
 const TempEmailActivationCode = require('../../models/TempEmailActivationCode');
 const TempEmailUsageLog = require('../../models/TempEmailUsageLog');
+const ToolConfig = require('../../models/ToolConfig');
 const logger = require('../../utils/logger');
 
 const router = express.Router();
+
+/**
+ * 获取临时邮箱配置
+ * GET /api/admin/temp-email-activation-codes/config
+ */
+router.get('/config', adminAuth, async (req, res) => {
+  try {
+    // 获取激活码验证开关配置
+    const requireActivationCode = await ToolConfig.getValue('tempEmail.requireActivationCode', true);
+
+    // 获取页面公告配置
+    const noticeConfig = await ToolConfig.getValue('tempEmail.notice', {
+      enabled: false,
+      title: '',
+      content: '',
+      type: 'info',
+      closable: true
+    });
+
+    res.json({
+      code: 200,
+      success: true,
+      data: {
+        requireActivationCode,
+        notice: noticeConfig
+      },
+      message: '获取配置成功'
+    });
+
+  } catch (error) {
+    logger.error('获取临时邮箱配置失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取配置失败'
+    });
+  }
+});
+
+/**
+ * 更新临时邮箱配置
+ * PUT /api/admin/temp-email-activation-codes/config
+ */
+router.put('/config', adminAuth, async (req, res) => {
+  try {
+    const { requireActivationCode, notice } = req.body;
+
+    // 更新激活码验证开关
+    if (typeof requireActivationCode === 'boolean') {
+      await ToolConfig.setValue('tempEmail.requireActivationCode', requireActivationCode);
+      logger.info(`管理员 ${req.user.username} 更新了激活码验证开关: ${requireActivationCode}`);
+    }
+
+    // 更新页面公告配置
+    if (notice && typeof notice === 'object') {
+      const noticeConfig = {
+        enabled: Boolean(notice.enabled),
+        title: String(notice.title || ''),
+        content: String(notice.content || ''),
+        type: ['info', 'success', 'warning', 'error'].includes(notice.type) ? notice.type : 'info',
+        closable: notice.closable !== false
+      };
+
+      await ToolConfig.setValue('tempEmail.notice', noticeConfig);
+      logger.info(`管理员 ${req.user.username} 更新了临时邮箱页面公告配置`);
+    }
+
+    res.json({
+      code: 200,
+      success: true,
+      message: '配置更新成功'
+    });
+
+  } catch (error) {
+    logger.error('更新临时邮箱配置失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '配置更新失败'
+    });
+  }
+});
 
 /**
  * 获取激活码列表

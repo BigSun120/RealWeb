@@ -73,11 +73,11 @@ const getFileSizeLimit = async () => {
       // 配置值已经是字节数，直接返回
       return config.value;
     }
-    // 默认20MB
-    return 20 * 1024 * 1024;
+    // 默认10MB
+    return 10 * 1024 * 1024;
   } catch (error) {
     logger.error('获取文件大小限制失败:', error);
-    return 20 * 1024 * 1024; // 默认20MB
+    return 10 * 1024 * 1024; // 默认10MB
   }
 };
 

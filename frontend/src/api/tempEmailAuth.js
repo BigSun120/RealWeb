@@ -128,6 +128,21 @@ export const adminTempEmailActivationCodesApi = {
     return request.delete('/admin/temp-email-activation-codes/batch', {
       data: { ids }
     })
+  },
+
+  /**
+   * 获取临时邮箱配置
+   */
+  getConfig() {
+    return request.get('/admin/temp-email-activation-codes/config')
+  },
+
+  /**
+   * 更新临时邮箱配置
+   * @param {Object} config - 配置数据
+   */
+  updateConfig(config) {
+    return request.put('/admin/temp-email-activation-codes/config', config)
   }
 }
 

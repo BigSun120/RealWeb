@@ -21,8 +21,8 @@
         <AppHeader />
         <!-- 公告横幅（显示位置由管理端设置控制，默认展示） -->
         <PublicNoticeBanner :placements="uiPlacements" />
-        <!-- 邮箱验证横幅 -->
-        <EmailVerificationBanner />
+        <!-- 邮箱验证横幅 - 只在特定页面显示 -->
+        <EmailVerificationBanner v-if="shouldShowEmailVerificationBanner" />
         <main class="main-content content-wrapper" :class="{ 'tools-page': isToolsRoute }">
           <router-view />
         </main>
@@ -67,6 +67,21 @@ export default {
     // 判断是否为工具页面
     const isToolsRoute = computed(() => route.path.startsWith('/tools'));
 
+    // 判断是否应该显示邮箱验证横幅
+    // 只在需要邮箱验证的功能页面显示，不在首页显示
+    const shouldShowEmailVerificationBanner = computed(() => {
+      const currentPath = route.path;
+      const showOnPaths = [
+        '/articles/create',  // 创建文章
+        '/articles/edit',    // 编辑文章
+        '/profile',          // 个人资料
+        '/tools',            // 工具页面
+        '/temp-email'        // 临时邮箱
+      ];
+
+      return showOnPaths.some(path => currentPath.startsWith(path));
+    });
+
     // 公告展示位置设置（公开读接口）
     const uiPlacements = computed(() => window.__PUBLIC_NOTICE_PLACEMENTS__ || ['banner','dropdown']);
 
@@ -74,6 +89,7 @@ export default {
       isAdminRoute,
       isAuthRoute,
       isToolsRoute,
+      shouldShowEmailVerificationBanner,
       uiPlacements
     };
   }

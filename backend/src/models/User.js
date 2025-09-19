@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const ToolConfig = require('./ToolConfig');
 
 const userSchema = new mongoose.Schema(
   {
@@ -516,6 +517,14 @@ userSchema.methods.resetPassword = async function (newPassword) {
 userSchema.methods.hasTempEmailAccess = async function () {
   // 管理员拥有所有权限
   if (this.isAdmin) {
+    return true;
+  }
+
+  // 检查是否开启激活码验证
+  const requireActivationCode = await ToolConfig.getValue('tempEmail.requireActivationCode', true);
+
+  // 如果未开启激活码验证，所有登录用户都可以使用
+  if (!requireActivationCode) {
     return true;
   }
 

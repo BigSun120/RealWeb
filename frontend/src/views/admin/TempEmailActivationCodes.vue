@@ -19,6 +19,108 @@
         </div>
       </template>
 
+      <!-- 配置管理区域 -->
+      <div class="config-section">
+        <el-row :gutter="20">
+          <!-- 激活码验证开关 -->
+          <el-col :span="12">
+            <el-card class="config-card">
+              <template #header>
+                <div class="config-header">
+                  <el-icon><Setting /></el-icon>
+                  <span>激活码验证设置</span>
+                </div>
+              </template>
+              <div class="config-content">
+                <el-form-item label="是否开启验证码验证">
+                  <el-switch
+                    v-model="config.requireActivationCode"
+                    @change="updateRequireActivationCode"
+                    :loading="updatingConfig"
+                    active-text="开启"
+                    inactive-text="关闭"
+                  />
+                </el-form-item>
+                <div class="config-description">
+                  <p v-if="config.requireActivationCode" class="enabled-desc">
+                    <el-icon color="#67c23a"><CircleCheck /></el-icon>
+                    已开启：用户需要激活码才能使用临时邮箱功能
+                  </p>
+                  <p v-else class="disabled-desc">
+                    <el-icon color="#f56c6c"><CircleClose /></el-icon>
+                    已关闭：所有登录用户都可以直接使用临时邮箱功能
+                  </p>
+                </div>
+              </div>
+            </el-card>
+          </el-col>
+
+          <!-- 页面公告配置 -->
+          <el-col :span="12">
+            <el-card class="config-card">
+              <template #header>
+                <div class="config-header">
+                  <el-icon><Bell /></el-icon>
+                  <span>页面公告设置</span>
+                </div>
+              </template>
+              <div class="config-content">
+                <el-form :model="noticeForm" label-width="80px" size="small">
+                  <el-form-item label="启用公告">
+                    <el-switch
+                      v-model="noticeForm.enabled"
+                      :loading="updatingConfig"
+                    />
+                  </el-form-item>
+                  <el-form-item label="公告标题" v-if="noticeForm.enabled">
+                    <el-input
+                      v-model="noticeForm.title"
+                      placeholder="留空使用默认标题"
+                    />
+                  </el-form-item>
+                  <el-form-item label="公告内容" v-if="noticeForm.enabled">
+                    <el-input
+                      v-model="noticeForm.content"
+                      type="textarea"
+                      :rows="2"
+                      placeholder="请输入公告内容"
+                    />
+                  </el-form-item>
+                  <el-form-item label="公告类型" v-if="noticeForm.enabled">
+                    <el-select
+                      v-model="noticeForm.type"
+                      style="width: 100%"
+                    >
+                      <el-option label="信息" value="info" />
+                      <el-option label="成功" value="success" />
+                      <el-option label="警告" value="warning" />
+                      <el-option label="错误" value="error" />
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item v-if="noticeForm.enabled">
+                    <el-button
+                      type="primary"
+                      @click="updateNoticeConfig"
+                      :loading="updatingConfig"
+                      size="small"
+                    >
+                      保存公告设置
+                    </el-button>
+                    <el-button
+                      @click="resetNoticeForm"
+                      size="small"
+                      style="margin-left: 10px"
+                    >
+                      重置
+                    </el-button>
+                  </el-form-item>
+                </el-form>
+              </div>
+            </el-card>
+          </el-col>
+        </el-row>
+      </div>
+
       <!-- 统计信息 -->
       <div class="stats-section" v-if="stats">
         <el-row :gutter="20">
@@ -433,7 +535,9 @@ import {
   Delete,
   Close,
   Edit,
-  Minus
+  Minus,
+  Setting,
+  Bell
 } from '@element-plus/icons-vue'
 import { adminTempEmailActivationCodesApi } from '@/api/tempEmailAuth'
 
@@ -442,6 +546,29 @@ const loading = ref(false)
 const codes = ref([])
 const stats = ref(null)
 const selectedCodes = ref([])
+
+// 配置管理
+const config = ref({
+  requireActivationCode: true,
+  notice: {
+    enabled: false,
+    title: '',
+    content: '',
+    type: 'info',
+    closable: true
+  }
+})
+
+// 公告表单（独立于配置，用于编辑）
+const noticeForm = ref({
+  enabled: false,
+  title: '',
+  content: '',
+  type: 'info',
+  closable: true
+})
+
+const updatingConfig = ref(false)
 
 // 跨页选择管理
 const selectedCodesMap = ref(new Map()) // 存储所有选中的激活码 ID -> 激活码对象
@@ -530,6 +657,78 @@ const generateRandomCode = () => {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   createForm.code = result
+}
+
+// 配置管理方法
+const loadConfig = async () => {
+  try {
+    const response = await adminTempEmailActivationCodesApi.getConfig()
+    if (response.success) {
+      config.value = response.data
+      // 同时初始化公告表单
+      noticeForm.value = { ...response.data.notice }
+    }
+  } catch (error) {
+    console.error('加载配置失败:', error)
+    ElMessage.error('加载配置失败')
+  }
+}
+
+const updateRequireActivationCode = async () => {
+  try {
+    updatingConfig.value = true
+    const response = await adminTempEmailActivationCodesApi.updateConfig({
+      requireActivationCode: config.value.requireActivationCode
+    })
+
+    if (response.success) {
+      ElMessage.success('激活码验证设置已更新')
+    } else {
+      ElMessage.error(response.message || '更新失败')
+    }
+  } catch (error) {
+    console.error('更新激活码验证设置失败:', error)
+    ElMessage.error('更新失败')
+    // 回滚状态
+    config.value.requireActivationCode = !config.value.requireActivationCode
+  } finally {
+    updatingConfig.value = false
+  }
+}
+
+const updateNoticeConfig = async () => {
+  try {
+    updatingConfig.value = true
+
+    // 验证表单
+    if (noticeForm.value.enabled && !noticeForm.value.content.trim()) {
+      ElMessage.warning('请输入公告内容')
+      return
+    }
+
+    const response = await adminTempEmailActivationCodesApi.updateConfig({
+      notice: noticeForm.value
+    })
+
+    if (response.success) {
+      ElMessage.success('页面公告设置已更新')
+      // 更新配置数据
+      config.value.notice = { ...noticeForm.value }
+    } else {
+      ElMessage.error(response.message || '更新失败')
+    }
+  } catch (error) {
+    console.error('更新页面公告设置失败:', error)
+    ElMessage.error('更新失败')
+  } finally {
+    updatingConfig.value = false
+  }
+}
+
+const resetNoticeForm = () => {
+  // 重置为当前配置的值
+  noticeForm.value = { ...config.value.notice }
+  ElMessage.info('已重置为当前配置')
 }
 
 // API调用方法
@@ -956,6 +1155,7 @@ const batchDelete = async (ids) => {
 
 // 组件挂载时初始化
 onMounted(() => {
+  loadConfig()
   refreshCodes()
 })
 </script>
@@ -976,6 +1176,55 @@ onMounted(() => {
 .header-actions {
   display: flex;
   gap: 12px;
+}
+
+.config-section {
+  margin-bottom: 28px;
+}
+
+.config-card {
+  height: 100%;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.config-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.config-content {
+  padding: 8px 0;
+}
+
+.config-description {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #e2e8f0;
+}
+
+.enabled-desc {
+  color: #38a169;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.disabled-desc {
+  color: #e53e3e;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
 }
 
 .stats-section {

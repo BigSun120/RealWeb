@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const logger = require('../utils/logger');
+const ToolConfig = require('../models/ToolConfig');
 const sessionManager = require('../utils/sessionManager');
 
 // 验证token中间件

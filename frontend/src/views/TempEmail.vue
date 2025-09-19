@@ -111,6 +111,18 @@
         @show-activation="showActivation = true"
       />
 
+      <!-- 临时邮箱专用公告横幅 -->
+      <el-alert
+        v-if="tempEmailNotice && tempEmailNotice.content"
+        :title="tempEmailNotice.title || '📢 使用提醒'"
+        :description="tempEmailNotice.content"
+        :type="tempEmailNotice.type || 'info'"
+        :closable="tempEmailNotice.closable !== false"
+        show-icon
+        class="temp-email-notice"
+        style="margin-bottom: 20px"
+      />
+
 
 
       <!-- 激活界面弹窗（已激活用户也可以使用） -->
@@ -459,8 +471,28 @@ const activeEmailTab = ref('')
 const showCurrentEmailOnly = ref(false) // 已不再使用，仅保留变量避免大范围改动
 const allMessages = ref([])
 
+// 临时邮箱公告
+const tempEmailNotice = ref(null)
+
 // 计算属性：显示的邮件列表（默认显示全部）
 const displayMessages = computed(() => allMessages.value)
+
+// 加载临时邮箱公告
+const loadTempEmailNotice = async () => {
+  try {
+    const response = await tempEmailApi.getNotice()
+    const backendData = response.data
+
+    if (backendData.success && backendData.data) {
+      tempEmailNotice.value = backendData.data
+    } else {
+      tempEmailNotice.value = null
+    }
+  } catch (error) {
+    // 静默处理公告加载失败，不影响主要功能
+    tempEmailNotice.value = null
+  }
+}
 
 // 权限控制相关方法
 const checkAccessStatus = async () => {
@@ -880,6 +912,9 @@ const performFullAccessCheck = async () => {
 
 // 组件挂载时初始化
 onMounted(async () => {
+  // 加载临时邮箱公告（不依赖权限状态）
+  await loadTempEmailNotice()
+
   // 进行全面的验证码状态检查
   await performFullAccessCheck()
 

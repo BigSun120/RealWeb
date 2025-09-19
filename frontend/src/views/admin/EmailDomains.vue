@@ -8,15 +8,33 @@
             <el-button type="primary" @click="showAddDialog">
               添加域名
             </el-button>
-            <el-button
-              type="success"
-              @click="syncPostfixConfig"
-              :loading="syncing"
-              plain
-            >
-              <el-icon><Refresh /></el-icon>
-              同步Postfix配置
-            </el-button>
+            <el-dropdown @command="handleSyncCommand" :loading="syncing">
+              <el-button
+                type="success"
+                :loading="syncing"
+                plain
+              >
+                <el-icon><Refresh /></el-icon>
+                同步配置
+                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="postfix">
+                    <el-icon><Setting /></el-icon>
+                    同步Postfix配置
+                  </el-dropdown-item>
+                  <el-dropdown-item command="inbucket">
+                    <el-icon><Message /></el-icon>
+                    同步Inbucket配置
+                  </el-dropdown-item>
+                  <el-dropdown-item command="all" divided>
+                    <el-icon><Refresh /></el-icon>
+                    同步所有配置
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </div>
       </template>
@@ -201,7 +219,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, ArrowDown, Setting, Message } from '@element-plus/icons-vue'
 import request from '@/api/index'
 
 // 响应式数据
@@ -413,6 +431,21 @@ const formatDate = (dateString) => {
   return date.toLocaleString('zh-CN')
 }
 
+// 处理同步命令
+const handleSyncCommand = (command) => {
+  switch (command) {
+    case 'postfix':
+      syncPostfixConfig()
+      break
+    case 'inbucket':
+      syncInbucketConfig()
+      break
+    case 'all':
+      syncAllConfig()
+      break
+  }
+}
+
 // 同步Postfix配置
 const syncPostfixConfig = async () => {
   try {
@@ -429,6 +462,48 @@ const syncPostfixConfig = async () => {
   } catch (error) {
     console.error('同步Postfix配置失败:', error)
     ElMessage.error('同步Postfix配置失败')
+  } finally {
+    syncing.value = false
+  }
+}
+
+// 同步Inbucket配置
+const syncInbucketConfig = async () => {
+  try {
+    syncing.value = true
+    const response = await request.post('/admin/email-domains/sync-inbucket')
+
+    if (response.data.success) {
+      if (response.data.data.platform && response.data.data.platform !== 'linux') {
+        ElMessage.info('当前为开发环境，无需同步Inbucket配置')
+      } else {
+        ElMessage.success('Inbucket配置同步成功，临时邮箱服务已更新')
+      }
+    }
+  } catch (error) {
+    console.error('同步Inbucket配置失败:', error)
+    ElMessage.error('同步Inbucket配置失败')
+  } finally {
+    syncing.value = false
+  }
+}
+
+// 同步所有配置
+const syncAllConfig = async () => {
+  try {
+    syncing.value = true
+    const response = await request.post('/admin/email-domains/sync-all')
+
+    if (response.data.success) {
+      if (response.data.data.platform && response.data.data.platform !== 'linux') {
+        ElMessage.info('当前为开发环境，无需同步配置')
+      } else {
+        ElMessage.success('所有配置同步成功，邮件服务已更新')
+      }
+    }
+  } catch (error) {
+    console.error('同步所有配置失败:', error)
+    ElMessage.error('同步配置失败')
   } finally {
     syncing.value = false
   }
