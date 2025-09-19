@@ -123,7 +123,7 @@ defineExpose({
   right: 10px;
   background: rgba(0, 0, 0, 0.8);
   color: white;
-  padding: 10px;
+  padding: 0px;
   border-radius: 8px;
   font-size: 12px;
   z-index: 9999;
@@ -131,6 +131,6 @@ defineExpose({
 }
 
 .debug-info p {
-  margin: 2px 0;
+  margin:0px 0;
 }
 </style>

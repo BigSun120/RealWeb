@@ -5,63 +5,19 @@
     </div>
 
     <!-- 页面头部 -->
-    <div v-if="!loading" class="page-header">
-      <div class="header-content">
-        <h1 class="page-title">实用工具箱</h1>
-        <p class="page-subtitle">精选实用的在线工具，提升您的工作效率</p>
-        <div class="hero-stats">
-          <div class="stat-item">
-            <span class="stat-number">{{ stats.totalTools }}</span>
-            <span class="stat-label">个工具</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number">{{ stats.totalCategories }}</span>
-            <span class="stat-label">个分类</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number">{{ stats.activeTools }}</span>
-            <span class="stat-label">已上线</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 搜索和筛选 -->
-      <div class="filters">
-        <!-- 搜索框 -->
-        <div class="search-section">
-          <div class="search-box">
-            <input
-              v-model="searchKeyword"
-              type="text"
-              placeholder="搜索工具名称、描述或标签..."
-              class="search-input"
-              @input="handleSearch"
-            />
-            <button v-if="searchKeyword" class="clear-search-btn" @click="clearSearch">✕</button>
-          </div>
-        </div>
-
-        <!-- 视图切换工具条 -->
-        <div class="toolbar">
-          <div class="view-controls">
-            <button
-              class="btn btn-ghost btn-sm"
-              :class="viewMode === 'grid' ? 'active' : ''"
-              @click="switchViewMode('grid')"
-            >
-              网格
-            </button>
-            <button
-              class="btn btn-ghost btn-sm"
-              :class="viewMode === 'list' ? 'active' : ''"
-              @click="switchViewMode('list')"
-            >
-              列表
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <PageHeader
+      v-if="!loading"
+      title="实用工具箱"
+      subtitle="精选实用的在线工具，提升您的工作效率"
+      :stats="headerStats"
+      :show-filters="true"
+      :search-value="searchKeyword"
+      search-placeholder="搜索工具名称、描述或标签..."
+      :view-mode="viewMode"
+      @search="handleSearch"
+      @clear-search="clearSearch"
+      @view-mode-change="switchViewMode"
+    />
 
     <!-- 主内容区域 -->
     <div v-if="!loading" class="main-content" :class="{ 'with-sidebar': viewMode === 'list' }">
@@ -397,6 +353,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search, Star } from '@element-plus/icons-vue';
 import ToolCard from '@/components/tools/ToolCard.vue';
+import PageHeader from '@/components/common/PageHeader.vue';
 import toolsService from '@/services/toolsService';
 
 export default {
@@ -404,7 +361,8 @@ export default {
   components: {
     Search,
     Star,
-    ToolCard
+    ToolCard,
+    PageHeader
   },
   setup() {
     const router = useRouter();
@@ -449,6 +407,13 @@ export default {
     // 统计数据
     const stats = computed(() => toolsService.getStats());
 
+    // 页面头部统计数据
+    const headerStats = computed(() => [
+      { value: stats.value.totalTools, label: '个工具' },
+      { value: stats.value.totalCategories, label: '个分类' },
+      { value: stats.value.activeTools, label: '已上线' }
+    ]);
+
     // 根据视图模式调整每页数量
     const currentPageSize = computed(() => {
       return viewMode.value === 'list' ? 20 : pageSize.value;
@@ -487,7 +452,10 @@ export default {
     };
 
     // 搜索处理
-    const handleSearch = () => {
+    const handleSearch = (value) => {
+      if (typeof value === 'string') {
+        searchKeyword.value = value;
+      }
       // 搜索时重置分类筛选和分页
       if (searchKeyword.value) {
         selectedCategory.value = 'all';
@@ -791,6 +759,7 @@ export default {
       totalPages,
       currentPageSize,
       stats,
+      headerStats,
       getCategoryTools,
       handleSearch,
       selectCategory,
@@ -871,46 +840,7 @@ export default {
   justify-content: center;
 }
 
-/* 页面头部 */
-.page-header {
-  margin-bottom: 2rem;
-}
-
-.header-content {
-  text-align: center;
-  padding: 1.5rem 2rem;
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 16px;
-  margin-bottom: 1.5rem;
-  color: #2c3e50;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-}
-
-.page-title {
-  font-size: 2.2rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  color: #2c3e50;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.page-subtitle {
-  font-size: 1rem;
-  margin: 0 0 1.5rem 0;
-  opacity: 1;
-  color: #1e293b;
-  font-weight: 500;
-}
-
-.hero-stats {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-top: 0.5rem;
-}
+/* 页面头部样式已移至 PageHeader 组件 */
 
 .stat-item {
   text-align: center;
@@ -943,147 +873,7 @@ export default {
   font-weight: 500;
 }
 
-/* 筛选区域 */
-.filters {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-}
-
-.filters:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-}
-
-.search-section {
-  flex: 1;
-  max-width: 400px;
-}
-
-.search-box {
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  font-size: 1rem;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  color: #2c3e50;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.search-input::placeholder {
-  color: #475569;
-  font-weight: 400;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-1px);
-}
-
-.clear-search-btn {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  border: none;
-  background: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  transition: all 0.3s ease;
-}
-
-.clear-search-btn:hover {
-  background: rgba(255, 0, 0, 0.3);
-  color: white;
-  transform: translateY(-50%) scale(1.1);
-}
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.view-controls {
-  display: flex;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 0.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: transparent;
-  color: #1e293b;
-}
-
-.btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  transform: translateY(-1px);
-}
-
-.btn-ghost.active {
-  background: rgba(59, 130, 246, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: white;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-.btn-primary {
-  background: rgba(59, 130, 246, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: white;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-.btn-primary:hover {
-  background: rgba(37, 99, 235, 0.9);
-  border-color: rgba(37, 99, 235, 0.4);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-.btn-sm {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-}
+/* 筛选区域样式已移至 PageHeader 组件 */
 
 /* 主内容区域 */
 .main-content {
@@ -1552,29 +1342,7 @@ export default {
     padding: 0 1rem;
   }
 
-  .header-content {
-    padding: 1.5rem 1rem;
-    margin: 0 -1rem 2rem -1rem;
-    border-radius: 0;
-  }
-
-  .page-title {
-    font-size: 2rem;
-  }
-
-  .page-subtitle {
-    font-size: 1rem;
-  }
-
-  .hero-stats {
-    gap: 1.5rem;
-  }
-
-  .filters {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
+  /* 页面头部响应式样式已移至 PageHeader 组件 */
 
   .search-section {
     max-width: none;
@@ -1657,10 +1425,7 @@ export default {
 }
 
 @media (max-width: 480px) {
-  .hero-stats {
-    flex-direction: column;
-    gap: 1rem;
-  }
+  /* hero-stats 响应式样式已移至 PageHeader 组件 */
 
   .list-content {
     gap: 0.75rem;

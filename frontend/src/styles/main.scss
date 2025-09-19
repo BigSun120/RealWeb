@@ -20,7 +20,18 @@ body {
 .content-wrapper {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 0;
+}
+
+// 如果需要恢复某些页面的padding，可以使用这个类
+.content-wrapper.with-padding {
   padding: var(--spacing-6) var(--spacing-4);
+}
+
+// 完全无padding的紧凑布局
+.content-wrapper.no-padding {
+  padding: 0;
+  max-width: none;
 }
 
 // 博客特定样式
@@ -151,6 +162,11 @@ body {
 // 响应式设计
 @media (max-width: 768px) {
   .content-wrapper {
+    padding: 0;
+  }
+
+  // 如果需要在移动端恢复padding
+  .content-wrapper.with-padding {
     padding: var(--spacing-4) var(--spacing-3);
   }
 

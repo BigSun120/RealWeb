@@ -105,23 +105,47 @@
 
     <!-- 主功能界面 -->
     <div v-else class="temp-email-main">
-      <!-- 简化的权限状态显示 -->
-      <TempEmailStatusBar
-        :access-status="accessStatus"
-        @show-activation="showActivation = true"
-      />
+      <!-- 页面头部 -->
+      <PageHeader
+        title="临时邮箱"
+        subtitle="安全可靠的临时邮箱服务，保护您的隐私"
+        :show-stats="false"
+        :show-filters="false"
+      >
+        <template #toolbar>
+          <el-button
+            type="primary"
+            @click="generateEmail"
+            :loading="generating"
+          >
+            生成新邮箱
+          </el-button>
+        </template>
+      </PageHeader>
 
-      <!-- 临时邮箱专用公告横幅 -->
-      <el-alert
-        v-if="tempEmailNotice && tempEmailNotice.content"
-        :title="tempEmailNotice.title || '📢 使用提醒'"
-        :description="tempEmailNotice.content"
-        :type="tempEmailNotice.type || 'info'"
-        :closable="tempEmailNotice.closable !== false"
-        show-icon
-        class="temp-email-notice"
-        style="margin-bottom: 20px"
-      />
+      <!-- 权限状态和公告横幅合并行 -->
+      <div class="status-notice-row">
+        <!-- 左侧：权限状态 -->
+        <div class="status-section">
+          <TempEmailStatusBar
+            :access-status="accessStatus"
+            @show-activation="showActivation = true"
+          />
+        </div>
+
+        <!-- 右侧：公告横幅 -->
+        <div class="notice-section">
+          <el-alert
+            v-if="tempEmailNotice && tempEmailNotice.content"
+            :title="tempEmailNotice.title || '📢 使用提醒'"
+            :description="tempEmailNotice.content"
+            :type="tempEmailNotice.type || 'info'"
+            :closable="false"
+            show-icon
+            class="temp-email-notice"
+          />
+        </div>
+      </div>
 
 
 
@@ -161,20 +185,6 @@
       </el-dialog>
 
       <el-card class="main-card">
-        <template #header>
-          <div class="card-header">
-            <h2>📧 临时邮箱</h2>
-            <div class="header-actions">
-              <el-button
-                type="primary"
-                @click="generateEmail"
-                :loading="generating"
-              >
-                生成新邮箱
-              </el-button>
-            </div>
-          </div>
-        </template>
 
       <!-- 邮箱生成配置 -->
       <div class="email-config">
@@ -431,6 +441,7 @@ import { tempEmailApi } from '@/api/tempEmail'
 import { tempEmailAuthApi } from '@/api/tempEmailAuth'
 import TempEmailActivation from '@/components/TempEmailActivation.vue'
 import TempEmailStatusBar from '@/components/TempEmailStatusBar.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 // 路由和用户状态
 const router = useRouter()
@@ -476,6 +487,13 @@ const tempEmailNotice = ref(null)
 
 // 计算属性：显示的邮件列表（默认显示全部）
 const displayMessages = computed(() => allMessages.value)
+
+// 页面头部统计数据
+const headerStats = computed(() => [
+  { value: allMessages.value.length, label: '封邮件' },
+  { value: availableDomains.value.length, label: '个域名' },
+  { value: currentEmail.value ? 1 : 0, label: '个邮箱' }
+])
 
 // 加载临时邮箱公告
 const loadTempEmailNotice = async () => {
@@ -953,6 +971,43 @@ onUnmounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   min-height: calc(100vh - 120px); /* 确保页面有足够高度显示footer */
+}
+
+/* 权限状态和公告合并行 */
+.status-notice-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.status-section {
+  flex: 0 0 auto;
+  min-width: 300px;
+}
+
+.notice-section {
+  flex: 1;
+}
+
+.notice-section .temp-email-notice {
+  margin: 0;
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .status-notice-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .status-section {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .notice-section {
+    width: 100%;
+  }
 }
 
 /* 权限控制相关样式 */
