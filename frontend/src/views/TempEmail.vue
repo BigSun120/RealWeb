@@ -117,8 +117,13 @@
             type="primary"
             @click="generateEmail"
             :loading="generating"
+            :disabled="!selectedDomain"
+            class="header-generate-btn"
           >
-            生成新邮箱
+            <template #icon>
+              <el-icon><Plus /></el-icon>
+            </template>
+            {{ generating ? '生成中...' : '快速生成' }}
           </el-button>
         </template>
       </PageHeader>
@@ -184,51 +189,82 @@
         </div>
       </el-dialog>
 
-      <el-card class="main-card">
+      <el-card class="main-card glass-card">
 
       <!-- 邮箱生成配置 -->
       <div class="email-config">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="邮箱前缀">
-              <el-input
-                v-model="emailPrefix"
-                placeholder="留空自动生成，或输入自定义前缀"
-                clearable
+        <div class="config-header">
+          <h3 class="config-title">
+            <el-icon class="config-icon"><Message /></el-icon>
+            邮箱生成配置
+          </h3>
+        </div>
+
+        <div class="config-form">
+          <div class="compact-form-row">
+            <!-- 邮箱前缀输入 -->
+            <el-input
+              v-model="emailPrefix"
+              placeholder="自定义前缀或留空自动生成"
+              clearable
+              class="prefix-input"
+            />
+
+            <!-- 随机按钮 -->
+            <el-button
+              @click="generateRandomPrefix"
+              class="random-btn"
+              type="info"
+              plain
+            >
+              <el-icon><Refresh /></el-icon>
+              随机
+            </el-button>
+
+            <!-- @ 符号分隔 -->
+            <div class="at-symbol">@</div>
+
+            <!-- 邮箱域名选择 -->
+            <el-select
+              v-model="selectedDomain"
+              placeholder="选择域名"
+              class="domain-select"
+            >
+              <el-option
+                v-for="domain in availableDomains"
+                :key="domain"
+                :label="domain"
+                :value="domain"
               >
-                <template #prepend>
-                  <el-button @click="generateRandomPrefix" size="small">
-                    🎲 随机
-                  </el-button>
-                </template>
-              </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="邮箱域名">
-              <el-select
-                v-model="selectedDomain"
-                placeholder="选择域名后缀"
-                style="width: 100%"
-              >
-                <el-option
-                  v-for="domain in availableDomains"
-                  :key="domain"
-                  :label="`@${domain}`"
-                  :value="domain"
-                >
-                  <span style="float: left">@{{ domain }}</span>
-                  <span
+                <div class="domain-option">
+                  <span class="domain-name">{{ domain }}</span>
+                  <el-tag
                     v-if="domain === 'godaug.fun'"
-                    style="float: right; color: #67c23a; font-size: 12px"
+                    type="success"
+                    size="small"
+                    class="domain-tag"
                   >
                     ⭐ 专属
-                  </span>
-                </el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+                  </el-tag>
+                </div>
+              </el-option>
+            </el-select>
+
+            <!-- 生成按钮 -->
+            <el-button
+              type="primary"
+              @click="generateEmail"
+              :loading="generating"
+              :disabled="!selectedDomain"
+              class="generate-btn"
+            >
+              <template #icon>
+                <el-icon><Plus /></el-icon>
+              </template>
+              {{ generating ? '生成中' : '生成邮箱' }}
+            </el-button>
+          </div>
+        </div>
       </div>
 
       <!-- 服务状态 请运行 npm run email:start 启动邮箱服务-->
@@ -238,16 +274,16 @@
         description="嗷呜！"
         type="warning"
         :closable="false"
-        class="status-alert"
+        class="status-alert glass-alert"
       />
 
       <!-- 当前邮箱 -->
-      <div v-if="currentEmail" class="current-email">
-        <el-descriptions title="当前邮箱" :column="1" border>
+      <div v-if="currentEmail" class="current-email glass-container">
+        <el-descriptions title="当前邮箱" :column="1" border class="glass-descriptions">
           <el-descriptions-item label="邮箱地址">
             <el-tag type="success" size="large">{{ currentEmail }}</el-tag>
-            <el-button 
-              type="text" 
+            <el-button
+              type="text"
               @click="copyEmail"
               style="margin-left: 10px"
             >
@@ -259,7 +295,7 @@
       </div>
 
       <!-- 邮件列表 -->
-      <div class="email-list">
+      <div class="email-list glass-container">
         <div class="list-header">
           <h3>📬 所有邮件</h3>
           <div class="list-actions">
@@ -279,6 +315,7 @@
           :data="displayMessages"
           v-loading="loading"
           empty-text="暂无邮件"
+          class="glass-table"
         >
           <el-table-column prop="email" label="收件邮箱" width="260">
             <template #default="{ row }">
@@ -334,6 +371,7 @@
       title="邮件详情"
       width="80%"
       :before-close="closeMessageDialog"
+      class="glass-dialog"
     >
       <template #header>
         <div class="dialog-header">
@@ -434,7 +472,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, Key } from '@element-plus/icons-vue'
+import { User, Key, Plus, Message, Refresh } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { tempEmailApi } from '@/api/tempEmail'
@@ -967,7 +1005,7 @@ onUnmounted(() => {
 
 <style scoped>
 .temp-email-container {
-  padding: 20px;
+  padding: 8px;
   max-width: 1200px;
   margin: 0 auto;
   min-height: calc(100vh - 120px); /* 确保页面有足够高度显示footer */
@@ -977,16 +1015,21 @@ onUnmounted(() => {
 .status-notice-row {
   display: flex;
   gap: 1rem;
-  align-items: flex-start;
+  align-items: stretch; /* 改为stretch确保高度一致 */
+  min-height: 80px; /* 设置最小高度 */
 }
 
 .status-section {
   flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
   min-width: 300px;
 }
 
 .notice-section {
   flex: 1;
+  display: flex;
+  align-items: stretch;
 }
 
 .notice-section .temp-email-notice {
@@ -1040,7 +1083,7 @@ onUnmounted(() => {
 
 
 .main-card {
-  margin-bottom: 20px;
+  margin:  8px 0 8px 0;
 }
 
 .card-header {
@@ -1128,19 +1171,202 @@ onUnmounted(() => {
   font-family: monospace;
 }
 
-.code-text{font-family:monospace;color:#333;}
+.code-text{font-family:monospace;color:#2b6cb0;font-weight:600;}
 
 .no-content {
   color: #909399;
   font-style: italic;
 }
 
-/* 邮箱配置样式 */
+/* 紧凑布局的邮箱配置样式 */
 .email-config {
-  margin-bottom: 20px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  margin-bottom: 24px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+  overflow: hidden;
+}
+
+/* 配置头部 - 紧凑版 */
+.config-header {
+  padding: 16px 24px 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.config-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a365d;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-icon {
+  font-size: 18px;
+  color: #3182ce;
+}
+
+/* 紧凑表单区域 */
+.config-form {
+  padding: 20px 24px;
+}
+
+/* 单行紧凑布局 */
+.compact-form-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+/* @ 符号样式 - 紧凑版 */
+.at-symbol {
+  font-size: 20px;
+  font-weight: 700;
+  color: #3182ce;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  min-width: 24px;
+  flex-shrink: 0;
+}
+
+/* 紧凑单行布局 - 所有元素统一高度44px */
+
+/* 邮箱前缀输入框 */
+.prefix-input {
+  flex: 2;
+  min-width: 200px;
+}
+
+.prefix-input .el-input__wrapper {
+  height: 44px !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  border-radius: 10px !important;
+  transition: all 0.3s ease !important;
+}
+
+.prefix-input .el-input__wrapper:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(64, 158, 255, 0.5) !important;
+}
+
+.prefix-input .el-input__wrapper.is-focus {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(64, 158, 255, 0.7) !important;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2) !important;
+}
+
+.prefix-input .el-input__inner {
+  color: #2d3748 !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  height: 42px !important;
+  line-height: 42px !important;
+}
+
+/* 随机按钮 */
+.random-btn {
+  height: 32px !important;
+  padding: 0 14px !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(10px) !important;
+  border-radius: 10px !important;
+  color: #3182ce !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  transition: all 0.3s ease !important;
+  flex-shrink: 0;
+}
+
+.random-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(64, 158, 255, 0.4) !important;
+  color: #2b6cb0 !important;
+}
+
+/* 域名选择器 */
+.domain-select {
+  flex: 1.5;
+  min-width: 150px;
+}
+
+.domain-select .el-input__wrapper {
+  height: 44px !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  border-radius: 10px !important;
+  transition: all 0.3s ease !important;
+}
+
+.domain-select .el-input__wrapper:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(64, 158, 255, 0.5) !important;
+}
+
+.domain-select .el-input__inner {
+  color: #2d3748 !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  height: 42px !important;
+  line-height: 42px !important;
+}
+
+/* 域名选项样式 */
+.domain-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.domain-name {
+  color: #2d3748;
+  font-weight: 500;
+}
+
+.domain-tag {
+  margin-left: 8px;
+}
+
+/* 生成按钮 */
+.generate-btn {
+  height: 32px !important;
+  padding: 0 20px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #ec4899 0%, #be185d 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.3) !important;
+  transition: all 0.3s ease !important;
+  color: white !important;
+  flex-shrink: 0;
+  min-width: 120px !important;
+}
+
+.generate-btn:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4) !important;
+  background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%) !important;
+}
+
+.generate-btn:disabled {
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%) !important;
+  color: #9ca3af !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 .header-actions {
@@ -1370,6 +1596,7 @@ onUnmounted(() => {
 
 .intro-right .temp-email-status-bar .activation-action {
   text-align: center;
+
 }
 
 .intro-right .temp-email-status-bar .activation-action .el-button {
@@ -1403,6 +1630,108 @@ onUnmounted(() => {
 .intro-right .el-result .el-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+}
+
+/* 旧的粉色按钮样式已被新的generate-btn替代 */
+
+/* Header中的生成按钮样式 */
+.header-generate-btn {
+  background: linear-gradient(135deg, #ec4899 0%, #be185d 100%) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3) !important;
+  transition: all 0.3s ease !important;
+  color: white !important;
+}
+
+.header-generate-btn:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4) !important;
+  background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%) !important;
+}
+
+/* 毛玻璃主卡片样式 */
+.glass-card {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15) !important;
+}
+
+.glass-card .el-card__body {
+  background: transparent !important;
+  padding: 32px !important;
+}
+
+/* 响应式设计 - 紧凑布局 */
+@media (max-width: 1024px) {
+  .compact-form-row {
+    gap: 8px;
+  }
+
+  .prefix-input {
+    flex: 1.5;
+    min-width: 150px;
+  }
+
+  .domain-select {
+    flex: 1.2;
+    min-width: 120px;
+  }
+
+  .generate-btn {
+    min-width: 100px !important;
+    padding: 0 16px !important;
+  }
+
+  .random-btn {
+    padding: 0 10px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .compact-form-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .prefix-input {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .random-btn {
+    order: 2;
+  }
+
+  .at-symbol {
+    order: 3;
+    display: none;
+  }
+
+  .domain-select {
+    flex: 1;
+    min-width: 150px;
+    order: 4;
+  }
+
+  .generate-btn {
+    order: 5;
+    width: 100% !important;
+    min-width: auto !important;
+    margin-top: 8px;
+  }
+
+  .config-form {
+    padding: 16px 20px;
+  }
+
+  .config-header {
+    padding: 14px 20px 10px;
+  }
 }
 
 /* 响应式设计 */
@@ -1495,5 +1824,623 @@ onUnmounted(() => {
   .why-choose h3 {
     font-size: 17px;
   }
+}
+
+/* 通用毛玻璃容器样式 */
+.glass-container {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+  padding: 24px !important;
+  margin-bottom: 24px !important;
+}
+
+/* 毛玻璃警告框样式 */
+.glass-alert {
+  background: rgba(255, 193, 7, 0.1) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 193, 7, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 16px rgba(255, 193, 7, 0.1) !important;
+}
+
+.glass-alert .el-alert__content {
+  background: transparent !important;
+}
+
+/* 毛玻璃描述列表样式 */
+.glass-descriptions {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+}
+
+.glass-descriptions .el-descriptions__header {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass-descriptions .el-descriptions__body {
+  background: transparent !important;
+}
+
+.glass-descriptions .el-descriptions__table {
+  background: transparent !important;
+}
+
+.glass-descriptions .el-descriptions__cell {
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: transparent !important;
+}
+
+/* 毛玻璃表格样式 */
+.glass-table {
+  background: transparent !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass-table .el-table__header-wrapper {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass-table .el-table__header {
+  background: transparent !important;
+}
+
+.glass-table .el-table__body-wrapper {
+  background: transparent !important;
+}
+
+.glass-table .el-table__body {
+  background: transparent !important;
+}
+
+.glass-table .el-table__row {
+  background: transparent !important;
+}
+
+.glass-table .el-table__row:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.glass-table .el-table td,
+.glass-table .el-table th {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: transparent !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.glass-table .el-table th {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #1a365d !important;
+  font-weight: 700 !important;
+}
+
+.glass-table .el-table__header th.el-table__cell {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 表格内的按钮和标签样式 */
+.glass-table .el-tag {
+  background: rgba(64, 158, 255, 0.15) !important;
+  border: 1px solid rgba(64, 158, 255, 0.3) !important;
+  color: #409eff !important;
+}
+
+.glass-table .el-tag--success {
+  background: rgba(103, 194, 58, 0.15) !important;
+  border: 1px solid rgba(103, 194, 58, 0.3) !important;
+  color: #67c23a !important;
+}
+
+.glass-table .el-button--text {
+  color: #409eff !important;
+  background: transparent !important;
+}
+
+.glass-table .el-button--primary {
+  background: rgba(64, 158, 255, 0.8) !important;
+  border: 1px solid rgba(64, 158, 255, 0.3) !important;
+}
+
+.glass-table .el-button--danger {
+  background: rgba(245, 108, 108, 0.8) !important;
+  border: 1px solid rgba(245, 108, 108, 0.3) !important;
+}
+
+/* 毛玻璃对话框样式 */
+.glass-dialog .el-dialog {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2) !important;
+}
+
+.glass-dialog .el-dialog__header {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px 16px 0 0 !important;
+}
+
+.glass-dialog .el-dialog__body {
+  background: transparent !important;
+}
+
+/* 处理其他可能的纯色背景 */
+/* 表格空状态 */
+.glass-table .el-table__empty-block {
+  background: transparent !important;
+}
+
+.glass-table .el-table__empty-text {
+  color: #909399 !important;
+}
+
+/* 加载状态 */
+.glass-table .el-loading-mask {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* 表格固定列 */
+.glass-table .el-table__fixed,
+.glass-table .el-table__fixed-right {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+/* 输入框和选择器的毛玻璃效果 */
+.glass-card .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.glass-card .el-input__wrapper:hover {
+  border-color: rgba(64, 158, 255, 0.4) !important;
+}
+
+.glass-card .el-input__wrapper.is-focus {
+  border-color: rgba(64, 158, 255, 0.6) !important;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2) !important;
+}
+
+.glass-card .el-select .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 下拉菜单毛玻璃效果 */
+.el-select-dropdown {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+}
+
+.el-select-dropdown .el-select-dropdown__item {
+  background: transparent !important;
+}
+
+.el-select-dropdown .el-select-dropdown__item:hover {
+  background: rgba(64, 158, 255, 0.1) !important;
+}
+
+.el-select-dropdown .el-select-dropdown__item.selected {
+  background: rgba(64, 158, 255, 0.15) !important;
+  color: #409eff !important;
+}
+
+/* 表单标签样式 - 使用深蓝色显眼 */
+.glass-card .el-form-item__label {
+  color: #2d3748 !important;
+  font-weight: 700 !important;
+}
+
+/* 权限状态栏完整毛玻璃效果 */
+.status-section {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+  padding: 0 !important;
+  min-height: 80px !important;
+}
+
+.glass-status-bar {
+  background: transparent !important;
+}
+
+/* 深度覆盖TempEmailStatusBar组件内部样式 */
+.status-section .temp-email-status-bar {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 16px !important;
+}
+
+.status-section .temp-email-status-bar .el-card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.status-section .temp-email-status-bar .el-alert {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* 公告横幅完整毛玻璃效果 */
+.notice-section {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+  padding: 16px !important;
+  min-height: 80px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.notice-section .temp-email-notice {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+/* 优化公告横幅文本颜色 */
+.notice-section .el-alert__title {
+  color: #1a365d !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+}
+
+.notice-section .el-alert__description {
+  color: #2d3748 !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+}
+
+.notice-section .el-alert__icon {
+  color: #3182ce !important;
+}
+
+.glass-notice {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+/* 当前邮箱信息毛玻璃效果 */
+.current-email.glass-container .el-descriptions {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+}
+
+.current-email.glass-container .el-descriptions__header {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(10px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #1a365d !important;
+  font-weight: 700 !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.current-email.glass-container .el-descriptions__body {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(15px) !important;
+  border-radius: 0 0 12px 12px !important;
+}
+
+.current-email.glass-container .el-descriptions__cell {
+  background: transparent !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #2d3748 !important;
+  font-weight: 500 !important;
+}
+
+/* 旧的邮箱配置样式已被重构 */
+
+/* 输入框完全毛玻璃化 */
+.glass-card .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12) !important;
+  transition: all 0.3s ease !important;
+}
+
+.glass-card .el-input__wrapper:hover {
+  border-color: rgba(64, 158, 255, 0.6) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+.glass-card .el-input__wrapper.is-focus {
+  border-color: rgba(64, 158, 255, 0.8) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.25), 0 8px 28px rgba(0, 0, 0, 0.18) !important;
+  transform: translateY(-2px) !important;
+}
+
+.glass-card .el-select .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+}
+
+/* 输入框内文字颜色 - 使用深蓝色显眼 */
+.glass-card .el-input__inner {
+  color: #2d3748 !important;
+  font-weight: 600 !important;
+}
+
+.glass-card .el-input__inner::placeholder {
+  color: #4a5568 !important;
+  font-weight: 500 !important;
+}
+
+/* 列表表头毛玻璃效果 */
+.glass-container .list-header {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+  padding: 16px 20px !important;
+  margin-bottom: 16px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.glass-container .list-header h3 {
+  margin: 0 !important;
+  color: #1a365d !important;
+  font-weight: 700 !important;
+}
+
+/* 深度覆盖Element Plus组件的默认背景 */
+.status-section .el-card__body,
+.notice-section .el-alert__content,
+.glass-card .el-form-item,
+.glass-container .el-descriptions,
+.glass-container .el-descriptions__body {
+  background: transparent !important;
+}
+
+/* 全局深度覆盖Element Plus默认背景 */
+/* 卡片组件 */
+.temp-email-container .el-card,
+.temp-email-container .el-card__body,
+.temp-email-container .el-card__header {
+  background: transparent !important;
+}
+
+/* 警告框组件 */
+.temp-email-container .el-alert,
+.temp-email-container .el-alert__content {
+  background: transparent !important;
+}
+
+/* 表单组件 */
+.temp-email-container .el-form,
+.temp-email-container .el-form-item,
+.temp-email-container .el-form-item__content {
+  background: transparent !important;
+}
+
+/* 描述列表组件 */
+.temp-email-container .el-descriptions,
+.temp-email-container .el-descriptions__body,
+.temp-email-container .el-descriptions__table,
+.temp-email-container .el-descriptions__cell {
+  background: transparent !important;
+}
+
+/* 表格组件深度覆盖 */
+.temp-email-container .el-table,
+.temp-email-container .el-table__body,
+.temp-email-container .el-table__header,
+.temp-email-container .el-table tr,
+.temp-email-container .el-table td,
+.temp-email-container .el-table th {
+  background: transparent !important;
+}
+
+/* 表格表头特殊处理 */
+.temp-email-container .el-table__header-wrapper,
+.temp-email-container .el-table__header th {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 表格悬停效果 */
+.temp-email-container .el-table__row:hover td {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 全局文字颜色强化 - 使用深色但不全是黑色 */
+.temp-email-container,
+.temp-email-container * {
+  color: #2d3748 !important;
+}
+
+/* 特殊元素保持原有颜色 */
+.temp-email-container .el-tag,
+.temp-email-container .el-button,
+.temp-email-container .el-icon,
+.temp-email-container .status-icon,
+.temp-email-container .el-alert__icon {
+  color: inherit !important;
+}
+
+/* 链接和按钮文字保持原有颜色 */
+.temp-email-container .el-button--text,
+.temp-email-container .el-link {
+  color: #409eff !important;
+}
+
+/* 成功、警告、错误状态保持原有颜色 */
+.temp-email-container .el-tag--success,
+.temp-email-container .status-icon.status-success {
+  color: #67c23a !important;
+}
+
+.temp-email-container .el-tag--warning,
+.temp-email-container .status-icon.status-warning {
+  color: #e6a23c !important;
+}
+
+.temp-email-container .el-tag--danger {
+  color: #f56c6c !important;
+}
+
+/* 额外的协调性优化 */
+/* 确保TempEmailStatusBar在父容器中完全填充 */
+.status-section .temp-email-status-bar {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* 优化选择器下拉选项的颜色 */
+.el-select-dropdown .el-select-dropdown__item {
+  color: #2d3748 !important;
+}
+
+.el-select-dropdown .el-select-dropdown__item.selected {
+  color: #2b6cb0 !important;
+}
+
+/* 旧的前置按钮样式已在新布局中重构 */
+
+/* 优化表格内容的可读性 */
+.glass-table .el-table td {
+  color: #2d3748 !important;
+  font-weight: 500 !important;
+}
+
+/* 优化标签的毛玻璃效果 */
+.glass-table .el-tag {
+  backdrop-filter: blur(10px) !important;
+  border-radius: 8px !important;
+}
+
+/* 对话框组件 */
+.temp-email-container .el-dialog,
+.temp-email-container .el-dialog__body,
+.temp-email-container .el-dialog__header {
+  background: transparent !important;
+}
+
+/* 按钮组件在毛玻璃容器中的样式 */
+.glass-container .el-button,
+.glass-card .el-button {
+  backdrop-filter: blur(5px) !important;
+}
+
+.glass-container .el-button--primary:not(.pink-generate-btn):not(.header-generate-btn) {
+  background: rgba(64, 158, 255, 0.8) !important;
+  border: 1px solid rgba(64, 158, 255, 0.3) !important;
+}
+
+/* 输入框在毛玻璃容器中的增强效果 */
+.glass-container .el-input__wrapper,
+.glass-card .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* 选择器在毛玻璃容器中的增强效果 */
+.glass-container .el-select .el-input__wrapper,
+.glass-card .el-select .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 全局字体颜色优化 - 将灰色改为黑色显眼颜色 */
+.temp-email-container {
+  color: #2c3e50 !important;
+}
+
+.temp-email-container .el-text,
+.temp-email-container .el-descriptions__label,
+.temp-email-container .el-descriptions__content,
+.temp-email-container .el-table td,
+.temp-email-container .el-table th,
+.temp-email-container .el-form-item__label,
+.temp-email-container .el-alert__title,
+.temp-email-container .el-alert__description,
+.temp-email-container h1, .temp-email-container h2,
+.temp-email-container h3, .temp-email-container h4,
+.temp-email-container p, .temp-email-container span,
+.temp-email-container .list-header h3 {
+  color: #2c3e50 !important;
+}
+
+/* 特殊状态文字颜色 */
+.temp-email-container .el-table__empty-text {
+  color: #2c3e50 !important;
+}
+
+.temp-email-container .code-text {
+  color: #2c3e50 !important;
+  font-weight: 600 !important;
+}
+
+/* 输入框文字颜色 */
+.temp-email-container .el-input__inner,
+.temp-email-container .el-textarea__inner {
+  color: #2c3e50 !important;
+  font-weight: 500 !important;
+}
+
+/* 占位符文字颜色 */
+.temp-email-container .el-input__inner::placeholder,
+.temp-email-container .el-textarea__inner::placeholder {
+  color: #6c757d !important;
+}
+
+/* 选择器文字颜色 */
+.temp-email-container .el-select .el-input__inner {
+  color: #2c3e50 !important;
+}
+
+/* 下拉选项文字颜色 */
+.el-select-dropdown .el-select-dropdown__item {
+  color: #2c3e50 !important;
+}
+
+/* 标签文字颜色保持原有主题色 */
+.temp-email-container .el-tag {
+  font-weight: 600 !important;
+}
+
+/* 按钮文字颜色 */
+.temp-email-container .el-button {
+  font-weight: 600 !important;
+}
+
+/* 对话框文字颜色 */
+.temp-email-container .el-dialog__title {
+  color: #2c3e50 !important;
+  font-weight: 600 !important;
+}
+
+/* 描述列表标题颜色 */
+.temp-email-container .el-descriptions__title {
+  color: #2c3e50 !important;
+  font-weight: 700 !important;
 }
 </style>

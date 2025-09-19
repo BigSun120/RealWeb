@@ -136,7 +136,7 @@ const getAuthorName = (author) => {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #1a202c;
   line-height: 1.3;
   flex: 1;
   min-width: 150px;
@@ -148,7 +148,7 @@ const getAuthorName = (author) => {
   gap: 0.4rem;
   flex-wrap: wrap;
   font-size: 0.75rem;
-  color: #64748b;
+  color: #2d3748;
   flex-shrink: 0;
 }
 
@@ -159,29 +159,29 @@ const getAuthorName = (author) => {
 
 .tag {
   padding: 0.1rem 0.3rem;
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background: rgba(128, 90, 213, 0.15);
+  color: #805ad5;
   border-radius: 6px;
   font-size: 0.7rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .author {
-  color: #3b82f6;
-  font-weight: 500;
+  color: #e53e3e;
+  font-weight: 600;
 }
 
 .separator {
-  color: #94a3b8;
+  color: #2d3748;
 }
 
 .views, .likes {
-  color: #64748b;
+  color: #38a169;
 }
 
 .article-excerpt {
   margin: 0;
-  color: #475569;
+  color: #2d3748;
   line-height: 1.5;
   font-size: 0.85rem;
 }

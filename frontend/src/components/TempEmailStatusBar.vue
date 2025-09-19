@@ -129,11 +129,10 @@ const statusTagType = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  padding: 16px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 16px;
 }
 
 .status-info {
@@ -162,19 +161,21 @@ const statusTagType = computed(() => {
 }
 
 .status-title {
-  font-weight: 500;
-  color: #303133;
-  font-size: 14px;
+  font-weight: 700;
+  color: #1a365d;
+  font-size: 15px;
 }
 
 .status-detail {
-  font-size: 12px;
-  color: #909399;
+  font-size: 13px;
+  color: #3182ce;
+  font-weight: 600;
 }
 
 .status-tag {
   margin-left: auto;
   margin-right: 12px;
+  margin-top: 3px;
 }
 
 .activation-action {

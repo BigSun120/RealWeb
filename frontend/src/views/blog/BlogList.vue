@@ -2,32 +2,30 @@
   <div class="blog-list-page">
     <!-- 完全铺满页面的背景 -->
     <div class="page-background"></div>
-    <div class="glass-header">
-      <PageHeader
-        title="博客文章"
-        :show-stats="false"
-        :show-filters="true"
-        :search-value="searchQuery"
-        search-placeholder="🔍 搜索文章..."
-        :view-mode="viewMode"
-        :view-modes="[
-          { value: 'list', label: '📊' },
-          { value: 'grid', label: '⊞' }
-        ]"
-        @search="handleSearch"
-        @clear-search="clearSearch"
-        @view-mode-change="switchViewMode"
-      >
-        <template #toolbar>
-          <el-button type="primary" plain @click="goToPopularArticles" class="action-button" size="small">
-            热门排行
-          </el-button>
-        </template>
-      </PageHeader>
-    </div>
+    <PageHeader
+      title="博客文章"
+      :show-stats="false"
+      :show-filters="true"
+      :search-value="searchQuery"
+      search-placeholder="🔍 搜索文章..."
+      :view-mode="viewMode"
+      :view-modes="[
+        { value: 'list', label: '📊' },
+        { value: 'grid', label: '⊞' }
+      ]"
+      @search="handleSearch"
+      @clear-search="clearSearch"
+      @view-mode-change="switchViewMode"
+    >
+      <template #toolbar>
+        <el-button type="primary" plain @click="goToPopularArticles" class="action-button" size="small">
+          热门排行
+        </el-button>
+      </template>
+    </PageHeader>
 
     <!-- 主内容区域 - 左右布局 -->
-    <div class="container" style="margin: 2rem auto; padding: 0 1rem;">
+    <div class="container">
       <div class="main-layout">
         <!-- 左侧筛选卡片 -->
         <div class="sidebar-card">
@@ -47,15 +45,15 @@
           <!-- 博客列表区域 -->
           <div class="articles-section">
             <BlogSkeletons v-if="loading" :mode="viewMode" />
-            <BlogEmptyState v-else-if="filteredArticles.length === 0" :search="searchQuery" @clear="clearSearch" />
+            <BlogEmptyState v-else-if="!loading && filteredArticles.length === 0" :search="searchQuery" @clear="clearSearch" />
 
             <BlogArticlesGrid
-              v-else-if="isGridMode"
+              v-else-if="!loading && isGridMode"
               :articles="filteredArticles"
               @open="id => $router.push(`/blog/${id}`)"
             />
             <BlogArticlesList
-              v-else
+              v-else-if="!loading"
               :articles="filteredArticles"
               @open="id => $router.push(`/blog/${id}`)"
             />
@@ -118,11 +116,18 @@
   z-index: -1;
 }
 
+/* 容器样式 */
+.container {
+  max-width: 1200px;
+  margin: 0.5rem 0;
+  padding: 0rem;
+}
+
 /* 主布局 - 左右分栏 */
 .main-layout {
   display: grid;
   grid-template-columns: 280px 1fr;
-  gap: 2rem;
+  gap: 0.7rem;
   align-items: start;
 }
 
@@ -132,8 +137,8 @@
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 20px;
-  padding: 1.5rem;
-  color: #2c3e50;
+  padding: 1rem;
+  color: #1a202c;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 2rem;
@@ -146,8 +151,8 @@
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 20px;
-  padding: 2rem;
-  color: #2c3e50;
+  padding: 0.5rem;
+  color: #1a202c;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 

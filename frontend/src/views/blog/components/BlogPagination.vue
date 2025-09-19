@@ -99,13 +99,13 @@ const onInputJump = (e: Event) => {
 
 .pagination-info {
   text-align: center;
-  color: #64748b;
+  color: #2d3748;
   font-size: 0.9rem;
 }
 
 .highlight {
-  color: #3b82f6;
-  font-weight: 600;
+  color: #d69e2e;
+  font-weight: 700;
 }
 
 .pagination-main {
@@ -130,7 +130,7 @@ const onInputJump = (e: Event) => {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  color: #475569;
+  color: #1a202c;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -147,10 +147,10 @@ const onInputJump = (e: Event) => {
 }
 
 .page-btn.active {
-  background: rgba(59, 130, 246, 0.8);
-  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(214, 158, 46, 0.9);
+  border-color: rgba(214, 158, 46, 0.4);
   color: white;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(214, 158, 46, 0.4);
 }
 
 .page-btn:disabled {
@@ -164,7 +164,7 @@ const onInputJump = (e: Event) => {
 
 .pagination-ellipsis {
   padding: 0.5rem;
-  color: #94a3b8;
+  color: #2d3748;
   font-weight: 500;
 }
 
@@ -183,7 +183,7 @@ const onInputJump = (e: Event) => {
 }
 
 .label {
-  color: #64748b;
+  color: #2d3748;
   font-size: 0.85rem;
   font-weight: 500;
 }
@@ -195,7 +195,7 @@ const onInputJump = (e: Event) => {
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  color: #475569;
+  color: #2d3748;
   font-size: 0.85rem;
   transition: all 0.2s ease;
 }
@@ -203,9 +203,9 @@ const onInputJump = (e: Event) => {
 .size-select:focus,
 .jump-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #d69e2e;
   background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(214, 158, 46, 0.1);
 }
 
 .jump-input {
@@ -215,11 +215,11 @@ const onInputJump = (e: Event) => {
 
 .jump-btn {
   padding: 0.4rem 0.8rem;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(214, 158, 46, 0.3);
   border-radius: 6px;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(214, 158, 46, 0.1);
   backdrop-filter: blur(10px);
-  color: #3b82f6;
+  color: #d69e2e;
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -227,8 +227,8 @@ const onInputJump = (e: Event) => {
 }
 
 .jump-btn:hover {
-  border-color: rgba(59, 130, 246, 0.5);
-  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(214, 158, 46, 0.5);
+  background: rgba(214, 158, 46, 0.15);
   transform: translateY(-1px);
 }
 

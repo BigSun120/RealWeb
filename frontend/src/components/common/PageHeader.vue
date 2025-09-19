@@ -218,20 +218,20 @@ defineEmits(['search', 'clear-search', 'view-mode-change'])
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
-  color: #2c3e50;
+  color: #1a202c;
   font-size: 0.9rem;
   transition: all 0.3s ease;
   outline: none;
 }
 
 .search-input::placeholder {
-  color: #64748b;
+  color: #2d3748;
 }
 
 .search-input:focus {
-  border-color: #3b82f6;
+  border-color: #d69e2e;
   background: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(214, 158, 46, 0.1);
 }
 
 .clear-search-btn {
@@ -241,7 +241,7 @@ defineEmits(['search', 'clear-search', 'view-mode-change'])
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #64748b;
+  color: #2d3748;
   cursor: pointer;
   font-size: 1rem;
   padding: 0.25rem;
@@ -270,7 +270,7 @@ defineEmits(['search', 'clear-search', 'view-mode-change'])
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.1);
-  color: #64748b;
+  color: #2d3748;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -281,14 +281,14 @@ defineEmits(['search', 'clear-search', 'view-mode-change'])
 .btn:hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.4);
-  color: #2c3e50;
+  color: #1a202c;
 }
 
 .btn.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: #d69e2e;
+  border-color: #d69e2e;
   color: white;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(214, 158, 46, 0.3);
 }
 
 .extra-toolbar {

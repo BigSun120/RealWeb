@@ -407,6 +407,10 @@ export default {
         console.error('获取文章失败:', error);
       } finally {
         loading.value = false;
+        // 文章加载完成后，确保布局正确
+        nextTick(() => {
+          handleResize();
+        });
       }
     };
 
@@ -531,10 +535,33 @@ export default {
       { immediate: true, deep: true }
     );
 
+    // 强制初始化布局
+    const forceInitLayout = () => {
+      const unifiedContainer = document.querySelector('.unified-container');
+      if (!unifiedContainer) return;
+
+      // 强制移除可能存在的样式
+      unifiedContainer.classList.remove('js-layout-controlled');
+      unifiedContainer.style.removeProperty('--js-margin-right');
+      unifiedContainer.style.removeProperty('--js-max-width');
+
+      // 立即重新应用布局
+      setTimeout(() => {
+        handleResize();
+      }, 10);
+    };
+
     // 窗口大小变化时重新调整布局
     const handleResize = () => {
       const unifiedContainer = document.querySelector('.unified-container');
-      if (unifiedContainer && window.innerWidth > 1200) {
+
+      // 如果DOM还没有准备好，延迟执行
+      if (!unifiedContainer) {
+        setTimeout(handleResize, 50);
+        return;
+      }
+
+      if (window.innerWidth > 1200) {
         if (sidebarHidden.value) {
           unifiedContainer.style.setProperty('--js-margin-right', '0px');
           unifiedContainer.style.setProperty('--js-max-width', '1000px');
@@ -622,8 +649,14 @@ export default {
 
       nextTick(() => {
         window.scrollTo({ top: 0, behavior: 'auto' });
-        // 初始化布局（延迟一点确保DOM完全渲染）
+        // 强制初始化布局
+        forceInitLayout();
+        // 立即初始化布局
+        handleResize();
+        // 再次延迟确保DOM完全渲染后重新调整
         setTimeout(handleResize, 100);
+        // 最后一次确保布局正确
+        setTimeout(handleResize, 300);
       });
 
       // 添加滚动监听器
@@ -652,6 +685,19 @@ export default {
       }
     );
 
+    // 监听文章内容变化，确保布局正确
+    watch(
+      () => article.value,
+      (newArticle) => {
+        if (newArticle) {
+          nextTick(() => {
+            // 延迟执行，确保DOM完全更新
+            setTimeout(handleResize, 100);
+          });
+        }
+      }
+    );
+
     // 跳转到用户资料页面
     const goToUserProfile = () => {
       if (article.value?.author?._id) {
@@ -663,7 +709,8 @@ export default {
     const toggleSidebar = () => {
       sidebarHidden.value = !sidebarHidden.value;
 
-      // 动态调整主内容宽度
+      // 立即调整布局，然后再次确认
+      handleResize();
       nextTick(() => {
         handleResize();
       });
@@ -754,6 +801,11 @@ export default {
   max-width: var(--js-max-width, 1489px) !important;
   width: auto !important;
   box-sizing: border-box !important;
+  /* 确保过渡效果 */
+  transition: margin-right 0.3s ease, max-width 0.3s ease !important;
+  /* 强制应用样式 */
+  display: block !important;
+  position: relative !important;
 }
 
 /* 布局 */
@@ -784,7 +836,7 @@ export default {
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
-  padding: var(--spacing-4);
+  padding: 8px 5px; /* 左右内边距不超过5px */
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
@@ -792,7 +844,7 @@ export default {
 .floating-sidebar .sidebar-content {
   max-height: calc(100vh - 200px);
   overflow-y: auto;
-  padding: 10px; /* 增加内边距，确保边框不被裁剪 */
+  padding: 8px 3px; /* 左右内边距不超过5px */
   box-sizing: border-box;
 }
 
@@ -984,14 +1036,23 @@ export default {
   margin-bottom: var(--spacing-4);
 }
 
+/* 重写侧边栏中的card-header和card-body默认内边距 */
+.floating-sidebar .card-header {
+  padding: var(--spacing-2) 3px; /* 左右内边距不超过5px */
+}
+
+.floating-sidebar .card-body {
+  padding: var(--spacing-1) 3px; /* 左右内边距不超过5px */
+}
+
 .table-of-contents {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
   max-height: 400px;
   overflow-y: auto;
-  padding-right: var(--spacing-2);
-  padding-left: var(--spacing-2);
+  padding-right: 3px; /* 左右内边距不超过5px */
+  padding-left: 3px; /* 左右内边距不超过5px */
 }
 
 /* 目录滚动条样式 */
@@ -1015,7 +1076,7 @@ export default {
 
 .toc-link {
   display: block;
-  padding: var(--spacing-2) var(--spacing-3);
+  padding: var(--spacing-1) 4px; /* 左右内边距不超过5px */
   color: #34495e;
   text-decoration: none;
   border-radius: var(--radius-base);
@@ -1083,10 +1144,10 @@ export default {
   color: #2c3e50;
   font-size: var(--font-size-base);
   font-weight: 600;
-  margin-bottom: var(--spacing-3);
+  margin-bottom: var(--spacing-2);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
   border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-  padding-bottom: var(--spacing-2);
+  padding: 0 3px var(--spacing-1); /* 左右内边距不超过5px */
 }
 
 /* 浮动侧边栏滚动条美化 */
@@ -1161,12 +1222,13 @@ export default {
 .related-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4);
+  gap: var(--spacing-2);
+  padding: 0 3px; /* 左右内边距不超过5px */
 }
 
 .related-item {
   display: block;
-  padding: var(--spacing-3);
+  padding: var(--spacing-2) 4px; /* 左右内边距不超过5px */
   border-radius: var(--radius-base);
   text-decoration: none;
   transition: all 0.3s ease;
@@ -1210,28 +1272,42 @@ export default {
   /* 宽度和边距由JavaScript动态控制 */
 }
 
-@media (max-width: 1200px) {
+/* 移除错误的中等屏幕侧边栏样式 */
+
+/* 中等屏幕下的浮动侧边栏调整 */
+@media (max-width: 1200px) and (min-width: 769px) {
   .unified-container {
     margin-right: 0; /* 移除右边距 */
   }
 
   .floating-sidebar {
-    position: static;
-    width: 100%;
-    max-width: none;
-    max-height: none;
-    margin-top: var(--spacing-6);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    position: fixed;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    width: 200px;
+    max-height: 70vh;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   }
 
-  .floating-sidebar .toc-card,
-  .floating-sidebar .related-articles {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: var(--spacing-3);
-    margin-bottom: var(--spacing-4);
+  .floating-sidebar .sidebar-content {
+    max-height: calc(70vh - 60px);
+    overflow-y: auto;
+    padding: 6px 2px; /* 左右内边距不超过5px */
+  }
+
+  /* 中等屏幕重写card默认内边距 */
+  .floating-sidebar .card-header {
+    padding: var(--spacing-2) 3px; /* 左右内边距不超过5px */
+  }
+
+  .floating-sidebar .card-body {
+    padding: var(--spacing-1) 2px; /* 左右内边距不超过5px */
   }
 
   .article-title {
@@ -1244,6 +1320,7 @@ export default {
   }
 }
 
+/* 移动端浮动目录设计 */
 @media (max-width: 768px) {
   .page-container {
     padding: var(--spacing-4) var(--spacing-3);
@@ -1257,9 +1334,108 @@ export default {
   }
 
   .floating-sidebar {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(52, 152, 219, 0.9);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 20px rgba(52, 152, 219, 0.4);
+    z-index: 1001;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+
+  .floating-sidebar:not(.sidebar-hidden) {
+    width: 280px;
+    height: auto;
+    max-height: 60vh;
+    border-radius: 16px;
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .floating-sidebar .sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 1002;
+  }
+
+  .floating-sidebar:not(.sidebar-hidden) .sidebar-toggle {
+    top: 15px;
+    right: 15px;
+    left: auto;
+    transform: none;
+  }
+
+  .floating-sidebar .sidebar-content {
+    opacity: 0;
+    pointer-events: none;
+    padding: 50px 3px 8px; /* 左右内边距不超过5px */
+    max-height: calc(60vh - 50px);
+    overflow-y: auto;
+  }
+
+  .floating-sidebar:not(.sidebar-hidden) .sidebar-content {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* 移动端目录卡片样式 */
+  .floating-sidebar .toc-card,
+  .floating-sidebar .related-articles {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: var(--spacing-3);
-    margin: var(--spacing-4) var(--spacing-2) 0;
+    margin-bottom: var(--spacing-2); /* 减少下边距 */
+  }
+
+  /* 移动端重写card默认内边距 */
+  .floating-sidebar .card-header {
+    padding: var(--spacing-1) 3px; /* 左右内边距不超过5px */
+  }
+
+  .floating-sidebar .card-body {
+    padding: var(--spacing-1) 2px; /* 左右内边距不超过5px */
+  }
+
+  .floating-sidebar .card-header h4 {
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-1);
+    padding: 0; /* 移除额外内边距 */
+  }
+
+  .floating-sidebar .toc-link {
+    padding: var(--spacing-1) 2px; /* 左右内边距不超过5px */
+    font-size: var(--font-size-xs);
+    line-height: 1.3;
+  }
+
+  .floating-sidebar .related-item {
+    padding: var(--spacing-1) 2px; /* 左右内边距不超过5px */
+  }
+
+  .floating-sidebar .related-title {
+    font-size: var(--font-size-xs);
+    line-height: 1.3;
+  }
+
+  /* 移动端相关文章列表内边距 */
+  .floating-sidebar .related-list {
+    padding: 0 2px; /* 左右内边距不超过5px */
   }
 
   .article-meta {

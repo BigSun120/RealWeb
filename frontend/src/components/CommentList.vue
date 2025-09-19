@@ -249,6 +249,8 @@ export default {
         // 设置新评论的默认状态
         newComment.isLiked = false;
         newComment.replyCount = 0;
+        newComment.isBookmarked = false; // 新评论默认未收藏
+        newComment.bookmarkCount = 0; // 新评论收藏数为0
 
         // 将新评论添加到列表顶部
         comments.value.unshift(newComment);
@@ -423,6 +425,16 @@ export default {
         loading.value = false;
       }
     };
+
+
+
+    // 监听用户登录状态变化，重新加载评论以获取收藏状态
+    watch(() => userStore.isLoggedIn, (isLoggedIn) => {
+      if (isLoggedIn && comments.value.length > 0) {
+        // 重新加载评论以获取完整的用户状态（点赞、收藏等）
+        loadComments(true);
+      }
+    });
 
     // 组件挂载时加载评论
     onMounted(() => {

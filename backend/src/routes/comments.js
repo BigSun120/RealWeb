@@ -160,11 +160,21 @@ router.get(
       }
       const total = await Comment.countDocuments(query);
 
-      // 如果用户已登录，检查点赞状态
+      // 如果用户已登录，检查点赞状态和收藏状态
       if (req.user) {
+        const Bookmark = require('../models/Bookmark');
+
         for (let comment of comments) {
           const isLiked = await CommentLike.isLiked(comment._id, req.user._id);
           comment.isLiked = !!isLiked;
+
+          // 检查收藏状态
+          const isBookmarked = await Bookmark.isBookmarked(req.user._id, 'comment', comment._id);
+          comment.isBookmarked = !!isBookmarked;
+
+          // 获取收藏数量（可选，如果需要显示收藏数量）
+          const bookmarkStats = await Bookmark.getBookmarkStats('comment', comment._id);
+          comment.bookmarkCount = bookmarkStats.count || 0;
         }
       }
 
@@ -233,11 +243,21 @@ router.get(
         isDeleted: false
       });
 
-      // 如果用户已登录，检查点赞状态
+      // 如果用户已登录，检查点赞状态和收藏状态
       if (req.user) {
+        const Bookmark = require('../models/Bookmark');
+
         for (let reply of replies) {
           const isLiked = await CommentLike.isLiked(reply._id, req.user._id);
           reply.isLiked = !!isLiked;
+
+          // 检查收藏状态
+          const isBookmarked = await Bookmark.isBookmarked(req.user._id, 'comment', reply._id);
+          reply.isBookmarked = !!isBookmarked;
+
+          // 获取收藏数量
+          const bookmarkStats = await Bookmark.getBookmarkStats('comment', reply._id);
+          reply.bookmarkCount = bookmarkStats.count || 0;
         }
       }
 

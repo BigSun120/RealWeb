@@ -99,8 +99,8 @@
             v-if="!isReply"
             target-type="comment"
             :target-id="comment._id"
-            :initial-bookmarked="false"
-            :initial-bookmark-count="0"
+            :initial-bookmarked="comment.isBookmarked || false"
+            :initial-bookmark-count="comment.bookmarkCount || 0"
             size="small"
             :show-text="false"
             :show-count="false"
@@ -346,6 +346,10 @@ export default {
           if (!existingReply) {
             // 将新回复添加到列表顶部
             replies.value.unshift(newReply);
+
+            // 设置新回复的默认状态（新回复默认未收藏）
+            newReply.isBookmarked = false;
+            newReply.bookmarkCount = 0;
           }
 
           // 展开回复列表
@@ -447,16 +451,6 @@ export default {
         hasMoreReplies.value = response.data.pagination.pages > 1;
         repliesPage.value = 1;
 
-        // 如果用户已登录，检查每个回复的点赞状态
-        if (userStore.isLoggedIn) {
-          for (let reply of replies.value) {
-            // 这里可以批量检查点赞状态，暂时设为false
-            if (reply.isLiked === undefined) {
-              reply.isLiked = false;
-            }
-          }
-        }
-
         // 如果指定了autoShow，则自动显示回复列表
         if (autoShow) {
           showReplies.value = true;
@@ -503,6 +497,8 @@ export default {
       // 向上传递事件
       emit('like', data);
     };
+
+
 
     // 处理收藏状态变化
     const handleBookmarkChange = (data) => {
