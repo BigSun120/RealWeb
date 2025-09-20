@@ -179,8 +179,8 @@ app.use(
   express.static(path.resolve(process.env.UPLOAD_PATH || path.join(__dirname, 'uploads')))
 );
 
-// Augment配套程序静态文件服务（无需认证）
-app.use('/static', express.static(path.join(__dirname, '../augment-proxy')));
+// 注意：Augment配套程序静态文件服务已移除，改用协议调用方式
+// app.use('/static', express.static(path.join(__dirname, '../augment-proxy')));
 
 // 背景图片静态文件服务已由上面的 /uploads 路径处理，移除重复配置
 

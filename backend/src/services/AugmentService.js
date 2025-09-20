@@ -285,11 +285,26 @@ class AugmentService {
         try {
           const ledgerData = await this.getLedgerSummary(customerId, pricingUnitId, portalToken);
 
+          // 提取创建时间和过期时间
+          let createdAt = null;
+          let expiryDate = null;
+          let isActive = false;
+
+          if (ledgerData.credit_blocks && ledgerData.credit_blocks.length > 0) {
+            const firstBlock = ledgerData.credit_blocks[0];
+            createdAt = firstBlock.created_at;
+            expiryDate = firstBlock.expiry_date;
+            isActive = firstBlock.is_active;
+          }
+
           return {
             customer_id: customerId,
             pricing_unit_id: pricingUnitId,
             credits_balance: ledgerData.credits_balance || 0,
             total_usage: ledgerData.total_usage || 0,
+            is_active: isActive,
+            created_at: createdAt,
+            expiry_date: expiryDate,
             usage_stats: {
               credits_balance: ledgerData.credits_balance || 0,
               total_usage: ledgerData.total_usage || 0,
@@ -305,6 +320,9 @@ class AugmentService {
             pricing_unit_id: pricingUnitId,
             credits_balance: 0,
             total_usage: 0,
+            is_active: false,
+            created_at: null,
+            expiry_date: null,
             usage_stats: {
               credits_balance: 0,
               total_usage: 0,
@@ -319,6 +337,9 @@ class AugmentService {
       return {
         credits_balance: 0,
         total_usage: 0,
+        is_active: false,
+        created_at: null,
+        expiry_date: null,
         usage_stats: {
           credits_balance: 0,
           total_usage: 0,

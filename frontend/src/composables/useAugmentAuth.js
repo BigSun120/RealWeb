@@ -384,6 +384,36 @@ export function useAugmentAuth() {
     }
   })
 
+  /**
+   * 刷新Portal信息
+   */
+  const refreshPortalInfo = async (tokenId) => {
+    try {
+      const result = await augmentService.refreshPortalInfo(tokenId)
+
+      // 不在这里更新本地状态，让调用方处理更新逻辑
+      // 避免与页面组件中的更新逻辑冲突
+
+      return result
+    } catch (error) {
+      ElMessage.error(`刷新Portal信息失败: ${error.message}`)
+      throw error
+    }
+  }
+
+  /**
+   * 批量刷新Portal信息
+   */
+  const batchRefreshPortalInfo = async (tokenIds) => {
+    try {
+      const results = await augmentService.batchRefreshPortalInfo(tokenIds)
+      return results
+    } catch (error) {
+      ElMessage.error(`批量刷新Portal信息失败: ${error.message}`)
+      throw error
+    }
+  }
+
   // 重置OAuth状态
   const resetOAuthState = () => {
     oauthState.authUrl = ''
@@ -412,6 +442,8 @@ export function useAugmentAuth() {
     loadTokens,
     updateToken,
     deleteToken,
+    refreshPortalInfo,
+    batchRefreshPortalInfo,
     checkTokenStatus,
     batchCheckTokenStatus,
     refreshTokenUsage,

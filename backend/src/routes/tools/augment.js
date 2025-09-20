@@ -17,93 +17,7 @@ const router = express.Router();
 router.use(ToolsPermission.checkToolboxEnabled);
 router.use(ToolsPermission.checkRateLimit);
 
-// 下载路由无需认证
-router.get('/download/:platform', async (req, res) => {
-  try {
-    const { platform } = req.params;
-
-    // 定义下载链接映射
-    // 检查本地是否有构建好的exe文件
-    const path = require('path');
-    const fs = require('fs');
-
-    const localExePath = path.resolve(__dirname, '../../../../augment-proxy/AugmentTokenManager.exe');
-    const hasLocalExe = fs.existsSync(localExePath);
-
-
-
-    const downloadUrls = {
-      windows: {
-        url: hasLocalExe ? `/static/AugmentTokenManager.exe` : null,
-        filename: 'AugmentTokenManager.exe',
-        local: hasLocalExe
-      },
-      macos: {
-        url: null,
-        filename: 'Augment-Token-Manager-macOS.dmg',
-        local: false
-      },
-      linux: {
-        url: null,
-        filename: 'Augment-Token-Manager-Linux.AppImage',
-        local: false
-      }
-    };
-
-    const downloadInfo = downloadUrls[platform];
-    if (!downloadInfo || !downloadInfo.url) {
-      return res.status(404).json({
-        success: false,
-        message: platform === 'windows' ? '本地文件不存在' : '暂不支持该平台'
-      });
-    }
-
-    // 如果是本地文件，直接发送文件
-    if (downloadInfo.local && platform === 'windows') {
-      try {
-        // 设置正确的响应头
-        res.setHeader('Content-Disposition', `attachment; filename="${downloadInfo.filename}"`);
-        res.setHeader('Content-Type', 'application/octet-stream');
-
-        // 发送文件
-        res.sendFile(localExePath, (err) => {
-          if (err) {
-            logger.error(`Failed to send local file: ${err.message}`);
-            if (!res.headersSent) {
-              res.status(500).json({
-                success: false,
-                message: '文件发送失败',
-                error: err.message
-              });
-            }
-          } else {
-            logger.info(`Local file downloaded: ${localExePath}`);
-          }
-        });
-        return;
-      } catch (error) {
-        logger.error(`Failed to send local file: ${error.message}`);
-        return res.status(500).json({
-          success: false,
-          message: '文件发送失败',
-          error: error.message
-        });
-      }
-    }
-
-    // 重定向到实际下载链接
-    res.redirect(downloadInfo.url);
-
-    logger.info(`Download requested for platform: ${platform}, redirected to: ${downloadInfo.url}`);
-  } catch (error) {
-    logger.error('Download failed:', error);
-    res.status(500).json({
-      success: false,
-      message: '下载失败',
-      error: error.message
-    });
-  }
-});
+// 注意：本地代理程序下载功能已移除，改用协议调用方式
 
 // 其他路由都需要认证
 router.use(requireAuth);
@@ -203,20 +117,56 @@ router.get('/tokens', async (req, res) => {
     const tokens = await AugmentToken.getUserTokens(req.user._id, active_only === 'true');
 
     // 返回脱敏后的令牌数据
-    const safeTokens = tokens.map(token => ({
-      id: token.tokenId,
-      tenant_url: token.tenantUrl,
-      portal_url: token.portalUrl,
-      email_note: token.emailNote,
-      is_active: token.isActive,
-      ban_status: token.banStatus,
-      portal_info: token.portalInfo,
-      usage_stats: token.usageStats,
-      display_name: token.displayName,
-      masked_token: token.getMaskedToken(),
-      created_at: token.createdAt,
-      updated_at: token.updatedAt
-    }));
+    const safeTokens = tokens.map(token => {
+      // 处理portal_info数据格式
+      let portalInfoStr = '{}';
+      if (token.portalInfo && token.portalInfo.fullData) {
+        // 如果有完整数据，使用完整数据
+        portalInfoStr = JSON.stringify(token.portalInfo.fullData);
+      } else if (token.portalInfo && token.portalInfo.customerId) {
+        // 如果有数据库结构的数据，转换为前端期望的格式
+        const frontendFormat = {
+          customer_id: token.portalInfo.customerId,
+          pricing_unit_id: token.portalInfo.pricingUnitId,
+          credits_balance: token.usageStats?.credits_balance || 0,
+          total_usage: token.usageStats?.total_usage || 0,
+          is_active: true,
+          expiry_date: null,
+          raw_customer_data: token.portalInfo.customerData,
+          raw_ledger_data: token.portalInfo.ledgerSummary
+        };
+
+        // 尝试从ledgerSummary中提取过期时间
+        if (token.portalInfo.ledgerSummary && token.portalInfo.ledgerSummary.credit_blocks) {
+          const creditBlocks = token.portalInfo.ledgerSummary.credit_blocks;
+          if (creditBlocks.length > 0) {
+            frontendFormat.expiry_date = creditBlocks[0].expiry_date;
+            frontendFormat.is_active = creditBlocks[0].is_active;
+          }
+        }
+
+        portalInfoStr = JSON.stringify(frontendFormat);
+      } else if (token.portalInfo) {
+        // 否则使用原始portalInfo
+        portalInfoStr = JSON.stringify(token.portalInfo);
+      }
+
+      return {
+        id: token.tokenId,
+        tenant_url: token.tenantUrl,
+        portal_url: token.portalUrl,
+        email_note: token.emailNote,
+        is_active: token.isActive,
+        ban_status: token.banStatus,
+        portal_info: portalInfoStr, // 确保返回JSON字符串格式
+        usage_stats: token.usageStats,
+        display_name: token.displayName,
+        masked_token: token.getMaskedToken(),
+        created_at: token.createdAt,
+        updated_at: token.updatedAt,
+        last_refreshed: token.lastRefreshed
+      };
+    });
 
     res.json({
       success: true,
@@ -480,7 +430,7 @@ router.post('/tokens/:tokenId/refresh-portal-info', async (req, res) => {
       });
     }
 
-    // 刷新Portal信息 - 使用portalUrl而不是tenantUrl
+    // 刷新Portal信息
     const portalInfo = await AugmentService.getCustomerInfo(decryptedToken, token.portalUrl);
 
     // 更新令牌Portal信息

@@ -136,7 +136,7 @@ import {
   SwitchButton, 
   Check 
 } from '@element-plus/icons-vue'
-import { useLocalProxy } from '@/composables/useLocalProxy'
+// import { useLocalProxy } from '@/composables/useLocalProxy' // 已移除本地代理功能
 import { useAugmentAuth } from '@/composables/useAugmentAuth'
 
 // Emits
@@ -147,17 +147,22 @@ const isRefreshing = ref(false)
 const isLoadingAccounts = ref(false)
 const switchMethod = ref('auto')
 
-// 使用组合式函数
-const {
-  proxyStatus,
-  hasAdvancedFeatures,
-  accounts,
-  currentAccount,
-  getAccounts,
-  getCurrentAccount,
-  smartSwitchAccount,
-  logout
-} = useLocalProxy()
+// 使用组合式函数 - 本地代理功能已移除
+// const {
+//   proxyStatus,
+//   hasAdvancedFeatures,
+//   accounts,
+//   currentAccount,
+//   getAccounts,
+//   getCurrentAccount,
+//   smartSwitchAccount,
+//   logout
+// } = useLocalProxy() // 已移除本地代理功能
+
+// 临时替代变量
+const hasAdvancedFeatures = ref(false)
+const accounts = ref([])
+const currentAccount = ref(null)
 
 const {
   tokens,

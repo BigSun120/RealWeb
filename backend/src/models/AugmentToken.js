@@ -147,8 +147,10 @@ const augmentTokenSchema = new mongoose.Schema({
       // 添加解密后的令牌字段供本地代理使用
       if (doc.decryptToken) {
         ret.token = doc.decryptToken();
+        // 为编辑功能提供明文访问令牌
+        ret.access_token = doc.decryptToken();
       }
-      // 不返回加密的访问令牌
+      // 不返回加密的访问令牌字段
       delete ret.accessToken;
       return ret;
     }
@@ -252,13 +254,25 @@ augmentTokenSchema.methods.updateBanStatus = function (statusData) {
 
 // 实例方法：更新Portal信息
 augmentTokenSchema.methods.updatePortalInfo = function (portalInfo) {
+
   this.portalInfo = {
-    customer_id: portalInfo.customer_id || null,
-    pricing_unit_id: portalInfo.pricing_unit_id || null,
-    credits_balance: portalInfo.credits_balance || 0,
-    total_usage: portalInfo.total_usage || 0,
-    last_updated: new Date(),
-    raw_data: portalInfo.raw_customer_data || null
+    customerId: portalInfo.customer_id || null,
+    pricingUnitId: portalInfo.pricing_unit_id || null,
+    customerData: portalInfo.raw_customer_data || null,
+    ledgerSummary: portalInfo.raw_ledger_data || null,
+    lastUpdated: new Date(),
+    // 保存完整的原始数据以便前端使用
+    fullData: {
+      customer_id: portalInfo.customer_id || null,
+      pricing_unit_id: portalInfo.pricing_unit_id || null,
+      credits_balance: portalInfo.credits_balance || 0,
+      total_usage: portalInfo.total_usage || 0,
+      is_active: portalInfo.is_active || false,
+      created_at: portalInfo.created_at || null,
+      expiry_date: portalInfo.expiry_date || null,
+      raw_customer_data: portalInfo.raw_customer_data || null,
+      raw_ledger_data: portalInfo.raw_ledger_data || null
+    }
   };
 
   this.usageStats = {
@@ -267,10 +281,18 @@ augmentTokenSchema.methods.updatePortalInfo = function (portalInfo) {
     last_updated: new Date()
   };
 
+  this.lastRefreshed = new Date();
+  this.updatedAt = new Date();
+
   // 标记字段已修改（Mixed类型需要）
+  this.markModified('portalInfo');
   this.markModified('usageStats');
+  this.markModified('lastRefreshed');
+
   return this.save();
 };
+
+
 
 // 实例方法：检查是否需要状态更新
 augmentTokenSchema.methods.needsStatusCheck = function () {

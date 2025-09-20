@@ -260,6 +260,38 @@ class AugmentService {
   }
 
   /**
+   * 刷新单个令牌的Portal信息
+   * @param {string} tokenId - 令牌ID
+   * @returns {Promise<Object>}
+   */
+  async refreshPortalInfo(tokenId) {
+    const response = await augmentApi.post(`/tokens/${tokenId}/refresh-portal-info`)
+
+    if (!response.success) {
+      throw new Error(response.message || '刷新Portal信息失败')
+    }
+
+    return response.data
+  }
+
+  /**
+   * 批量刷新令牌Portal信息
+   * @param {Array<string>} tokenIds - 令牌ID数组
+   * @returns {Promise<Array>}
+   */
+  async batchRefreshPortalInfo(tokenIds) {
+    const response = await augmentApi.post('/tokens/batch-refresh-portal-info', {
+      tokenIds
+    })
+
+    if (!response.success) {
+      throw new Error(response.message || '批量刷新Portal信息失败')
+    }
+
+    return response.data
+  }
+
+  /**
    * 导出令牌数据
    * @param {boolean} activeOnly - 是否只导出活跃令牌
    * @returns {Promise<Array>}

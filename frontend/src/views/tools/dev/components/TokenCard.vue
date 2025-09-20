@@ -96,7 +96,7 @@
       </div>
 
       <!-- 编辑器切换区域 -->
-      <div v-if="hasLocalProxy" class="editor-switcher">
+      <div class="editor-switcher">
         <div class="switcher-header">
           <span class="label">快速切换到编辑器:</span>
         </div>
@@ -109,7 +109,7 @@
           >
             <el-button
               size="small"
-              :loading="switchingEditor === editor.type"
+              :loading="switching && switchingEditor === editor.type"
               @click="handleEditorSwitch(editor.type)"
               class="editor-btn"
             >
@@ -117,6 +117,18 @@
               <span class="editor-name">{{ editor.name }}</span>
             </el-button>
           </el-tooltip>
+        </div>
+
+        <!-- 降级方案按钮 -->
+        <div class="fallback-actions">
+          <el-button
+            size="small"
+            type="text"
+            @click="handleCopyToken"
+            class="copy-btn"
+          >
+            📋 复制令牌信息
+          </el-button>
         </div>
       </div>
 
@@ -142,7 +154,7 @@ import {
   Refresh
 } from '@element-plus/icons-vue'
 import { useAugmentAuth } from '@/composables/useAugmentAuth'
-import { useLocalProxy } from '@/composables/useLocalProxy'
+import { useProtocolSwitcher } from '@/composables/useProtocolSwitcher'
 import { ElMessage } from 'element-plus'
 
 // Props
@@ -165,7 +177,7 @@ const emit = defineEmits([
 
 // 使用组合式函数
 const { formatTokenStatus, getTokenDisplayName, formatDate, formatUrl } = useAugmentAuth()
-const { proxyStatus, callProxyApi } = useLocalProxy()
+const { switching, supportedEditors, switchToEditor, copyTokenInfo } = useProtocolSwitcher()
 
 // 响应式数据
 const switchingEditor = ref(null)
@@ -179,20 +191,10 @@ const statusInfo = computed(() => {
   return formatTokenStatus(props.token.ban_status)
 })
 
-// 本地代理相关计算属性
-const hasLocalProxy = computed(() => {
-  return proxyStatus.isAvailable
+// 计算属性
+const canSwitchToEditor = computed(() => {
+  return props.token?.access_token && props.token?.tenant_url
 })
-
-// 支持的编辑器列表
-const supportedEditors = [
-  { type: 'vscode', name: 'VS Code', icon: '🔵' },
-  { type: 'cursor', name: 'Cursor', icon: '🔷' },
-  { type: 'windsurf', name: 'Windsurf', icon: '🌊' },
-  { type: 'trae', name: 'Trae', icon: '⚡' },
-  { type: 'qoder', name: 'Qoder', icon: '📝' },
-  { type: 'jetbrains', name: 'JetBrains', icon: '🔶' }
-]
 
 // 方法
 const handleCommand = (command) => {
@@ -220,31 +222,33 @@ const handleCommand = (command) => {
 
 // 编辑器切换方法
 const handleEditorSwitch = async (editorType) => {
-  if (!hasLocalProxy.value) {
-    ElMessage.warning('本地代理服务不可用，无法切换编辑器')
+  if (!canSwitchToEditor.value) {
+    ElMessage.warning('令牌数据不完整，无法切换编辑器')
     return
   }
 
   try {
     switchingEditor.value = editorType
 
-    await callProxyApi('/switch-account', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        tokenData: props.token,
-        editorType: editorType
-      })
-    })
+    const success = await switchToEditor(props.token, editorType)
 
-    ElMessage.success(`已切换到 ${supportedEditors.find(e => e.type === editorType)?.name}`)
+    if (success) {
+      const editor = supportedEditors.find(e => e.type === editorType)
+      console.log(`[TokenCard] 成功切换到 ${editor?.name || editorType}`)
+    }
   } catch (error) {
-    console.error('Editor switch failed:', error)
-    ElMessage.error(`切换失败: ${error.message}`)
+    console.error('[TokenCard] 编辑器切换失败:', error)
   } finally {
     switchingEditor.value = null
+  }
+}
+
+// 复制令牌信息方法
+const handleCopyToken = async () => {
+  try {
+    await copyTokenInfo(props.token)
+  } catch (error) {
+    console.error('[TokenCard] 复制令牌失败:', error)
   }
 }
 </script>
@@ -409,6 +413,22 @@ const handleEditorSwitch = async (editorType) => {
 .editor-name {
   font-size: 12px;
   font-weight: 500;
+}
+
+.fallback-actions {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--el-border-color-lighter);
+  text-align: center;
+}
+
+.copy-btn {
+  font-size: 12px;
+  color: var(--el-text-color-regular);
+}
+
+.copy-btn:hover {
+  color: var(--el-color-primary);
 }
 
 /* 响应式设计 */
