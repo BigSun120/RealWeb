@@ -27,10 +27,10 @@ async function initActivityData() {
     // 生成过去7天的活动数据
     for (let i = 0; i < 7; i++) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      
+
       // 每天生成一些随机活动
       const dailyActivities = Math.floor(Math.random() * 10) + 5; // 5-15个活动
-      
+
       for (let j = 0; j < dailyActivities; j++) {
         const user = users[Math.floor(Math.random() * users.length)];
         const activityTime = new Date(
@@ -67,7 +67,7 @@ async function initActivityData() {
         ];
 
         const activity = activityTypes[Math.floor(Math.random() * activityTypes.length)];
-        
+
         activities.push({
           type: activity.type,
           title: activity.title,
@@ -91,7 +91,7 @@ async function initActivityData() {
 
     // 批量插入活动数据
     await ActivityLog.insertMany(activities);
-    
+
     logger.info(`成功初始化 ${activities.length} 条活动日志测试数据`);
 
     // 记录初始化完成事件
@@ -100,7 +100,7 @@ async function initActivityData() {
       title: '活动日志初始化',
       description: `成功初始化 ${activities.length} 条活动日志测试数据`,
       targetId: null,
-      targetType: null,
+      // targetType: null, // 移除这行，让它使用默认值
       metadata: {
         totalRecords: activities.length,
         initializationTime: new Date(),
@@ -121,7 +121,7 @@ async function clearTestActivityData() {
     const result = await ActivityLog.deleteMany({
       'metadata.testData': true
     });
-    
+
     logger.info(`清理了 ${result.deletedCount} 条测试活动数据`);
     return result.deletedCount;
   } catch (error) {
@@ -139,7 +139,7 @@ async function generateRealtimeActivity() {
     if (users.length === 0) return;
 
     const user = users[Math.floor(Math.random() * users.length)];
-    
+
     const activities = [
       {
         type: 'user_login',
@@ -159,14 +159,14 @@ async function generateRealtimeActivity() {
     ];
 
     const activity = activities[Math.floor(Math.random() * activities.length)];
-    
+
     await ActivityLog.create({
       type: activity.type,
       title: activity.title,
       description: activity.description,
       userId: user._id,
       targetId: null,
-      targetType: null,
+      // targetType: null, // 移除这行，让它使用默认值
       ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       metadata: {

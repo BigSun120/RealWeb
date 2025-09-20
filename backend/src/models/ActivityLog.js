@@ -51,7 +51,8 @@ const activityLogSchema = new mongoose.Schema({
   targetType: {
     type: String,
     enum: ['User', 'Article', 'Comment', 'System', 'tool', 'category', 'config'],
-    required: false
+    required: false,
+    default: null
   },
 
   // IP地址
