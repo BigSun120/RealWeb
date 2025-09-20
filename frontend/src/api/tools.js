@@ -80,6 +80,91 @@ export const getFavoriteTools = () => {
   })
 }
 
+// ==================== 视频下载工具API ====================
+
+// 解析视频信息
+export const parseVideo = (url) => {
+  return request({
+    url: '/tools/video/parse',
+    method: 'post',
+    data: { url }
+  })
+}
+
+// 下载视频
+export const downloadVideo = (url, format, audioOnly = false) => {
+  return request({
+    url: '/tools/video/download',
+    method: 'post',
+    data: { url, format, audioOnly }
+  })
+}
+
+// ==================== YouTube工具API ====================
+
+// 解析YouTube视频
+export const parseYouTubeVideo = (url) => {
+  return request({
+    url: '/tools/youtube/parse',
+    method: 'post',
+    data: { url }
+  })
+}
+
+// 下载YouTube视频
+export const downloadYouTubeVideo = (url, format, audioOnly = false) => {
+  return request({
+    url: '/tools/youtube/download',
+    method: 'post',
+    data: { url, format, audioOnly }
+  })
+}
+
+// 检查YouTube Cookies状态
+export const checkYouTubeCookiesStatus = () => {
+  return request({
+    url: '/tools/youtube/cookies/status',
+    method: 'get'
+  })
+}
+
+// 上传YouTube Cookies
+export const uploadYouTubeCookies = (cookies) => {
+  return request({
+    url: '/tools/youtube/cookies/upload',
+    method: 'post',
+    data: { cookies }
+  })
+}
+
+// 删除YouTube Cookies
+export const deleteYouTubeCookies = () => {
+  return request({
+    url: '/tools/youtube/cookies',
+    method: 'delete'
+  })
+}
+
+// ==================== 爱奇艺工具API ====================
+
+// 解析爱奇艺视频
+export const parseIqiyiVideo = (url) => {
+  return request({
+    url: '/tools/iqiyi/parse',
+    method: 'post',
+    data: { url }
+  })
+}
+
+// 下载爱奇艺视频
+export const downloadIqiyiVideo = (url, tvid, vid) => {
+  return request({
+    url: '/tools/iqiyi/download',
+    method: 'post',
+    data: { url, tvid, vid }
+  })
+}
+
 export default {
   getTools,
   getToolCategories,
@@ -88,5 +173,17 @@ export default {
   getToolStats,
   favoriteTools,
   unfavoriteTools,
-  getFavoriteTools
+  getFavoriteTools,
+  // 视频下载
+  parseVideo,
+  downloadVideo,
+  // YouTube
+  parseYouTubeVideo,
+  downloadYouTubeVideo,
+  checkYouTubeCookiesStatus,
+  uploadYouTubeCookies,
+  deleteYouTubeCookies,
+  // 爱奇艺
+  parseIqiyiVideo,
+  downloadIqiyiVideo
 }

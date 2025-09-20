@@ -3,60 +3,7 @@
  * 处理与后端API的通信
  */
 
-import axios from 'axios'
-import { useUserStore } from '@/stores/user'
-
-// 创建专用的axios实例
-const augmentApi = axios.create({
-  baseURL: '/api/tools/augment',
-  timeout: 30000
-})
-
-// 请求拦截器：添加认证token
-augmentApi.interceptors.request.use(
-  (config) => {
-    const userStore = useUserStore()
-    if (userStore.token) {
-      config.headers.Authorization = `Bearer ${userStore.token}`
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
-
-// 响应拦截器：统一错误处理
-augmentApi.interceptors.response.use(
-  (response) => {
-    return response.data
-  },
-  (error) => {
-    if (error.response) {
-      // 服务器返回错误状态码
-      const { status, data } = error.response
-
-      if (status === 401) {
-        // 未认证，跳转到登录页
-        const userStore = useUserStore()
-        userStore.logout()
-        throw new Error('请先登录')
-      } else if (status === 403) {
-        throw new Error('权限不足')
-      } else if (status === 429) {
-        throw new Error('请求过于频繁，请稍后再试')
-      } else {
-        throw new Error(data?.message || `请求失败 (${status})`)
-      }
-    } else if (error.request) {
-      // 网络错误
-      throw new Error('网络连接失败，请检查网络设置')
-    } else {
-      // 其他错误
-      throw new Error(error.message || '未知错误')
-    }
-  }
-)
+import request from '@/utils/request'
 
 /**
  * Augment服务类
@@ -67,7 +14,10 @@ class AugmentService {
    * @returns {Promise<{auth_url: string, state: string}>}
    */
   async generateAuthUrl() {
-    const response = await augmentApi.post('/auth-url')
+    const response = await request({
+      url: '/tools/augment/auth-url',
+      method: 'post'
+    })
     if (!response.success) {
       throw new Error(response.message || '生成授权URL失败')
     }
@@ -81,7 +31,11 @@ class AugmentService {
    * @returns {Promise<{access_token: string, tenant_url: string}>}
    */
   async getAccessToken(code, state) {
-    const response = await augmentApi.post('/token', { code, state })
+    const response = await request({
+      url: '/tools/augment/token',
+      method: 'post',
+      data: { code, state }
+    })
     if (!response.success) {
       throw new Error(response.message || '获取访问令牌失败')
     }
@@ -94,7 +48,9 @@ class AugmentService {
    * @returns {Promise<Array>}
    */
   async getTokens(activeOnly = false) {
-    const response = await augmentApi.get('/tokens', {
+    const response = await request({
+      url: '/tools/augment/tokens',
+      method: 'get',
       params: { active_only: activeOnly }
     })
     if (!response.success) {
@@ -113,7 +69,11 @@ class AugmentService {
    * @returns {Promise<{id: string, message: string}>}
    */
   async saveToken(tokenData) {
-    const response = await augmentApi.post('/tokens', tokenData)
+    const response = await request({
+      url: '/tools/augment/tokens',
+      method: 'post',
+      data: tokenData
+    })
     if (!response.success) {
       throw new Error(response.message || '保存令牌失败')
     }
@@ -127,7 +87,11 @@ class AugmentService {
    * @returns {Promise<{id: string, message: string}>}
    */
   async updateToken(tokenId, updateData) {
-    const response = await augmentApi.put(`/tokens/${tokenId}`, updateData)
+    const response = await request({
+      url: `/tools/augment/tokens/${tokenId}`,
+      method: 'put',
+      data: updateData
+    })
     if (!response.success) {
       throw new Error(response.message || '更新令牌失败')
     }
@@ -140,7 +104,10 @@ class AugmentService {
    * @returns {Promise<{message: string}>}
    */
   async deleteToken(tokenId) {
-    const response = await augmentApi.delete(`/tokens/${tokenId}`)
+    const response = await request({
+      url: `/tools/augment/tokens/${tokenId}`,
+      method: 'delete'
+    })
     if (!response.success) {
       throw new Error(response.message || '删除令牌失败')
     }
@@ -154,7 +121,10 @@ class AugmentService {
    */
   async checkTokenStatus(tokenId) {
     try {
-      const response = await augmentApi.post(`/tokens/${tokenId}/check-status`)
+      const response = await request({
+        url: `/tools/augment/tokens/${tokenId}/check-status`,
+        method: 'post'
+      })
       return response.data.data
     } catch (error) {
       throw new Error(`检查令牌状态失败: ${error.message}`)
@@ -196,7 +166,10 @@ class AugmentService {
    */
   async refreshTokenUsage(tokenId) {
     try {
-      const response = await augmentApi.post(`/tokens/${tokenId}/refresh-portal-info`)
+      const response = await request({
+        url: `/tools/augment/tokens/${tokenId}/refresh-portal-info`,
+        method: 'post'
+      })
       return response.data
     } catch (error) {
       throw new Error(`刷新使用次数失败: ${error.message}`)
@@ -277,7 +250,10 @@ class AugmentService {
    * @returns {Promise<Object>}
    */
   async refreshPortalInfo(tokenId) {
-    const response = await augmentApi.post(`/tokens/${tokenId}/refresh-portal-info`)
+    const response = await request({
+      url: `/tools/augment/tokens/${tokenId}/refresh-portal-info`,
+      method: 'post'
+    })
 
     if (!response.success) {
       throw new Error(response.message || '刷新Portal信息失败')
@@ -292,8 +268,10 @@ class AugmentService {
    * @returns {Promise<Array>}
    */
   async batchRefreshPortalInfo(tokenIds) {
-    const response = await augmentApi.post('/tokens/batch-refresh-portal-info', {
-      tokenIds
+    const response = await request({
+      url: '/tools/augment/tokens/batch-refresh-portal-info',
+      method: 'post',
+      data: { tokenIds }
     })
 
     if (!response.success) {

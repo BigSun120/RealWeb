@@ -253,7 +253,7 @@
               type="primary"
               size="large"
               :loading="youtubeLoading"
-              @click="parseYouTubeVideo"
+              @click="handleParseYouTubeVideo"
               :disabled="!youtubeUrl.trim()"
             >
               {{ youtubeLoading ? '解析中...' : '解析视频' }}
@@ -395,7 +395,7 @@
               type="primary"
               size="large"
               :loading="youtubeDownloading"
-              @click="downloadYouTubeVideo"
+              @click="handleDownloadYouTubeVideo"
               :disabled="!canDownloadYouTube"
               class="download-btn"
             >
@@ -498,7 +498,7 @@
                 <template #append>
                   <el-button
                     type="primary"
-                    @click="parseIqiyiVideo"
+                    @click="handleParseIqiyiVideo"
                     :loading="iqiyiLoading"
                     :disabled="!iqiyiUrl.trim()"
                   >
@@ -616,7 +616,7 @@
               <el-button
                 type="primary"
                 size="large"
-                @click="downloadIqiyiVideo"
+                @click="handleDownloadIqiyiVideo"
                 :loading="iqiyiDownloading"
               >
                 <span v-if="!iqiyiDownloading">下载视频</span>
@@ -802,7 +802,17 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import axios from 'axios';
+import {
+  parseVideo as apiParseVideo,
+  downloadVideo as apiDownloadVideo,
+  parseYouTubeVideo,
+  downloadYouTubeVideo,
+  checkYouTubeCookiesStatus,
+  uploadYouTubeCookies,
+  deleteYouTubeCookies,
+  parseIqiyiVideo,
+  downloadIqiyiVideo
+} from '@/api/tools';
 
 import { useToolAnalytics } from '@/composables/useToolAnalytics';
 
@@ -963,13 +973,11 @@ export default {
         parsing.value = true;
         videoInfo.value = null; // 清空之前的结果
 
-        // 使用POST请求
-        const response = await axios.post('/api/tools/video/parse', {
-          url: videoUrl.value.trim()
-        });
+        // 使用统一的API调用
+        const response = await apiParseVideo(videoUrl.value.trim());
 
-        if (response.data.success) {
-          const result = response.data.result;
+        if (response.success) {
+          const result = response.result;
           videoInfo.value = result;
 
           // 自动选择最佳格式
@@ -990,7 +998,7 @@ export default {
             videoDuration: result.duration
           });
         } else {
-          ElMessage.error(response.data.error || '解析失败');
+          ElMessage.error(response.error || '解析失败');
           videoInfo.value = null;
         }
       } catch (error) {
@@ -1025,14 +1033,10 @@ export default {
           audioOnly = false;
         }
 
-        const response = await axios.post('/api/tools/video/download', {
-          url: videoUrl.value.trim(),
-          format,
-          audioOnly
-        });
+        const response = await apiDownloadVideo(videoUrl.value.trim(), format, audioOnly);
 
-        if (response.data.success) {
-          const result = response.data.result;
+        if (response.success) {
+          const result = response.result;
 
           ElMessage.success('下载完成！');
 
@@ -1049,7 +1053,7 @@ export default {
             document.body.removeChild(link);
           }, 500);
         } else {
-          ElMessage.error(response.data.error || '下载失败');
+          ElMessage.error(response.error || '下载失败');
         }
       } catch (error) {
         ElMessage.error(error.response?.data?.error || error.message || '下载失败');
@@ -1059,7 +1063,7 @@ export default {
     };
 
     // YouTube相关方法
-    const parseYouTubeVideo = async () => {
+    const handleParseYouTubeVideo = async () => {
       if (!youtubeUrl.value.trim()) {
         ElMessage.warning('请输入YouTube视频链接');
         return;
@@ -1069,25 +1073,15 @@ export default {
       youtubeVideoInfo.value = null;
 
       try {
-        const response = await fetch('/api/tools/youtube/parse', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            url: youtubeUrl.value.trim()
-          })
-        });
+        const response = await parseYouTubeVideo(youtubeUrl.value.trim());
 
-        const data = await response.json();
-
-        if (data.success) {
-          youtubeVideoInfo.value = data.result;
+        if (response.success) {
+          youtubeVideoInfo.value = response.result;
           ElMessage.success('YouTube视频解析成功');
 
           // 自动选择推荐格式
-          if (data.result.available.recommended && data.result.available.recommended.length > 0) {
-            selectedYouTubeRecommended.value = data.result.available.recommended[0];
+          if (response.result.available.recommended && response.result.available.recommended.length > 0) {
+            selectedYouTubeRecommended.value = response.result.available.recommended[0];
             youtubeDownloadType.value = 'recommended';
           }
 
@@ -1095,11 +1089,11 @@ export default {
           recordUsage('use', {
             action: 'parse_youtube_video',
             platform: 'youtube',
-            videoTitle: data.result.title,
-            videoDuration: data.result.duration
+            videoTitle: response.result.title,
+            videoDuration: response.result.duration
           });
         } else {
-          ElMessage.error(data.error || 'YouTube视频解析失败');
+          ElMessage.error(response.error || 'YouTube视频解析失败');
         }
       } catch (error) {
         console.error('YouTube解析失败:', error);
@@ -1139,7 +1133,7 @@ export default {
       youtubeUrl.value = url;
     };
 
-    const downloadYouTubeVideo = async () => {
+    const handleDownloadYouTubeVideo = async () => {
       if (!canDownloadYouTube.value) {
         ElMessage.warning('请先选择要下载的格式');
         return;
@@ -1162,32 +1156,20 @@ export default {
           audioOnly = false;
         }
 
-        const response = await fetch('/api/tools/youtube/download', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            url: youtubeUrl.value.trim(),
-            format: format,
-            audioOnly: audioOnly
-          })
-        });
+        const response = await downloadYouTubeVideo(youtubeUrl.value.trim(), format, audioOnly);
 
-        const data = await response.json();
-
-        if (data.success) {
+        if (response.success) {
           ElMessage.success('YouTube视频下载成功');
 
           // 触发浏览器下载
           const link = document.createElement('a');
-          link.href = data.result.downloadPath;
-          link.download = data.result.fileName;
+          link.href = response.result.downloadPath;
+          link.download = response.result.fileName;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
         } else {
-          ElMessage.error(data.error || 'YouTube下载失败');
+          ElMessage.error(response.error || 'YouTube下载失败');
         }
       } catch (error) {
         ElMessage.error(error.response?.data?.error || error.message || 'YouTube下载失败');
@@ -1200,11 +1182,10 @@ export default {
     const checkCookiesStatus = async () => {
       checkingCookies.value = true;
       try {
-        const response = await fetch('/api/tools/youtube/cookies/status');
-        const data = await response.json();
+        const response = await checkYouTubeCookiesStatus();
 
-        if (data.success) {
-          cookiesStatus.value = data.cookies;
+        if (response.success) {
+          cookiesStatus.value = response.cookies;
         } else {
           ElMessage.error('检查cookies状态失败');
         }
@@ -1223,25 +1204,15 @@ export default {
 
       uploadingCookies.value = true;
       try {
-        const response = await fetch('/api/tools/youtube/cookies/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            cookiesContent: cookiesContent.value
-          })
-        });
+        const response = await uploadYouTubeCookies(cookiesContent.value);
 
-        const data = await response.json();
-
-        if (data.success) {
-          ElMessage.success(`Cookies上传成功！包含${data.cookieCount}个cookies`);
+        if (response.success) {
+          ElMessage.success(`Cookies上传成功！包含${response.cookieCount}个cookies`);
           cookiesContent.value = '';
           cookiesTab.value = 'status';
           await checkCookiesStatus();
         } else {
-          ElMessage.error(data.error || 'Cookies上传失败');
+          ElMessage.error(response.error || 'Cookies上传失败');
         }
       } catch (error) {
         ElMessage.error('上传cookies失败');
@@ -1260,17 +1231,13 @@ export default {
 
         deletingCookies.value = true;
 
-        const response = await fetch('/api/tools/youtube/cookies', {
-          method: 'DELETE'
-        });
+        const response = await deleteYouTubeCookies();
 
-        const data = await response.json();
-
-        if (data.success) {
+        if (response.success) {
           ElMessage.success('Cookies已删除');
           await checkCookiesStatus();
         } else {
-          ElMessage.error(data.error || 'Cookies删除失败');
+          ElMessage.error(response.error || 'Cookies删除失败');
         }
       } catch (error) {
         if (error !== 'cancel') {
@@ -1282,7 +1249,7 @@ export default {
     };
 
     // 爱奇艺相关方法
-    const parseIqiyiVideo = async () => {
+    const handleParseIqiyiVideo = async () => {
       if (!iqiyiUrl.value.trim()) {
         ElMessage.warning('请输入爱奇艺视频链接');
         return;
@@ -1292,23 +1259,13 @@ export default {
       iqiyiVideoInfo.value = null;
 
       try {
-        const response = await fetch('/api/tools/iqiyi/parse', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            url: iqiyiUrl.value.trim()
-          })
-        });
+        const response = await parseIqiyiVideo(iqiyiUrl.value.trim());
 
-        const data = await response.json();
-
-        if (data.success) {
-          iqiyiVideoInfo.value = data.result;
+        if (response.success) {
+          iqiyiVideoInfo.value = response.result;
           ElMessage.success('爱奇艺视频解析成功');
         } else {
-          ElMessage.error(data.error || '爱奇艺视频解析失败');
+          ElMessage.error(response.error || '爱奇艺视频解析失败');
         }
       } catch (error) {
         ElMessage.error(error.response?.data?.error || error.message || '爱奇艺视频解析失败');
@@ -1317,7 +1274,7 @@ export default {
       }
     };
 
-    const downloadIqiyiVideo = async () => {
+    const handleDownloadIqiyiVideo = async () => {
       if (!iqiyiVideoInfo.value) {
         ElMessage.warning('请先解析视频');
         return;
@@ -1326,32 +1283,24 @@ export default {
       iqiyiDownloading.value = true;
 
       try {
-        const response = await fetch('/api/tools/iqiyi/download', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            url: iqiyiUrl.value.trim(),
-            tvid: iqiyiVideoInfo.value.tvid,
-            vid: iqiyiVideoInfo.value.vid
-          })
-        });
+        const response = await downloadIqiyiVideo(
+          iqiyiUrl.value.trim(),
+          iqiyiVideoInfo.value.tvid,
+          iqiyiVideoInfo.value.vid
+        );
 
-        const data = await response.json();
-
-        if (data.success) {
+        if (response.success) {
           ElMessage.success('爱奇艺视频下载成功');
 
           // 触发浏览器下载
           const link = document.createElement('a');
-          link.href = data.result.downloadPath;
-          link.download = data.result.fileName;
+          link.href = response.result.downloadPath;
+          link.download = response.result.fileName;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
         } else {
-          ElMessage.error(data.error || '爱奇艺下载失败');
+          ElMessage.error(response.error || '爱奇艺下载失败');
         }
       } catch (error) {
         ElMessage.error(error.response?.data?.error || error.message || '爱奇艺下载失败');
@@ -1417,21 +1366,21 @@ export default {
       youtubeDownloadType,
       canDownloadYouTube,
       formatViews,
-      parseYouTubeVideo,
+      handleParseYouTubeVideo,
       selectYouTubeVideo,
       selectYouTubeAudio,
       selectYouTubeRecommended,
       getYouTubeDownloadButtonText,
       setYouTubeExampleUrl,
-      downloadYouTubeVideo,
+      handleDownloadYouTubeVideo,
 
       // 爱奇艺功能
       iqiyiUrl,
       iqiyiLoading,
       iqiyiDownloading,
       iqiyiVideoInfo,
-      parseIqiyiVideo,
-      downloadIqiyiVideo,
+      handleParseIqiyiVideo,
+      handleDownloadIqiyiVideo,
       setIqiyiExampleUrl,
 
       // Cookies管理功能
