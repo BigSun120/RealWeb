@@ -25,36 +25,28 @@
 
     <!-- 统计信息 -->
     <div class="stats-section">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-card class="stat-card">
+      <el-row :gutter="16">
+        <el-col :span="8">
+          <el-card class="stat-card compact-stat-card">
             <div class="stat-content">
-              <div class="stat-number">{{ poolStats.available || 0 }}</div>
+              <div class="stat-number">{{ poolStatsComputed.available || 0 }}</div>
               <div class="stat-label">可用令牌</div>
             </div>
           </el-card>
         </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
+        <el-col :span="8">
+          <el-card class="stat-card compact-stat-card">
             <div class="stat-content">
-              <div class="stat-number">{{ poolStats.total || 0 }}</div>
+              <div class="stat-number">{{ poolStatsComputed.total || 0 }}</div>
               <div class="stat-label">总令牌数</div>
             </div>
           </el-card>
         </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
+        <el-col :span="8">
+          <el-card class="stat-card compact-stat-card">
             <div class="stat-content">
-              <div class="stat-number">{{ myUploadsCount || 0 }}</div>
+              <div class="stat-number">{{ poolStatsComputed.myUploads || 0 }}</div>
               <div class="stat-label">我的上传</div>
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-number">1000</div>
-              <div class="stat-label">池子容量</div>
             </div>
           </el-card>
         </el-col>
@@ -65,16 +57,16 @@
     <el-tabs v-model="activeTab" class="pool-tabs">
       <!-- 令牌池 -->
       <el-tab-pane label="令牌池" name="pool">
-        <el-card class="pool-card" shadow="hover">
+        <el-card class="pool-card compact-card" shadow="hover">
           <template #header>
-            <div class="card-header">
-              <div class="card-title">
+            <div class="card-header-compact">
+              <div class="card-title-compact">
                 <el-icon class="card-icon">
                   <Coin />
                 </el-icon>
                 <h2>可用令牌池</h2>
+                <span class="card-subtitle-inline">从池子中领取令牌到您的账户</span>
               </div>
-              <span class="card-subtitle">从池子中领取令牌到您的账户</span>
             </div>
           </template>
 
@@ -92,18 +84,18 @@
               borderBottom: '2px solid #e5e7eb'
             }" :cell-style="{ textAlign: 'center', padding: '12px 8px' }" stripe border>
 
-              <el-table-column label="上传者" min-width="140" align="center">
+              <el-table-column label="上传者" min-width="120" align="center">
                 <template #default="{ row }">
                   <div class="uploader-info">
                     <el-icon class="uploader-icon">
                       <User />
                     </el-icon>
-                    {{ row.maskedEmail }}
+                    {{ row.uploaderId?.username || row.maskedEmail }}
                   </div>
                 </template>
               </el-table-column>
 
-              <el-table-column label="上传时间" min-width="140" align="center">
+              <el-table-column label="上传时间" min-width="120" align="center">
                 <template #default="{ row }">
                   <div class="upload-time">
                     {{ formatDate(row.uploadedAt) }}
@@ -111,23 +103,23 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="令牌状态" min-width="110" align="center">
+              <el-table-column label="令牌状态" min-width="100" align="center">
                 <template #default="{ row }">
-                  <el-tag :type="getStatusType(row)" size="default" effect="light" round>
+                  <el-tag :type="getStatusType(row)" size="small" effect="light" round>
                     {{ getStatusText(row) }}
                   </el-tag>
                 </template>
               </el-table-column>
 
-              <el-table-column label="剩余次数" min-width="110" align="center">
+              <el-table-column label="剩余次数" min-width="100" align="center">
                 <template #default="{ row }">
-                  <el-tag :type="getCreditsType(row)" size="default" effect="light" round>
+                  <el-tag :type="getCreditsType(row)" size="small" effect="light" round>
                     {{ row.creditsBalance || '未知' }}
                   </el-tag>
                 </template>
               </el-table-column>
 
-              <el-table-column label="过期时间" min-width="140" align="center">
+              <el-table-column label="过期时间" min-width="120" align="center">
                 <template #default="{ row }">
                   <div class="expiry-time" :class="getExpiryClass(row)">
                     {{ formatDate(row.expiryDate) || '未知' }}
@@ -135,12 +127,17 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="操作" min-width="120" align="center">
+              <el-table-column label="操作" min-width="140" align="center">
                 <template #default="{ row }">
-                  <el-button type="primary" size="small" @click="claimToken(row)" :loading="row._claiming"
-                    :disabled="row.status !== 'available'" round>
-                    领取
-                  </el-button>
+                  <div class="action-buttons">
+                    <el-button type="primary" size="small" @click="claimToken(row)" :loading="row._claiming"
+                      :disabled="row.status !== 'available'" round>
+                      领取
+                    </el-button>
+                    <el-button :icon="Refresh" size="small" @click="refreshTokenPortalInfo(row)"
+                      :loading="row._refreshing" title="刷新Portal信息" round plain>
+                    </el-button>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -150,16 +147,16 @@
 
       <!-- 我的上传 -->
       <el-tab-pane label="我的上传" name="uploads">
-        <el-card class="uploads-card" shadow="hover">
+        <el-card class="uploads-card compact-card" shadow="hover">
           <template #header>
-            <div class="card-header">
-              <div class="card-title">
+            <div class="card-header-compact">
+              <div class="card-title-compact">
                 <el-icon class="card-icon">
                   <Upload />
                 </el-icon>
                 <h2>我的上传</h2>
+                <span class="card-subtitle-inline">管理您上传到池子的令牌</span>
               </div>
-              <span class="card-subtitle">管理您上传到池子的令牌</span>
             </div>
           </template>
 
@@ -181,41 +178,43 @@
               borderBottom: '2px solid #e5e7eb'
             }" :cell-style="{ textAlign: 'center', padding: '12px 8px' }" stripe border>
 
-              <el-table-column label="上传时间" min-width="140" align="center">
+              <el-table-column label="上传时间" min-width="120" align="center">
                 <template #default="{ row }">
                   {{ formatDate(row.uploadedAt) }}
                 </template>
               </el-table-column>
 
-              <el-table-column label="状态" min-width="110" align="center">
+              <el-table-column label="状态" min-width="100" align="center">
                 <template #default="{ row }">
-                  <el-tag :type="getStatusType(row)" size="default" effect="light" round>
+                  <el-tag :type="getStatusType(row)" size="small" effect="light" round>
                     {{ getStatusText(row) }}
                   </el-tag>
                 </template>
               </el-table-column>
 
-              <el-table-column label="剩余次数" min-width="110" align="center">
+              <el-table-column label="剩余次数" min-width="100" align="center">
                 <template #default="{ row }">
-                  <el-tag :type="getCreditsType(row)" size="default" effect="light" round>
+                  <el-tag :type="getCreditsType(row)" size="small" effect="light" round>
                     {{ row.creditsBalance || '未知' }}
                   </el-tag>
                 </template>
               </el-table-column>
 
-              <el-table-column label="领取者" min-width="140" align="center">
+              <el-table-column label="领取者" min-width="120" align="center">
                 <template #default="{ row }">
                   <div v-if="row.claimedBy">
                     <el-icon>
                       <User />
                     </el-icon>
-                    {{ row.claimedBy.email ? maskEmail(row.claimedBy.email) : '已领取' }}
+                    {{ row.claimedBy.username || '未知用户' }}
+                    <br>
+                    <small style="color: #999;">{{ row.claimedBy.email ? maskEmail(row.claimedBy.email) : '' }}</small>
                   </div>
                   <span v-else class="not-claimed">未领取</span>
                 </template>
               </el-table-column>
 
-              <el-table-column label="操作" min-width="160" align="center">
+              <el-table-column label="操作" min-width="180" align="center">
                 <template #default="{ row }">
                   <div class="action-buttons">
                     <el-button v-if="row.status === 'claimed'" type="warning" size="small" @click="returnToken(row)"
@@ -224,6 +223,9 @@
                     </el-button>
                     <el-button type="danger" size="small" @click="deletePoolToken(row)" :loading="row._deleting" round>
                       删除
+                    </el-button>
+                    <el-button :icon="Refresh" size="small" @click="refreshTokenPortalInfo(row)"
+                      :loading="row._refreshing" title="刷新Portal信息" round plain>
                     </el-button>
                   </div>
                 </template>
@@ -673,14 +675,23 @@ const showUploadDialog = ref(false)
 const isUploading = ref(false)
 const poolTokens = ref([])
 const myUploads = ref([])
-const poolStats = ref({
-  available: 0,
-  total: 0
+
+
+// 计算统计信息
+const poolStatsComputed = computed(() => {
+  const available = poolTokens.value.filter(token => token.status === 'available').length
+  const total = poolTokens.value.length
+  const myUploadsCount = myUploads.value.length
+
+  return {
+    available,
+    total,
+    myUploads: myUploadsCount,
+    capacity: 1000
+  }
 })
 
-const uploadForm = ref({
-  accessToken: ''
-})
+
 
 // 上传对话框相关数据
 const uploadMode = ref('manual')
@@ -734,8 +745,7 @@ const canGetToken = computed(() => {
   return authUrl.value && authCode.value.trim().length > 0
 })
 
-// 令牌池计算属性
-const myUploadsCount = computed(() => myUploads.value.length)
+
 
 // 方法
 const generateAuthUrl = async () => {
@@ -1077,47 +1087,47 @@ const scrollToGenerator = () => {
 const refreshPool = async () => {
   isRefreshing.value = true
   try {
-    // 模拟数据，因为后端API还未完全实现
-    poolTokens.value = []
-    poolStats.value = { available: 0, total: 0 }
-    myUploads.value = []
+    console.log('开始刷新令牌池数据...')
+
+    // 获取池子数据
+    const poolResponse = await tokenPoolService.getPoolTokens({ status: 'available' })
+    console.log('池子数据响应:', poolResponse)
+    poolTokens.value = poolResponse.data?.tokens || poolResponse.tokens || []
+
+    // 获取我的上传
+    const uploadsResponse = await tokenPoolService.getMyUploads()
+    console.log('我的上传响应:', uploadsResponse)
+    myUploads.value = uploadsResponse.data?.tokens || uploadsResponse.tokens || []
 
     ElMessage.success('刷新成功')
   } catch (error) {
     console.error('刷新失败:', error)
+    console.error('错误详情:', error.response?.data || error.message)
     ElMessage.error(error.message || '刷新失败')
   } finally {
     isRefreshing.value = false
   }
 }
 
-const uploadToken = async () => {
-  if (!uploadForm.value.accessToken.trim()) {
-    ElMessage.warning('请输入访问令牌')
-    return
-  }
 
-  isUploading.value = true
-  try {
-    await tokenPoolService.uploadToken(uploadForm.value.accessToken.trim())
-    ElMessage.success('令牌上传成功')
-    showUploadDialog.value = false
-    uploadForm.value.accessToken = ''
-    await refreshPool()
-  } catch (error) {
-    console.error('上传失败:', error)
-    ElMessage.error(error.message || '上传失败')
-  } finally {
-    isUploading.value = false
-  }
-}
 
 const claimToken = async (token) => {
   token._claiming = true
   try {
-    await tokenPoolService.claimToken(token._id)
+    await tokenPoolService.claimToken(token._id || token.id)
     ElMessage.success('令牌领取成功')
-    await refreshPool()
+
+    // 立即更新本地数据
+    const tokenIndex = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+    if (tokenIndex !== -1) {
+      poolTokens.value.splice(tokenIndex, 1)
+    }
+
+    // 刷新完整数据：令牌池、我的上传、已保存的令牌
+    await Promise.all([
+      refreshPool(),
+      refreshTokens() // 刷新已保存的令牌列表
+    ])
   } catch (error) {
     console.error('领取失败:', error)
     ElMessage.error(error.message || '领取失败')
@@ -1129,9 +1139,20 @@ const claimToken = async (token) => {
 const returnToken = async (token) => {
   token._returning = true
   try {
-    await tokenPoolService.returnToken(token._id)
+    await tokenPoolService.returnToken(token._id || token.id)
     ElMessage.success('令牌已归还到池子')
-    await refreshPool()
+
+    // 立即更新本地数据
+    const tokenIndex = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+    if (tokenIndex !== -1) {
+      myUploads.value[tokenIndex].status = 'available'
+    }
+
+    // 刷新完整数据：令牌池、我的上传、已保存的令牌
+    await Promise.all([
+      refreshPool(),
+      refreshTokens() // 刷新已保存的令牌列表
+    ])
   } catch (error) {
     console.error('归还失败:', error)
     ElMessage.error(error.message || '归还失败')
@@ -1147,9 +1168,31 @@ const deletePoolToken = async (token) => {
     })
 
     token._deleting = true
-    await tokenPoolService.deleteToken(token._id)
+    await tokenPoolService.deleteToken(token._id || token.id)
     ElMessage.success('令牌已删除')
-    await refreshPool()
+
+    // 立即更新本地数据 - 从所有相关数组中移除
+    const tokenId = token._id || token.id
+
+    // 从池子令牌中移除
+    const poolIndex = poolTokens.value.findIndex(t => (t._id || t.id) === tokenId)
+    if (poolIndex !== -1) {
+      poolTokens.value.splice(poolIndex, 1)
+      console.log('从池子中移除令牌:', tokenId)
+    }
+
+    // 从我的上传中移除
+    const uploadIndex = myUploads.value.findIndex(t => (t._id || t.id) === tokenId)
+    if (uploadIndex !== -1) {
+      myUploads.value.splice(uploadIndex, 1)
+      console.log('从我的上传中移除令牌:', tokenId)
+    }
+
+    // 刷新完整数据以确保同步：令牌池、我的上传、已保存的令牌
+    await Promise.all([
+      refreshPool(),
+      refreshTokens() // 刷新已保存的令牌列表
+    ])
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除失败:', error)
@@ -1259,25 +1302,36 @@ const uploadTokensToPool = async () => {
 
     isUploading.value = true
 
-    // 模拟上传过程，因为后端API还未完全实现
-    ElMessage.success(`模拟上传 ${tokensToUpload.length} 个令牌成功`)
-    showUploadDialog.value = false
+    // 批量上传令牌到池子
+    console.log('正在批量上传令牌:', tokensToUpload.length, '个')
+    const result = await tokenPoolService.uploadTokens(tokensToUpload)
+    console.log('批量上传结果:', result)
 
-    // 重置表单
-    uploadMode.value = 'manual'
-    uploadTokens.value = [{
-      access_token: '',
-      tenant_url: '',
-      portal_url: '',
-      email_note: ''
-    }]
-    uploadJsonText.value = ''
+    const { uploaded, failed, errors } = result.data
 
-    // 刷新池子数据
-    await refreshPool()
+    // 显示结果
+    if (uploaded > 0) {
+      ElMessage.success(`成功上传 ${uploaded} 个令牌${failed > 0 ? `，失败 ${failed} 个` : ''}`)
+      showUploadDialog.value = false
+
+      // 重置表单
+      uploadMode.value = 'manual'
+      uploadTokens.value = [{
+        access_token: '',
+        tenant_url: '',
+        portal_url: '',
+        email_note: ''
+      }]
+      uploadJsonText.value = ''
+
+      // 刷新池子数据和统计信息
+      await refreshPool()
+    } else {
+      ElMessage.error(`所有令牌上传失败${errors.length > 0 ? `：${errors[0]}` : ''}`)
+    }
   } catch (error) {
-    console.error('上传失败:', error)
-    ElMessage.error(error.message || '上传失败')
+    console.error('批量上传失败:', error)
+    ElMessage.error(error.response?.data?.message || error.message || '上传失败')
   } finally {
     isUploading.value = false
   }
@@ -1466,8 +1520,68 @@ const handleImportSuccess = async (result) => {
   showImportDialog.value = false
 }
 
+// 刷新令牌池中单个令牌的Portal信息
+const refreshTokenPortalInfo = async (token) => {
+  token._refreshing = true
+  try {
+    // 调用后端API刷新Portal信息
+    const response = await tokenPoolService.refreshTokenInfo(token._id || token.id)
+
+    // 更新本地数据 - 与已保存令牌的刷新逻辑一致
+    const updatedToken = response.data || response
+    if (updatedToken) {
+      console.log('刷新返回的数据:', updatedToken)
+
+      // 更新令牌状态、剩余次数、过期时间等数据
+      const newTokenData = {
+        ...token,
+        status: updatedToken.status,
+        creditsBalance: updatedToken.creditsBalance,
+        expiryDate: updatedToken.expiryDate,
+        portalInfo: updatedToken.portalInfo,
+        lastRefreshed: updatedToken.lastRefreshed || new Date(),
+        _refreshing: false
+      }
+
+      // 如果令牌状态变为无效，从可用列表中移除
+      if (updatedToken.status === 'invalid' || updatedToken.status === 'expired') {
+        const poolIndex = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+        if (poolIndex !== -1) {
+          poolTokens.value.splice(poolIndex, 1)
+        }
+        const uploadIndex = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+        if (uploadIndex !== -1) {
+          myUploads.value.splice(uploadIndex, 1, newTokenData)
+        }
+      } else {
+        // 强制更新Vue的响应式系统
+        const poolIndex = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+        if (poolIndex !== -1) {
+          poolTokens.value.splice(poolIndex, 1, newTokenData)
+        }
+
+        const uploadIndex = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+        if (uploadIndex !== -1) {
+          myUploads.value.splice(uploadIndex, 1, newTokenData)
+        }
+      }
+    }
+
+    ElMessage.success('Portal信息刷新成功')
+  } catch (error) {
+    console.error('刷新Portal信息失败:', error)
+    ElMessage.error(error.message || '刷新Portal信息失败')
+  } finally {
+    token._refreshing = false
+  }
+}
+
 // 生命周期 - 页面加载时仅获取数据库中的令牌数据，不主动刷新Portal信息
 onMounted(() => {
+  console.log('页面加载，检查用户认证状态...')
+  const token = localStorage.getItem('token')
+  console.log('用户token:', token ? '已存在' : '不存在')
+
   // 仅加载数据库中存储的令牌数据（包括已保存的Portal信息）
   loadTokensOnly()
   // 加载令牌池数据
@@ -1543,7 +1657,27 @@ body {
 
 /* 统计卡片 */
 .stats-section {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+.compact-stat-card {
+  height: 70px;
+}
+
+.compact-stat-card .el-card__body {
+  padding: 10px 14px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compact-stat-card .stat-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
 }
 
 .stat-card {
@@ -1557,20 +1691,23 @@ body {
 
 .stat-content {
   text-align: center;
-  padding: 16px;
+  padding: 4px;
 }
 
 .stat-number {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: #3b82f6;
-  margin-bottom: 6px;
+  margin-bottom: 0;
+  line-height: 1;
 }
 
 .stat-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #000000;
   font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* 标签页 */
@@ -1603,6 +1740,72 @@ body {
   flex-direction: column;
   gap: 8px;
 }
+
+.card-header-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  min-height: 40px;
+}
+
+.card-title-compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.card-subtitle-inline {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: normal;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.card-title-compact h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.uploader-info,
+.upload-time,
+.expiry-time {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.uploader-icon {
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+.action-buttons .el-button {
+  margin: 0 2px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.action-buttons .el-button + .el-button {
+  margin-left: 4px;
+}
+
+.compact-header {
+  padding: 12px 0;
+}
+
+.compact-card .el-card__header {
+  padding: 12px 20px;
+}
+
+.compact-card .el-card__body {
+  padding: 12px 20px;
+}
+
+
 
 .card-actions {
   display: flex;
@@ -2049,9 +2252,24 @@ body {
 
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.credits-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.expiry-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .empty-state {

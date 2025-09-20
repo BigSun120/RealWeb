@@ -18,6 +18,9 @@ const tokenPoolRoutes = require('./tools/tokenPool');
 
 const router = express.Router();
 
+// 特殊路由：不需要工具记录检查的路由
+router.use('/token-pool', tokenPoolRoutes); // 令牌池管理（直接写死在代码中）
+
 // 应用工具箱基础中间件
 router.use(ToolsPermission.checkToolboxEnabled); // 检查工具箱是否启用
 router.use(ToolsPermission.checkRateLimit); // 检查频率限制
@@ -303,6 +306,5 @@ router.use('/video', videoRoutes);
 router.use('/youtube', youtubeRoutes);
 router.use('/iqiyi', iqiyiRoutes);
 router.use('/augment', augmentRoutes);
-router.use('/token-pool', tokenPoolRoutes);
 
 module.exports = router;

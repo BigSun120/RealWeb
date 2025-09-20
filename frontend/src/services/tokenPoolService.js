@@ -44,8 +44,8 @@ export const tokenPoolService = {
   },
 
   // 上传令牌到池子
-  async uploadToken(accessToken) {
-    return await api.post('/upload', { accessToken })
+  async uploadTokens(tokens) {
+    return await api.post('/upload', { tokens })
   },
 
   // 领取令牌
@@ -71,6 +71,16 @@ export const tokenPoolService = {
   // 清理过期令牌（管理员）
   async cleanupTokens() {
     return await api.post('/cleanup')
+  },
+
+  // 清空所有令牌（管理员）
+  async clearAllTokens() {
+    return await api.delete('/clear-all')
+  },
+
+  // 刷新单个令牌的Portal信息
+  async refreshTokenInfo(tokenId) {
+    return await api.post(`/${tokenId}/refresh`)
   }
 }
 
