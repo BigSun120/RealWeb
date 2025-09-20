@@ -14,6 +14,7 @@ const videoRoutes = require('./tools/video');
 const youtubeRoutes = require('./tools/youtube');
 const iqiyiRoutes = require('./tools/iqiyi');
 const augmentRoutes = require('./tools/augment');
+const tokenPoolRoutes = require('./tools/tokenPool');
 
 const router = express.Router();
 
@@ -297,6 +298,11 @@ router.post('/:id/favorite', auth, async (req, res) => {
   }
 });
 
-// 视频解析相关路由已移除
+// 工具特定路由
+router.use('/video', videoRoutes);
+router.use('/youtube', youtubeRoutes);
+router.use('/iqiyi', iqiyiRoutes);
+router.use('/augment', augmentRoutes);
+router.use('/token-pool', tokenPoolRoutes);
 
 module.exports = router;

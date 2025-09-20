@@ -240,7 +240,9 @@ class AugmentService {
     const results = {
       imported: 0,
       failed: 0,
-      errors: []
+      duplicated: 0,
+      errors: [],
+      duplicates: []
     }
 
     for (const tokenData of tokensData) {
@@ -248,11 +250,21 @@ class AugmentService {
         await this.saveToken(tokenData)
         results.imported++
       } catch (error) {
-        results.failed++
-        results.errors.push({
-          tokenData,
-          error: error.message
-        })
+        // 检查是否是重复令牌错误（409状态码）
+        if (error.response && error.response.status === 409) {
+          results.duplicated++
+          results.duplicates.push({
+            tokenData,
+            error: error.response.data.message,
+            existingInfo: error.response.data.data
+          })
+        } else {
+          results.failed++
+          results.errors.push({
+            tokenData,
+            error: error.message
+          })
+        }
       }
     }
 

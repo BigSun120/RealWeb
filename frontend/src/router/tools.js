@@ -187,6 +187,16 @@ export default {
         }
       ]
     },
+    {
+      path: 'token-pool-manager',
+      name: 'TokenPoolManager',
+      component: () => import('@/views/tools/dev/TokenPoolManager.vue'),
+      meta: {
+        title: 'Augment 令牌池',
+        description: '共享令牌池，上传和领取 Augment Code 访问令牌',
+        requiresAuth: true
+      }
+    },
     // 实用工具分类
     {
       path: 'utility',

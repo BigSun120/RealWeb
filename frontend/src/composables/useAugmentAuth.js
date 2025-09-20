@@ -321,14 +321,32 @@ export function useAugmentAuth() {
     try {
       const result = await augmentService.importTokens(tokensData)
 
+      // 构建结果消息
+      const messages = []
+      if (result.imported > 0) {
+        messages.push(`成功导入 ${result.imported} 个令牌`)
+      }
+      if (result.duplicated > 0) {
+        messages.push(`跳过 ${result.duplicated} 个重复令牌`)
+      }
+      if (result.failed > 0) {
+        messages.push(`失败 ${result.failed} 个令牌`)
+      }
+
       if (result.imported > 0) {
         await loadTokens()
-        ElMessage.success(`成功导入 ${result.imported} 个令牌`)
+        ElMessage.success(messages.join('，'))
+      } else if (result.duplicated > 0 && result.failed === 0) {
+        ElMessage.warning(messages.join('，'))
+      } else if (messages.length > 0) {
+        ElMessage.error(messages.join('，'))
       }
 
       if (result.failed > 0) {
-        ElMessage.warning(`${result.failed} 个令牌导入失败`)
         console.warn('导入失败的令牌:', result.errors)
+      }
+      if (result.duplicated > 0) {
+        console.info('重复的令牌:', result.duplicates)
       }
 
       return result

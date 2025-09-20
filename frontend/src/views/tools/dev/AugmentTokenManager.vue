@@ -4,261 +4,627 @@
     <div class="page-header">
       <div class="header-content">
         <div class="title-section">
-          <h1>Augment 令牌管理器</h1>
-          <p>管理您的 Augment Code 访问令牌，支持一键切换到编辑器</p>
+          <h1 class="page-title">
+            <el-icon class="title-icon">
+              <Coin />
+            </el-icon>
+            Augment 令牌池
+          </h1>
+          <p class="page-description">共享令牌池，上传和领取 Augment Code 访问令牌</p>
         </div>
         <div class="header-actions">
-          <el-button @click="showImportDialog = true" :icon="Upload">
-            导入令牌
+          <el-button @click="showUploadDialog = true" :icon="Upload" type="primary" round>
+            上传令牌
           </el-button>
-          <el-button type="primary" @click="refreshTokens" :icon="Refresh" :loading="isRefreshing">
-            刷新令牌
+          <el-button @click="refreshPool" :icon="Refresh" :loading="isRefreshing" round>
+            刷新
           </el-button>
         </div>
       </div>
     </div>
 
-    <!-- 已保存的令牌列表 -->
-    <el-card class="tokens-card">
-      <template #header>
-        <div class="card-header">
-          <h2>已保存的令牌</h2>
-          <span>点击编辑器图标可直接切换到对应编辑器</span>
-        </div>
-      </template>
+    <!-- 统计信息 -->
+    <div class="stats-section">
+      <el-row :gutter="20">
+        <el-col :span="6">
+          <el-card class="stat-card">
+            <div class="stat-content">
+              <div class="stat-number">{{ poolStats.available || 0 }}</div>
+              <div class="stat-label">可用令牌</div>
+            </div>
+          </el-card>
+        </el-col>
+        <el-col :span="6">
+          <el-card class="stat-card">
+            <div class="stat-content">
+              <div class="stat-number">{{ poolStats.total || 0 }}</div>
+              <div class="stat-label">总令牌数</div>
+            </div>
+          </el-card>
+        </el-col>
+        <el-col :span="6">
+          <el-card class="stat-card">
+            <div class="stat-content">
+              <div class="stat-number">{{ myUploadsCount || 0 }}</div>
+              <div class="stat-label">我的上传</div>
+            </div>
+          </el-card>
+        </el-col>
+        <el-col :span="6">
+          <el-card class="stat-card">
+            <div class="stat-content">
+              <div class="stat-number">1000</div>
+              <div class="stat-label">池子容量</div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
 
-      <div v-if="tokens.length === 0" class="empty-state">
-        <el-empty description="暂无保存的令牌">
-          <el-button type="primary" @click="scrollToGenerator">
-            生成新令牌
-          </el-button>
-        </el-empty>
-      </div>
-
-      <div v-else class="tokens-table-container">
-        <el-table :data="tokens" style="width: 100%" :row-key="row => row.id" table-layout="auto">
-          <el-table-column prop="email_note" label="邮箱备注" min-width="120">
-            <template #default="{ row }">
-              <div class="email-note">
-                <el-icon class="email-icon">
-                  <Message />
+    <!-- 标签页 -->
+    <el-tabs v-model="activeTab" class="pool-tabs">
+      <!-- 令牌池 -->
+      <el-tab-pane label="令牌池" name="pool">
+        <el-card class="pool-card" shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <div class="card-title">
+                <el-icon class="card-icon">
+                  <Coin />
                 </el-icon>
-                {{ row.email_note || '未设置' }}
+                <h2>可用令牌池</h2>
               </div>
-            </template>
-          </el-table-column>
+              <span class="card-subtitle">从池子中领取令牌到您的账户</span>
+            </div>
+          </template>
 
-          <el-table-column label="创建时间" min-width="120">
-            <template #default="{ row }">
-              <div class="time-info">
-                {{ getCreatedAt(row) }}
-              </div>
-            </template>
-          </el-table-column>
+          <div v-if="poolTokens.length === 0" class="empty-state">
+            <el-empty description="暂无可用令牌" />
+          </div>
 
-          <el-table-column label="过期时间" min-width="120">
-            <template #default="{ row }">
-              <div class="expiry-info">
-                <span :class="getExpiryClass(row)">
-                  {{ getExpiryDate(row) }}
-                </span>
-              </div>
-            </template>
-          </el-table-column>
+          <div v-else class="pool-table-container">
+            <el-table :data="poolTokens" style="width: 100%" :header-cell-style="{
+              background: '#f8fafc',
+              color: '#000000',
+              fontWeight: '600',
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+              borderBottom: '2px solid #e5e7eb'
+            }" :cell-style="{ textAlign: 'center', padding: '12px 8px' }" stripe border>
 
-          <el-table-column label="剩余次数" min-width="100">
-            <template #default="{ row }">
-              <div class="credits-info">
-                <el-tag :type="getCreditsType(row)" size="small">
-                  {{ getCreditsBalance(row) }}
-                </el-tag>
-              </div>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="账号状态" min-width="100">
-            <template #default="{ row }">
-              <div class="status-info">
-                <el-tag :type="getPortalStatusType(row)" size="small">
-                  {{ getPortalStatusText(row) }}
-                </el-tag>
-              </div>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="编辑器" min-width="100">
-            <template #default="{ row }">
-              <el-dropdown @command="(command) => handleEditorSwitch(row, command)">
-                <el-button size="small" :icon="Monitor">
-                  切换
-                  <el-icon class="el-icon--right">
-                    <ArrowDown />
-                  </el-icon>
-                </el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item command="vscode">
-                      <span class="editor-item">🔵 VS Code</span>
-                    </el-dropdown-item>
-                    <el-dropdown-item command="cursor">
-                      <span class="editor-item">⚡ Cursor</span>
-                    </el-dropdown-item>
-                    <el-dropdown-item command="kiro">
-                      <span class="editor-item">🔥 Kiro</span>
-                    </el-dropdown-item>
-                    <el-dropdown-item command="trae">
-                      <span class="editor-item">🚀 Trae</span>
-                    </el-dropdown-item>
-                    <el-dropdown-item command="windsurf">
-                      <span class="editor-item">🌊 Windsurf</span>
-                    </el-dropdown-item>
-                    <el-dropdown-item command="qoder">
-                      <span class="editor-item">📝 Qoder</span>
-                    </el-dropdown-item>
-                    <el-dropdown-item divided command="copy">
-                      <span class="editor-item">📋 复制令牌</span>
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
+              <el-table-column label="上传者" min-width="140" align="center">
+                <template #default="{ row }">
+                  <div class="uploader-info">
+                    <el-icon class="uploader-icon">
+                      <User />
+                    </el-icon>
+                    {{ row.maskedEmail }}
+                  </div>
                 </template>
-              </el-dropdown>
-            </template>
-          </el-table-column>
+              </el-table-column>
 
-          <el-table-column label="操作" min-width="200" fixed="right">
-            <template #default="{ row }">
-              <div class="action-buttons">
-                <el-button type="primary" size="small" @click="refreshPortalInfo(row)" :loading="row._refreshing"
-                  :icon="Refresh">
-                  刷新
+              <el-table-column label="上传时间" min-width="140" align="center">
+                <template #default="{ row }">
+                  <div class="upload-time">
+                    {{ formatDate(row.uploadedAt) }}
+                  </div>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="令牌状态" min-width="110" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="getStatusType(row)" size="default" effect="light" round>
+                    {{ getStatusText(row) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="剩余次数" min-width="110" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="getCreditsType(row)" size="default" effect="light" round>
+                    {{ row.creditsBalance || '未知' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="过期时间" min-width="140" align="center">
+                <template #default="{ row }">
+                  <div class="expiry-time" :class="getExpiryClass(row)">
+                    {{ formatDate(row.expiryDate) || '未知' }}
+                  </div>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="操作" min-width="120" align="center">
+                <template #default="{ row }">
+                  <el-button type="primary" size="small" @click="claimToken(row)" :loading="row._claiming"
+                    :disabled="row.status !== 'available'" round>
+                    领取
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-card>
+      </el-tab-pane>
+
+      <!-- 我的上传 -->
+      <el-tab-pane label="我的上传" name="uploads">
+        <el-card class="uploads-card" shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <div class="card-title">
+                <el-icon class="card-icon">
+                  <Upload />
+                </el-icon>
+                <h2>我的上传</h2>
+              </div>
+              <span class="card-subtitle">管理您上传到池子的令牌</span>
+            </div>
+          </template>
+
+          <div v-if="myUploads.length === 0" class="empty-state">
+            <el-empty description="您还没有上传任何令牌">
+              <el-button type="primary" @click="showUploadDialog = true">
+                上传令牌
+              </el-button>
+            </el-empty>
+          </div>
+
+          <div v-else class="uploads-table-container">
+            <el-table :data="myUploads" style="width: 100%" :header-cell-style="{
+              background: '#f8fafc',
+              color: '#000000',
+              fontWeight: '600',
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+              borderBottom: '2px solid #e5e7eb'
+            }" :cell-style="{ textAlign: 'center', padding: '12px 8px' }" stripe border>
+
+              <el-table-column label="上传时间" min-width="140" align="center">
+                <template #default="{ row }">
+                  {{ formatDate(row.uploadedAt) }}
+                </template>
+              </el-table-column>
+
+              <el-table-column label="状态" min-width="110" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="getStatusType(row)" size="default" effect="light" round>
+                    {{ getStatusText(row) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="剩余次数" min-width="110" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="getCreditsType(row)" size="default" effect="light" round>
+                    {{ row.creditsBalance || '未知' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="领取者" min-width="140" align="center">
+                <template #default="{ row }">
+                  <div v-if="row.claimedBy">
+                    <el-icon>
+                      <User />
+                    </el-icon>
+                    {{ row.claimedBy.email ? maskEmail(row.claimedBy.email) : '已领取' }}
+                  </div>
+                  <span v-else class="not-claimed">未领取</span>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="操作" min-width="160" align="center">
+                <template #default="{ row }">
+                  <div class="action-buttons">
+                    <el-button v-if="row.status === 'claimed'" type="warning" size="small" @click="returnToken(row)"
+                      :loading="row._returning" round>
+                      归还
+                    </el-button>
+                    <el-button type="danger" size="small" @click="deletePoolToken(row)" :loading="row._deleting" round>
+                      删除
+                    </el-button>
+                  </div>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-card>
+      </el-tab-pane>
+
+      <!-- 已保存的令牌 -->
+      <el-tab-pane label="已保存的令牌" name="saved">
+
+        <!-- 已保存的令牌列表 -->
+        <el-card class="tokens-card" shadow="hover">
+          <template #header>
+            <div class="card-header-with-actions">
+              <div class="card-title">
+                <el-icon class="card-icon">
+                  <Document />
+                </el-icon>
+                <h2>已保存的令牌</h2>
+              </div>
+              <div class="card-actions">
+                <el-button @click="showImportDialog = true" :icon="Upload" type="info" plain round size="small">
+                  导入令牌
                 </el-button>
-                <el-button type="warning" size="small" @click="editToken(row)" :icon="Edit">
-                  编辑
-                </el-button>
-                <el-button type="info" size="small" @click="exportToken(row)" :icon="Download">
-                  导出
-                </el-button>
-                <el-button type="danger" size="small" @click="deleteToken(row)" :icon="Delete">
-                  删除
+                <el-dropdown @command="handleExportCommand" :disabled="tokens.length === 0">
+                  <el-button :icon="Download" type="success" plain round size="small">
+                    批量导出
+                    <el-icon class="el-icon--right">
+                      <ArrowDown />
+                    </el-icon>
+                  </el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="all">
+                        <el-icon>
+                          <Download />
+                        </el-icon>
+                        导出全部 ({{ tokens.length }})
+                      </el-dropdown-item>
+                      <el-dropdown-item command="selected" :disabled="selectedTokens.length === 0">
+                        <el-icon>
+                          <Check />
+                        </el-icon>
+                        导出选中 ({{ selectedTokens.length }})
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+                <el-button type="primary" @click="refreshTokens" :icon="Refresh" :loading="isRefreshing" round
+                  size="small">
+                  刷新令牌
                 </el-button>
               </div>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-    </el-card>
+            </div>
+          </template>
 
-    <!-- 生成新令牌 -->
-    <el-card class="generator-card" ref="generatorCard">
-      <template #header>
-        <div class="card-header">
-          <h2>生成新的访问令牌</h2>
-          <span>按照以下步骤获取您的 Augment 访问令牌</span>
-        </div>
-      </template>
+          <div v-if="tokens.length === 0" class="empty-state">
+            <el-empty description="暂无保存的令牌">
+              <el-button type="primary" @click="scrollToGenerator">
+                生成新令牌
+              </el-button>
+            </el-empty>
+          </div>
 
-      <!-- 步骤 1: 生成授权URL -->
-      <div class="step-section">
-        <div class="step-header">
-          <el-icon class="step-icon">
-            <Key />
-          </el-icon>
-          <h3>步骤 1: 生成授权URL</h3>
-        </div>
+          <div v-else class="tokens-table-container">
+            <el-table :data="tokens" style="width: 100%" :row-key="row => row.id" table-layout="auto"
+              @selection-change="handleSelectionChange" ref="tokenTable" :header-cell-style="{
+                background: '#f8fafc',
+                color: '#000000',
+                fontWeight: '600',
+                textAlign: 'center',
+                whiteSpace: 'nowrap',
+                borderBottom: '2px solid #e5e7eb'
+              }" :cell-style="{ textAlign: 'center', padding: '12px 8px' }" stripe border>
+              <el-table-column type="selection" width="50" align="center" />
+              <el-table-column prop="email_note" label="邮箱备注" min-width="140" align="center">
+                <template #default="{ row }">
+                  <div class="email-note">
+                    <el-icon class="email-icon">
+                      <Message />
+                    </el-icon>
+                    {{ row.email_note || '未设置' }}
+                  </div>
+                </template>
+              </el-table-column>
 
-        <el-button type="primary" @click="generateAuthUrl" :loading="isGenerating" size="large">
-          生成授权URL
-        </el-button>
+              <el-table-column label="创建时间" min-width="140" align="center">
+                <template #default="{ row }">
+                  <div class="time-info">
+                    <el-text size="small" style="color: #000000;">
+                      {{ getCreatedAt(row) }}
+                    </el-text>
+                  </div>
+                </template>
+              </el-table-column>
 
-        <div v-if="authUrl" class="url-section">
-          <el-form-item label="授权URL:">
-            <el-input v-model="authUrl" readonly placeholder="点击上方按钮生成授权URL">
-              <template #append>
-                <el-button @click="copyAuthUrl" :icon="CopyDocument">
-                  复制
-                </el-button>
-              </template>
-            </el-input>
-          </el-form-item>
+              <el-table-column label="过期时间" min-width="140" align="center">
+                <template #default="{ row }">
+                  <div class="expiry-info">
+                    <el-text :class="getExpiryClass(row)" size="small">
+                      {{ getExpiryDate(row) }}
+                    </el-text>
+                  </div>
+                </template>
+              </el-table-column>
 
-          <div class="action-buttons">
-            <el-button @click="openAuthUrl" :icon="Link">
-              打开授权页面
+              <el-table-column label="剩余次数" min-width="110" align="center">
+                <template #default="{ row }">
+                  <div class="credits-info">
+                    <el-tag :type="getCreditsType(row)" size="default" effect="light" round>
+                      {{ getCreditsBalance(row) }}
+                    </el-tag>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="账号状态" min-width="110" align="center">
+                <template #default="{ row }">
+                  <div class="status-info">
+                    <el-tag :type="getPortalStatusType(row)" size="default" effect="light" round>
+                      {{ getPortalStatusText(row) }}
+                    </el-tag>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="编辑器" min-width="120" align="center">
+                <template #default="{ row }">
+                  <el-dropdown @command="(command) => handleEditorSwitch(row, command)" trigger="click">
+                    <el-button size="default" type="primary" plain :icon="Monitor" round>
+                      切换
+                      <el-icon class="el-icon--right">
+                        <ArrowDown />
+                      </el-icon>
+                    </el-button>
+                    <template #dropdown>
+                      <el-dropdown-menu>
+                        <el-dropdown-item command="vscode">
+                          <span class="editor-item">🔵 VS Code</span>
+                        </el-dropdown-item>
+                        <el-dropdown-item command="cursor">
+                          <span class="editor-item">⚡ Cursor</span>
+                        </el-dropdown-item>
+                        <el-dropdown-item command="kiro">
+                          <span class="editor-item">🔥 Kiro</span>
+                        </el-dropdown-item>
+                        <el-dropdown-item command="trae">
+                          <span class="editor-item">🚀 Trae</span>
+                        </el-dropdown-item>
+                        <el-dropdown-item command="windsurf">
+                          <span class="editor-item">🌊 Windsurf</span>
+                        </el-dropdown-item>
+                        <el-dropdown-item command="qoder">
+                          <span class="editor-item">📝 Qoder</span>
+                        </el-dropdown-item>
+                        <el-dropdown-item divided command="copy">
+                          <span class="editor-item">📋 复制令牌</span>
+                        </el-dropdown-item>
+                      </el-dropdown-menu>
+                    </template>
+                  </el-dropdown>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="操作" min-width="240" fixed="right" align="center">
+                <template #default="{ row }">
+                  <div class="action-buttons">
+                    <el-button type="primary" size="small" @click="refreshPortalInfo(row)" :loading="row._refreshing"
+                      :icon="Refresh" round plain>
+                      刷新
+                    </el-button>
+                    <el-button type="warning" size="small" @click="editToken(row)" :icon="Edit" round plain>
+                      编辑
+                    </el-button>
+                    <el-button type="success" size="small" @click="exportToken(row)" :icon="Download" round plain>
+                      导出
+                    </el-button>
+                    <el-button type="danger" size="small" @click="deleteToken(row)" :icon="Delete" round plain>
+                      删除
+                    </el-button>
+                  </div>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-card>
+
+        <!-- 生成新令牌 -->
+        <el-card class="generator-card" ref="generatorCard" shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <div class="card-title">
+                <el-icon class="card-icon">
+                  <Key />
+                </el-icon>
+                <h2>生成新的访问令牌</h2>
+              </div>
+              <span class="card-subtitle">按照以下步骤获取您的 Augment 访问令牌</span>
+            </div>
+          </template>
+
+          <!-- 步骤 1: 生成授权URL -->
+          <div class="step-section">
+            <div class="step-header">
+              <el-icon class="step-icon">
+                <Key />
+              </el-icon>
+              <h3>步骤 1: 生成授权URL</h3>
+            </div>
+
+            <el-button type="primary" @click="generateAuthUrl" :loading="isGenerating" size="large" round>
+              <el-icon>
+                <Link />
+              </el-icon>
+              生成授权URL
             </el-button>
+
+            <div v-if="authUrl" class="url-section">
+              <el-form-item label="授权URL:">
+                <el-input v-model="authUrl" readonly placeholder="点击上方按钮生成授权URL">
+                  <template #append>
+                    <el-button @click="copyAuthUrl" :icon="CopyDocument">
+                      复制
+                    </el-button>
+                  </template>
+                </el-input>
+              </el-form-item>
+
+              <div class="action-buttons">
+                <el-button @click="openAuthUrl" :icon="Link">
+                  打开授权页面
+                </el-button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 步骤 2: 输入授权码 -->
+          <div class="step-section">
+            <div class="step-header">
+              <el-icon class="step-icon">
+                <Document />
+              </el-icon>
+              <h3>步骤 2: 输入授权码</h3>
+            </div>
+
+            <el-form-item label="授权码:">
+              <el-input v-model="authCode" type="textarea" :rows="4" placeholder="在此粘贴授权码JSON..." />
+            </el-form-item>
+
+            <el-button type="primary" @click="getAccessToken" :loading="isGettingToken" :disabled="!canGetToken"
+              size="large" round>
+              <el-icon>
+                <Key />
+              </el-icon>
+              获取访问令牌
+            </el-button>
+          </div>
+
+          <!-- 步骤 3: 访问令牌结果 -->
+          <div v-if="tokenResult" class="step-section">
+            <div class="step-header">
+              <el-icon class="step-icon">
+                <Check />
+              </el-icon>
+              <h3>步骤 3: 保存访问令牌</h3>
+            </div>
+
+            <el-form :model="tokenForm" label-width="120px">
+              <el-form-item label="访问令牌:">
+                <el-input v-model="tokenResult.access_token" readonly>
+                  <template #append>
+                    <el-button @click="copyAccessToken" :icon="CopyDocument">
+                      复制
+                    </el-button>
+                  </template>
+                </el-input>
+              </el-form-item>
+
+              <el-form-item label="租户URL:">
+                <el-input v-model="tokenResult.tenant_url" readonly>
+                  <template #append>
+                    <el-button @click="copyTenantUrl" :icon="CopyDocument">
+                      复制
+                    </el-button>
+                  </template>
+                </el-input>
+              </el-form-item>
+
+              <el-form-item label="Portal URL:">
+                <el-input v-model="tokenForm.portalUrl" placeholder="请输入 Portal 地址（可选）" />
+              </el-form-item>
+
+              <el-form-item label="邮箱备注:">
+                <el-input v-model="tokenForm.emailNote" placeholder="请输入邮箱相关备注（可选）" />
+              </el-form-item>
+
+              <el-form-item>
+                <el-button type="success" @click="saveToken" :loading="isSaving" size="large" round>
+                  <el-icon>
+                    <Check />
+                  </el-icon>
+                  保存令牌
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+        </el-card>
+
+        <!-- 导入令牌对话框 -->
+        <TokenImportDialog v-model="showImportDialog" @import-success="handleImportSuccess" />
+
+        <!-- 编辑对话框 -->
+        <TokenEditDialog v-model="showEditDialog" :token="editingToken" @save="handleEditSave" />
+      </el-tab-pane>
+    </el-tabs>
+
+    <!-- 上传令牌到池子对话框 -->
+    <el-dialog v-model="showUploadDialog" title="上传令牌到池子" width="800px" :close-on-click-modal="false">
+      <div class="upload-dialog">
+        <!-- 导入方式选择 -->
+        <div class="import-mode-selector">
+          <el-radio-group v-model="uploadMode" @change="handleUploadModeChange">
+            <el-radio-button label="manual">手动输入</el-radio-button>
+            <el-radio-button label="json">JSON导入</el-radio-button>
+          </el-radio-group>
+        </div>
+
+        <!-- 手动输入模式 -->
+        <div v-if="uploadMode === 'manual'" class="manual-upload">
+          <div class="section-header">
+            <h3>手动输入令牌信息</h3>
+            <p>请逐个输入令牌信息，每个令牌占一行</p>
+          </div>
+
+          <div class="token-inputs">
+            <div v-for="(token, index) in uploadTokens" :key="index" class="token-input-row">
+              <div class="row-header">
+                <span class="row-number">{{ index + 1 }}</span>
+                <el-button v-if="uploadTokens.length > 1" type="danger" size="small" :icon="Delete" circle
+                  @click="removeUploadTokenRow(index)" />
+              </div>
+
+              <div class="token-fields">
+                <el-form-item label="访问令牌" required>
+                  <el-input v-model="token.access_token" placeholder="请输入访问令牌" type="textarea" :rows="2"
+                    :disabled="isUploading" />
+                </el-form-item>
+
+                <el-form-item label="租户URL">
+                  <el-input v-model="token.tenant_url" placeholder="请输入租户URL（可选）" :disabled="isUploading" />
+                </el-form-item>
+
+                <el-form-item label="Portal URL">
+                  <el-input v-model="token.portal_url" placeholder="请输入Portal URL（可选）" :disabled="isUploading" />
+                </el-form-item>
+
+                <el-form-item label="邮箱备注">
+                  <el-input v-model="token.email_note" placeholder="请输入邮箱备注（可选）" :disabled="isUploading" />
+                </el-form-item>
+              </div>
+            </div>
+          </div>
+
+          <div class="add-token-row">
+            <el-button @click="addUploadTokenRow" :icon="Plus" type="primary" plain>
+              添加令牌
+            </el-button>
+          </div>
+        </div>
+
+        <!-- JSON导入模式 -->
+        <div v-else class="json-upload">
+          <div class="section-header">
+            <h3>JSON格式导入</h3>
+            <p>请粘贴JSON格式的令牌数据</p>
+          </div>
+
+          <el-input v-model="uploadJsonText" type="textarea" :rows="12" placeholder="请粘贴JSON格式的令牌数据..."
+            :disabled="isUploading" />
+
+          <div class="json-example">
+            <el-collapse>
+              <el-collapse-item title="查看JSON格式示例" name="example">
+                <pre class="json-example-code">{{ jsonExample }}</pre>
+              </el-collapse-item>
+            </el-collapse>
           </div>
         </div>
       </div>
 
-      <!-- 步骤 2: 输入授权码 -->
-      <div class="step-section">
-        <div class="step-header">
-          <el-icon class="step-icon">
-            <Document />
-          </el-icon>
-          <h3>步骤 2: 输入授权码</h3>
-        </div>
-
-        <el-form-item label="授权码:">
-          <el-input v-model="authCode" type="textarea" :rows="4" placeholder="在此粘贴授权码JSON..." />
-        </el-form-item>
-
-        <el-button type="primary" @click="getAccessToken" :loading="isGettingToken" :disabled="!canGetToken"
-          size="large">
-          获取访问令牌
+      <template #footer>
+        <el-button @click="showUploadDialog = false" :disabled="isUploading">
+          取消
         </el-button>
-      </div>
-
-      <!-- 步骤 3: 访问令牌结果 -->
-      <div v-if="tokenResult" class="step-section">
-        <div class="step-header">
-          <el-icon class="step-icon">
-            <Check />
-          </el-icon>
-          <h3>步骤 3: 保存访问令牌</h3>
-        </div>
-
-        <el-form :model="tokenForm" label-width="120px">
-          <el-form-item label="访问令牌:">
-            <el-input v-model="tokenResult.access_token" readonly>
-              <template #append>
-                <el-button @click="copyAccessToken" :icon="CopyDocument">
-                  复制
-                </el-button>
-              </template>
-            </el-input>
-          </el-form-item>
-
-          <el-form-item label="租户URL:">
-            <el-input v-model="tokenResult.tenant_url" readonly>
-              <template #append>
-                <el-button @click="copyTenantUrl" :icon="CopyDocument">
-                  复制
-                </el-button>
-              </template>
-            </el-input>
-          </el-form-item>
-
-          <el-form-item label="Portal URL:">
-            <el-input v-model="tokenForm.portalUrl" placeholder="请输入 Portal 地址（可选）" />
-          </el-form-item>
-
-          <el-form-item label="邮箱备注:">
-            <el-input v-model="tokenForm.emailNote" placeholder="请输入邮箱相关备注（可选）" />
-          </el-form-item>
-
-          <el-form-item>
-            <el-button type="success" @click="saveToken" :loading="isSaving" size="large">
-              保存令牌
-            </el-button>
-          </el-form-item>
-        </el-form>
-      </div>
-    </el-card>
-
-    <!-- 导入令牌对话框 -->
-    <TokenImportDialog v-model="showImportDialog" @import-success="handleImportSuccess" />
-
-    <!-- 编辑对话框 -->
-    <TokenEditDialog v-model="showEditDialog" :token="editingToken" @save="handleEditSave" />
+        <el-button type="primary" @click="uploadTokensToPool" :loading="isUploading">
+          上传到池子
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -278,12 +644,16 @@ import {
   Monitor,
   ArrowDown,
   Edit,
-  Download
+  Download,
+  Coin,
+  User,
+  Plus
 } from '@element-plus/icons-vue'
 import { useAugmentAuth } from '@/composables/useAugmentAuth'
 import { useProtocolSwitcher } from '@/composables/useProtocolSwitcher'
 import TokenImportDialog from './components/TokenImportDialog.vue'
 import TokenEditDialog from './components/TokenEditDialog.vue'
+import { tokenPoolService } from '@/services/tokenPoolService'
 
 // 响应式数据
 const authUrl = ref('')
@@ -294,6 +664,45 @@ const generatorCard = ref(null)
 const showImportDialog = ref(false)
 const showEditDialog = ref(false)
 const editingToken = ref(null)
+const selectedTokens = ref([])
+const tokenTable = ref(null)
+
+// 令牌池相关数据
+const activeTab = ref('saved')
+const showUploadDialog = ref(false)
+const isUploading = ref(false)
+const poolTokens = ref([])
+const myUploads = ref([])
+const poolStats = ref({
+  available: 0,
+  total: 0
+})
+
+const uploadForm = ref({
+  accessToken: ''
+})
+
+// 上传对话框相关数据
+const uploadMode = ref('manual')
+const uploadTokens = ref([{
+  access_token: '',
+  tenant_url: '',
+  portal_url: '',
+  email_note: ''
+}])
+const uploadJsonText = ref('')
+
+// JSON示例
+const jsonExample = ref(`[
+  {
+    "access_token": "your_access_token_here",
+    "tenant_url": "https://your-tenant.augmentcode.com",
+    "portal_url": "https://portal.augmentcode.com",
+    "email_note": "example@domain.com"
+  }
+]`)
+
+
 
 const tokenForm = ref({
   portalUrl: '',
@@ -324,6 +733,9 @@ const { switchToEditor, copyTokenInfo } = useProtocolSwitcher()
 const canGetToken = computed(() => {
   return authUrl.value && authCode.value.trim().length > 0
 })
+
+// 令牌池计算属性
+const myUploadsCount = computed(() => myUploads.value.length)
 
 // 方法
 const generateAuthUrl = async () => {
@@ -631,10 +1043,10 @@ const getExpiryClass = (token) => {
       const now = new Date()
       const diffDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24))
 
-      if (diffDays < 0) return 'expiry-expired'
-      if (diffDays <= 7) return 'expiry-warning'
-      if (diffDays <= 30) return 'expiry-caution'
-      return 'expiry-normal'
+      if (diffDays < 0) return 'expiry-expired'  // 已过期：红色
+      if (diffDays < 1) return 'expiry-danger'   // 低于1天：红色
+      if (diffDays < 3) return 'expiry-warning'  // 低于3天：橙色
+      return 'expiry-normal'                     // 其他时间：绿色
     }
     return 'expiry-unknown'
   } catch {
@@ -648,7 +1060,7 @@ const getCreditsType = (token) => {
   if (isNaN(credits)) return 'info'
   if (credits <= 0) return 'danger'
   if (credits <= 10) return 'warning'
-  if (credits <= 50) return ''
+  if (credits <= 50) return 'primary'
   return 'success'
 }
 
@@ -659,6 +1071,216 @@ const scrollToGenerator = () => {
       generatorCard.value.$el.scrollIntoView({ behavior: 'smooth' })
     }
   })
+}
+
+// 令牌池相关方法
+const refreshPool = async () => {
+  isRefreshing.value = true
+  try {
+    // 模拟数据，因为后端API还未完全实现
+    poolTokens.value = []
+    poolStats.value = { available: 0, total: 0 }
+    myUploads.value = []
+
+    ElMessage.success('刷新成功')
+  } catch (error) {
+    console.error('刷新失败:', error)
+    ElMessage.error(error.message || '刷新失败')
+  } finally {
+    isRefreshing.value = false
+  }
+}
+
+const uploadToken = async () => {
+  if (!uploadForm.value.accessToken.trim()) {
+    ElMessage.warning('请输入访问令牌')
+    return
+  }
+
+  isUploading.value = true
+  try {
+    await tokenPoolService.uploadToken(uploadForm.value.accessToken.trim())
+    ElMessage.success('令牌上传成功')
+    showUploadDialog.value = false
+    uploadForm.value.accessToken = ''
+    await refreshPool()
+  } catch (error) {
+    console.error('上传失败:', error)
+    ElMessage.error(error.message || '上传失败')
+  } finally {
+    isUploading.value = false
+  }
+}
+
+const claimToken = async (token) => {
+  token._claiming = true
+  try {
+    await tokenPoolService.claimToken(token._id)
+    ElMessage.success('令牌领取成功')
+    await refreshPool()
+  } catch (error) {
+    console.error('领取失败:', error)
+    ElMessage.error(error.message || '领取失败')
+  } finally {
+    token._claiming = false
+  }
+}
+
+const returnToken = async (token) => {
+  token._returning = true
+  try {
+    await tokenPoolService.returnToken(token._id)
+    ElMessage.success('令牌已归还到池子')
+    await refreshPool()
+  } catch (error) {
+    console.error('归还失败:', error)
+    ElMessage.error(error.message || '归还失败')
+  } finally {
+    token._returning = false
+  }
+}
+
+const deletePoolToken = async (token) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这个令牌吗？', '确认删除', {
+      type: 'warning'
+    })
+
+    token._deleting = true
+    await tokenPoolService.deleteToken(token._id)
+    ElMessage.success('令牌已删除')
+    await refreshPool()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+      ElMessage.error(error.message || '删除失败')
+    }
+  } finally {
+    token._deleting = false
+  }
+}
+
+// 辅助方法 - 使用已有的formatDate函数
+
+const getStatusType = (token) => {
+  switch (token.status) {
+    case 'available': return 'success'
+    case 'claimed': return 'warning'
+    case 'expired': return 'danger'
+    case 'invalid': return 'info'
+    default: return 'info'
+  }
+}
+
+const getStatusText = (token) => {
+  switch (token.status) {
+    case 'available': return '可用'
+    case 'claimed': return '已领取'
+    case 'expired': return '已过期'
+    case 'invalid': return '无效'
+    default: return '未知'
+  }
+}
+
+const maskEmail = (email) => {
+  if (!email) return '未知'
+  const [localPart, domain] = email.split('@')
+  if (!domain) return '未知'
+
+  let maskedLocal = localPart
+  if (localPart.length > 3) {
+    const start = localPart.substring(0, 2)
+    const end = localPart.substring(localPart.length - 1)
+    const middle = '*'.repeat(Math.max(1, localPart.length - 3))
+    maskedLocal = start + middle + end
+  } else if (localPart.length > 1) {
+    maskedLocal = localPart[0] + '*'.repeat(localPart.length - 1)
+  }
+
+  return `${maskedLocal}@${domain}`
+}
+
+// 上传对话框相关方法
+const handleUploadModeChange = () => {
+  // 切换模式时清空数据
+  if (uploadMode.value === 'manual') {
+    uploadTokens.value = [{
+      access_token: '',
+      tenant_url: '',
+      portal_url: '',
+      email_note: ''
+    }]
+  } else {
+    uploadJsonText.value = ''
+  }
+}
+
+const addUploadTokenRow = () => {
+  uploadTokens.value.push({
+    access_token: '',
+    tenant_url: '',
+    portal_url: '',
+    email_note: ''
+  })
+}
+
+const removeUploadTokenRow = (index) => {
+  if (uploadTokens.value.length > 1) {
+    uploadTokens.value.splice(index, 1)
+  }
+}
+
+const uploadTokensToPool = async () => {
+  try {
+    let tokensToUpload = []
+
+    if (uploadMode.value === 'manual') {
+      // 手动输入模式
+      tokensToUpload = uploadTokens.value.filter(token => token.access_token.trim())
+      if (tokensToUpload.length === 0) {
+        ElMessage.warning('请至少输入一个访问令牌')
+        return
+      }
+    } else {
+      // JSON导入模式
+      if (!uploadJsonText.value.trim()) {
+        ElMessage.warning('请输入JSON数据')
+        return
+      }
+
+      try {
+        const jsonData = JSON.parse(uploadJsonText.value)
+        tokensToUpload = Array.isArray(jsonData) ? jsonData : [jsonData]
+      } catch (error) {
+        ElMessage.error('JSON格式错误，请检查格式')
+        return
+      }
+    }
+
+    isUploading.value = true
+
+    // 模拟上传过程，因为后端API还未完全实现
+    ElMessage.success(`模拟上传 ${tokensToUpload.length} 个令牌成功`)
+    showUploadDialog.value = false
+
+    // 重置表单
+    uploadMode.value = 'manual'
+    uploadTokens.value = [{
+      access_token: '',
+      tenant_url: '',
+      portal_url: '',
+      email_note: ''
+    }]
+    uploadJsonText.value = ''
+
+    // 刷新池子数据
+    await refreshPool()
+  } catch (error) {
+    console.error('上传失败:', error)
+    ElMessage.error(error.message || '上传失败')
+  } finally {
+    isUploading.value = false
+  }
 }
 
 // 处理编辑器切换
@@ -684,39 +1306,105 @@ const editToken = (token) => {
   showEditDialog.value = true
 }
 
-// 导出令牌
+// 导出单个令牌
 const exportToken = (token) => {
   try {
-    // 创建导出数据
-    const exportData = {
-      id: token.id,
-      tenant_url: token.tenant_url,
+    // 创建导出数据（数组格式，与导入格式一致）
+    const exportData = [{
       access_token: token.access_token,
+      tenant_url: token.tenant_url,
       portal_url: token.portal_url,
-      email_note: token.email_note,
-      portal_info: token.portal_info,
-      created_at: token.created_at,
-      updated_at: token.updated_at
-    }
+      email_note: token.email_note
+    }]
 
-    // 创建下载链接
-    const dataStr = JSON.stringify(exportData, null, 2)
-    const dataBlob = new Blob([dataStr], { type: 'application/json' })
-    const url = URL.createObjectURL(dataBlob)
-
-    // 创建下载链接并触发下载
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `augment-token-${token.email_note || token.id}.json`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-
+    downloadTokensAsJson(exportData, `augment-token-${token.email_note || token.id}.json`)
     ElMessage.success('令牌导出成功')
   } catch (error) {
     ElMessage.error('导出令牌失败')
   }
+}
+
+// 处理表格选择变化
+const handleSelectionChange = (selection) => {
+  selectedTokens.value = selection
+}
+
+// 处理导出命令
+const handleExportCommand = (command) => {
+  if (command === 'all') {
+    exportAllTokens()
+  } else if (command === 'selected') {
+    exportSelectedTokens()
+  }
+}
+
+// 批量导出所有令牌
+const exportAllTokens = () => {
+  try {
+    if (tokens.value.length === 0) {
+      ElMessage.warning('没有可导出的令牌')
+      return
+    }
+
+    // 创建导出数据（数组格式，与导入格式一致）
+    const exportData = tokens.value.map(token => ({
+      access_token: token.access_token,
+      tenant_url: token.tenant_url,
+      portal_url: token.portal_url,
+      email_note: token.email_note
+    }))
+
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+    downloadTokensAsJson(exportData, `augment-tokens-batch-${timestamp}.json`)
+    ElMessage.success(`成功导出 ${tokens.value.length} 个令牌`)
+  } catch (error) {
+    ElMessage.error('批量导出失败')
+  }
+}
+
+// 导出选中的令牌
+const exportSelectedTokens = () => {
+  try {
+    if (selectedTokens.value.length === 0) {
+      ElMessage.warning('请先选择要导出的令牌')
+      return
+    }
+
+    // 创建导出数据（数组格式，与导入格式一致）
+    const exportData = selectedTokens.value.map(token => ({
+      access_token: token.access_token,
+      tenant_url: token.tenant_url,
+      portal_url: token.portal_url,
+      email_note: token.email_note
+    }))
+
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+    downloadTokensAsJson(exportData, `augment-tokens-selected-${timestamp}.json`)
+    ElMessage.success(`成功导出 ${selectedTokens.value.length} 个选中令牌`)
+
+    // 清空选择
+    if (tokenTable.value) {
+      tokenTable.value.clearSelection()
+    }
+  } catch (error) {
+    ElMessage.error('导出选中令牌失败')
+  }
+}
+
+// 通用下载函数
+const downloadTokensAsJson = (data, filename) => {
+  const dataStr = JSON.stringify(data, null, 2)
+  const dataBlob = new Blob([dataStr], { type: 'application/json' })
+  const url = URL.createObjectURL(dataBlob)
+
+  // 创建下载链接并触发下载
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 // 处理编辑保存
@@ -753,10 +1441,26 @@ const handleEditSave = async (updatedToken) => {
 
 // 处理导入成功
 const handleImportSuccess = async (result) => {
-  ElMessage.success(`成功导入 ${result.imported} 个令牌${result.failed > 0 ? `，失败 ${result.failed} 个` : ''}`)
+  // 构建结果消息
+  const messages = []
+  if (result.imported > 0) {
+    messages.push(`成功导入 ${result.imported} 个`)
+  }
+  if (result.duplicated > 0) {
+    messages.push(`跳过重复 ${result.duplicated} 个`)
+  }
+  if (result.failed > 0) {
+    messages.push(`失败 ${result.failed} 个`)
+  }
+
+  if (messages.length > 0) {
+    ElMessage.success(`导入完成：${messages.join('，')}`)
+  }
 
   // 刷新令牌列表
-  await refreshTokens()
+  if (result.imported > 0) {
+    await refreshTokens()
+  }
 
   // 关闭对话框
   showImportDialog.value = false
@@ -766,22 +1470,185 @@ const handleImportSuccess = async (result) => {
 onMounted(() => {
   // 仅加载数据库中存储的令牌数据（包括已保存的Portal信息）
   loadTokensOnly()
+  // 加载令牌池数据
+  refreshPool()
 })
 </script>
 
 <style scoped>
 .augment-token-manager {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 24px;
+  max-width: 1400px;
   margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* 全局背景渐变 */
+body {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-attachment: fixed;
 }
 
 .page-header {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  color: white;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-.tokens-card {
-  margin-bottom: 24px;
+/* 页面头部样式 */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.title-section {
+  flex: 1;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 6px 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: white;
+}
+
+.title-icon {
+  font-size: 2rem;
+  color: #fbbf24;
+}
+
+.page-description {
+  margin: 0;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 400;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* 统计卡片 */
+.stats-section {
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.stat-content {
+  text-align: center;
+  padding: 16px;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #3b82f6;
+  margin-bottom: 6px;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #000000;
+  font-weight: 500;
+}
+
+/* 标签页 */
+.pool-tabs {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* 卡片样式 */
+.tokens-card,
+.generator-card,
+.pool-card,
+.uploads-card {
+  margin-bottom: 32px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.card-header-with-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.card-header-with-actions .card-title {
+  flex: 1;
+}
+
+.card-header-with-actions .card-actions {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+
+.card-title h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #000000;
+}
+
+.card-icon {
+  font-size: 1.5rem;
+  color: #3b82f6;
+}
+
+.card-subtitle {
+  color: #000000;
+  font-size: 0.9rem;
 }
 
 .empty-state {
@@ -789,8 +1656,119 @@ onMounted(() => {
   padding: 40px 20px;
 }
 
+/* 表格样式 */
 .tokens-table-container {
   overflow-x: auto;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+:deep(.el-table) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+:deep(.el-table__header-wrapper) .el-checkbox {
+  transform: scale(1.1);
+}
+
+:deep(.el-table__body-wrapper) .el-checkbox {
+  transform: scale(1.1);
+}
+
+:deep(.el-table .el-table__cell) {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background-color: rgba(248, 250, 252, 0.5);
+}
+
+:deep(.el-table__body tr:hover > td) {
+  background-color: rgba(224, 242, 254, 0.6) !important;
+}
+
+/* 表格内容样式 */
+.email-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.email-icon {
+  color: #3b82f6;
+  font-size: 16px;
+}
+
+.time-info,
+.expiry-info,
+.credits-info,
+.status-info {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 过期时间样式 */
+.expiry-normal {
+  color: #059669;
+  /* 绿色：其他时间 */
+}
+
+.expiry-warning {
+  color: #f97316;
+  /* 橙色：低于3天 */
+}
+
+.expiry-danger {
+  color: #dc2626;
+  /* 红色：低于1天 */
+}
+
+.expiry-expired {
+  color: #dc2626;
+  /* 红色：已过期 */
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.expiry-unknown {
+  color: #000000;
+  /* 黑色：未知状态 */
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* 编辑器下拉菜单样式 */
+.editor-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+/* 下拉菜单样式 */
+:deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+}
+
+:deep(.el-dropdown-menu__item .el-icon) {
+  font-size: 14px;
+}
+
+:deep(.el-dropdown-menu__item:hover) {
+  background-color: #f0f9ff;
 }
 
 .email-note {
@@ -815,7 +1793,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 2px;
   font-size: 12px;
-  color: var(--el-text-color-regular);
+  color: #000000;
 }
 
 .credits {
@@ -823,7 +1801,7 @@ onMounted(() => {
 }
 
 .expiry {
-  color: var(--el-text-color-secondary);
+  color: #000000;
 }
 
 .action-buttons {
@@ -839,34 +1817,11 @@ onMounted(() => {
 /* 时间和状态信息样式 */
 .time-info {
   font-size: 12px;
-  color: var(--el-text-color-regular);
+  color: #000000;
 }
 
 .expiry-info {
   font-size: 12px;
-}
-
-.expiry-normal {
-  color: var(--el-color-success);
-}
-
-.expiry-caution {
-  color: var(--el-color-warning);
-}
-
-.expiry-warning {
-  color: var(--el-color-danger);
-  font-weight: 500;
-}
-
-.expiry-expired {
-  color: var(--el-color-danger);
-  font-weight: 600;
-  text-decoration: line-through;
-}
-
-.expiry-unknown {
-  color: var(--el-text-color-placeholder);
 }
 
 .credits-info {
@@ -897,12 +1852,12 @@ onMounted(() => {
   margin: 0 0 8px 0;
   font-size: 28px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: #000000;
 }
 
 .title-section p {
   margin: 0;
-  color: var(--el-text-color-regular);
+  color: #000000;
   font-size: 16px;
 }
 
@@ -917,7 +1872,7 @@ onMounted(() => {
 }
 
 .card-header span {
-  color: var(--el-text-color-regular);
+  color: #000000;
   font-size: 14px;
 }
 
@@ -948,7 +1903,7 @@ onMounted(() => {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: #000000;
 }
 
 .url-section {
@@ -976,5 +1931,227 @@ onMounted(() => {
   .title-section h1 {
     font-size: 24px;
   }
+}
+
+/* 步骤区域样式 */
+.step-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.step-icon {
+  font-size: 1.5rem;
+  color: #3b82f6;
+  background: #dbeafe;
+  padding: 8px;
+  border-radius: 50%;
+}
+
+.step-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #000000;
+}
+
+/* URL区域样式 */
+.url-section {
+  margin-top: 20px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* 表单样式优化 */
+:deep(.el-form-item__label) {
+  font-weight: 600;
+  color: #000000;
+}
+
+:deep(.el-input__wrapper) {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+:deep(.el-textarea__inner) {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* 按钮样式优化 */
+:deep(.el-button) {
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 标签样式优化 */
+:deep(.el-tag) {
+  font-weight: 500;
+  border: none;
+  font-size: 12px;
+}
+
+/* 令牌池表格样式 */
+.pool-table-container,
+.uploads-table-container {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.uploader-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.uploader-icon {
+  color: #3b82f6;
+  font-size: 16px;
+}
+
+.upload-time,
+.expiry-time {
+  font-size: 12px;
+  color: #000000;
+}
+
+.not-claimed {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+/* 上传对话框样式 */
+.upload-dialog {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.import-mode-selector {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-header h3 {
+  margin: 0 0 8px 0;
+  color: #000000;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.section-header p {
+  margin: 0;
+  color: #000000;
+  font-size: 0.9rem;
+}
+
+.token-inputs {
+  margin-bottom: 20px;
+}
+
+.token-input-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.row-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 60px;
+}
+
+.row-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.token-fields {
+  flex: 1;
+}
+
+.add-token-row {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.json-example {
+  margin-top: 16px;
+}
+
+.json-example-code {
+  background: #f3f4f6;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #374151;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* 修复对话框背景问题 */
+:deep(.el-dialog__wrapper) {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2000 !important;
 }
 </style>

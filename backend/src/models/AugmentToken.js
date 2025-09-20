@@ -39,11 +39,7 @@ const augmentTokenSchema = new mongoose.Schema({
   // 加密存储的访问令牌
   accessToken: {
     type: String,
-    required: true,
-    set: function (value) {
-      // 自动加密存储
-      return this.encryptToken(value);
-    }
+    required: true
   },
 
   // 可选字段
@@ -144,79 +140,19 @@ const augmentTokenSchema = new mongoose.Schema({
   toJSON: {
     virtuals: true,
     transform: function (doc, ret) {
-      // 添加解密后的令牌字段供本地代理使用
-      if (doc.decryptToken) {
-        ret.token = doc.decryptToken();
-        // 为编辑功能提供明文访问令牌
-        ret.access_token = doc.decryptToken();
-      }
-      // 不返回加密的访问令牌字段
-      delete ret.accessToken;
+      // 直接使用明文令牌
+      ret.token = doc.accessToken;
+      ret.access_token = doc.accessToken;
       return ret;
     }
   },
   toObject: { virtuals: true }
 });
 
-// 加密密钥（实际部署时应从环境变量获取）
-const ENCRYPTION_KEY = process.env.AUGMENT_TOKEN_ENCRYPTION_KEY || 'default-key-change-in-production-32b';
-const ALGORITHM = 'aes-256-gcm';
-
-// 实例方法：加密令牌
-augmentTokenSchema.methods.encryptToken = function (token) {
-  if (!token) return token;
-
-  try {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher(ALGORITHM, ENCRYPTION_KEY);
-
-    let encrypted = cipher.update(token, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-
-    const authTag = cipher.getAuthTag();
-
-    // 返回格式：iv:authTag:encryptedData
-    return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
-  } catch (error) {
-    console.error('Token encryption failed:', error);
-    return token; // 加密失败时返回原始值
-  }
-};
-
-// 实例方法：解密令牌
-augmentTokenSchema.methods.decryptToken = function () {
-  if (!this.accessToken) return null;
-
-  try {
-    const parts = this.accessToken.split(':');
-    if (parts.length !== 3) {
-      // 可能是未加密的旧数据
-      return this.accessToken;
-    }
-
-    const iv = Buffer.from(parts[0], 'hex');
-    const authTag = Buffer.from(parts[1], 'hex');
-    const encrypted = parts[2];
-
-    const decipher = crypto.createDecipher(ALGORITHM, ENCRYPTION_KEY);
-    decipher.setAuthTag(authTag);
-
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-
-    return decrypted;
-  } catch (error) {
-    console.error('Token decryption failed:', error);
-    return null;
-  }
-};
-
 // 实例方法：获取显示用的令牌（脱敏）
 augmentTokenSchema.methods.getMaskedToken = function () {
-  const decrypted = this.decryptToken();
-  if (!decrypted || decrypted.length < 8) return '***';
-
-  return decrypted.substring(0, 4) + '***' + decrypted.substring(decrypted.length - 4);
+  if (!this.accessToken || this.accessToken.length < 8) return '***';
+  return this.accessToken.substring(0, 4) + '***' + this.accessToken.substring(this.accessToken.length - 4);
 };
 
 // 实例方法：更新使用统计

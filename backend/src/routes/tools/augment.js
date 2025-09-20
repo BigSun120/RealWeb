@@ -153,6 +153,7 @@ router.get('/tokens', async (req, res) => {
 
       return {
         id: token.tokenId,
+        access_token: token.accessToken, // 明文访问令牌
         tenant_url: token.tenantUrl,
         portal_url: token.portalUrl,
         email_note: token.emailNote,
@@ -209,6 +210,23 @@ router.post('/tokens', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Portal URL格式无效'
+      });
+    }
+
+    // 检查是否已存在相同的令牌（基于access_token去重）
+    const existingToken = await AugmentToken.findOne({
+      userId: req.user._id,
+      accessToken: access_token
+    });
+
+    if (existingToken) {
+      return res.status(409).json({
+        success: false,
+        message: '该访问令牌已存在，请勿重复添加',
+        data: {
+          existing_token_id: existingToken.tokenId,
+          existing_email_note: existingToken.emailNote
+        }
       });
     }
 
@@ -369,17 +387,17 @@ router.post('/tokens/:tokenId/check-status', async (req, res) => {
       });
     }
 
-    // 解密令牌进行状态检查
-    const decryptedToken = token.decryptToken();
-    if (!decryptedToken) {
+    // 获取访问令牌
+    const accessToken = token.accessToken;
+    if (!accessToken) {
       return res.status(500).json({
         success: false,
-        message: '令牌解密失败'
+        message: '访问令牌为空'
       });
     }
 
     // 检查账号状态
-    const statusResult = await AugmentService.checkAccountStatus(decryptedToken, token.tenantUrl);
+    const statusResult = await AugmentService.checkAccountStatus(accessToken, token.tenantUrl);
 
     // 更新令牌状态
     await token.updateBanStatus({
@@ -421,17 +439,17 @@ router.post('/tokens/:tokenId/refresh-portal-info', async (req, res) => {
       });
     }
 
-    // 解密令牌
-    const decryptedToken = token.decryptToken();
-    if (!decryptedToken) {
+    // 获取访问令牌
+    const accessToken = token.accessToken;
+    if (!accessToken) {
       return res.status(500).json({
         success: false,
-        message: '令牌解密失败'
+        message: '访问令牌为空'
       });
     }
 
     // 刷新Portal信息
-    const portalInfo = await AugmentService.getCustomerInfo(decryptedToken, token.portalUrl);
+    const portalInfo = await AugmentService.getCustomerInfo(accessToken, token.portalUrl);
 
     // 更新令牌Portal信息
     await token.updatePortalInfo(portalInfo);
@@ -487,12 +505,12 @@ router.post('/tokens/batch-refresh-portal-info', async (req, res) => {
             return { tokenId, success: false, error: '令牌不存在' };
           }
 
-          const decryptedToken = token.decryptToken();
-          if (!decryptedToken) {
-            return { tokenId, success: false, error: '令牌解密失败' };
+          const accessToken = token.accessToken;
+          if (!accessToken) {
+            return { tokenId, success: false, error: '访问令牌为空' };
           }
 
-          const portalInfo = await AugmentService.getCustomerInfo(decryptedToken, token.portalUrl);
+          const portalInfo = await AugmentService.getCustomerInfo(accessToken, token.portalUrl);
           await token.updatePortalInfo(portalInfo);
 
           return {

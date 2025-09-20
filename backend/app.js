@@ -16,6 +16,7 @@ const { initToolsData } = require('./src/utils/initTools');
 const analyticsScheduler = require('./src/utils/analyticsScheduler');
 const errorHandler = require('./src/middleware/errorHandler');
 const initPublicNoticeReadStatus = require('./src/scripts/initPublicNoticeReadStatus');
+const { scheduleTokenPoolCleanup } = require('./src/jobs/tokenPoolCleanup');
 
 // 路由导入
 const authRoutes = require('./src/routes/auth');
@@ -256,6 +257,9 @@ app.listen(PORT, () => {
     tokenCleanup.start();
     logger.info('Token cleanup scheduler started');
   }
+
+  // 启动令牌池清理任务
+  scheduleTokenPoolCleanup();
 
   // 初始化全局域名配置
   try {
