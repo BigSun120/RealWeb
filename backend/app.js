@@ -45,7 +45,7 @@ const bookmarkRoutes = require('./src/routes/bookmarks');
 const backgroundRoutes = require('./src/routes/backgrounds');
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8001;
 
 // 连接数据库并初始化配置
 const initializeDatabase = async () => {
