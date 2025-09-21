@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const { auth, adminAuth, requireTempEmailAccess } = require('../middleware/auth');
 const TempEmailUsageLog = require('../models/TempEmailUsageLog');
+const TempEmailBox = require('../models/TempEmailBox');
 const ToolConfig = require('../models/ToolConfig');
 const router = express.Router();
 
@@ -19,12 +20,6 @@ const DEFAULT_DOMAINS = [
 function getSupportedDomains() {
   return global.emailDomains || DEFAULT_DOMAINS;
 }
-
-// 内存中的邮箱注册表（生产环境建议使用Redis或数据库）
-const generatedEmails = new Set();
-
-// 添加已知的邮箱到注册表
-generatedEmails.add('wihte4xduv@godaug.fun');
 
 /**
  * 生成随机字符串
@@ -56,8 +51,38 @@ router.post('/generate', auth, requireTempEmailAccess, async (req, res) => {
     const username = customName || generateRandomString(10);
     const email = `${username}@${selectedDomain}`;
 
-    // 记录生成的邮箱
-    generatedEmails.add(email);
+    // 检查邮箱是否已存在
+    const existingEmailBox = await TempEmailBox.findOne({ email });
+    if (existingEmailBox) {
+      // 如果邮箱已存在，更新最后访问时间
+      await existingEmailBox.updateLastAccessed();
+
+      return res.json({
+        success: true,
+        data: {
+          email: existingEmailBox.email,
+          domain: existingEmailBox.domain,
+          username: existingEmailBox.username,
+          createdAt: existingEmailBox.createdAt,
+          webUrl: `http://localhost:9000/#/mailbox/${email}`,
+          isExisting: true
+        },
+        message: '邮箱已存在，已更新访问时间'
+      });
+    }
+
+    // 创建新的邮箱记录
+    const emailBox = new TempEmailBox({
+      email,
+      username,
+      domain: selectedDomain,
+      userId: req.user._id,
+      isCustomName: !!customName,
+      createdFromIP: req.ip || req.connection.remoteAddress,
+      createdFromUserAgent: req.get('User-Agent')
+    });
+
+    await emailBox.save();
 
     // 记录使用日志
     try {
@@ -81,16 +106,26 @@ router.post('/generate', auth, requireTempEmailAccess, async (req, res) => {
     res.json({
       success: true,
       data: {
-        email,
-        domain: selectedDomain,
-        username,
-        createdAt: new Date(),
-        webUrl: `http://localhost:9000/#/mailbox/${email}`
+        email: emailBox.email,
+        domain: emailBox.domain,
+        username: emailBox.username,
+        createdAt: emailBox.createdAt,
+        webUrl: `http://localhost:9000/#/mailbox/${email}`,
+        isExisting: false
       },
       message: '临时邮箱生成成功'
     });
   } catch (error) {
     console.error('生成临时邮箱失败:', error);
+
+    // 处理重复邮箱错误
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: '邮箱地址已存在，请重新生成'
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: '生成临时邮箱失败'
@@ -272,6 +307,52 @@ router.get('/domains', (req, res) => {
 });
 
 /**
+ * 获取用户的邮箱列表
+ * GET /api/temp-email/my-emails
+ */
+router.get('/my-emails', auth, requireTempEmailAccess, async (req, res) => {
+  try {
+    const { limit = 50, page = 1 } = req.query;
+    const skip = (page - 1) * limit;
+
+    // 获取用户的邮箱列表
+    const emailBoxes = await TempEmailBox.find({
+      userId: req.user._id,
+      isActive: true
+    })
+      .sort({ lastAccessedAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // 获取总数
+    const total = await TempEmailBox.countDocuments({
+      userId: req.user._id,
+      isActive: true
+    });
+
+    // 获取用户统计
+    const stats = await TempEmailBox.getUserStats(req.user._id);
+
+    res.json({
+      success: true,
+      data: {
+        emailBoxes,
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        stats
+      }
+    });
+  } catch (error) {
+    console.error('获取用户邮箱列表失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取邮箱列表失败'
+    });
+  }
+});
+
+/**
  * 获取所有邮箱的邮件概览
  * GET /api/temp-email/all-emails
  */
@@ -279,71 +360,51 @@ router.get('/all-emails', auth, requireTempEmailAccess, async (req, res) => {
   try {
     const allEmails = [];
 
-    // 方法1: 检查已生成的邮箱
-    for (const email of generatedEmails) {
+    // 从数据库获取用户的邮箱
+    const userEmailBoxes = await TempEmailBox.getUserActiveEmails(req.user._id, 100);
+
+    // 检查每个邮箱的邮件
+    for (const emailBox of userEmailBoxes) {
       try {
-        const response = await axios.get(`${INBUCKET_API}/mailbox/${email}`, {
+        const response = await axios.get(`${INBUCKET_API}/mailbox/${emailBox.email}`, {
           timeout: 3000
         });
 
         const messages = response.data || [];
+
+        // 更新邮箱的邮件数量
+        await emailBox.updateMessageCount(messages.length);
+
+        // 只返回有邮件的邮箱，并限制最多20条邮件
         if (messages.length > 0) {
-          const domain = email.split('@')[1];
-          allEmails.push({
-            email,
-            domain,
-            messageCount: messages.length,
-            messages: messages.map(msg => ({
+          const limitedMessages = messages
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 20)
+            .map(msg => ({
               id: msg.id,
               from: msg.from,
               subject: msg.subject,
               date: msg.date,
               size: msg.size
-            }))
+            }));
+
+          allEmails.push({
+            email: emailBox.email,
+            domain: emailBox.domain,
+            messageCount: messages.length,
+            messages: limitedMessages,
+            createdAt: emailBox.createdAt,
+            lastAccessedAt: emailBox.lastAccessedAt
           });
         }
       } catch (error) {
-        // 忽略单个邮箱的错误
+        // 忽略单个邮箱的错误，但记录日志
+        console.warn(`获取邮箱 ${emailBox.email} 的邮件失败:`, error.message);
       }
     }
 
-    // 方法2: 检查常见的邮箱地址（向后兼容）
-    const commonPrefixes = ['test', 'demo', 'temp', 'mail', 'user', 'admin'];
-
-    for (const domain of getSupportedDomains()) {
-      for (const prefix of commonPrefixes) {
-        const email = `${prefix}@${domain}`;
-
-        // 跳过已经检查过的邮箱
-        if (generatedEmails.has(email) || allEmails.find(box => box.email === email)) {
-          continue;
-        }
-
-        try {
-          const response = await axios.get(`${INBUCKET_API}/mailbox/${email}`, {
-            timeout: 3000
-          });
-
-          const messages = response.data || [];
-          if (messages.length > 0) {
-            allEmails.push({
-              email,
-              domain,
-              messageCount: messages.length,
-              messages: messages.map(msg => ({
-                id: msg.id,
-                from: msg.from,
-                subject: msg.subject,
-                date: msg.date,
-                size: msg.size
-              }))
-            });
-          }
-        } catch (error) {
-          // 忽略单个邮箱的错误，继续检查其他邮箱
-        }
-      }
-    }
+    // 按最后访问时间排序
+    allEmails.sort((a, b) => new Date(b.lastAccessedAt) - new Date(a.lastAccessedAt));
 
     res.json({
       code: 200,
@@ -412,46 +473,45 @@ router.delete('/:email/clear', auth, requireTempEmailAccess, async (req, res) =>
 });
 
 /**
- * 清空所有邮箱的邮件
+ * 清空用户所有邮箱的邮件
  * DELETE /api/temp-email/clear-all
  */
-router.delete('/clear-all', async (req, res) => {
+router.delete('/clear-all', auth, requireTempEmailAccess, async (req, res) => {
   try {
-    const supportedDomains = getSupportedDomains();
-    const commonPrefixes = ['test', 'demo', 'temp', 'mail', 'user', 'admin'];
-
     let totalDeleted = 0;
     let totalMailboxes = 0;
 
-    // 遍历所有可能的邮箱
-    for (const domain of supportedDomains) {
-      for (const prefix of commonPrefixes) {
-        const email = `${prefix}@${domain}`;
+    // 获取用户的所有活跃邮箱
+    const userEmailBoxes = await TempEmailBox.getUserActiveEmails(req.user._id, 100);
 
-        try {
-          const messagesResponse = await axios.get(`${INBUCKET_API}/mailbox/${email}`, {
-            timeout: 3000
-          });
+    // 遍历用户的邮箱
+    for (const emailBox of userEmailBoxes) {
+      try {
+        const messagesResponse = await axios.get(`${INBUCKET_API}/mailbox/${emailBox.email}`, {
+          timeout: 3000
+        });
 
-          const messages = messagesResponse.data || [];
-          if (messages.length > 0) {
-            totalMailboxes++;
+        const messages = messagesResponse.data || [];
+        if (messages.length > 0) {
+          totalMailboxes++;
 
-            // 删除该邮箱的所有邮件
-            for (const message of messages) {
-              try {
-                await axios.delete(`${INBUCKET_API}/mailbox/${email}/${message.id}`, {
-                  timeout: 2000
-                });
-                totalDeleted++;
-              } catch (error) {
-                console.error(`删除邮件失败:`, error.message);
-              }
+          // 删除该邮箱的所有邮件
+          for (const message of messages) {
+            try {
+              await axios.delete(`${INBUCKET_API}/mailbox/${emailBox.email}/${message.id}`, {
+                timeout: 2000
+              });
+              totalDeleted++;
+            } catch (error) {
+              console.error(`删除邮件失败:`, error.message);
             }
           }
-        } catch (error) {
-          // 忽略单个邮箱的错误
+
+          // 更新邮箱的邮件数量
+          await emailBox.updateMessageCount(0);
         }
+      } catch (error) {
+        console.warn(`清空邮箱 ${emailBox.email} 失败:`, error.message);
       }
     }
 

@@ -57,6 +57,16 @@ export const tempEmailApi = {
 
 
   /**
+   * 获取用户的邮箱列表
+   * @param {Object} params - 查询参数
+   * @param {number} params.page - 页码
+   * @param {number} params.limit - 每页数量
+   */
+  getMyEmails(params = {}) {
+    return request.get('/temp-email/my-emails', { params })
+  },
+
+  /**
    * 获取所有邮箱的邮件概览
    */
   getAllEmails() {

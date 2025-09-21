@@ -45,7 +45,7 @@ const bookmarkRoutes = require('./src/routes/bookmarks');
 const backgroundRoutes = require('./src/routes/backgrounds');
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8001;
 
 // 连接数据库并初始化配置
 const initializeDatabase = async () => {
@@ -112,7 +112,7 @@ app.use(
     origin: [
       process.env.FRONTEND_URL || 'http://localhost:3000',
       'http://localhost:3001', // 支持Vite的备用端口
-      'http://38.146.30.39', // 生产环境IP
+      'http://74.48.194.227', // 生产环境IP
       'https://godaug.fun', // 生产环境域名
       'http://godaug.fun', // 生产环境域名（HTTP）
       'http://localhost' // 本地访问
