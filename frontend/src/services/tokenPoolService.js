@@ -91,6 +91,15 @@ export const tokenPoolService = {
       url: `/tools/token-pool/${tokenId}/claim-transfer`,
       method: 'post'
     })
+  },
+
+  // 管理员删除令牌池中的令牌
+  async adminDeleteToken(tokenId, reason) {
+    return await request({
+      url: `/tools/token-pool/${tokenId}/admin`,
+      method: 'delete',
+      data: { reason }
+    })
   }
 }
 

@@ -3,7 +3,7 @@ const router = express.Router()
 const mongoose = require('mongoose')
 const TokenPool = require('../../models/TokenPool')
 const AugmentToken = require('../../models/AugmentToken')
-const { auth } = require('../../middleware/auth')
+const { auth, adminAuth } = require('../../middleware/auth')
 const logger = require('../../utils/logger')
 const AugmentService = require('../../services/AugmentService')
 const TokenManagerService = require('../../services/TokenManagerService')
@@ -690,6 +690,70 @@ router.post('/:tokenId/claim-transfer', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: '领取令牌失败',
+      error: error.message
+    })
+  }
+})
+
+// 管理员删除令牌池中的令牌
+router.delete('/:tokenId/admin', auth, adminAuth, async (req, res) => {
+  try {
+    const { tokenId } = req.params
+    const { reason } = req.body
+
+    // 查找令牌池中的令牌
+    const poolToken = await TokenPool.findById(tokenId)
+      .populate('uploaderId', 'username email')
+      .populate('claimedBy', 'username email')
+
+    if (!poolToken) {
+      return res.status(404).json({
+        success: false,
+        message: '令牌不存在'
+      })
+    }
+
+    // 记录删除信息用于日志
+    const deleteInfo = {
+      tokenId: poolToken._id,
+      originalUploader: poolToken.originalUploader || '未知',
+      uploaderInfo: poolToken.uploaderId ? `${poolToken.uploaderId.username} (${poolToken.uploaderId.email})` : '未知',
+      status: poolToken.status,
+      uploadedAt: poolToken.uploadedAt,
+      claimedBy: poolToken.claimedBy ? `${poolToken.claimedBy.username} (${poolToken.claimedBy.email})` : null,
+      reason: reason || '管理员删除'
+    }
+
+    // 删除令牌
+    await TokenPool.findByIdAndDelete(tokenId)
+
+    // 记录管理员操作日志
+    logger.info(`管理员 ${req.user.username} 删除了令牌池中的令牌:`, {
+      adminUser: req.user.username,
+      adminEmail: req.user.email,
+      deletedToken: deleteInfo,
+      userAgent: req.get('User-Agent'),
+      ip: req.ip
+    })
+
+    res.json({
+      success: true,
+      message: '令牌删除成功',
+      data: {
+        deletedTokenInfo: {
+          originalUploader: deleteInfo.originalUploader,
+          uploadedAt: deleteInfo.uploadedAt,
+          status: deleteInfo.status,
+          reason: deleteInfo.reason
+        }
+      }
+    })
+
+  } catch (error) {
+    logger.error('管理员删除令牌失败:', error)
+    res.status(500).json({
+      success: false,
+      message: '删除令牌失败',
       error: error.message
     })
   }

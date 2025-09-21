@@ -145,7 +145,7 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="操作" min-width="140" align="center">
+              <el-table-column label="操作" :min-width="isAdmin ? 200 : 140" align="center">
                 <template #default="{ row }">
                   <div class="action-buttons">
                     <el-button type="primary" size="small" @click="claimToken(row)" :loading="row._claiming"
@@ -154,6 +154,10 @@
                     </el-button>
                     <el-button :icon="Refresh" size="small" @click="refreshTokenPortalInfo(row)"
                       :loading="row._refreshing" title="刷新Portal信息" round plain>
+                    </el-button>
+                    <!-- 管理员删除按钮 -->
+                    <el-button v-if="isAdmin" type="danger" size="small" @click="adminDeleteToken(row)"
+                      :loading="row._deleting" title="管理员删除" :icon="Delete" round plain>
                     </el-button>
                   </div>
                 </template>
@@ -706,6 +710,9 @@ const editingToken = ref(null)
 const selectedTokens = ref([])
 const tokenTable = ref(null)
 
+// 用户store
+const userStore = useUserStore()
+
 // 令牌池相关数据
 const activeTab = ref('saved')
 const showUploadDialog = ref(false)
@@ -726,6 +733,11 @@ const poolStatsComputed = computed(() => {
     myUploads: myUploadsCount,
     capacity: 1000
   }
+})
+
+// 判断是否为管理员
+const isAdmin = computed(() => {
+  return userStore.user && userStore.user.isAdmin
 })
 
 
@@ -1258,6 +1270,58 @@ const deletePoolToken = async (token) => {
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除失败:', error)
+      ElMessage.error(error.message || '删除失败')
+    }
+  } finally {
+    token._deleting = false
+  }
+}
+
+// 管理员删除令牌池中的令牌
+const adminDeleteToken = async (token) => {
+  try {
+    // 管理员删除确认对话框
+    const { value: reason } = await ElMessageBox.prompt(
+      `确定要删除此令牌吗？
+
+⚠️ 管理员操作提醒：
+• 此操作将永久删除令牌池中的令牌
+• 原始上传者：${token.originalUploader || '未知'}
+• 上传时间：${formatDate(token.uploadedAt)}
+• 当前状态：${token.status === 'available' ? '可领取' : '已被领取'}
+
+请输入删除原因（可选）：`,
+      '管理员删除令牌',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        inputPlaceholder: '请输入删除原因...',
+        inputType: 'textarea',
+        type: 'warning'
+      }
+    )
+
+    token._deleting = true
+    const response = await tokenPoolService.adminDeleteToken(token._id || token.id, reason || '管理员删除')
+
+    if (response.success) {
+      ElMessage.success('令牌删除成功')
+
+      // 立即更新本地数据 - 从令牌池中移除
+      const tokenId = token._id || token.id
+      const poolIndex = poolTokens.value.findIndex(t => (t._id || t.id) === tokenId)
+      if (poolIndex !== -1) {
+        poolTokens.value.splice(poolIndex, 1)
+      }
+
+      // 刷新完整数据以确保同步
+      await refreshPool()
+    } else {
+      throw new Error(response.message || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('管理员删除失败:', error)
       ElMessage.error(error.message || '删除失败')
     }
   } finally {
