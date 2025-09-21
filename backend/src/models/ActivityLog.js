@@ -50,7 +50,7 @@ const activityLogSchema = new mongoose.Schema({
   // 目标对象类型
   targetType: {
     type: String,
-    enum: ['User', 'Article', 'Comment', 'System', 'tool', 'category', 'config'],
+    enum: ['User', 'Article', 'Comment', 'System', 'tool', 'category', 'config', null],
     required: false,
     default: null
   },
