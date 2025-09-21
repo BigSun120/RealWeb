@@ -228,6 +228,9 @@
           <div class="list-header">
             <h3>📬 所有邮件</h3>
             <div class="list-actions">
+              <el-tag v-if="allMessages.length >= 20" type="info" size="small" style="margin-right: 8px;">
+                仅显示最新20条
+              </el-tag>
               <el-button @click="refreshAllMessages" :loading="loading" icon="Refresh" type="primary" size="small">
                 刷新全部
               </el-button>
@@ -399,8 +402,12 @@ const allMessages = ref([])
 // 临时邮箱公告
 const tempEmailNotice = ref(null)
 
-// 计算属性：显示的邮件列表（默认显示全部）
-const displayMessages = computed(() => allMessages.value)
+// 计算属性：显示的邮件列表（限制最多20条，按时间排序）
+const displayMessages = computed(() => {
+  return allMessages.value
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 20)
+})
 
 // 页面头部统计数据
 const headerStats = computed(() => [
@@ -589,13 +596,20 @@ const refreshAllMessages = async () => {
         })
       })
 
-      // 按时间排序，最新的在前
+      // 按时间排序，最新的在前，并限制最多20条
       allMessages.value.sort((a, b) => new Date(b.date) - new Date(a.date))
+      const totalMessages = allMessages.value.length
+      allMessages.value = allMessages.value.slice(0, 20)
 
       // 异步补充最近5封的验证码（从正文提取），不阻塞主列表刷新
       await enrichLatestCodes()
 
-      ElMessage.success(`已加载 ${allMessages.value.length} 封邮件`)
+      const displayedCount = allMessages.value.length
+      if (totalMessages > displayedCount) {
+        ElMessage.success(`已加载最新 ${displayedCount} 封邮件（共 ${totalMessages} 封）`)
+      } else {
+        ElMessage.success(`已加载 ${displayedCount} 封邮件`)
+      }
     }
   } catch (error) {
     console.error('获取全部邮件失败:', error)

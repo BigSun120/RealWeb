@@ -44,6 +44,7 @@
     "email:logs": "docker logs -f inbucket-dev",
     "email:status": "docker ps | grep inbucket-dev || echo \"Inbucket未运行\"",
     "email:clean": "docker stop inbucket-dev || true && docker rm inbucket-dev || true",
+    "email:test-db": "cd backend && node scripts/test-temp-email-db.js",
     "dev:compose": "docker-compose -f docker-compose.dev.yml up -d && concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "email:compose:up": "docker-compose -f docker-compose.dev.yml up -d",
     "email:compose:down": "docker-compose -f docker-compose.dev.yml down",
