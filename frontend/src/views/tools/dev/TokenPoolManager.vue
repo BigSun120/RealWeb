@@ -92,45 +92,53 @@
               borderBottom: '2px solid #e5e7eb'
             }" :cell-style="{ textAlign: 'center', padding: '12px 8px' }" stripe border>
 
-              <el-table-column label="上传者" min-width="140" align="center">
+              <el-table-column label="邮箱备注" min-width="140" align="center">
                 <template #default="{ row }">
-                  <div class="uploader-info">
-                    <el-icon class="uploader-icon">
-                      <User />
+                  <div class="email-note">
+                    <el-icon class="email-icon">
+                      <Message />
                     </el-icon>
-                    {{ row.maskedEmail }}
+                    <span>{{ row.email_note || row.emailNote || '未设置' }}</span>
                   </div>
                 </template>
               </el-table-column>
 
-              <el-table-column label="上传时间" min-width="140" align="center">
+              <el-table-column label="创建时间" min-width="140" align="center">
                 <template #default="{ row }">
-                  <div class="upload-time">
-                    {{ formatDate(row.uploadedAt) }}
+                  <div class="time-info">
+                    <el-text size="small" style="color: #000000;">
+                      {{ formatDate(row.uploadedAt) }}
+                    </el-text>
                   </div>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="令牌状态" min-width="110" align="center">
-                <template #default="{ row }">
-                  <el-tag :type="getStatusType(row)" size="default" effect="light" round>
-                    {{ getStatusText(row) }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="剩余次数" min-width="110" align="center">
-                <template #default="{ row }">
-                  <el-tag :type="getCreditsType(row)" size="default" effect="light" round>
-                    {{ row.creditsBalance || '未知' }}
-                  </el-tag>
                 </template>
               </el-table-column>
 
               <el-table-column label="过期时间" min-width="140" align="center">
                 <template #default="{ row }">
-                  <div class="expiry-time" :class="getExpiryClass(row)">
-                    {{ formatDate(row.expiryDate) || '未知' }}
+                  <div class="expiry-info">
+                    <el-text :class="getExpiryClass(row)" size="small">
+                      {{ formatDate(row.expiryDate) || '未知' }}
+                    </el-text>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="剩余次数" min-width="110" align="center">
+                <template #default="{ row }">
+                  <div class="credits-info">
+                    <el-tag :type="getCreditsType(row)" size="default" effect="light" round>
+                      {{ row.creditsBalance || '未知' }}
+                    </el-tag>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="账号状态" min-width="110" align="center">
+                <template #default="{ row }">
+                  <div class="status-info">
+                    <el-tag :type="getStatusType(row)" size="default" effect="light" round>
+                      {{ getStatusText(row) }}
+                    </el-tag>
                   </div>
                 </template>
               </el-table-column>
@@ -181,32 +189,61 @@
               borderBottom: '2px solid #e5e7eb'
             }" :cell-style="{ textAlign: 'center', padding: '12px 8px' }" stripe border>
 
-              <el-table-column label="上传时间" min-width="140" align="center">
+              <el-table-column label="邮箱备注" min-width="140" align="center">
                 <template #default="{ row }">
-                  {{ formatDate(row.uploadedAt) }}
+                  <div class="email-note">
+                    <el-icon class="email-icon">
+                      <Message />
+                    </el-icon>
+                    <span>{{ row.email_note || row.emailNote || '我的上传' }}</span>
+                  </div>
                 </template>
               </el-table-column>
 
-              <el-table-column label="状态" min-width="110" align="center">
+              <el-table-column label="创建时间" min-width="140" align="center">
                 <template #default="{ row }">
-                  <el-tag :type="getStatusType(row)" size="default" effect="light" round>
-                    {{ getStatusText(row) }}
-                  </el-tag>
+                  <div class="time-info">
+                    <el-text size="small" style="color: #000000;">
+                      {{ formatDate(row.uploadedAt) }}
+                    </el-text>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="过期时间" min-width="140" align="center">
+                <template #default="{ row }">
+                  <div class="expiry-info">
+                    <el-text :class="getExpiryClass(row)" size="small">
+                      {{ formatDate(row.expiryDate) || '未知' }}
+                    </el-text>
+                  </div>
                 </template>
               </el-table-column>
 
               <el-table-column label="剩余次数" min-width="110" align="center">
                 <template #default="{ row }">
-                  <el-tag :type="getCreditsType(row)" size="default" effect="light" round>
-                    {{ row.creditsBalance || '未知' }}
-                  </el-tag>
+                  <div class="credits-info">
+                    <el-tag :type="getCreditsType(row)" size="default" effect="light" round>
+                      {{ row.creditsBalance || '未知' }}
+                    </el-tag>
+                  </div>
                 </template>
               </el-table-column>
 
-              <el-table-column label="领取者" min-width="140" align="center">
+              <el-table-column label="账号状态" min-width="110" align="center">
                 <template #default="{ row }">
-                  <div v-if="row.claimedBy">
-                    <el-icon>
+                  <div class="status-info">
+                    <el-tag :type="getStatusType(row)" size="default" effect="light" round>
+                      {{ getStatusText(row) }}
+                    </el-tag>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="领取状态" min-width="140" align="center">
+                <template #default="{ row }">
+                  <div v-if="row.claimedBy" class="claimed-info">
+                    <el-icon class="claimed-icon">
                       <User />
                     </el-icon>
                     {{ row.claimedBy.email ? maskEmail(row.claimedBy.email) : '已领取' }}
@@ -262,9 +299,12 @@ import {
   Coin,
   Upload,
   Refresh,
-  User
+  User,
+  Message
 } from '@element-plus/icons-vue'
 import { tokenPoolService } from '@/services/tokenPoolService'
+import { useAugmentAuth } from '@/composables/useAugmentAuth'
+import { useUserStore } from '@/stores/user'
 
 // 响应式数据
 const activeTab = ref('pool')
@@ -430,17 +470,26 @@ const maskEmail = (email) => {
   if (!domain) return '未知'
 
   let maskedLocal = localPart
-  if (localPart.length > 3) {
-    const start = localPart.substring(0, 2)
-    const end = localPart.substring(localPart.length - 1)
-    const middle = '*'.repeat(Math.max(1, localPart.length - 3))
-    maskedLocal = start + middle + end
-  } else if (localPart.length > 1) {
-    maskedLocal = localPart[0] + '*'.repeat(localPart.length - 1)
+  let maskedDomain = domain
+
+  // @前4位改为星号
+  if (localPart.length > 4) {
+    maskedLocal = localPart.substring(0, localPart.length - 4) + '****'
+  } else {
+    maskedLocal = '****'
   }
 
-  return `${maskedLocal}@${domain}`
+  // @后4位改为星号
+  if (domain.length > 4) {
+    maskedDomain = '****' + domain.substring(4)
+  } else {
+    maskedDomain = '****'
+  }
+
+  return `${maskedLocal}@${maskedDomain}`
 }
+
+// 这些函数已不再需要，因为我们简化了显示逻辑
 
 // 生命周期
 onMounted(() => {
@@ -609,6 +658,54 @@ body {
 
 .uploader-icon {
   color: #3b82f6;
+  font-size: 16px;
+}
+
+.email-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.email-icon {
+  color: #3b82f6;
+  font-size: 16px;
+}
+
+.time-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expiry-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.credits-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.claimed-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.claimed-icon {
+  color: #10b981;
   font-size: 16px;
 }
 

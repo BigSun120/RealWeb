@@ -1,31 +1,15 @@
 <template>
-  <div 
-    class="background-manager"
-    :class="{ 'has-background': hasBackground }"
-    :style="backgroundStyles"
-  >
+  <div class="background-manager" :class="{ 'has-background': hasBackground }" :style="backgroundStyles">
     <!-- 背景层 -->
     <div v-if="hasBackground" class="background-layer">
       <!-- 视频背景 -->
-      <video
-        v-if="isVideoBackground"
-        class="background-video"
-        :src="backgroundUrl"
-        :style="backgroundLayerStyles"
-        autoplay
-        muted
-        loop
-        playsinline
-      ></video>
+      <video v-if="isVideoBackground" class="background-video" :src="backgroundUrl" :style="backgroundLayerStyles"
+        autoplay muted loop playsinline></video>
 
       <!-- 图片背景 -->
-      <div
-        v-else
-        class="background-image"
-        :style="backgroundLayerStyles"
-      ></div>
+      <div v-else class="background-image" :style="backgroundLayerStyles"></div>
     </div>
-    
+
     <!-- 内容插槽 -->
     <div class="content-layer">
       <slot></slot>
@@ -36,7 +20,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { getBackgroundByPath, getImageUrl } from '@/api/backgrounds';
+import { getBackgroundByPath } from '@/api/backgrounds';
+import { getImageUrl } from '@/utils/imageUrl';
 
 // Props
 const props = defineProps({
@@ -115,17 +100,17 @@ const backgroundImage = computed(() => {
 
 const backgroundStyles = computed(() => {
   if (!hasBackground.value) return {};
-  
+
   const config = backgroundConfig.value;
   const styles = {
     position: 'relative',
     minHeight: '100vh'
   };
-  
+
   // 检查响应式设置
   if (props.responsive && config.responsiveSettings) {
     const responsive = config.responsiveSettings;
-    
+
     switch (deviceType.value) {
       case 'mobile':
         if (!responsive.enableOnMobile) return {};
@@ -138,17 +123,17 @@ const backgroundStyles = computed(() => {
         break;
     }
   }
-  
+
   return styles;
 });
 
 const backgroundLayerStyles = computed(() => {
   if (!hasBackground.value) return {};
-  
+
   const config = backgroundConfig.value;
   const display = config.displaySettings || {};
   const layout = config.layoutSettings || {};
-  
+
   const filters = [];
   if (display.blur > 0) {
     filters.push(`blur(${display.blur}px)`);
@@ -162,7 +147,7 @@ const backgroundLayerStyles = computed(() => {
   if (display.saturation !== 1) {
     filters.push(`saturate(${display.saturation})`);
   }
-  
+
   const baseStyles = {
     position: 'absolute',
     top: 0,
@@ -197,13 +182,13 @@ const backgroundLayerStyles = computed(() => {
 // 方法
 const detectDevice = () => {
   if (!props.responsive) return;
-  
+
   const width = window.innerWidth;
-  
+
   // 使用配置中的断点或默认值
   const mobileBreakpoint = backgroundConfig.value?.responsiveSettings?.mobileBreakpoint || 768;
   const tabletBreakpoint = backgroundConfig.value?.responsiveSettings?.tabletBreakpoint || 1024;
-  
+
   if (width < mobileBreakpoint) {
     currentDevice.value = 'mobile';
   } else if (width < tabletBreakpoint) {
@@ -215,14 +200,14 @@ const detectDevice = () => {
 
 const loadBackgroundConfig = async () => {
   if (!props.enabled) return;
-  
+
   loading.value = true;
   try {
     const response = await getBackgroundByPath(currentPath.value);
-    
+
     if (response.data.success && response.data.data) {
       backgroundConfig.value = response.data.data;
-      
+
       // 检测设备类型
       detectDevice();
     } else {
@@ -242,7 +227,7 @@ const handleResize = () => {
 
 const setupResizeObserver = () => {
   if (!props.responsive || !window.ResizeObserver) return;
-  
+
   resizeObserver.value = new ResizeObserver(handleResize);
   resizeObserver.value.observe(document.body);
 };
@@ -257,7 +242,7 @@ const cleanupResizeObserver = () => {
 // 生命周期
 onMounted(() => {
   loadBackgroundConfig();
-  
+
   if (props.responsive) {
     window.addEventListener('resize', handleResize);
     setupResizeObserver();

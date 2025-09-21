@@ -1,10 +1,12 @@
 const express = require('express')
 const router = express.Router()
+const mongoose = require('mongoose')
 const TokenPool = require('../../models/TokenPool')
 const AugmentToken = require('../../models/AugmentToken')
 const { auth } = require('../../middleware/auth')
 const logger = require('../../utils/logger')
 const AugmentService = require('../../services/AugmentService')
+const TokenManagerService = require('../../services/TokenManagerService')
 
 // 验证令牌有效性的辅助函数 - 使用真实API
 async function validateToken(accessToken, portalUrl = null) {
@@ -107,17 +109,24 @@ router.post('/upload', auth, async (req, res) => {
           continue
         }
 
-        // 检查令牌是否已存在
-        const existingToken = await TokenPool.findOne({ accessToken })
+        // 使用统一令牌管理服务检查令牌状态
+        const operationValidation = await TokenManagerService.validateTokenOperation('add_pool_token', req.user._id, accessToken)
+        if (!operationValidation.isValid) {
+          errors.push(`令牌验证失败: ${accessToken.substring(0, 10)}... - ${operationValidation.errors.join('; ')}`)
+          continue
+        }
+
+        // 检查令牌是否已存在于池中
+        const existingToken = await TokenManagerService.checkPoolTokenExists(accessToken)
         if (existingToken) {
           errors.push(`令牌已存在于池子中: ${accessToken.substring(0, 10)}...`)
           continue
         }
 
         // 验证令牌有效性 - 使用portal_url进行验证
-        const validation = await validateToken(accessToken, portalUrl)
-        if (!validation.valid) {
-          errors.push(`令牌验证失败: ${accessToken.substring(0, 10)}... - ${validation.error}`)
+        const tokenValidation = await validateToken(accessToken, portalUrl)
+        if (!tokenValidation.valid) {
+          errors.push(`令牌验证失败: ${accessToken.substring(0, 10)}... - ${tokenValidation.error}`)
           continue
         }
 
@@ -135,9 +144,9 @@ router.post('/upload', auth, async (req, res) => {
           portalUrl: portalUrl || '',
           uploaderId: req.user._id,
           uploaderEmail: req.user.email,
-          portalInfo: JSON.stringify(validation.portalInfo), // 确保存储为JSON字符串
-          creditsBalance: validation.creditsBalance,
-          expiryDate: validation.expiryDate,
+          portalInfo: JSON.stringify(tokenValidation.portalInfo), // 确保存储为JSON字符串
+          creditsBalance: tokenValidation.creditsBalance,
+          expiryDate: tokenValidation.expiryDate,
           status: 'available'
         })
 
@@ -217,44 +226,15 @@ router.post('/:tokenId/claim', auth, async (req, res) => {
       })
     }
 
-    // 检查用户是否已有相同令牌（但允许领取自己上传的令牌）
-    const existingUserToken = await AugmentToken.findOne({
-      userId: req.user._id,
-      accessToken: tokenPool.accessToken
-    })
-
-    if (existingUserToken && tokenPool.uploaderId.toString() !== req.user._id.toString()) {
-      return res.status(409).json({
-        success: false,
-        message: '您已拥有此令牌'
-      })
-    }
-
-    // 标记为已领取
-    await tokenPool.claimBy(req.user._id)
-
-    // 添加到用户的令牌列表
-    // 使用TokenPool中保存的tenantUrl和portalUrl
-    const userToken = new AugmentToken({
-      userId: req.user._id,
-      accessToken: tokenPool.accessToken,
-      tenantUrl: tokenPool.tenantUrl || 'https://api.augmentcode.com/',
-      portalUrl: tokenPool.portalUrl || '',
-      emailNote: `从令牌池领取 - ${new Date().toLocaleDateString()}`,
-      portalInfo: tokenPool.portalInfo
-    })
-
-    await userToken.save()
+    // 使用统一令牌管理服务进行安全领取
+    const result = await TokenManagerService.safeClaimPoolToken(req.user._id, tokenId)
 
     logger.info(`Token claimed by user ${req.user.email} from pool`)
 
     res.json({
       success: true,
       message: '令牌领取成功',
-      data: {
-        poolToken: tokenPool,
-        userToken
-      }
+      data: result
     })
   } catch (error) {
     logger.error('Claim token error:', error)
@@ -300,12 +280,17 @@ router.post('/:tokenId/return', auth, async (req, res) => {
     // 归还到池子
     await tokenPool.returnToPool()
 
-    // 从领取者的令牌列表中移除
+    // 从领取者的令牌列表中移除（使用统一服务确保一致性）
     if (tokenPool.claimedBy) {
-      await AugmentToken.deleteOne({
-        userId: tokenPool.claimedBy,
-        accessToken: tokenPool.accessToken
-      })
+      try {
+        await AugmentToken.deleteOne({
+          userId: tokenPool.claimedBy,
+          accessToken: tokenPool.accessToken
+        })
+        logger.info(`已从用户 ${tokenPool.claimedBy} 的令牌列表中移除归还的令牌: ${tokenPool.accessToken.substring(0, 10)}...`)
+      } catch (error) {
+        logger.warn(`归还令牌时清理用户令牌失败: ${error.message}`)
+      }
     }
 
     logger.info(`Token returned to pool by user ${req.user.email}`)
@@ -329,47 +314,23 @@ router.post('/:tokenId/return', auth, async (req, res) => {
 router.delete('/:tokenId', auth, async (req, res) => {
   try {
     const { tokenId } = req.params
-
-    const tokenPool = await TokenPool.findById(tokenId)
-    if (!tokenPool) {
-      return res.status(404).json({
-        success: false,
-        message: '令牌不存在'
-      })
-    }
-
-    // 检查权限：上传者或管理员
-    const isOwner = tokenPool.uploaderId.toString() === req.user._id.toString()
     const isAdmin = req.user.role === 'admin'
 
-    if (!isOwner && !isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: '无权限删除此令牌'
-      })
-    }
-
-    // 如果令牌已被领取，也要从领取者的令牌列表中移除
-    if (tokenPool.status === 'claimed' && tokenPool.claimedBy) {
-      await AugmentToken.deleteOne({
-        userId: tokenPool.claimedBy,
-        accessToken: tokenPool.accessToken
-      })
-    }
-
-    await TokenPool.findByIdAndDelete(tokenId)
+    // 使用统一令牌管理服务进行安全删除
+    const result = await TokenManagerService.safeDeletePoolToken(req.user._id, tokenId, isAdmin)
 
     logger.info(`Token deleted from pool by user ${req.user.email}`)
 
     res.json({
       success: true,
-      message: '令牌已删除'
+      message: '令牌已删除',
+      data: result
     })
   } catch (error) {
     logger.error('Delete token error:', error)
     res.status(500).json({
       success: false,
-      message: '删除令牌失败',
+      message: error.message || '删除令牌失败',
       error: error.message
     })
   }
@@ -533,6 +494,202 @@ router.post('/:tokenId/refresh', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: '刷新失败',
+      error: error.message
+    })
+  }
+})
+
+// 转移令牌到池子（新的转移模式）
+router.post('/transfer/:tokenId', auth, async (req, res) => {
+  try {
+    const { tokenId } = req.params
+    const tokenData = req.body
+
+    logger.info(`Transfer token request: tokenId=${tokenId}, userId=${req.user._id}`)
+
+    // 查找用户的个人令牌 - 支持两种ID格式
+    let personalToken = null
+
+    // 首先尝试使用 _id 查询（如果是有效的 ObjectId）
+    if (mongoose.Types.ObjectId.isValid(tokenId)) {
+      logger.info(`Trying to find token by _id: ${tokenId}`)
+      personalToken = await AugmentToken.findOne({
+        _id: tokenId,
+        userId: req.user._id
+      })
+      logger.info(`Found by _id: ${personalToken ? 'YES' : 'NO'}`)
+    }
+
+    // 如果没找到，尝试使用 tokenId 字段查询
+    if (!personalToken) {
+      logger.info(`Trying to find token by tokenId: ${tokenId}`)
+      personalToken = await AugmentToken.findOne({
+        tokenId: tokenId,
+        userId: req.user._id
+      })
+      logger.info(`Found by tokenId: ${personalToken ? 'YES' : 'NO'}`)
+    }
+
+    if (!personalToken) {
+      return res.status(404).json({
+        success: false,
+        message: '令牌不存在或无权限'
+      })
+    }
+
+    // 检查令牌是否已在池中
+    const existingPoolToken = await TokenPool.findOne({
+      accessToken: personalToken.accessToken
+    })
+
+    if (existingPoolToken) {
+      return res.status(400).json({
+        success: false,
+        message: '该令牌已存在于池中'
+      })
+    }
+
+    // 验证令牌有效性
+    const tokenValidation = await validateToken(personalToken.accessToken, personalToken.portalUrl)
+    if (!tokenValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: `令牌验证失败: ${tokenValidation.error}`
+      })
+    }
+
+    // 创建令牌池记录
+    const tokenPool = new TokenPool({
+      accessToken: personalToken.accessToken,
+      tenantUrl: personalToken.tenantUrl,
+      portalUrl: personalToken.portalUrl || '',
+      uploaderId: req.user._id,
+      uploaderEmail: req.user.email,
+      originalUploader: req.user.username, // 添加原始上传者用户名
+      portalInfo: JSON.stringify(tokenValidation.portalInfo),
+      creditsBalance: tokenValidation.creditsBalance,
+      expiryDate: tokenValidation.expiryDate,
+      status: 'available',
+      email_note: personalToken.emailNote || personalToken.email_note || ''
+    })
+
+    await tokenPool.save()
+
+    // 删除个人令牌（转移所有权）
+    await AugmentToken.deleteOne({ _id: personalToken._id, userId: req.user._id })
+
+    logger.info(`Token transferred to pool by user ${req.user.email}: ${personalToken.accessToken.substring(0, 10)}...`)
+
+    res.json({
+      success: true,
+      message: '令牌已转移到池子',
+      data: tokenPool
+    })
+  } catch (error) {
+    logger.error('Transfer token to pool error:', error)
+    res.status(500).json({
+      success: false,
+      message: '转移令牌失败',
+      error: error.message
+    })
+  }
+})
+
+// 从池中领取令牌（转移模式）
+router.post('/:tokenId/claim-transfer', auth, async (req, res) => {
+  try {
+    const { tokenId } = req.params
+
+    // 检查领取频率限制（生产环境）
+    if (process.env.NODE_ENV === 'production') {
+      const oneMinuteAgo = new Date(Date.now() - 60 * 1000)
+      const recentClaims = await AugmentToken.countDocuments({
+        userId: req.user._id,
+        createdAt: { $gte: oneMinuteAgo },
+        'metadata.source': 'pool_claim'
+      })
+
+      if (recentClaims >= 1) {
+        return res.status(429).json({
+          success: false,
+          message: '领取过于频繁，请稍后再试（每分钟最多领取1个令牌）'
+        })
+      }
+    }
+
+    const tokenPool = await TokenPool.findById(tokenId)
+    if (!tokenPool) {
+      return res.status(404).json({
+        success: false,
+        message: '令牌不存在'
+      })
+    }
+
+    if (tokenPool.status !== 'available') {
+      return res.status(400).json({
+        success: false,
+        message: '令牌不可用'
+      })
+    }
+
+    // 检查用户是否已拥有相同的令牌
+    const existingToken = await AugmentToken.findOne({
+      userId: req.user._id,
+      accessToken: tokenPool.accessToken
+    })
+
+    if (existingToken) {
+      return res.status(400).json({
+        success: false,
+        message: '您已拥有相同的令牌'
+      })
+    }
+
+    // 验证令牌仍然有效
+    const tokenValidation = await validateToken(tokenPool.accessToken, tokenPool.portalUrl)
+    if (!tokenValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: '令牌已过期或无效'
+      })
+    }
+
+    // 创建个人令牌
+    const personalToken = new AugmentToken({
+      userId: req.user._id,
+      tenantUrl: tokenPool.tenantUrl,
+      accessToken: tokenPool.accessToken,
+      portalUrl: tokenPool.portalUrl,
+      emailNote: tokenPool.email_note || '',
+      metadata: {
+        source: 'pool_claim',
+        originalUploader: tokenPool.originalUploader,
+        claimedAt: new Date()
+      }
+    })
+
+    // 更新Portal信息并保存
+    if (tokenValidation.portalInfo) {
+      await personalToken.updatePortalInfo(tokenValidation.portalInfo)
+    } else {
+      await personalToken.save()
+    }
+
+    // 从池中删除令牌（转移所有权）
+    await TokenPool.deleteOne({ _id: tokenId })
+
+    logger.info(`Token claimed and transferred by user ${req.user.email} from pool`)
+
+    res.json({
+      success: true,
+      message: '令牌已领取并添加到您的个人列表',
+      data: personalToken
+    })
+  } catch (error) {
+    logger.error('Claim token transfer error:', error)
+    res.status(500).json({
+      success: false,
+      message: '领取令牌失败',
       error: error.message
     })
   }

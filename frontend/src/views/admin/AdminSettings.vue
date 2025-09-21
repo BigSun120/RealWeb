@@ -4,16 +4,13 @@
     <div class="settings-nav-float" v-show="showFloatNav">
       <div class="nav-header">
         <span>快捷导航</span>
-        <el-icon class="close-btn" @click="showFloatNav = false"><Close /></el-icon>
+        <el-icon class="close-btn" @click="showFloatNav = false">
+          <Close />
+        </el-icon>
       </div>
       <div class="nav-list">
-        <div
-          v-for="section in navSections"
-          :key="section.id"
-          class="nav-item"
-          :class="{ active: activeSection === section.id }"
-          @click="scrollToSection(section.id)"
-        >
+        <div v-for="section in navSections" :key="section.id" class="nav-item"
+          :class="{ active: activeSection === section.id }" @click="scrollToSection(section.id)">
           <el-icon>
             <component :is="section.icon" />
           </el-icon>
@@ -24,7 +21,9 @@
 
     <!-- 浮窗切换按钮 -->
     <div class="float-nav-toggle" @click="showFloatNav = !showFloatNav">
-      <el-icon><Menu /></el-icon>
+      <el-icon>
+        <Menu />
+      </el-icon>
     </div>
 
     <div class="settings-header">
@@ -37,7 +36,9 @@
       <el-card id="site-info" class="settings-card">
         <template #header>
           <div class="card-header">
-            <el-icon><Setting /></el-icon>
+            <el-icon>
+              <Setting />
+            </el-icon>
             <span>网站基本信息</span>
           </div>
         </template>
@@ -58,28 +59,17 @@
           </el-row>
 
           <el-form-item label="网站描述">
-            <el-input
-              v-model="siteInfo.description"
-              type="textarea"
-              :rows="3"
-              placeholder="简单介绍一下你的网站..."
-            />
+            <el-input v-model="siteInfo.description" type="textarea" :rows="3" placeholder="简单介绍一下你的网站..." />
           </el-form-item>
 
           <el-form-item label="网站Logo">
             <div class="logo-upload">
-              <el-upload
-                class="logo-uploader"
-                :action="uploadUrl"
-                :headers="uploadHeaders"
-                :show-file-list="false"
-                :on-success="handleLogoSuccess"
-                :before-upload="beforeLogoUpload"
-                name="image"
-                accept="image/*"
-              >
+              <el-upload class="logo-uploader" :action="uploadUrl" :headers="uploadHeaders" :show-file-list="false"
+                :on-success="handleLogoSuccess" :before-upload="beforeLogoUpload" name="image" accept="image/*">
                 <img v-if="siteInfo.logo" :src="siteInfo.logo" class="logo-preview" />
-                <el-icon v-else class="logo-uploader-icon"><Plus /></el-icon>
+                <el-icon v-else class="logo-uploader-icon">
+                  <Plus />
+                </el-icon>
               </el-upload>
               <div class="logo-tips">
                 <p>建议尺寸：200x60px，支持 JPG、PNG 格式</p>
@@ -99,7 +89,9 @@
       <el-card class="settings-card">
         <template #header>
           <div class="card-header">
-            <el-icon><Setting /></el-icon>
+            <el-icon>
+              <Setting />
+            </el-icon>
             <span>公告展示设置</span>
           </div>
         </template>
@@ -121,40 +113,40 @@
       <el-card id="personal-info" class="settings-card">
         <template #header>
           <div class="card-header">
-            <el-icon><User /></el-icon>
+            <el-icon>
+              <User />
+            </el-icon>
             <span>个人信息</span>
           </div>
         </template>
 
         <el-form :model="personalInfo" label-width="100px" class="settings-form">
           <el-form-item label="个人简介">
-            <el-input
-              v-model="personalInfo.bio"
-              type="textarea"
-              :rows="4"
-              placeholder="介绍一下你自己..."
-            />
+            <el-input v-model="personalInfo.bio" type="textarea" :rows="4" placeholder="介绍一下你自己..." />
           </el-form-item>
 
           <el-form-item label="社交链接">
             <div class="social-links">
               <div class="social-item">
-                <el-icon><Link /></el-icon>
+                <el-icon>
+                  <Link />
+                </el-icon>
                 <span class="social-label">GitHub:</span>
                 <el-input v-model="personalInfo.github" placeholder="https://github.com/username" />
               </div>
               <div class="social-item">
-                <el-icon><Link /></el-icon>
+                <el-icon>
+                  <Link />
+                </el-icon>
                 <span class="social-label">微博:</span>
                 <el-input v-model="personalInfo.weibo" placeholder="https://weibo.com/username" />
               </div>
               <div class="social-item">
-                <el-icon><Link /></el-icon>
+                <el-icon>
+                  <Link />
+                </el-icon>
                 <span class="social-label">个人邮箱:</span>
-                <el-input
-                  v-model="personalInfo.email"
-                  placeholder="personal@email.com（可选，如与联系邮箱不同）"
-                />
+                <el-input v-model="personalInfo.email" placeholder="personal@email.com（可选，如与联系邮箱不同）" />
               </div>
             </div>
           </el-form-item>
@@ -171,7 +163,9 @@
       <el-card id="blog-settings" class="settings-card">
         <template #header>
           <div class="card-header">
-            <el-icon><Document /></el-icon>
+            <el-icon>
+              <Document />
+            </el-icon>
             <span>博客设置</span>
           </div>
         </template>
@@ -198,21 +192,9 @@
 
           <el-form-item label="功能开关">
             <div class="feature-switches">
-              <el-switch
-                v-model="blogSettings.enableComments"
-                active-text="开启评论"
-                inactive-text="关闭评论"
-              />
-              <el-switch
-                v-model="blogSettings.enableLikes"
-                active-text="开启点赞"
-                inactive-text="关闭点赞"
-              />
-              <el-switch
-                v-model="blogSettings.enableShare"
-                active-text="开启分享"
-                inactive-text="关闭分享"
-              />
+              <el-switch v-model="blogSettings.enableComments" active-text="开启评论" inactive-text="关闭评论" />
+              <el-switch v-model="blogSettings.enableLikes" active-text="开启点赞" inactive-text="关闭点赞" />
+              <el-switch v-model="blogSettings.enableShare" active-text="开启分享" inactive-text="关闭分享" />
             </div>
           </el-form-item>
 
@@ -228,30 +210,22 @@
       <el-card id="upload-settings" class="settings-card">
         <template #header>
           <div class="card-header">
-            <el-icon><Upload /></el-icon>
+            <el-icon>
+              <Upload />
+            </el-icon>
             <span>文件上传设置</span>
           </div>
         </template>
 
         <el-form label-width="120px" class="settings-form">
           <el-form-item label="最大文件大小">
-            <el-input-number
-              v-model="uploadSettings.maxFileSize"
-              :min="1"
-              :max="100"
-              style="width: 200px"
-            />
+            <el-input-number v-model="uploadSettings.maxFileSize" :min="1" :max="100" style="width: 200px" />
             <span style="margin-left: 8px">MB</span>
             <div class="field-tip">单个文件的最大上传大小，影响头像、文章图片、背景图片等所有上传功能</div>
           </el-form-item>
 
           <el-form-item label="允许的文件类型">
-            <el-select
-              v-model="uploadSettings.allowedTypes"
-              multiple
-              placeholder="选择允许的文件类型"
-              style="width: 100%"
-            >
+            <el-select v-model="uploadSettings.allowedTypes" multiple placeholder="选择允许的文件类型" style="width: 100%">
               <el-option label="图片 (JPEG)" value="image/jpeg" />
               <el-option label="图片 (PNG)" value="image/png" />
               <el-option label="图片 (GIF)" value="image/gif" />
@@ -275,7 +249,9 @@
       <el-card id="user-defaults" class="settings-card">
         <template #header>
           <div class="card-header">
-            <el-icon><UserFilled /></el-icon>
+            <el-icon>
+              <UserFilled />
+            </el-icon>
             <span>用户注册默认配置</span>
           </div>
         </template>
@@ -291,19 +267,9 @@
           </el-form-item>
 
           <el-form-item label="默认权限">
-            <el-select
-              v-model="newUserDefaults.permissions"
-              multiple
-              collapse-tags
-              placeholder="选择权限"
-              style="width: 100%"
-            >
-              <el-option
-                v-for="perm in permissionsOptions"
-                :key="perm.value"
-                :label="perm.label"
-                :value="perm.value"
-              />
+            <el-select v-model="newUserDefaults.permissions" multiple collapse-tags placeholder="选择权限"
+              style="width: 100%">
+              <el-option v-for="perm in permissionsOptions" :key="perm.value" :label="perm.label" :value="perm.value" />
             </el-select>
             <div class="field-tip">如设置角色为管理员，权限选项将被忽略</div>
           </el-form-item>
@@ -313,9 +279,7 @@
           </el-form-item>
 
           <el-form-item>
-            <el-button type="primary" :loading="saving" @click="saveNewUserDefaults"
-              >保存默认配置</el-button
-            >
+            <el-button type="primary" :loading="saving" @click="saveNewUserDefaults">保存默认配置</el-button>
           </el-form-item>
         </el-form>
       </el-card>
@@ -384,7 +348,7 @@ export default {
     });
 
     // 公告展示设置
-    const noticePlacements = ref(['banner','dropdown']);
+    const noticePlacements = ref(['banner', 'dropdown']);
     const savingPlacements = ref(false);
 
 
@@ -411,7 +375,7 @@ export default {
         if (Array.isArray(val) && val.length) {
           noticePlacements.value = val;
         }
-      } catch (_) {}
+      } catch (_) { }
     };
 
     // 网站基本信息
@@ -439,15 +403,14 @@ export default {
       enableShare: true
     });
 
-    // 上传配置
+    // 上传配置 - 使用统一的URL生成逻辑
     const uploadUrl = computed(() => {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
-      // 如果baseUrl已经包含完整URL，直接使用；否则拼接
-      if (baseUrl.startsWith('http')) {
-        return `${baseUrl}/articles/upload-image`;
-      } else {
-        return `${baseUrl}/articles/upload-image`;
+      // 在生产环境中，使用相对路径，让nginx处理
+      if (import.meta.env.PROD) {
+        return '/api/articles/upload-image';
       }
+      // 开发环境使用完整URL
+      return 'http://localhost:8001/api/articles/upload-image';
     });
     const uploadHeaders = computed(() => {
       // 确保使用最新的token，与API拦截器保持一致
@@ -779,14 +742,16 @@ export default {
   right: 20px;
   transform: translateY(-50%);
   width: 200px;
-  max-height: 80vh; /* 限制最大高度 */
+  max-height: 80vh;
+  /* 限制最大高度 */
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;
   z-index: 1000;
   overflow: hidden;
-  pointer-events: auto; /* 确保可以交互 */
+  pointer-events: auto;
+  /* 确保可以交互 */
 }
 
 .nav-header {
@@ -858,7 +823,8 @@ export default {
   box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
   z-index: 999;
   transition: all 0.3s;
-  pointer-events: auto; /* 确保可以交互 */
+  pointer-events: auto;
+  /* 确保可以交互 */
 }
 
 .float-nav-toggle:hover {
@@ -877,7 +843,8 @@ export default {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   padding: 20px;
   position: relative;
-  overflow-x: hidden; /* 防止水平滚动条 */
+  overflow-x: hidden;
+  /* 防止水平滚动条 */
 }
 
 .settings-header {
@@ -902,7 +869,8 @@ export default {
 }
 
 .settings-content {
-  max-width: calc(100% - 100px); /* 为浮窗留出空间 */
+  max-width: calc(100% - 100px);
+  /* 为浮窗留出空间 */
   width: 100%;
   margin: 0 auto;
   display: flex;

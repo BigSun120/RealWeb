@@ -35,5 +35,8 @@ export default defineConfig({
         }
       }
     }
-  }
+  },
+  // 环境变量配置
+  envDir: './',
+  envPrefix: 'VITE_'
 });

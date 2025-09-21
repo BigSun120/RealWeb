@@ -3,20 +3,11 @@
     <!-- 全页面背景 -->
     <div class="page-background">
       <!-- 背景管理器 -->
-      <BackgroundManager
-        :enabled="hasStaticBackground"
-        custom-path="/"
-        :responsive="true"
-      >
+      <BackgroundManager :enabled="hasStaticBackground" custom-path="/" :responsive="true">
         <!-- 动态背景（MillipedeBackground） -->
         <div v-if="showDynamicBackground" class="dynamic-background">
-          <MillipedeBackground
-            :enabled="!prefersReducedMotion"
-            :count="millipedeCount"
-            :opacity="dynamicBackgroundOpacity"
-            :interaction="true"
-            :show-controls="isDev"
-          />
+          <MillipedeBackground :enabled="!prefersReducedMotion" :count="millipedeCount"
+            :opacity="dynamicBackgroundOpacity" :interaction="true" :show-controls="isDev" />
         </div>
       </BackgroundManager>
 
@@ -26,12 +17,8 @@
     <!-- 背景切换控制器（如果允许用户切换） -->
     <div v-if="canUserSwitchBackground" class="background-controls">
       <el-tooltip content="切换背景模式" placement="left">
-        <el-button
-          circle
-          :type="isDynamicMode ? 'primary' : 'default'"
-          @click="toggleBackgroundMode"
-          class="background-toggle"
-        >
+        <el-button circle :type="isDynamicMode ? 'primary' : 'default'" @click="toggleBackgroundMode"
+          class="background-toggle">
           <el-icon>
             <component :is="isDynamicMode ? 'MagicStick' : 'Picture'" />
           </el-icon>
@@ -43,12 +30,8 @@
     <section class="hero fullscreen-hero">
       <div class="hero-content">
         <div class="hero-avatar">
-          <img
-            v-if="settingsStore.siteLogo"
-            :src="settingsStore.siteLogo"
-            :alt="settingsStore.siteTitle"
-            class="animate__animated animate__bounceIn"
-          />
+          <img v-if="settingsStore.siteLogo" :src="settingsStore.siteLogo" :alt="settingsStore.siteTitle"
+            class="animate__animated animate__bounceIn" />
           <div v-else class="avatar-placeholder animate__animated animate__bounceIn">
             <i class="avatar-icon">👨‍💻</i>
           </div>
@@ -75,10 +58,7 @@
         </div>
 
         <div class="hero-actions">
-          <button
-            class="btn btn-primary btn-lg animate__animated animate__heartBeat"
-            @click="$router.push('/blog')"
-          >
+          <button class="btn btn-primary btn-lg animate__animated animate__heartBeat" @click="$router.push('/blog')">
             <i class="btn-icon">📚</i>
             浏览博客
           </button>
@@ -86,46 +66,28 @@
             <i class="btn-icon">💓 </i>
             联系我
           </button>
-          <button
-            class="btn btn-primary btn-lg animate__animated animate__heartBeat"
-            @click="$router.push('/tools')"
-          >
+          <button class="btn btn-primary btn-lg animate__animated animate__heartBeat" @click="$router.push('/tools')">
             <i class="btn-icon">🧰</i>
             前往工具箱
           </button>
-          <button
-            class="btn btn-accent btn-lg animate__animated animate__pulse"
-            @click="$router.push('/temp-email')"
-          >
+          <button class="btn btn-accent btn-lg animate__animated animate__pulse" @click="$router.push('/temp-email')">
             <i class="btn-icon">📧</i>
             临时邮箱
           </button>
         </div>
 
         <div class="hero-social">
-          <a
-            v-if="settingsStore.socialLinks && settingsStore.socialLinks.github"
-            :href="settingsStore.socialLinks.github"
-            target="_blank"
-            class="social-link"
-          >
+          <a v-if="settingsStore.socialLinks && settingsStore.socialLinks.github"
+            :href="settingsStore.socialLinks.github" target="_blank" class="social-link">
             <i class="social-icon">🐙</i>
             <span>GitHub</span>
           </a>
-          <a
-            v-if="settingsStore.contactEmail"
-            :href="`mailto:${settingsStore.contactEmail}`"
-            class="social-link"
-          >
+          <a v-if="settingsStore.contactEmail" :href="`mailto:${settingsStore.contactEmail}`" class="social-link">
             <i class="social-icon">📧</i>
             <span>Email</span>
           </a>
-          <a
-            v-if="settingsStore.socialLinks && settingsStore.socialLinks.weibo"
-            :href="settingsStore.socialLinks.weibo"
-            target="_blank"
-            class="social-link"
-          >
+          <a v-if="settingsStore.socialLinks && settingsStore.socialLinks.weibo" :href="settingsStore.socialLinks.weibo"
+            target="_blank" class="social-link">
             <i class="social-icon">🐦</i>
             <span>微博</span>
           </a>
@@ -155,19 +117,11 @@
 
         <!-- 文章列表 -->
         <div v-else class="articles-list grid grid-cols-3">
-          <article
-            v-for="article in latestArticles"
-            :key="article._id"
-            class="article-item card"
-            @click="$router.push(`/blog/${article._id}`)"
-          >
+          <article v-for="article in latestArticles" :key="article._id" class="article-item card"
+            @click="$router.push(`/blog/${article._id}`)">
             <!-- 文章封面 -->
             <div class="article-image" v-if="article.coverImage">
-              <img
-                :src="getFullImageUrl(article.coverImage)"
-                :alt="article.title"
-                @error="handleImageError"
-              />
+              <img :src="getFullImageUrl(article.coverImage)" :alt="article.title" @error="handleImageError" />
             </div>
             <div class="article-image-placeholder" v-else>
               <div class="placeholder-content">
@@ -184,10 +138,7 @@
 
             <div class="card-footer">
               <div class="article-author">
-                <div
-                  class="author-avatar"
-                  :style="getAuthorAvatarStyle(article.author && article.author.avatar)"
-                >
+                <div class="author-avatar" :style="getAuthorAvatarStyle(article.author && article.author.avatar)">
                   <span class="avatar-fallback">{{
                     (
                       (article.author && (article.author.displayName || article.author.username)) ||
@@ -255,7 +206,7 @@ export default {
 
     const backgroundSwitchEnabled = computed(() => {
       return hasStaticBackground.value &&
-             homeBackgroundManager.homeConfig.value?.enableBackgroundSwitch;
+        homeBackgroundManager.homeConfig.value?.enableBackgroundSwitch;
     });
 
     const isDynamicMode = computed(() => {
@@ -374,17 +325,10 @@ export default {
       return getAvatarStyle(avatarUrl);
     };
 
-    // 获取完整的图片URL
-    const getFullImageUrl = imageUrl => {
-      if (!imageUrl) return '';
-
-      // 如果已经是完整的URL，直接返回
-      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-        return imageUrl;
-      }
-
-      // 如果是相对路径，添加基础URL
-      return `${window.location.origin}${imageUrl}`;
+    // 使用统一的图片URL处理函数
+    const getFullImageUrl = (imageUrl) => {
+      const { getImageUrl } = require('@/utils/imageUrl');
+      return getImageUrl(imageUrl);
     };
 
     // 处理图片加载错误
@@ -474,7 +418,8 @@ export default {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 0; /* 修改为0，确保在页面内容下方但可见 */
+    z-index: 0;
+    /* 修改为0，确保在页面内容下方但可见 */
     width: 100%;
     height: 100vh;
 
@@ -493,14 +438,13 @@ export default {
       left: 0;
       right: 0;
       bottom: 0;
-      background: linear-gradient(
-        135deg,
-        rgba(15, 23, 42, 0.85) 0%,
-        rgba(30, 41, 59, 0.75) 30%,
-        rgba(51, 65, 85, 0.65) 60%,
-        rgba(71, 85, 105, 0.55) 100%
-      );
-      z-index: 10; /* 确保渐变在背景Canvas之上 */
+      background: linear-gradient(135deg,
+          rgba(15, 23, 42, 0.85) 0%,
+          rgba(30, 41, 59, 0.75) 30%,
+          rgba(51, 65, 85, 0.65) 60%,
+          rgba(71, 85, 105, 0.55) 100%);
+      z-index: 10;
+      /* 确保渐变在背景Canvas之上 */
     }
   }
 
@@ -563,7 +507,8 @@ export default {
 
     .hero-content {
       position: relative;
-      z-index: 20; /* 确保内容在所有背景之上 */
+      z-index: 20;
+      /* 确保内容在所有背景之上 */
       max-width: 900px;
       margin: 0 auto;
       padding: 70px 20px 0 20px; // 添加顶部padding避免被header遮挡
@@ -956,6 +901,7 @@ export default {
             position: relative;
             z-index: 1;
           }
+
           &::after {
             opacity: 0.9;
           }
@@ -982,12 +928,10 @@ export default {
           right: 0;
           bottom: 0;
           height: 70px;
-          background: linear-gradient(
-            180deg,
-            rgba(0, 0, 0, 0) 0%,
-            rgba(2, 6, 23, 0.28) 60%,
-            rgba(2, 6, 23, 0.42) 100%
-          );
+          background: linear-gradient(180deg,
+              rgba(0, 0, 0, 0) 0%,
+              rgba(2, 6, 23, 0.28) 60%,
+              rgba(2, 6, 23, 0.42) 100%);
           transition: opacity 0.3s ease;
           opacity: 0.75;
           z-index: 1;
@@ -1078,6 +1022,7 @@ export default {
           display: flex;
           align-items: center;
           gap: 10px;
+
           .author-avatar {
             width: 32px;
             height: 32px;
@@ -1091,6 +1036,7 @@ export default {
             justify-content: center;
             overflow: hidden;
           }
+
           .avatar-fallback {
             color: #fff;
             font-weight: 700;
@@ -1136,6 +1082,7 @@ export default {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1144,6 +1091,7 @@ export default {
 
 @media (max-width: 768px) {
   .home {
+
     // 移动端背景控制器调整
     .background-controls {
       right: 15px;

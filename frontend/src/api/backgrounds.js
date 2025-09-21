@@ -1,4 +1,5 @@
 import api from './index';
+import { getImageUrl, formatFileSize } from '@/utils/imageUrl';
 
 // ==================== 前端API ====================
 
@@ -141,32 +142,7 @@ export const importBackgroundConfigs = (configsData, options = {}) => {
 
 
 // ==================== 工具函数 ====================
-
-/**
- * 获取图片完整URL
- * @param {string} url - 相对URL
- */
-export const getImageUrl = (url) => {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-
-  const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  return baseURL.replace('/api', '') + url;
-};
-
-/**
- * 格式化文件大小
- * @param {number} bytes - 字节数
- */
-export const formatFileSize = (bytes) => {
-  if (!bytes) return '0 B';
-
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
+// 注意：getImageUrl 和 formatFileSize 已移至 @/utils/imageUrl 统一管理
 
 /**
  * 获取匹配类型显示名称

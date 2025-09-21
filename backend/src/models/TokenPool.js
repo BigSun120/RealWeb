@@ -33,6 +33,20 @@ const tokenPoolSchema = new mongoose.Schema({
     required: true
   },
 
+  // 原始上传者用户名（用于显示，不影响业务逻辑）
+  originalUploader: {
+    type: String,
+    default: ''
+  },
+
+  // 邮箱备注
+  email_note: {
+    type: String,
+    default: '',
+    trim: true,
+    maxlength: 500
+  },
+
   // 令牌状态信息
   status: {
     type: String,

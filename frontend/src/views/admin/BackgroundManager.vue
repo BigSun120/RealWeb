@@ -5,7 +5,9 @@
       <div class="header-content">
         <div class="header-left">
           <h1 class="page-title">
-            <el-icon class="title-icon"><Picture /></el-icon>
+            <el-icon class="title-icon">
+              <Picture />
+            </el-icon>
             页面背景配置管理
           </h1>
           <p class="page-description">
@@ -32,37 +34,32 @@
       <div class="toolbar">
         <div class="toolbar-left">
           <el-button type="primary" size="default" @click="showCreateDialog = true">
-            <el-icon><plus /></el-icon>
+            <el-icon>
+              <plus />
+            </el-icon>
             新增配置
           </el-button>
 
           <el-button type="success" size="default" @click="testCurrentPath" v-if="currentTestPath">
-            <el-icon><View /></el-icon>
+            <el-icon>
+              <View />
+            </el-icon>
             测试当前路径 ({{ currentTestPath }})
           </el-button>
         </div>
 
         <div class="toolbar-right">
           <div class="search-group">
-            <el-input
-              v-model="searchQuery"
-              placeholder="搜索路径、描述..."
-              style="width: 280px"
-              clearable
-              @input="handleSearch"
-            >
+            <el-input v-model="searchQuery" placeholder="搜索路径、描述..." style="width: 280px" clearable
+              @input="handleSearch">
               <template #prefix>
-                <el-icon><search /></el-icon>
+                <el-icon>
+                  <search />
+                </el-icon>
               </template>
             </el-input>
 
-            <el-select
-              v-model="filterActive"
-              placeholder="状态筛选"
-              style="width: 130px"
-              clearable
-              @change="loadConfigs"
-            >
+            <el-select v-model="filterActive" placeholder="状态筛选" style="width: 130px" clearable @change="loadConfigs">
               <el-option label="全部" :value="null" />
               <el-option label="激活" :value="true" />
               <el-option label="停用" :value="false" />
@@ -70,22 +67,32 @@
 
             <el-dropdown @command="handleCreateCommand">
               <el-button type="primary">
-                <el-icon><Plus /></el-icon>
+                <el-icon>
+                  <Plus />
+                </el-icon>
                 新增配置
-                <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                <el-icon class="el-icon--right">
+                  <ArrowDown />
+                </el-icon>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="single">
-                    <el-icon><Plus /></el-icon>
+                    <el-icon>
+                      <Plus />
+                    </el-icon>
                     单个新增
                   </el-dropdown-item>
                   <el-dropdown-item command="batch">
-                    <el-icon><DocumentAdd /></el-icon>
+                    <el-icon>
+                      <DocumentAdd />
+                    </el-icon>
                     批量新增
                   </el-dropdown-item>
                   <el-dropdown-item command="import">
-                    <el-icon><Upload /></el-icon>
+                    <el-icon>
+                      <Upload />
+                    </el-icon>
                     导入配置
                   </el-dropdown-item>
                 </el-dropdown-menu>
@@ -93,7 +100,9 @@
             </el-dropdown>
 
             <el-button @click="loadConfigs" :loading="loading">
-              <el-icon><refresh /></el-icon>
+              <el-icon>
+                <refresh />
+              </el-icon>
               刷新
             </el-button>
           </div>
@@ -106,94 +115,89 @@
       <template #header>
         <div class="table-header">
           <div class="table-title-section">
-            <el-icon class="title-icon"><Grid /></el-icon>
+            <el-icon class="title-icon">
+              <Grid />
+            </el-icon>
             <span class="table-title">配置列表</span>
           </div>
           <div class="table-stats">
             <el-tag v-if="configs.length > 0" type="primary" size="small" effect="light">
-              <el-icon><Document /></el-icon>
+              <el-icon>
+                <Document />
+              </el-icon>
               共 {{ total }} 条记录
             </el-tag>
             <el-tag v-if="configs.filter(c => c.isActive).length > 0" type="success" size="small" effect="light">
-              <el-icon><Check /></el-icon>
-              {{ configs.filter(c => c.isActive).length }} 条启用
+              <el-icon>
+                <Check />
+              </el-icon>
+              {{configs.filter(c => c.isActive).length}} 条启用
             </el-tag>
           </div>
         </div>
       </template>
 
-      <el-table
-        v-loading="loading"
-        :data="configs"
-        stripe
-        style="width: 100%"
-        :empty-text="configs.length === 0 ? '暂无配置数据，点击新增配置开始使用' : '暂无数据'"
-        class="config-table"
-        :row-class-name="getRowClassName"
-        @row-click="handleRowClick"
-        @selection-change="handleSelectionChange"
-        ref="tableRef"
-      >
+      <el-table v-loading="loading" :data="configs" stripe style="width: 100%"
+        :empty-text="configs.length === 0 ? '暂无配置数据，点击新增配置开始使用' : '暂无数据'" class="config-table"
+        :row-class-name="getRowClassName" @row-click="handleRowClick" @selection-change="handleSelectionChange"
+        ref="tableRef">
         <!-- 选择列 -->
         <el-table-column type="selection" width="55" :selectable="isRowSelectable" />
-        
+
         <el-table-column label="路径配置" min-width="220">
           <template #default="{ row }">
             <div class="path-config">
               <div class="path">
-                <el-tag
-                  :type="getMatchTypeTagType(row.pathConfig.matchType)"
-                  size="small"
-                  effect="light"
-                  class="match-type-tag"
-                >
-                  <el-icon><Link /></el-icon>
+                <el-tag :type="getMatchTypeTagType(row.pathConfig.matchType)" size="small" effect="light"
+                  class="match-type-tag">
+                  <el-icon>
+                    <Link />
+                  </el-icon>
                   {{ getMatchTypeLabel(row.pathConfig.matchType) }}
                 </el-tag>
                 <code class="path-text">{{ row.pathConfig.path }}</code>
               </div>
               <div class="description" v-if="row.pathConfig.description">
-                <el-icon class="desc-icon"><InfoFilled /></el-icon>
+                <el-icon class="desc-icon">
+                  <InfoFilled />
+                </el-icon>
                 {{ row.pathConfig.description }}
               </div>
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="背景图片" width="140">
           <template #default="{ row }">
             <div class="image-preview" v-if="row.backgroundImage?.url">
               <div class="image-container">
-                <el-image
-                  :src="getImageUrl(row.backgroundImage.url)"
-                  :preview-src-list="[getImageUrl(row.backgroundImage.url)]"
-                  fit="cover"
-                  class="preview-image"
-                  :preview-teleported="true"
-                  loading="lazy"
-                />
+                <el-image :src="getImageUrl(row.backgroundImage.url)"
+                  :preview-src-list="[getImageUrl(row.backgroundImage.url)]" fit="cover" class="preview-image"
+                  :preview-teleported="true" loading="lazy" />
                 <div class="image-overlay">
-                  <el-icon class="preview-icon"><ZoomIn /></el-icon>
+                  <el-icon class="preview-icon">
+                    <ZoomIn />
+                  </el-icon>
                 </div>
               </div>
             </div>
             <div v-else class="no-image">
-              <el-icon><Picture /></el-icon>
+              <el-icon>
+                <Picture />
+              </el-icon>
               <span>无图片</span>
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="优先级" width="100" sortable prop="pathConfig.priority">
           <template #default="{ row }">
             <div class="priority-cell">
-              <el-tag
-                :type="getPriorityTagType(row.pathConfig.priority)"
-                size="small"
-                effect="light"
-                class="priority-tag"
-              >
-                <el-icon><Sort /></el-icon>
+              <el-tag :type="getPriorityTagType(row.pathConfig.priority)" size="small" effect="light"
+                class="priority-tag">
+                <el-icon>
+                  <Sort />
+                </el-icon>
                 {{ row.pathConfig.priority }}
               </el-tag>
             </div>
@@ -203,27 +207,21 @@
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
             <div class="status-cell">
-              <el-switch
-                v-model="row.isActive"
-                @change="toggleActive(row)"
-                :loading="row._updating"
-                size="small"
-                :active-icon="Check"
-                :inactive-icon="Close"
-                active-color="#67c23a"
-                inactive-color="#f56c6c"
-              />
+              <el-switch v-model="row.isActive" @change="toggleActive(row)" :loading="row._updating" size="small"
+                :active-icon="Check" :inactive-icon="Close" active-color="#67c23a" inactive-color="#f56c6c" />
               <span class="status-text" :class="{ active: row.isActive }">
                 {{ row.isActive ? '启用' : '禁用' }}
               </span>
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="创建时间" width="180" sortable prop="createdAt">
           <template #default="{ row }">
             <div class="time-cell">
-              <el-icon class="time-icon"><Clock /></el-icon>
+              <el-icon class="time-icon">
+                <Clock />
+              </el-icon>
               <div class="time-info">
                 <div class="date">{{ formatDate(row.createdAt) }}</div>
                 <div class="relative-time">{{ getRelativeTime(row.createdAt) }}</div>
@@ -236,27 +234,26 @@
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button size="small" type="primary" @click="editConfig(row)" class="action-btn">
-                <el-icon><Edit /></el-icon>
+                <el-icon>
+                  <Edit />
+                </el-icon>
                 编辑
               </el-button>
 
               <el-button size="small" type="success" @click="previewConfig(row)" class="action-btn">
-                <el-icon><View /></el-icon>
+                <el-icon>
+                  <View />
+                </el-icon>
                 预览
               </el-button>
 
-              <el-popconfirm
-                title="确定要删除这个配置吗？"
-                @confirm="deleteConfig(row._id)"
-                confirm-button-text="确定删除"
-                cancel-button-text="取消"
-                confirm-button-type="danger"
-                :icon="WarningFilled"
-                icon-color="#f56c6c"
-              >
+              <el-popconfirm title="确定要删除这个配置吗？" @confirm="deleteConfig(row._id)" confirm-button-text="确定删除"
+                cancel-button-text="取消" confirm-button-type="danger" :icon="WarningFilled" icon-color="#f56c6c">
                 <template #reference>
                   <el-button size="small" type="danger" class="action-btn">
-                    <el-icon><Delete /></el-icon>
+                    <el-icon>
+                      <Delete />
+                    </el-icon>
                     删除
                   </el-button>
                 </template>
@@ -282,50 +279,37 @@
 
           <div class="batch-actions">
             <div class="action-group primary-actions">
-              <el-button
-                size="small"
-                @click="batchEnable"
-                :disabled="!canBatchEnable"
-                class="batch-btn enable-btn"
-              >
-                <el-icon><Check /></el-icon>
+              <el-button size="small" @click="batchEnable" :disabled="!canBatchEnable" class="batch-btn enable-btn">
+                <el-icon>
+                  <Check />
+                </el-icon>
                 <span>启用</span>
               </el-button>
-              <el-button
-                size="small"
-                @click="batchDisable"
-                :disabled="!canBatchDisable"
-                class="batch-btn disable-btn"
-              >
-                <el-icon><Close /></el-icon>
+              <el-button size="small" @click="batchDisable" :disabled="!canBatchDisable" class="batch-btn disable-btn">
+                <el-icon>
+                  <Close />
+                </el-icon>
                 <span>禁用</span>
               </el-button>
-              <el-button
-                size="small"
-                @click="openBatchEditDialog"
-                class="batch-btn edit-btn"
-              >
-                <el-icon><Edit /></el-icon>
+              <el-button size="small" @click="openBatchEditDialog" class="batch-btn edit-btn">
+                <el-icon>
+                  <Edit />
+                </el-icon>
                 <span>编辑</span>
               </el-button>
             </div>
 
             <div class="action-group secondary-actions">
-              <el-button
-                size="small"
-                type="danger"
-                @click="batchDelete"
-                class="batch-btn delete-btn"
-              >
-                <el-icon><Delete /></el-icon>
+              <el-button size="small" type="danger" @click="batchDelete" class="batch-btn delete-btn">
+                <el-icon>
+                  <Delete />
+                </el-icon>
                 <span>删除</span>
               </el-button>
-              <el-button
-                size="small"
-                @click="clearSelection"
-                class="batch-btn cancel-btn"
-              >
-                <el-icon><RefreshLeft /></el-icon>
+              <el-button size="small" @click="clearSelection" class="batch-btn cancel-btn">
+                <el-icon>
+                  <RefreshLeft />
+                </el-icon>
                 <span>取消</span>
               </el-button>
             </div>
@@ -335,49 +319,27 @@
 
       <!-- 分页 -->
       <div class="pagination-wrapper">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="loadConfigs"
-          @current-change="loadConfigs"
-        />
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
+          :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="loadConfigs"
+          @current-change="loadConfigs" />
       </div>
     </el-card>
 
     <!-- 创建/编辑对话框 -->
-    <background-config-dialog
-      v-model="showCreateDialog"
-      :config="editingConfig"
-      @success="handleDialogSuccess"
-    />
-    
+    <background-config-dialog v-model="showCreateDialog" :config="editingConfig" @success="handleDialogSuccess" />
+
     <!-- 预览对话框 -->
-    <background-preview-dialog
-      v-model="showPreviewDialog"
-      :config="previewingConfig"
-    />
+    <background-preview-dialog v-model="showPreviewDialog" :config="previewingConfig" />
 
     <!-- 批量编辑对话框 -->
-    <batch-edit-dialog
-      v-model="showBatchEditDialog"
-      :selected-configs="selectedConfigs"
-      @success="handleBatchEditSuccess"
-    />
+    <batch-edit-dialog v-model="showBatchEditDialog" :selected-configs="selectedConfigs"
+      @success="handleBatchEditSuccess" />
 
     <!-- 批量新增对话框 -->
-    <batch-create-dialog
-      v-model="showBatchCreateDialog"
-      @success="handleBatchCreateSuccess"
-    />
+    <batch-create-dialog v-model="showBatchCreateDialog" @success="handleBatchCreateSuccess" />
 
     <!-- 导入配置对话框 -->
-    <import-config-dialog
-      v-model="showImportDialog"
-      @success="handleImportSuccess"
-    />
+    <import-config-dialog v-model="showImportDialog" @success="handleImportSuccess" />
   </div>
 </template>
 
@@ -397,11 +359,11 @@ import {
   getBackgroundByPath,
   deleteBackgroundConfig,
   updateBackgroundConfig,
-  getImageUrl,
   getMatchTypeLabel,
   batchToggleBackgroundConfigs,
   batchDeleteBackgroundConfigs
 } from '@/api/backgrounds';
+import { getImageUrl } from '@/utils/imageUrl';
 import BackgroundConfigDialog from '@/components/admin/BackgroundConfigDialog.vue';
 import BackgroundPreviewDialog from '@/components/admin/BackgroundPreviewDialog.vue';
 import BatchEditDialog from '@/components/admin/BatchEditDialog.vue';
@@ -463,9 +425,9 @@ const loadConfigs = async () => {
       search: searchQuery.value || undefined,
       isActive: filterActive.value
     };
-    
+
     const response = await getBackgroundConfigs(params);
-    
+
     if (response.data.success) {
       configs.value = response.data.data.configs;
       total.value = response.data.data.pagination.total;
@@ -517,7 +479,7 @@ const toggleActive = async (config) => {
     await updateBackgroundConfig(config._id, {
       isActive: config.isActive
     });
-    
+
     ElMessage.success(`配置已${config.isActive ? '激活' : '停用'}`);
   } catch (error) {
     config.isActive = !config.isActive; // 回滚状态

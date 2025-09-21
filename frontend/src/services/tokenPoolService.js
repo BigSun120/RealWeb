@@ -74,6 +74,23 @@ export const tokenPoolService = {
       url: `/tools/token-pool/${tokenId}/refresh`,
       method: 'post'
     })
+  },
+
+  // 转移令牌到池子（新的转移模式）
+  async transferTokenToPool(tokenId, tokenData) {
+    return await request({
+      url: `/tools/token-pool/transfer/${tokenId}`,
+      method: 'post',
+      data: tokenData
+    })
+  },
+
+  // 从池中领取令牌（转移模式）
+  async claimTokenTransfer(tokenId) {
+    return await request({
+      url: `/tools/token-pool/${tokenId}/claim-transfer`,
+      method: 'post'
+    })
   }
 }
 

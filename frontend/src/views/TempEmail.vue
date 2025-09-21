@@ -37,14 +37,12 @@
         <!-- 右侧：登录功能 -->
         <div class="intro-right">
           <div class="action-panel">
-            <el-result
-              icon="warning"
-              title="需要登录"
-              sub-title="使用临时邮箱功能需要先登录账户"
-            >
+            <el-result icon="warning" title="需要登录" sub-title="使用临时邮箱功能需要先登录账户">
               <template #extra>
                 <el-button type="primary" size="large" @click="goToLogin">
-                  <el-icon><User /></el-icon>
+                  <el-icon>
+                    <User />
+                  </el-icon>
                   立即登录
                 </el-button>
               </template>
@@ -57,11 +55,7 @@
     <!-- 权限检查和激活流程 -->
     <div v-else-if="!accessStatus.hasAccess" class="permission-required">
       <!-- 显示激活界面 -->
-      <TempEmailActivation
-        v-if="showActivation"
-        @success="handleActivationSuccess"
-        @cancel="showActivation = false"
-      />
+      <TempEmailActivation v-if="showActivation" @success="handleActivationSuccess" @cancel="showActivation = false" />
 
       <!-- 未激活状态显示介绍 -->
       <div v-else class="intro-layout">
@@ -93,10 +87,7 @@
           <!-- 右侧：激活功能 -->
           <div class="intro-right">
             <div class="action-panel">
-              <TempEmailStatusBar
-                :access-status="accessStatus"
-                @show-activation="showActivation = true"
-              />
+              <TempEmailStatusBar :access-status="accessStatus" @show-activation="showActivation = true" />
             </div>
           </div>
         </div>
@@ -106,22 +97,14 @@
     <!-- 主功能界面 -->
     <div v-else class="temp-email-main">
       <!-- 页面头部 -->
-      <PageHeader
-        title="临时邮箱"
-        subtitle="安全可靠的临时邮箱服务，保护您的隐私"
-        :show-stats="false"
-        :show-filters="false"
-      >
+      <PageHeader title="临时邮箱" subtitle="安全可靠的临时邮箱服务，保护您的隐私" :show-stats="false" :show-filters="false">
         <template #toolbar>
-          <el-button
-            type="primary"
-            @click="generateEmail"
-            :loading="generating"
-            :disabled="!selectedDomain"
-            class="header-generate-btn"
-          >
+          <el-button type="primary" @click="generateEmail" :loading="generating" :disabled="!selectedDomain"
+            class="header-generate-btn">
             <template #icon>
-              <el-icon><Plus /></el-icon>
+              <el-icon>
+                <Plus />
+              </el-icon>
             </template>
             {{ generating ? '生成中...' : '快速生成' }}
           </el-button>
@@ -132,41 +115,23 @@
       <div class="status-notice-row">
         <!-- 左侧：权限状态 -->
         <div class="status-section">
-          <TempEmailStatusBar
-            :access-status="accessStatus"
-            @show-activation="showActivation = true"
-          />
+          <TempEmailStatusBar :access-status="accessStatus" @show-activation="showActivation = true" />
         </div>
 
         <!-- 右侧：公告横幅 -->
         <div class="notice-section">
-          <el-alert
-            v-if="tempEmailNotice && tempEmailNotice.content"
-            :title="tempEmailNotice.title || '📢 使用提醒'"
-            :description="tempEmailNotice.content"
-            :type="tempEmailNotice.type || 'info'"
-            :closable="false"
-            show-icon
-            class="temp-email-notice"
-          />
+          <el-alert v-if="tempEmailNotice && tempEmailNotice.content" :title="tempEmailNotice.title || '📢 使用提醒'"
+            :description="tempEmailNotice.content" :type="tempEmailNotice.type || 'info'" :closable="false" show-icon
+            class="temp-email-notice" />
         </div>
       </div>
 
 
 
       <!-- 激活界面弹窗（已激活用户也可以使用） -->
-      <el-dialog
-        v-model="showActivation"
-        title="激活临时邮箱权限"
-        width="680px"
-        :close-on-click-modal="false"
-        :close-on-press-escape="false"
-        :lock-scroll="true"
-        :modal="true"
-        :append-to-body="true"
-        class="activation-dialog"
-        destroy-on-close
-      >
+      <el-dialog v-model="showActivation" title="激活临时邮箱权限" width="680px" :close-on-click-modal="false"
+        :close-on-press-escape="false" :lock-scroll="true" :modal="true" :append-to-body="true"
+        class="activation-dialog" destroy-on-close>
         <template #header>
           <div class="dialog-header">
             <div class="header-icon">
@@ -182,291 +147,202 @@
         </template>
 
         <div class="activation-content">
-          <TempEmailActivation
-            @success="handleActivationSuccess"
-            @cancel="showActivation = false"
-          />
+          <TempEmailActivation @success="handleActivationSuccess" @cancel="showActivation = false" />
         </div>
       </el-dialog>
 
       <el-card class="main-card glass-card">
 
-      <!-- 邮箱生成配置 -->
-      <div class="email-config">
-        <div class="config-header">
-          <h3 class="config-title">
-            <el-icon class="config-icon"><Message /></el-icon>
-            邮箱生成配置
-          </h3>
-        </div>
-
-        <div class="config-form">
-          <div class="compact-form-row">
-            <!-- 邮箱前缀输入 -->
-            <el-input
-              v-model="emailPrefix"
-              placeholder="自定义前缀或留空自动生成"
-              clearable
-              class="prefix-input"
-            />
-
-            <!-- 随机按钮 -->
-            <el-button
-              @click="generateRandomPrefix"
-              class="random-btn"
-              type="info"
-              plain
-            >
-              <el-icon><Refresh /></el-icon>
-              随机
-            </el-button>
-
-            <!-- @ 符号分隔 -->
-            <div class="at-symbol">@</div>
-
-            <!-- 邮箱域名选择 -->
-            <el-select
-              v-model="selectedDomain"
-              placeholder="选择域名"
-              class="domain-select"
-            >
-              <el-option
-                v-for="domain in availableDomains"
-                :key="domain"
-                :label="domain"
-                :value="domain"
-              >
-                <div class="domain-option">
-                  <span class="domain-name">{{ domain }}</span>
-                  <el-tag
-                    v-if="domain === 'godaug.fun'"
-                    type="success"
-                    size="small"
-                    class="domain-tag"
-                  >
-                    ⭐ 专属
-                  </el-tag>
-                </div>
-              </el-option>
-            </el-select>
-
-            <!-- 生成按钮 -->
-            <el-button
-              type="primary"
-              @click="generateEmail"
-              :loading="generating"
-              :disabled="!selectedDomain"
-              class="generate-btn"
-            >
-              <template #icon>
-                <el-icon><Plus /></el-icon>
-              </template>
-              {{ generating ? '生成中' : '生成邮箱' }}
-            </el-button>
+        <!-- 邮箱生成配置 -->
+        <div class="email-config no-glass">
+          <div class="config-header">
+            <h3 class="config-title">
+              <el-icon class="config-icon">
+                <Message />
+              </el-icon>
+              邮箱生成配置
+            </h3>
           </div>
-        </div>
-      </div>
 
-      <!-- 服务状态 请运行 npm run email:start 启动邮箱服务-->
-      <el-alert
-        v-if="!serviceOnline"
-        title="邮箱服务未启动"
-        description="嗷呜！"
-        type="warning"
-        :closable="false"
-        class="status-alert glass-alert"
-      />
+          <div class="config-form">
+            <div class="compact-form-row">
+              <!-- 邮箱前缀输入 -->
+              <el-input v-model="emailPrefix" placeholder="自定义前缀或留空自动生成" clearable class="prefix-input" />
 
-      <!-- 当前邮箱 -->
-      <div v-if="currentEmail" class="current-email glass-container">
-        <el-descriptions title="当前邮箱" :column="1" border class="glass-descriptions">
-          <el-descriptions-item label="邮箱地址">
-            <el-tag type="success" size="large">{{ currentEmail }}</el-tag>
-            <el-button
-              type="text"
-              @click="copyEmail"
-              style="margin-left: 10px"
-            >
-              复制
-            </el-button>
-          </el-descriptions-item>
-
-        </el-descriptions>
-      </div>
-
-      <!-- 邮件列表 -->
-      <div class="email-list glass-container">
-        <div class="list-header">
-          <h3>📬 所有邮件</h3>
-          <div class="list-actions">
-            <el-button
-              @click="refreshAllMessages"
-              :loading="loading"
-              icon="Refresh"
-              type="primary"
-              size="small"
-            >
-              刷新全部
-            </el-button>
-          </div>
-        </div>
-
-        <el-table
-          :data="displayMessages"
-          v-loading="loading"
-          empty-text="暂无邮件"
-          class="glass-table"
-        >
-          <el-table-column prop="email" label="收件邮箱" width="260">
-            <template #default="{ row }">
-              <el-tag type="primary" size="small">{{ row.email }}</el-tag>
-              <el-button type="text" size="small" @click="copyText(row.email)" style="margin-left: 6px">复制</el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="from" label="发件人" width="200" />
-          <el-table-column prop="subject" label="主题" />
-          <el-table-column prop="date" label="时间" width="180">
-            <template #default="{ row }">
-              {{ formatDate(row.date) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="验证码" width="200">
-            <template #default="{ row }">
-              <span class="code-text">{{ row.code || extractCode(row) || '—' }}</span>
-              <el-button
-                v-if="row.code || extractCode(row)"
-                size="small"
-                type="text"
-                @click="copyText(row.code || extractCode(row))"
-                style="margin-left: 6px"
-              >复制</el-button>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="操作" width="160">
-            <template #default="{ row }">
-              <el-button
-                type="primary"
-                size="small"
-                @click="viewMessage(row)"
-              >
-                查看
+              <!-- 随机按钮 -->
+              <el-button @click="generateRandomPrefix" class="random-btn" type="info" plain>
+                <el-icon>
+                  <Refresh />
+                </el-icon>
+                随机
               </el-button>
-              <el-button
-                type="danger"
-                size="small"
-                @click="deleteMessage(row)"
-              >
-                删除
+
+              <!-- @ 符号分隔 -->
+              <div class="at-symbol">@</div>
+
+              <!-- 邮箱域名选择 -->
+              <el-select v-model="selectedDomain" placeholder="选择域名" class="domain-select">
+                <el-option v-for="domain in availableDomains" :key="domain" :label="domain" :value="domain">
+                  <div class="domain-option">
+                    <span class="domain-name">{{ domain }}</span>
+                    <el-tag v-if="domain === 'godaug.fun'" type="success" size="small" class="domain-tag">
+                      ⭐ 专属
+                    </el-tag>
+                  </div>
+                </el-option>
+              </el-select>
+
+              <!-- 生成按钮 -->
+              <el-button type="primary" @click="generateEmail" :loading="generating" :disabled="!selectedDomain"
+                class="generate-btn">
+                <template #icon>
+                  <el-icon>
+                    <Plus />
+                  </el-icon>
+                </template>
+                {{ generating ? '生成中' : '生成邮箱' }}
               </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-    </el-card>
-
-    <!-- 邮件详情对话框 -->
-    <el-dialog
-      v-model="messageDialogVisible"
-      title="邮件详情"
-      width="80%"
-      :before-close="closeMessageDialog"
-      class="glass-dialog"
-    >
-      <template #header>
-        <div class="dialog-header">
-          <span>邮件详情</span>
-          <div class="dialog-actions">
-            <el-button size="small" @click="toggleFullscreen" type="primary" plain>
-              {{ isFullscreen ? '退出全屏' : '全屏查看' }}
-            </el-button>
-          </div>
-        </div>
-      </template>
-
-      <div v-if="currentMessage" class="message-content" :class="{ fullscreen: isFullscreen }">
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="发件人">
-            {{ currentMessage.from }}
-          </el-descriptions-item>
-          <el-descriptions-item label="收件人">
-            {{ currentMessage.to }}
-          </el-descriptions-item>
-          <el-descriptions-item label="主题">
-            {{ currentMessage.subject }}
-          </el-descriptions-item>
-          <el-descriptions-item label="时间">
-            {{ formatDate(currentMessage.date) }}
-          </el-descriptions-item>
-        </el-descriptions>
-
-        <div class="message-body">
-          <h4>邮件内容</h4>
-          <div
-            v-if="currentMessage.body.html"
-            v-html="currentMessage.body.html"
-            class="html-content"
-          ></div>
-          <pre
-            v-else-if="currentMessage.body.text"
-            class="text-content"
-          >{{ currentMessage.body.text }}</pre>
-          <p v-else class="no-content">无邮件内容</p>
-        </div>
-      </div>
-    </el-dialog>
-
-    <!-- 全部邮件对话框 -->
-    <el-dialog
-      v-model="allEmailsDialogVisible"
-      title="📬 全部邮件"
-      width="90%"
-      :before-close="closeAllEmailsDialog"
-    >
-      <div class="all-emails-content">
-        <el-tabs v-model="activeEmailTab" type="card">
-          <el-tab-pane
-            v-for="emailBox in allEmailBoxes"
-            :key="emailBox.email"
-            :label="`${emailBox.email} (${emailBox.messages.length})`"
-            :name="emailBox.email"
-          >
-            <div class="email-box-content">
-              <el-table
-                :data="emailBox.messages"
-                empty-text="暂无邮件"
-                size="small"
-              >
-                <el-table-column prop="from" label="发件人" width="200" />
-                <el-table-column prop="subject" label="主题" />
-                <el-table-column prop="date" label="时间" width="180">
-                  <template #default="{ row }">
-                    {{ formatDate(row.date) }}
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" width="100">
-                  <template #default="{ row }">
-                    <el-button
-                      type="primary"
-                      size="small"
-                      @click="viewMessageFromAll(emailBox.email, row)"
-                    >
-                      查看
-                    </el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
             </div>
-          </el-tab-pane>
-        </el-tabs>
-
-        <div v-if="allEmailBoxes.length === 0" class="no-emails">
-          <el-empty description="还没有生成过邮箱" />
+          </div>
         </div>
-      </div>
-    </el-dialog>
-      </div>
+
+        <!-- 服务状态 请运行 npm run email:start 启动邮箱服务-->
+        <el-alert v-if="!serviceOnline" title="邮箱服务未启动" description="嗷呜！" type="warning" :closable="false"
+          class="status-alert glass-alert" />
+
+        <!-- 当前邮箱 -->
+        <div v-if="currentEmail" class="current-email no-glass">
+          <el-descriptions title="当前邮箱" :column="1" border>
+            <el-descriptions-item label="邮箱地址">
+              <el-tag type="success" size="large">{{ currentEmail }}</el-tag>
+              <el-button type="text" @click="copyEmail" style="margin-left: 10px">
+                复制
+              </el-button>
+            </el-descriptions-item>
+
+          </el-descriptions>
+        </div>
+
+        <!-- 邮件列表 -->
+        <div class="email-list no-glass">
+          <div class="list-header">
+            <h3>📬 所有邮件</h3>
+            <div class="list-actions">
+              <el-button @click="refreshAllMessages" :loading="loading" icon="Refresh" type="primary" size="small">
+                刷新全部
+              </el-button>
+            </div>
+          </div>
+
+          <el-table :data="displayMessages" v-loading="loading" empty-text="暂无邮件" class="glass-table">
+            <el-table-column prop="email" label="收件邮箱" width="260">
+              <template #default="{ row }">
+                <el-tag type="primary" size="small">{{ row.email }}</el-tag>
+                <el-button type="text" size="small" @click="copyText(row.email)" style="margin-left: 6px">复制</el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="from" label="发件人" width="200" />
+            <el-table-column prop="subject" label="主题" />
+            <el-table-column prop="date" label="时间" width="180">
+              <template #default="{ row }">
+                {{ formatDate(row.date) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="验证码" width="200">
+              <template #default="{ row }">
+                <span class="code-text">{{ row.code || extractCode(row) || '—' }}</span>
+                <el-button v-if="row.code || extractCode(row)" size="small" type="text"
+                  @click="copyText(row.code || extractCode(row))" style="margin-left: 6px">复制</el-button>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="操作" width="160">
+              <template #default="{ row }">
+                <el-button type="primary" size="small" @click="viewMessage(row)">
+                  查看
+                </el-button>
+                <el-button type="danger" size="small" @click="deleteMessage(row)">
+                  删除
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-card>
+
+      <!-- 邮件详情对话框 -->
+      <el-dialog v-model="messageDialogVisible" title="邮件详情" width="80%" :before-close="closeMessageDialog"
+        class="glass-dialog">
+        <template #header>
+          <div class="dialog-header">
+            <span>邮件详情</span>
+            <div class="dialog-actions">
+              <el-button size="small" @click="toggleFullscreen" type="primary" plain>
+                {{ isFullscreen ? '退出全屏' : '全屏查看' }}
+              </el-button>
+            </div>
+          </div>
+        </template>
+
+        <div v-if="currentMessage" class="message-content" :class="{ fullscreen: isFullscreen }">
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="发件人">
+              {{ currentMessage.from }}
+            </el-descriptions-item>
+            <el-descriptions-item label="收件人">
+              {{ currentMessage.to }}
+            </el-descriptions-item>
+            <el-descriptions-item label="主题">
+              {{ currentMessage.subject }}
+            </el-descriptions-item>
+            <el-descriptions-item label="时间">
+              {{ formatDate(currentMessage.date) }}
+            </el-descriptions-item>
+          </el-descriptions>
+
+          <div class="message-body">
+            <h4>邮件内容</h4>
+            <div v-if="currentMessage.body.html" v-html="currentMessage.body.html" class="html-content"></div>
+            <pre v-else-if="currentMessage.body.text" class="text-content">{{ currentMessage.body.text }}</pre>
+            <p v-else class="no-content">无邮件内容</p>
+          </div>
+        </div>
+      </el-dialog>
+
+      <!-- 全部邮件对话框 -->
+      <el-dialog v-model="allEmailsDialogVisible" title="📬 全部邮件" width="90%" :before-close="closeAllEmailsDialog">
+        <div class="all-emails-content">
+          <el-tabs v-model="activeEmailTab" type="card">
+            <el-tab-pane v-for="emailBox in allEmailBoxes" :key="emailBox.email"
+              :label="`${emailBox.email} (${emailBox.messages.length})`" :name="emailBox.email">
+              <div class="email-box-content">
+                <el-table :data="emailBox.messages" empty-text="暂无邮件" size="small">
+                  <el-table-column prop="from" label="发件人" width="200" />
+                  <el-table-column prop="subject" label="主题" />
+                  <el-table-column prop="date" label="时间" width="180">
+                    <template #default="{ row }">
+                      {{ formatDate(row.date) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="100">
+                    <template #default="{ row }">
+                      <el-button type="primary" size="small" @click="viewMessageFromAll(emailBox.email, row)">
+                        查看
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+            </el-tab-pane>
+          </el-tabs>
+
+          <div v-if="allEmailBoxes.length === 0" class="no-emails">
+            <el-empty description="还没有生成过邮箱" />
+          </div>
+        </div>
+      </el-dialog>
     </div>
+  </div>
 </template>
 
 <script setup>
@@ -1008,15 +884,18 @@ onUnmounted(() => {
   padding: 8px;
   max-width: 1200px;
   margin: 0 auto;
-  min-height: calc(100vh - 120px); /* 确保页面有足够高度显示footer */
+  min-height: calc(100vh - 120px);
+  /* 确保页面有足够高度显示footer */
 }
 
 /* 权限状态和公告合并行 */
 .status-notice-row {
   display: flex;
   gap: 1rem;
-  align-items: stretch; /* 改为stretch确保高度一致 */
-  min-height: 80px; /* 设置最小高度 */
+  align-items: stretch;
+  /* 改为stretch确保高度一致 */
+  min-height: 80px;
+  /* 设置最小高度 */
 }
 
 .status-section {
@@ -1083,7 +962,7 @@ onUnmounted(() => {
 
 
 .main-card {
-  margin:  8px 0 8px 0;
+  margin: 8px 0 8px 0;
 }
 
 .card-header {
@@ -1126,17 +1005,18 @@ onUnmounted(() => {
   gap: 10px;
 }
 
-.dialog-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .message-content {
   max-height: 70vh;
   overflow-y: auto;
 }
-.message-content.fullscreen{
+
+.message-content.fullscreen {
   max-height: calc(90vh - 120px);
 }
 
@@ -1171,7 +1051,11 @@ onUnmounted(() => {
   font-family: monospace;
 }
 
-.code-text{font-family:monospace;color:#2b6cb0;font-weight:600;}
+.code-text {
+  font-family: monospace;
+  color: #2b6cb0;
+  font-weight: 600;
+}
 
 .no-content {
   color: #909399;
@@ -1188,6 +1072,14 @@ onUnmounted(() => {
   border-radius: 16px !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
   overflow: hidden;
+}
+
+/* 移除毛玻璃效果的样式 */
+.email-config.no-glass {
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* 配置头部 - 紧凑版 */
@@ -1837,6 +1729,113 @@ onUnmounted(() => {
   margin-bottom: 24px !important;
 }
 
+/* 移除毛玻璃效果的容器样式 */
+.email-list.no-glass {
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  padding: 24px !important;
+  margin-bottom: 24px !important;
+  border-radius: 16px !important;
+}
+
+/* 当前邮箱美化样式 */
+.current-email.no-glass {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  backdrop-filter: none !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04) !important;
+  padding: 28px !important;
+  margin-bottom: 24px !important;
+  border-radius: 20px !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.current-email.no-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #059669, #047857);
+  border-radius: 20px 20px 0 0;
+}
+
+.current-email.no-glass .el-descriptions {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+.current-email.no-glass .el-descriptions__header {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  border-radius: 16px 16px 0 0 !important;
+  padding: 20px 24px !important;
+}
+
+.current-email.no-glass .el-descriptions__title {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.current-email.no-glass .el-descriptions__title::before {
+  content: '📧';
+  font-size: 20px;
+}
+
+.current-email.no-glass .el-descriptions__body {
+  background: #ffffff !important;
+  border-radius: 0 0 16px 16px !important;
+}
+
+.current-email.no-glass .el-descriptions__cell {
+  background: transparent !important;
+  border-right: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 16px 20px !important;
+  transition: background-color 0.2s ease;
+}
+
+.current-email.no-glass .el-descriptions__cell:hover {
+  background: #f8fafc !important;
+}
+
+.current-email.no-glass .el-descriptions__label {
+  font-weight: 600 !important;
+  color: #475569 !important;
+  font-size: 14px !important;
+}
+
+.current-email.no-glass .el-descriptions__content {
+  font-weight: 500 !important;
+  color: #1e293b !important;
+  font-size: 14px !important;
+}
+
+/* 邮箱地址特殊样式 */
+.current-email.no-glass .el-descriptions__content .code-text {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
+  color: #166534 !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border: 1px solid #bbf7d0 !important;
+  display: inline-block;
+  margin: 4px 0;
+}
+
 /* 毛玻璃警告框样式 */
 .glass-alert {
   background: rgba(255, 193, 7, 0.1) !important;
@@ -2097,21 +2096,19 @@ onUnmounted(() => {
   margin: 0 !important;
 }
 
-/* 优化公告横幅文本颜色 */
+/* 优化公告横幅文本颜色 - 使用默认颜色 */
 .notice-section .el-alert__title {
-  color: #1a365d !important;
   font-weight: 700 !important;
   font-size: 15px !important;
 }
 
 .notice-section .el-alert__description {
-  color: #2d3748 !important;
   font-weight: 500 !important;
   font-size: 14px !important;
 }
 
 .notice-section .el-alert__icon {
-  color: #3182ce !important;
+  /* 使用默认颜色 */
 }
 
 .glass-notice {
@@ -2270,9 +2267,8 @@ onUnmounted(() => {
 }
 
 /* 全局文字颜色强化 - 使用深色但不全是黑色 */
-.temp-email-container,
-.temp-email-container * {
-  color: #2d3748 !important;
+.temp-email-container {
+  /* 移除全局强制颜色设置，让组件使用默认颜色 */
 }
 
 /* 特殊元素保持原有颜色 */
@@ -2369,78 +2365,7 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
 }
 
-/* 全局字体颜色优化 - 将灰色改为黑色显眼颜色 */
-.temp-email-container {
-  color: #2c3e50 !important;
-}
+/* 移除全局字体颜色强制设置，让组件使用默认颜色 */
 
-.temp-email-container .el-text,
-.temp-email-container .el-descriptions__label,
-.temp-email-container .el-descriptions__content,
-.temp-email-container .el-table td,
-.temp-email-container .el-table th,
-.temp-email-container .el-form-item__label,
-.temp-email-container .el-alert__title,
-.temp-email-container .el-alert__description,
-.temp-email-container h1, .temp-email-container h2,
-.temp-email-container h3, .temp-email-container h4,
-.temp-email-container p, .temp-email-container span,
-.temp-email-container .list-header h3 {
-  color: #2c3e50 !important;
-}
-
-/* 特殊状态文字颜色 */
-.temp-email-container .el-table__empty-text {
-  color: #2c3e50 !important;
-}
-
-.temp-email-container .code-text {
-  color: #2c3e50 !important;
-  font-weight: 600 !important;
-}
-
-/* 输入框文字颜色 */
-.temp-email-container .el-input__inner,
-.temp-email-container .el-textarea__inner {
-  color: #2c3e50 !important;
-  font-weight: 500 !important;
-}
-
-/* 占位符文字颜色 */
-.temp-email-container .el-input__inner::placeholder,
-.temp-email-container .el-textarea__inner::placeholder {
-  color: #6c757d !important;
-}
-
-/* 选择器文字颜色 */
-.temp-email-container .el-select .el-input__inner {
-  color: #2c3e50 !important;
-}
-
-/* 下拉选项文字颜色 */
-.el-select-dropdown .el-select-dropdown__item {
-  color: #2c3e50 !important;
-}
-
-/* 标签文字颜色保持原有主题色 */
-.temp-email-container .el-tag {
-  font-weight: 600 !important;
-}
-
-/* 按钮文字颜色 */
-.temp-email-container .el-button {
-  font-weight: 600 !important;
-}
-
-/* 对话框文字颜色 */
-.temp-email-container .el-dialog__title {
-  color: #2c3e50 !important;
-  font-weight: 600 !important;
-}
-
-/* 描述列表标题颜色 */
-.temp-email-container .el-descriptions__title {
-  color: #2c3e50 !important;
-  font-weight: 700 !important;
-}
+/* 移除所有强制颜色设置，让组件使用默认颜色 */
 </style>

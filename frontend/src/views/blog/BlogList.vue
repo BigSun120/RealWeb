@@ -2,21 +2,11 @@
   <div class="blog-list-page">
     <!-- 完全铺满页面的背景 -->
     <div class="page-background"></div>
-    <PageHeader
-      title="博客文章"
-      :show-stats="false"
-      :show-filters="true"
-      :search-value="searchQuery"
-      search-placeholder="🔍 搜索文章..."
-      :view-mode="viewMode"
-      :view-modes="[
+    <PageHeader title="博客文章" :show-stats="false" :show-filters="true" :search-value="searchQuery"
+      search-placeholder="🔍 搜索文章..." :view-mode="viewMode" :view-modes="[
         { value: 'list', label: '📊' },
         { value: 'grid', label: '⊞' }
-      ]"
-      @search="handleSearch"
-      @clear-search="clearSearch"
-      @view-mode-change="switchViewMode"
-    >
+      ]" @search="handleSearch" @clear-search="clearSearch" @view-mode-change="switchViewMode">
       <template #toolbar>
         <el-button type="primary" plain @click="goToPopularArticles" class="action-button" size="small">
           热门排行
@@ -29,15 +19,9 @@
       <div class="main-layout">
         <!-- 左侧筛选卡片 -->
         <div class="sidebar-card">
-          <BlogFilterBar
-            :categories="filterOptions.categories"
-            :tags="filterOptions.tags"
-            :selected-category="selectedCategory"
-            :selected-tag="selectedTag"
-            @select-category="filterByCategory"
-            @select-tag="filterByTag"
-            @clear-all="clearAllFilters"
-          />
+          <BlogFilterBar :categories="filterOptions.categories" :tags="filterOptions.tags"
+            :selected-category="selectedCategory" :selected-tag="selectedTag" @select-category="filterByCategory"
+            @select-tag="filterByTag" @clear-all="clearAllFilters" />
         </div>
 
         <!-- 右侧内容卡片 -->
@@ -45,34 +29,21 @@
           <!-- 博客列表区域 -->
           <div class="articles-section">
             <BlogSkeletons v-if="loading" :mode="viewMode" />
-            <BlogEmptyState v-else-if="!loading && filteredArticles.length === 0" :search="searchQuery" @clear="clearSearch" />
+            <BlogEmptyState v-else-if="!loading && filteredArticles.length === 0" :search="searchQuery"
+              @clear="clearSearch" />
 
-            <BlogArticlesGrid
-              v-else-if="!loading && isGridMode"
-              :articles="filteredArticles"
-              @open="id => $router.push(`/blog/${id}`)"
-            />
-            <BlogArticlesList
-              v-else-if="!loading"
-              :articles="filteredArticles"
-              @open="id => $router.push(`/blog/${id}`)"
-            />
+            <BlogArticlesGrid v-else-if="!loading && isGridMode" :articles="filteredArticles"
+              @open="id => $router.push(`/blog/${id}`)" />
+            <BlogArticlesList v-else-if="!loading" :articles="filteredArticles"
+              @open="id => $router.push(`/blog/${id}`)" />
           </div>
 
           <!-- 分页区域 -->
           <div class="pagination-section">
-            <BlogPagination
-              :current-page="currentPage"
-              :total-pages="totalPages"
-              :total="totalCount"
-              :page-size="pageSizeLocal"
-              :visible-pages="visiblePages"
-              :jump-page="jumpPage"
-              @change-page="changePage"
-              @change-size="(s)=>{ pageSizeLocal=s; handlePageSizeChange(); }"
-              @update:jump-page="(v)=>{ jumpPage=v; }"
-              @page-jump="handlePageJump"
-            />
+            <BlogPagination :current-page="currentPage" :total-pages="totalPages" :total="totalCount"
+              :page-size="pageSizeLocal" :visible-pages="visiblePages" :jump-page="jumpPage" @change-page="changePage"
+              @change-size="(s) => { pageSizeLocal = s; handlePageSizeChange(); }"
+              @update:jump-page="(v) => { jumpPage = v; }" @page-jump="handlePageJump" />
           </div>
         </div>
       </div>
@@ -95,11 +66,11 @@
   right: 0;
   bottom: 0;
   background: linear-gradient(135deg,
-    rgba(99, 102, 241, 0.1) 0%,
-    rgba(168, 85, 247, 0.1) 25%,
-    rgba(236, 72, 153, 0.1) 50%,
-    rgba(245, 158, 11, 0.1) 75%,
-    rgba(34, 197, 94, 0.1) 100%);
+      rgba(99, 102, 241, 0.1) 0%,
+      rgba(168, 85, 247, 0.1) 25%,
+      rgba(236, 72, 153, 0.1) 50%,
+      rgba(245, 158, 11, 0.1) 75%,
+      rgba(34, 197, 94, 0.1) 100%);
   z-index: -2;
 }
 
@@ -546,35 +517,16 @@ export default {
       }
     };
 
-    // 获取完整的图片URL
-    const getFullImageUrl = imageUrl => {
-      if (!imageUrl) return '';
-
-      // 如果已经是完整的URL，直接返回
-      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-        return imageUrl;
-      }
-
-      // 如果是相对路径，添加基础URL
-      return `${window.location.origin}${imageUrl}`;
+    // 使用统一的图片URL处理函数
+    const getFullImageUrl = (imageUrl) => {
+      const { getImageUrl } = require('@/utils/imageUrl');
+      return getImageUrl(imageUrl);
     };
 
-    // 获取作者头像样式
+    // 获取作者头像样式 - 使用统一的头像处理函数
     const getAuthorAvatarStyle = avatarUrl => {
-      if (!avatarUrl) return {};
-
-      // 处理相对路径
-      let fullUrl = avatarUrl;
-      if (!avatarUrl.startsWith('http://') && !avatarUrl.startsWith('https://')) {
-        fullUrl = `${window.location.origin}${avatarUrl}`;
-      }
-
-      return {
-        backgroundImage: `url(${fullUrl})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      };
+      const { getAvatarStyle } = require('@/utils/imageUrl');
+      return getAvatarStyle(avatarUrl);
     };
 
 
@@ -610,7 +562,7 @@ export default {
       if (qs.page) currentPage.value = Number(qs.page);
       if (qs.size) {
         const s = Number(qs.size);
-        pageSizeLocal.value = Number.isFinite(s) && [10,20,30,50].includes(s) ? s : pageSizeLocal.value;
+        pageSizeLocal.value = Number.isFinite(s) && [10, 20, 30, 50].includes(s) ? s : pageSizeLocal.value;
         localStorage.setItem('blog-page-size', pageSizeLocal.value.toString());
       }
       if (qs.view) {
@@ -710,4 +662,3 @@ export default {
   }
 };
 </script>
-

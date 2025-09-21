@@ -9,6 +9,7 @@ const ToolsPermission = require('../../middleware/toolsPermission');
 const ActivityLogger = require('../../middleware/activityLogger');
 const AugmentToken = require('../../models/AugmentToken');
 const AugmentService = require('../../services/AugmentService');
+const TokenManagerService = require('../../services/TokenManagerService');
 const logger = require('../../utils/logger');
 
 const router = express.Router();
@@ -213,19 +214,15 @@ router.post('/tokens', async (req, res) => {
       });
     }
 
-    // 检查是否已存在相同的令牌（基于access_token去重）
-    const existingToken = await AugmentToken.findOne({
-      userId: req.user._id,
-      accessToken: access_token
-    });
+    // 使用统一令牌管理服务进行验证和创建
+    const validation = await TokenManagerService.validateTokenOperation('add_user_token', req.user._id, access_token);
 
-    if (existingToken) {
+    if (!validation.isValid) {
       return res.status(409).json({
         success: false,
-        message: '该访问令牌已存在，请勿重复添加',
+        message: validation.errors.join('; '),
         data: {
-          existing_token_id: existingToken.tokenId,
-          existing_email_note: existingToken.emailNote
+          validation
         }
       });
     }
@@ -243,7 +240,7 @@ router.post('/tokens', async (req, res) => {
       }
     };
 
-    const newToken = await AugmentToken.createToken(tokenData, req.user._id);
+    const newToken = await TokenManagerService.safeAddUserToken(req.user._id, tokenData);
 
     res.json({
       success: true,
@@ -343,20 +340,14 @@ router.delete('/tokens/:tokenId', async (req, res) => {
   try {
     const { tokenId } = req.params;
 
-    const token = await AugmentToken.findByTokenId(tokenId, req.user._id);
-    if (!token) {
-      return res.status(404).json({
-        success: false,
-        message: '令牌不存在'
-      });
-    }
-
-    await AugmentToken.deleteOne({ _id: token._id });
+    // 使用统一令牌管理服务进行安全删除
+    const result = await TokenManagerService.safeDeleteUserToken(req.user._id, tokenId);
 
     res.json({
       success: true,
       data: {
-        message: '令牌删除成功'
+        message: '令牌删除成功',
+        ...result
       }
     });
 
@@ -365,7 +356,7 @@ router.delete('/tokens/:tokenId', async (req, res) => {
     logger.error('Delete token failed:', error);
     res.status(500).json({
       success: false,
-      message: '删除令牌失败',
+      message: error.message || '删除令牌失败',
       error: error.message
     });
   }
@@ -551,5 +542,93 @@ router.post('/tokens/batch-refresh-portal-info', async (req, res) => {
 });
 
 
+
+/**
+ * 获取令牌全局状态
+ * GET /api/tools/augment/tokens/:accessToken/global-status
+ */
+router.get('/tokens/:accessToken/global-status', requireAuth, async (req, res) => {
+  try {
+    const { accessToken } = req.params;
+
+    // 获取令牌的全局状态
+    const globalStatus = await TokenManagerService.getTokenGlobalStatus(accessToken);
+
+    res.json({
+      success: true,
+      data: globalStatus
+    });
+
+    logger.info(`Global status retrieved for token: ${accessToken.substring(0, 10)}...`);
+  } catch (error) {
+    logger.error('Get token global status failed:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取令牌全局状态失败',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * 验证令牌操作
+ * POST /api/tools/augment/validate-operation
+ */
+router.post('/validate-operation', requireAuth, async (req, res) => {
+  try {
+    const { operation, accessToken } = req.body;
+
+    if (!operation || !accessToken) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少必要参数：operation 和 accessToken'
+      });
+    }
+
+    // 验证令牌操作
+    const validation = await TokenManagerService.validateTokenOperation(operation, req.user._id, accessToken);
+
+    res.json({
+      success: true,
+      data: validation
+    });
+
+    logger.info(`Token operation validated: ${operation} for token: ${accessToken.substring(0, 10)}...`);
+  } catch (error) {
+    logger.error('Validate token operation failed:', error);
+    res.status(500).json({
+      success: false,
+      message: '验证令牌操作失败',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * 获取令牌详细状态
+ * GET /api/tools/augment/tokens/:accessToken/detailed-status
+ */
+router.get('/tokens/:accessToken/detailed-status', requireAuth, async (req, res) => {
+  try {
+    const { accessToken } = req.params;
+
+    // 获取令牌的详细状态
+    const detailedStatus = await TokenManagerService.getDetailedTokenStatus(accessToken);
+
+    res.json({
+      success: true,
+      data: detailedStatus
+    });
+
+    logger.info(`Detailed status retrieved for token: ${accessToken.substring(0, 10)}...`);
+  } catch (error) {
+    logger.error('Get detailed token status failed:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取令牌详细状态失败',
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;

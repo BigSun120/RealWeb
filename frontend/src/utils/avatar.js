@@ -1,66 +1,14 @@
 /**
  * 头像处理工具函数
+ * 注意：核心函数已迁移至 @/utils/imageUrl 统一管理
  */
 
-/**
- * 获取完整的头像URL
- * @param {string} avatarUrl - 头像URL（可能是相对路径或绝对路径）
- * @returns {string} 完整的头像URL
- */
-export const getFullAvatarUrl = (avatarUrl) => {
-  if (!avatarUrl) return '';
-
-  // 如果已经是完整的URL，直接返回
-  if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-    return avatarUrl;
-  }
-
-  // 如果是相对路径，根据环境选择基础URL
-  let baseUrl;
-
-  // 优先使用环境变量，但需要去掉/api后缀（头像是静态文件，不走API路由）
-  if (import.meta.env.VITE_API_BASE_URL) {
-    baseUrl = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
-  } else {
-    // 本地开发环境fallback
-    baseUrl = 'http://localhost:8000';
-  }
-
-  // 确保路径以/开头
-  const normalizedPath = avatarUrl.startsWith('/') ? avatarUrl : `/${avatarUrl}`;
-
-  const fullUrl = `${baseUrl}${normalizedPath}`;
-
-  return fullUrl;
-};
-
-/**
- * 生成头像背景样式
- * @param {string} avatarUrl - 头像URL
- * @returns {object} CSS样式对象
- */
-export const getAvatarStyle = (avatarUrl) => {
-  if (avatarUrl) {
-    const fullUrl = getFullAvatarUrl(avatarUrl);
-    return {
-      backgroundImage: `url(${fullUrl})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat'
-    };
-  }
-  return {};
-};
-
-/**
- * 获取用户名的首字母（用于头像占位符）
- * @param {string} username - 用户名
- * @returns {string} 首字母
- */
-export const getUserInitial = (username) => {
-  if (!username) return 'U';
-  return username.charAt(0).toUpperCase();
-};
+// 重新导出统一的图片URL处理函数
+export {
+  getImageUrl as getFullAvatarUrl,
+  getAvatarStyle,
+  getUserInitial
+} from '@/utils/imageUrl';
 
 /**
  * 生成头像占位符颜色

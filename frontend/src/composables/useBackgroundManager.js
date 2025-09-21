@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { getBackgroundByPath, getImageUrl } from '@/api/backgrounds';
+import { getBackgroundByPath } from '@/api/backgrounds';
+import { getImageUrl } from '@/utils/imageUrl';
 
 // 全局状态
 const globalBackgroundConfig = ref(null);

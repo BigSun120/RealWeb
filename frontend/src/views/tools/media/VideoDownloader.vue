@@ -14,20 +14,14 @@
     <!-- Tab导航 -->
     <div class="platform-tabs">
       <div class="tab-header">
-        <div
-          :class="['tab-item', { active: activeTab === 'bilibili' }]"
-          @click="switchTab('bilibili')"
-        >
+        <div :class="['tab-item', { active: activeTab === 'bilibili' }]" @click="switchTab('bilibili')">
           <i class="fab fa-bilibili"></i>
           <span>Bilibili</span>
           <div class="tab-status">
             <span class="status-badge available">可用</span>
           </div>
         </div>
-        <div
-          :class="['tab-item', { active: activeTab === 'youtube', disabled: true }]"
-          @click="switchTab('youtube')"
-        >
+        <div :class="['tab-item', { active: activeTab === 'youtube', disabled: true }]" @click="switchTab('youtube')">
           <i class="fab fa-youtube"></i>
           <span>YouTube</span>
           <div class="tab-status">
@@ -57,23 +51,13 @@
         <div class="url-input-section">
           <el-form @submit.prevent="parseVideo">
             <el-form-item>
-              <el-input
-                v-model="videoUrl"
-                placeholder="请输入Bilibili视频链接 (如: https://www.bilibili.com/video/BV...)"
-                size="large"
-                clearable
-                @keyup.enter="parseVideo"
-              >
+              <el-input v-model="videoUrl" placeholder="请输入Bilibili视频链接 (如: https://www.bilibili.com/video/BV...)"
+                size="large" clearable @keyup.enter="parseVideo">
                 <template #prepend>
                   <span>🔗</span>
                 </template>
                 <template #append>
-                  <el-button
-                    type="primary"
-                    @click="parseVideo"
-                    :loading="parsing"
-                    :disabled="!videoUrl.trim()"
-                  >
+                  <el-button type="primary" @click="parseVideo" :loading="parsing" :disabled="!videoUrl.trim()">
                     {{ parsing ? '解析中...' : '解析视频' }}
                   </el-button>
                 </template>
@@ -93,9 +77,7 @@
               <h2>{{ videoInfo.title }}</h2>
               <div class="video-meta">
                 <span v-if="videoInfo.uploader">UP主: {{ videoInfo.uploader }}</span>
-                <span v-if="videoInfo.duration"
-                  >时长: {{ formatDuration(videoInfo.duration) }}</span
-                >
+                <span v-if="videoInfo.duration">时长: {{ formatDuration(videoInfo.duration) }}</span>
                 <span>平台: {{ getPlatformName(videoInfo.platform) }}</span>
               </div>
             </div>
@@ -116,12 +98,9 @@
                   <span>大小</span>
                   <span>说明</span>
                 </div>
-                <div
-                  v-for="video in videoInfo.available.videos"
-                  :key="video.id"
+                <div v-for="video in videoInfo.available.videos" :key="video.id"
                   :class="['table-row', { selected: selectedVideo && selectedVideo.id === video.id }]"
-                  @click="selectVideo(video)"
-                >
+                  @click="selectVideo(video)">
                   <span>
                     <el-radio v-model="selectedVideo" :value="video" @change="selectVideo(video)" />
                   </span>
@@ -147,12 +126,9 @@
                   <span>大小</span>
                   <span>说明</span>
                 </div>
-                <div
-                  v-for="audio in videoInfo.available.audios"
-                  :key="audio.id"
+                <div v-for="audio in videoInfo.available.audios" :key="audio.id"
                   :class="['table-row', { selected: selectedAudio && selectedAudio.id === audio.id }]"
-                  @click="selectAudio(audio)"
-                >
+                  @click="selectAudio(audio)">
                   <span>
                     <el-radio v-model="selectedAudio" :value="audio" @change="selectAudio(audio)" />
                   </span>
@@ -176,13 +152,8 @@
 
             <!-- 下载按钮 -->
             <div class="download-actions">
-              <el-button
-                type="primary"
-                size="large"
-                @click="downloadVideo"
-                :loading="downloading"
-                :disabled="!canDownload"
-              >
+              <el-button type="primary" size="large" @click="downloadVideo" :loading="downloading"
+                :disabled="!canDownload">
                 <span v-if="!downloading">{{ getDownloadButtonText() }}</span>
                 <span v-else>下载中...</span>
               </el-button>
@@ -196,8 +167,7 @@
           <ul>
             <li><strong>支持平台：</strong>Bilibili (bilibili.com, b23.tv)</li>
             <li>
-              <strong>解析功能：</strong
-              >输入Bilibili视频链接后点击"解析视频"，系统会自动获取所有可用格式
+              <strong>解析功能：</strong>输入Bilibili视频链接后点击"解析视频"，系统会自动获取所有可用格式
             </li>
             <li><strong>格式选择：</strong>可查看视频分辨率、音频质量、文件大小等详细信息</li>
             <li><strong>推荐格式：</strong>系统会自动推荐最佳MP4格式，确保兼容性</li>
@@ -214,14 +184,14 @@
             <div class="example-item">
               <span class="platform">Bilibili:</span>
               <code @click="setExampleUrl('https://www.bilibili.com/video/BV1xx411c7mD')">
-                https://www.bilibili.com/video/BV1xx411c7mD
-              </code>
+        https://www.bilibili.com/video/BV1xx411c7mD
+      </code>
             </div>
             <div class="example-item">
               <span class="platform">Bilibili:</span>
               <code @click="setExampleUrl('https://www.bilibili.com/video/BV1ta411Q7Zu')">
-                https://www.bilibili.com/video/BV1ta411Q7Zu
-              </code>
+        https://www.bilibili.com/video/BV1ta411Q7Zu
+      </code>
             </div>
           </div>
         </div>
@@ -238,24 +208,15 @@
         <!-- YouTube URL输入区域 -->
         <div class="url-input-section">
           <div class="input-group">
-            <el-input
-              v-model="youtubeUrl"
-              size="large"
-              placeholder="请输入YouTube视频链接 (如: https://www.youtube.com/watch?v=...)"
-              clearable
-              @keyup.enter="parseYouTubeVideo"
-            >
+            <el-input v-model="youtubeUrl" size="large"
+              placeholder="请输入YouTube视频链接 (如: https://www.youtube.com/watch?v=...)" clearable
+              @keyup.enter="handleParseYouTubeVideo">
               <template #prepend>
                 <i class="fab fa-youtube"></i>
               </template>
             </el-input>
-            <el-button
-              type="primary"
-              size="large"
-              :loading="youtubeLoading"
-              @click="handleParseYouTubeVideo"
-              :disabled="!youtubeUrl.trim()"
-            >
+            <el-button type="primary" size="large" :loading="youtubeLoading" @click="handleParseYouTubeVideo"
+              :disabled="!youtubeUrl.trim()">
               {{ youtubeLoading ? '解析中...' : '解析视频' }}
             </el-button>
           </div>
@@ -293,30 +254,19 @@
           <!-- YouTube格式选择区域 -->
           <div class="format-selection">
             <!-- 推荐格式 -->
-            <div
-              v-if="
-                youtubeVideoInfo.available.recommended &&
-                youtubeVideoInfo.available.recommended.length > 0
-              "
-              class="format-group"
-            >
+            <div v-if="
+              youtubeVideoInfo.available.recommended &&
+              youtubeVideoInfo.available.recommended.length > 0
+            " class="format-group">
               <h3>⭐ 推荐格式</h3>
               <div class="recommended-formats">
-                <div
-                  v-for="rec in youtubeVideoInfo.available.recommended"
-                  :key="rec.id"
-                  :class="[
-                    'recommended-item',
-                    { selected: selectedYouTubeRecommended && selectedYouTubeRecommended.id === rec.id }
-                  ]"
-                  @click="selectYouTubeRecommended(rec)"
-                >
+                <div v-for="rec in youtubeVideoInfo.available.recommended" :key="rec.id" :class="[
+                  'recommended-item',
+                  { selected: selectedYouTubeRecommended && selectedYouTubeRecommended.id === rec.id }
+                ]" @click="selectYouTubeRecommended(rec)">
                   <div class="rec-header">
-                    <el-radio
-                      v-model="selectedYouTubeRecommended"
-                      :value="rec"
-                      @change="selectYouTubeRecommended(rec)"
-                    />
+                    <el-radio v-model="selectedYouTubeRecommended" :value="rec"
+                      @change="selectYouTubeRecommended(rec)" />
                     <span class="rec-name">{{ rec.name }}</span>
                   </div>
                   <div class="rec-description">{{ rec.description }}</div>
@@ -325,26 +275,16 @@
             </div>
 
             <!-- Progressive格式 -->
-            <div
-              v-if="
-                youtubeVideoInfo.available.progressive &&
-                youtubeVideoInfo.available.progressive.length > 0
-              "
-              class="format-group"
-            >
+            <div v-if="
+              youtubeVideoInfo.available.progressive &&
+              youtubeVideoInfo.available.progressive.length > 0
+            " class="format-group">
               <h3>📹 视频格式（音视频合并）</h3>
               <div class="format-list">
-                <div
-                  v-for="video in youtubeVideoInfo.available.progressive"
-                  :key="video.itag"
+                <div v-for="video in youtubeVideoInfo.available.progressive" :key="video.itag"
                   :class="['format-item', { selected: selectedYouTubeVideo && selectedYouTubeVideo.itag === video.itag }]"
-                  @click="selectYouTubeVideo(video)"
-                >
-                  <el-radio
-                    v-model="selectedYouTubeVideo"
-                    :value="video"
-                    @change="selectYouTubeVideo(video)"
-                  />
+                  @click="selectYouTubeVideo(video)">
+                  <el-radio v-model="selectedYouTubeVideo" :value="video" @change="selectYouTubeVideo(video)" />
                   <div class="format-info">
                     <div class="format-quality">{{ video.resolution || 'Unknown' }}</div>
                     <div class="format-details">
@@ -357,26 +297,16 @@
             </div>
 
             <!-- 音频格式 -->
-            <div
-              v-if="
-                youtubeVideoInfo.available.audio_only &&
-                youtubeVideoInfo.available.audio_only.length > 0
-              "
-              class="format-group"
-            >
+            <div v-if="
+              youtubeVideoInfo.available.audio_only &&
+              youtubeVideoInfo.available.audio_only.length > 0
+            " class="format-group">
               <h3>🎵 音频格式</h3>
               <div class="format-list">
-                <div
-                  v-for="audio in youtubeVideoInfo.available.audio_only"
-                  :key="audio.itag"
+                <div v-for="audio in youtubeVideoInfo.available.audio_only" :key="audio.itag"
                   :class="['format-item', { selected: selectedYouTubeAudio && selectedYouTubeAudio.itag === audio.itag }]"
-                  @click="selectYouTubeAudio(audio)"
-                >
-                  <el-radio
-                    v-model="selectedYouTubeAudio"
-                    :value="audio"
-                    @change="selectYouTubeAudio(audio)"
-                  />
+                  @click="selectYouTubeAudio(audio)">
+                  <el-radio v-model="selectedYouTubeAudio" :value="audio" @change="selectYouTubeAudio(audio)" />
                   <div class="format-info">
                     <div class="format-quality">{{ audio.abr || 'Unknown' }}</div>
                     <div class="format-details">
@@ -391,14 +321,8 @@
 
           <!-- YouTube下载按钮 -->
           <div class="download-section">
-            <el-button
-              type="primary"
-              size="large"
-              :loading="youtubeDownloading"
-              @click="handleDownloadYouTubeVideo"
-              :disabled="!canDownloadYouTube"
-              class="download-btn"
-            >
+            <el-button type="primary" size="large" :loading="youtubeDownloading" @click="handleDownloadYouTubeVideo"
+              :disabled="!canDownloadYouTube" class="download-btn">
               <i class="fas fa-download"></i>
               {{ getYouTubeDownloadButtonText() }}
             </el-button>
@@ -413,11 +337,9 @@
               <div v-if="cookiesStatus.exists" class="status-item success">
                 <i class="fas fa-check-circle"></i>
                 <span>Cookies已配置</span>
-                <small
-                  >{{ cookiesStatus.cookieCount }} 个cookies，最后更新：{{
-                    formatDate(cookiesStatus.modified)
-                  }}</small
-                >
+                <small>{{ cookiesStatus.cookieCount }} 个cookies，最后更新：{{
+                  formatDate(cookiesStatus.modified)
+                }}</small>
               </div>
               <div v-else class="status-item warning">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -431,12 +353,7 @@
                 <i class="fas fa-cog"></i>
                 管理Cookies
               </el-button>
-              <el-button
-                type="info"
-                size="small"
-                @click="checkCookiesStatus"
-                :loading="checkingCookies"
-              >
+              <el-button type="info" size="small" @click="checkCookiesStatus" :loading="checkingCookies">
                 <i class="fas fa-refresh"></i>
                 刷新状态
               </el-button>
@@ -465,14 +382,14 @@
             <div class="example-item">
               <span class="platform">YouTube:</span>
               <code @click="setYouTubeExampleUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')">
-                https://www.youtube.com/watch?v=dQw4w9WgXcQ
-              </code>
+          https://www.youtube.com/watch?v=dQw4w9WgXcQ
+        </code>
             </div>
             <div class="example-item">
               <span class="platform">YouTube:</span>
               <code @click="setYouTubeExampleUrl('https://www.youtube.com/watch?v=jNQXAC9IVRw')">
-                https://www.youtube.com/watch?v=jNQXAC9IVRw
-              </code>
+          https://www.youtube.com/watch?v=jNQXAC9IVRw
+        </code>
             </div>
           </div>
         </div>
@@ -483,25 +400,16 @@
       <div v-show="activeTab === 'iqiyi'" class="tab-pane iqiyi-pane">
         <!-- URL输入区域 -->
         <div class="url-input-section">
-          <el-form @submit.prevent="parseIqiyiVideo">
+          <el-form @submit.prevent="handleParseIqiyiVideo">
             <el-form-item>
-              <el-input
-                v-model="iqiyiUrl"
-                placeholder="请输入爱奇艺视频链接 (如: https://www.iqiyi.com/v_...)"
-                size="large"
-                clearable
-                @keyup.enter="parseIqiyiVideo"
-              >
+              <el-input v-model="iqiyiUrl" placeholder="请输入爱奇艺视频链接 (如: https://www.iqiyi.com/v_...)" size="large"
+                clearable @keyup.enter="handleParseIqiyiVideo">
                 <template #prepend>
                   <span>🔗</span>
                 </template>
                 <template #append>
-                  <el-button
-                    type="primary"
-                    @click="handleParseIqiyiVideo"
-                    :loading="iqiyiLoading"
-                    :disabled="!iqiyiUrl.trim()"
-                  >
+                  <el-button type="primary" @click="handleParseIqiyiVideo" :loading="iqiyiLoading"
+                    :disabled="!iqiyiUrl.trim()">
                     {{ iqiyiLoading ? '解析中...' : '解析视频' }}
                   </el-button>
                 </template>
@@ -520,8 +428,8 @@
                 <span class="platform-tag iqiyi">爱奇艺</span>
                 <div class="example-url">
                   <code @click="setIqiyiExampleUrl('https://www.iqiyi.com/v_195j9pmsbng.html')">
-                    https://www.iqiyi.com/v_195j9pmsbng.html
-                  </code>
+              https://www.iqiyi.com/v_195j9pmsbng.html
+            </code>
                   <span class="example-desc">点击试试</span>
                 </div>
               </div>
@@ -591,18 +499,13 @@
         <div v-if="iqiyiVideoInfo" class="video-info-card">
           <div class="video-header">
             <div class="video-thumbnail">
-              <img
-                :src="iqiyiVideoInfo.thumbnail || '/placeholder-video.jpg'"
-                :alt="iqiyiVideoInfo.title"
-              />
+              <img :src="iqiyiVideoInfo.thumbnail || '/placeholder-video.jpg'" :alt="iqiyiVideoInfo.title" />
             </div>
             <div class="video-details">
               <h3>{{ iqiyiVideoInfo.title }}</h3>
               <div class="video-meta">
                 <span><i class="fas fa-user"></i> {{ iqiyiVideoInfo.uploader }}</span>
-                <span
-                  ><i class="fas fa-clock"></i> {{ formatDuration(iqiyiVideoInfo.duration) }}</span
-                >
+                <span><i class="fas fa-clock"></i> {{ formatDuration(iqiyiVideoInfo.duration) }}</span>
                 <span><i class="fas fa-video"></i> 爱奇艺</span>
               </div>
               <p class="video-description">{{ iqiyiVideoInfo.description }}</p>
@@ -613,12 +516,7 @@
           <div class="download-section">
             <h4>📥 下载选项</h4>
             <div class="download-options">
-              <el-button
-                type="primary"
-                size="large"
-                @click="handleDownloadIqiyiVideo"
-                :loading="iqiyiDownloading"
-              >
+              <el-button type="primary" size="large" @click="handleDownloadIqiyiVideo" :loading="iqiyiDownloading">
                 <span v-if="!iqiyiDownloading">下载视频</span>
                 <span v-else>下载中...</span>
               </el-button>
@@ -629,12 +527,7 @@
       <!-- Tab内容区域结束 -->
     </div>
     <!-- Cookies管理对话框 -->
-    <el-dialog
-      v-model="showCookiesDialog"
-      title="🍪 YouTube Cookies管理"
-      width="80%"
-      :close-on-click-modal="false"
-    >
+    <el-dialog v-model="showCookiesDialog" title="🍪 YouTube Cookies管理" width="80%" :close-on-click-modal="false">
       <div class="cookies-dialog">
         <div class="cookies-tabs">
           <el-tabs v-model="cookiesTab" type="card">
@@ -672,21 +565,12 @@
                 </div>
 
                 <div class="upload-area">
-                  <el-input
-                    v-model="cookiesContent"
-                    type="textarea"
-                    :rows="10"
-                    placeholder="请粘贴cookies.txt文件内容..."
-                    class="cookies-textarea"
-                  />
+                  <el-input v-model="cookiesContent" type="textarea" :rows="10" placeholder="请粘贴cookies.txt文件内容..."
+                    class="cookies-textarea" />
 
                   <div class="upload-actions">
-                    <el-button
-                      type="primary"
-                      @click="uploadCookies"
-                      :loading="uploadingCookies"
-                      :disabled="!cookiesContent.trim()"
-                    >
+                    <el-button type="primary" @click="uploadCookies" :loading="uploadingCookies"
+                      :disabled="!cookiesContent.trim()">
                       <i class="fas fa-upload"></i>
                       上传Cookies
                     </el-button>
@@ -724,12 +608,10 @@
                     </div>
                     <div class="detail-item">
                       <span class="label">重要Cookies：</span>
-                      <span
-                        :class="[
-                          'value',
-                          cookiesStatus.hasImportantCookies ? 'success' : 'warning'
-                        ]"
-                      >
+                      <span :class="[
+                        'value',
+                        cookiesStatus.hasImportantCookies ? 'success' : 'warning'
+                      ]">
                         {{ cookiesStatus.hasImportantCookies ? '✅ 已包含' : '⚠️ 缺少' }}
                       </span>
                     </div>
@@ -1520,6 +1402,7 @@ export default {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1575,7 +1458,7 @@ export default {
   margin-bottom: 16px;
 }
 
-.coming-soon-content > p {
+.coming-soon-content>p {
   font-size: 16px;
   color: #6c757d;
   margin-bottom: 24px;

@@ -117,7 +117,7 @@ const augmentTokenSchema = new mongoose.Schema({
   metadata: {
     source: {
       type: String,
-      enum: ['web', 'desktop', 'import'],
+      enum: ['web', 'desktop', 'import', 'pool_claim'],
       default: 'web'
     },
     userAgent: String,
@@ -258,6 +258,13 @@ augmentTokenSchema.index({ userId: 1, isActive: 1 });
 augmentTokenSchema.index({ tokenId: 1 }, { unique: true });
 augmentTokenSchema.index({ 'banStatus.isBanned': 1 });
 augmentTokenSchema.index({ 'usageStats.lastUsed': -1 });
+
+// 复合唯一索引：确保同一用户不能拥有相同的访问令牌
+augmentTokenSchema.index({ userId: 1, accessToken: 1 }, {
+  unique: true,
+  name: 'unique_user_access_token',
+  background: true
+});
 
 // 中间件：更新时间戳
 augmentTokenSchema.pre('save', function (next) {

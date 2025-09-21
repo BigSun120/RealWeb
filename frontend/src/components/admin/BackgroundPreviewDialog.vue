@@ -1,17 +1,12 @@
 <template>
-  <el-dialog
-    v-model="dialogVisible"
-    title="背景配置预览"
-    width="900px"
-    :close-on-click-modal="false"
-  >
+  <el-dialog v-model="dialogVisible" title="背景配置预览" width="900px" :close-on-click-modal="false">
     <div class="preview-container" v-if="config">
       <!-- 配置信息 -->
       <el-card class="config-info" shadow="never">
         <template #header>
           <h4>配置信息</h4>
         </template>
-        
+
         <el-descriptions :column="2" border>
           <el-descriptions-item label="路径规则">
             <el-tag :type="getMatchTypeTagType(config.pathConfig.matchType)" size="small">
@@ -19,21 +14,21 @@
             </el-tag>
             <code class="path-text">{{ config.pathConfig.path }}</code>
           </el-descriptions-item>
-          
+
           <el-descriptions-item label="优先级">
             <el-tag size="small">{{ config.pathConfig.priority }}</el-tag>
           </el-descriptions-item>
-          
+
           <el-descriptions-item label="状态">
             <el-tag :type="config.isActive ? 'success' : 'danger'" size="small">
               {{ config.isActive ? '激活' : '停用' }}
             </el-tag>
           </el-descriptions-item>
-          
+
           <el-descriptions-item label="创建时间">
             {{ formatDate(config.createdAt) }}
           </el-descriptions-item>
-          
+
           <el-descriptions-item label="图片信息" v-if="config.backgroundImage?.url">
             <div class="image-info">
               <p>{{ config.backgroundImage.filename }}</p>
@@ -41,7 +36,7 @@
               <p>{{ formatFileSize(config.backgroundImage.size) }}</p>
             </div>
           </el-descriptions-item>
-          
+
           <el-descriptions-item label="响应式支持">
             <div class="responsive-info">
               <el-tag v-if="config.responsiveSettings?.enableOnDesktop" size="small" type="primary">桌面端</el-tag>
@@ -49,11 +44,11 @@
               <el-tag v-if="config.responsiveSettings?.enableOnMobile" size="small" type="success">移动端</el-tag>
             </div>
           </el-descriptions-item>
-          
+
           <el-descriptions-item label="配置描述" :span="2" v-if="config.pathConfig.description">
             {{ config.pathConfig.description }}
           </el-descriptions-item>
-          
+
           <el-descriptions-item label="备注" :span="2" v-if="config.notes">
             {{ config.notes }}
           </el-descriptions-item>
@@ -76,18 +71,14 @@
             </div>
           </div>
         </template>
-        
+
         <div class="preview-area">
-          <div 
-            class="preview-viewport"
-            :class="previewDevice"
-            :style="previewStyles"
-          >
+          <div class="preview-viewport" :class="previewDevice" :style="previewStyles">
             <div class="preview-content">
               <h3>示例页面内容</h3>
               <p>这是一个示例页面，用于预览背景效果。</p>
               <p>背景图片会根据配置的参数进行显示。</p>
-              
+
               <div class="sample-card">
                 <h4>示例卡片</h4>
                 <p>这是页面中的内容区域，可以看到背景图片的效果。</p>
@@ -95,7 +86,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- 参数显示 -->
         <div class="params-display">
           <h5>当前显示参数:</h5>
@@ -125,7 +116,7 @@
               </div>
             </el-col>
           </el-row>
-          
+
           <el-row :gutter="20" style="margin-top: 10px">
             <el-col :span="6">
               <div class="param-item">
@@ -168,10 +159,9 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import {
-  getImageUrl,
-  formatFileSize,
   getMatchTypeLabel
 } from '@/api/backgrounds';
+import { getImageUrl, formatFileSize } from '@/utils/imageUrl';
 
 // Props
 const props = defineProps({

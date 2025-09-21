@@ -1,30 +1,15 @@
 <template>
-  <el-dialog
-    v-model="dialogVisible"
-    :title="isEdit ? '编辑背景配置' : '新增背景配置'"
-    width="800px"
-    :close-on-click-modal="false"
-    @close="handleClose"
-  >
-    <el-form
-      ref="formRef"
-      :model="form"
-      :rules="rules"
-      label-width="120px"
-      @submit.prevent
-    >
+  <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑背景配置' : '新增背景配置'" width="800px" :close-on-click-modal="false"
+    @close="handleClose">
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="120px" @submit.prevent>
       <!-- 路径配置 -->
       <el-card class="form-section" shadow="never">
         <template #header>
           <h4>路径匹配配置</h4>
         </template>
-        
+
         <el-form-item label="匹配类型" prop="pathConfig.matchType">
-          <el-select
-            v-model="form.pathConfig.matchType"
-            style="width: 200px"
-            @change="handleMatchTypeChange"
-          >
+          <el-select v-model="form.pathConfig.matchType" style="width: 200px" @change="handleMatchTypeChange">
             <el-option label="精确匹配" value="exact" />
             <el-option label="前缀匹配" value="prefix" />
             <el-option label="通配符匹配" value="wildcard" />
@@ -42,49 +27,29 @@
             <el-icon style="margin-left: 8px; cursor: help"><question-filled /></el-icon>
           </el-tooltip>
         </el-form-item>
-        
+
         <el-form-item label="路径规则" prop="pathConfig.path">
-          <el-input
-            v-model="form.pathConfig.path"
-            placeholder="请输入路径规则"
-            style="width: 400px"
-            @input="updatePathExamples"
-          />
+          <el-input v-model="form.pathConfig.path" placeholder="请输入路径规则" style="width: 400px"
+            @input="updatePathExamples" />
         </el-form-item>
-        
+
         <el-form-item label="匹配示例" v-if="pathExamples.length > 0">
           <div class="path-examples">
-            <el-tag
-              v-for="example in pathExamples"
-              :key="example"
-              size="small"
-              type="info"
-              style="margin-right: 8px; margin-bottom: 4px"
-            >
+            <el-tag v-for="example in pathExamples" :key="example" size="small" type="info"
+              style="margin-right: 8px; margin-bottom: 4px">
               {{ example }}
             </el-tag>
           </div>
         </el-form-item>
-        
+
         <el-form-item label="优先级" prop="pathConfig.priority">
-          <el-input-number
-            v-model="form.pathConfig.priority"
-            :min="1"
-            :max="1000"
-            style="width: 150px"
-          />
+          <el-input-number v-model="form.pathConfig.priority" :min="1" :max="1000" style="width: 150px" />
           <span class="form-tip">数字越大优先级越高</span>
         </el-form-item>
-        
+
         <el-form-item label="配置描述" prop="pathConfig.description">
-          <el-input
-            v-model="form.pathConfig.description"
-            type="textarea"
-            :rows="2"
-            placeholder="请输入配置描述"
-            maxlength="200"
-            show-word-limit
-          />
+          <el-input v-model="form.pathConfig.description" type="textarea" :rows="2" placeholder="请输入配置描述"
+            maxlength="200" show-word-limit />
         </el-form-item>
       </el-card>
 
@@ -93,23 +58,14 @@
         <template #header>
           <h4>背景图片配置</h4>
         </template>
-        
+
         <el-form-item label="背景图片" prop="backgroundImage.url" required>
           <div class="image-upload-area">
             <div class="upload-section">
-              <el-upload
-                ref="uploadRef"
-                :action="uploadAction"
-                :headers="uploadHeaders"
-                :data="uploadData"
-                :before-upload="beforeUpload"
-                :on-success="handleUploadSuccess"
-                :on-error="handleUploadError"
-                :on-progress="handleUploadProgress"
-                :show-file-list="false"
-                accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/ogg"
-                drag
-              >
+              <el-upload ref="uploadRef" :action="uploadAction" :headers="uploadHeaders" :data="uploadData"
+                :before-upload="beforeUpload" :on-success="handleUploadSuccess" :on-error="handleUploadError"
+                :on-progress="handleUploadProgress" :show-file-list="false"
+                accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/ogg" drag>
                 <div class="upload-content">
                   <el-icon class="upload-icon"><upload-filled /></el-icon>
                   <div class="upload-text">
@@ -118,42 +74,38 @@
                   </div>
                 </div>
               </el-upload>
-              
+
               <div class="upload-options">
                 <el-checkbox v-model="generateMobile">
                   自动生成移动端图片
                 </el-checkbox>
               </div>
             </div>
-            
+
             <div class="preview-section" v-if="form.backgroundImage.url">
               <div class="image-preview">
-                <el-image
-                  :src="getImageUrl(form.backgroundImage.url)"
-                  fit="cover"
-                  style="width: 200px; height: 120px; border-radius: 8px"
-                />
+                <el-image :src="getImageUrl(form.backgroundImage.url)" fit="cover"
+                  style="width: 200px; height: 120px; border-radius: 8px" />
                 <div class="image-info">
                   <p><strong>文件名:</strong> {{ form.backgroundImage.filename }}</p>
-                  <p><strong>尺寸:</strong> {{ form.backgroundImage.dimensions?.width }}x{{ form.backgroundImage.dimensions?.height }}</p>
+                  <p><strong>尺寸:</strong> {{ form.backgroundImage.dimensions?.width }}x{{
+                    form.backgroundImage.dimensions?.height }}</p>
                   <p><strong>大小:</strong> {{ formatFileSize(form.backgroundImage.size) }}</p>
                   <p><strong>格式:</strong> {{ form.backgroundImage.format?.toUpperCase() }}</p>
                 </div>
               </div>
-              
+
               <el-button type="danger" size="small" @click="removeImage">
-                <el-icon><delete /></el-icon>
+                <el-icon>
+                  <delete />
+                </el-icon>
                 移除图片
               </el-button>
             </div>
           </div>
-          
-          <el-progress
-            v-if="uploadProgress > 0 && uploadProgress < 100"
-            :percentage="uploadProgress"
-            :show-text="false"
-            style="margin-top: 10px"
-          />
+
+          <el-progress v-if="uploadProgress > 0 && uploadProgress < 100" :percentage="uploadProgress" :show-text="false"
+            style="margin-top: 10px" />
         </el-form-item>
       </el-card>
 
@@ -162,68 +114,39 @@
         <template #header>
           <h4>显示设置</h4>
         </template>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="透明度">
-              <el-slider
-                v-model="form.displaySettings.opacity"
-                :min="0"
-                :max="1"
-                :step="0.1"
-                show-input
-                :format-tooltip="(val) => `${Math.round(val * 100)}%`"
-              />
+              <el-slider v-model="form.displaySettings.opacity" :min="0" :max="1" :step="0.1" show-input
+                :format-tooltip="(val) => `${Math.round(val * 100)}%`" />
             </el-form-item>
           </el-col>
-          
+
           <el-col :span="12">
             <el-form-item label="模糊程度">
-              <el-slider
-                v-model="form.displaySettings.blur"
-                :min="0"
-                :max="20"
-                show-input
-                :format-tooltip="(val) => `${val}px`"
-              />
+              <el-slider v-model="form.displaySettings.blur" :min="0" :max="20" show-input
+                :format-tooltip="(val) => `${val}px`" />
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="亮度">
-              <el-slider
-                v-model="form.displaySettings.brightness"
-                :min="0.1"
-                :max="2"
-                :step="0.1"
-                show-input
-              />
+              <el-slider v-model="form.displaySettings.brightness" :min="0.1" :max="2" :step="0.1" show-input />
             </el-form-item>
           </el-col>
-          
+
           <el-col :span="8">
             <el-form-item label="对比度">
-              <el-slider
-                v-model="form.displaySettings.contrast"
-                :min="0.1"
-                :max="2"
-                :step="0.1"
-                show-input
-              />
+              <el-slider v-model="form.displaySettings.contrast" :min="0.1" :max="2" :step="0.1" show-input />
             </el-form-item>
           </el-col>
-          
+
           <el-col :span="8">
             <el-form-item label="饱和度">
-              <el-slider
-                v-model="form.displaySettings.saturation"
-                :min="0"
-                :max="2"
-                :step="0.1"
-                show-input
-              />
+              <el-slider v-model="form.displaySettings.saturation" :min="0" :max="2" :step="0.1" show-input />
             </el-form-item>
           </el-col>
         </el-row>
@@ -234,7 +157,7 @@
         <template #header>
           <h4>布局设置</h4>
         </template>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="背景尺寸">
@@ -246,7 +169,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-          
+
           <el-col :span="12">
             <el-form-item label="背景位置">
               <el-select v-model="form.layoutSettings.backgroundPosition" style="width: 100%">
@@ -261,7 +184,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="背景重复">
@@ -273,7 +196,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-          
+
           <el-col :span="12">
             <el-form-item label="背景固定">
               <el-select v-model="form.layoutSettings.backgroundAttachment" style="width: 100%">
@@ -291,7 +214,7 @@
         <template #header>
           <h4>其他设置</h4>
         </template>
-        
+
         <el-form-item label="响应式设置">
           <el-checkbox-group v-model="responsiveDevices">
             <el-checkbox label="desktop">桌面端</el-checkbox>
@@ -299,21 +222,15 @@
             <el-checkbox label="mobile">移动端</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
-        
+
         <el-form-item label="激活状态">
           <el-switch v-model="form.isActive" />
           <span class="form-tip">关闭后此配置将不会生效</span>
         </el-form-item>
-        
+
         <el-form-item label="备注">
-          <el-input
-            v-model="form.notes"
-            type="textarea"
-            :rows="3"
-            placeholder="配置备注信息"
-            maxlength="500"
-            show-word-limit
-          />
+          <el-input v-model="form.notes" type="textarea" :rows="3" placeholder="配置备注信息" maxlength="500"
+            show-word-limit />
         </el-form-item>
       </el-card>
     </el-form>
@@ -338,11 +255,10 @@ import {
 import {
   createBackgroundConfig,
   updateBackgroundConfig,
-  getImageUrl,
-  formatFileSize,
   validatePath,
   getPathMatchExamples
 } from '@/api/backgrounds';
+import { getImageUrl, formatFileSize } from '@/utils/imageUrl';
 import { useUserStore } from '@/stores/user';
 import configsApi from '@/api/admin/configs';
 import api from '@/api/index';
@@ -504,14 +420,14 @@ const handleUploadProgress = (event) => {
 
 const handleUploadSuccess = (response) => {
   uploadProgress.value = 100;
-  
+
   if (response.success) {
     form.backgroundImage = { ...response.data };
     ElMessage.success('图片上传成功');
   } else {
     ElMessage.error(response.message || '图片上传失败');
   }
-  
+
   setTimeout(() => {
     uploadProgress.value = 0;
   }, 1000);
