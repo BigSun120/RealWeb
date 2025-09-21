@@ -227,6 +227,17 @@ app.get('/health', (req, res) => {
   });
 });
 
+// API健康检查（用于Nginx代理）
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    environment: process.env.NODE_ENV
+  });
+});
+
 // 前端路由处理（生产环境）- 已由 nginx 处理，禁用以避免 API 路由冲突
 // if (process.env.NODE_ENV === 'production') {
 //   app.get('*', (req, res) => {
