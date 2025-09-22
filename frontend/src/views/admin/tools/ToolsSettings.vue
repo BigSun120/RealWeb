@@ -4,33 +4,39 @@
     <div class="page-header">
       <div class="header-content">
         <h1 class="page-title">
-          <el-icon><Setting /></el-icon>
+          <el-icon>
+            <Setting />
+          </el-icon>
           工具箱设置
         </h1>
         <p class="page-description">配置工具箱的全局设置和参数</p>
       </div>
       <div class="header-actions">
-        <el-upload
-          :show-file-list="false"
-          :before-upload="importSettings"
-          accept=".json"
-          style="display: inline-block; margin-right: 10px;"
-        >
+        <el-upload :show-file-list="false" :before-upload="importSettings" accept=".json"
+          style="display: inline-block; margin-right: 10px;">
           <el-button>
-            <el-icon><Upload /></el-icon>
+            <el-icon>
+              <Upload />
+            </el-icon>
             导入设置
           </el-button>
         </el-upload>
         <el-button @click="exportSettings" style="margin-right: 10px;">
-          <el-icon><Download /></el-icon>
+          <el-icon>
+            <Download />
+          </el-icon>
           导出设置
         </el-button>
         <el-button @click="resetToDefaults">
-          <el-icon><RefreshLeft /></el-icon>
+          <el-icon>
+            <RefreshLeft />
+          </el-icon>
           恢复默认
         </el-button>
         <el-button type="primary" @click="saveSettings" :loading="saving">
-          <el-icon><Check /></el-icon>
+          <el-icon>
+            <Check />
+          </el-icon>
           保存设置
         </el-button>
       </div>
@@ -44,47 +50,33 @@
           <el-card class="settings-card">
             <template #header>
               <div class="card-header">
-                <el-icon><Tools /></el-icon>
+                <el-icon>
+                  <Tools />
+                </el-icon>
                 <span>基本设置</span>
               </div>
             </template>
 
             <el-form :model="settings.general" label-width="120px">
               <el-form-item label="启用工具箱">
-                <el-switch
-                  v-model="settings.general.enabled"
-                  active-text="启用"
-                  inactive-text="禁用"
-                />
+                <el-switch v-model="settings.general.enabled" active-text="启用" inactive-text="禁用" />
                 <div class="form-tip">关闭后用户将无法访问工具箱功能</div>
               </el-form-item>
 
               <el-form-item label="需要登录">
-                <el-switch
-                  v-model="settings.general.requireAuth"
-                  active-text="需要"
-                  inactive-text="不需要"
-                />
+                <el-switch v-model="settings.general.requireAuth" active-text="需要" inactive-text="不需要" />
                 <div class="form-tip">开启后只有登录用户才能使用工具</div>
               </el-form-item>
 
               <el-form-item label="每日使用限制">
-                <el-input-number
-                  v-model="settings.general.maxUsagePerDay"
-                  :min="0"
-                  :max="100000"
-                  style="width: 200px"
-                />
+                <el-input-number v-model="settings.general.maxUsagePerDay" :min="0" :max="100000"
+                  style="width: 200px" />
                 <div class="form-tip">全站每日最大使用次数，0表示无限制</div>
               </el-form-item>
 
               <el-form-item label="用户使用限制">
-                <el-input-number
-                  v-model="settings.general.maxUsagePerUser"
-                  :min="0"
-                  :max="10000"
-                  style="width: 200px"
-                />
+                <el-input-number v-model="settings.general.maxUsagePerUser" :min="0" :max="10000"
+                  style="width: 200px" />
                 <div class="form-tip">单用户每日最大使用次数，0表示无限制</div>
               </el-form-item>
             </el-form>
@@ -96,37 +88,26 @@
           <el-card class="settings-card">
             <template #header>
               <div class="card-header">
-                <el-icon><DataAnalysis /></el-icon>
+                <el-icon>
+                  <DataAnalysis />
+                </el-icon>
                 <span>统计设置</span>
               </div>
             </template>
 
             <el-form :model="settings.analytics" label-width="120px">
               <el-form-item label="启用统计">
-                <el-switch
-                  v-model="settings.analytics.enabled"
-                  active-text="启用"
-                  inactive-text="禁用"
-                />
+                <el-switch v-model="settings.analytics.enabled" active-text="启用" inactive-text="禁用" />
                 <div class="form-tip">关闭后将不记录使用统计数据</div>
               </el-form-item>
 
               <el-form-item label="数据保留天数">
-                <el-input-number
-                  v-model="settings.analytics.retentionDays"
-                  :min="1"
-                  :max="365"
-                  style="width: 200px"
-                />
+                <el-input-number v-model="settings.analytics.retentionDays" :min="1" :max="365" style="width: 200px" />
                 <div class="form-tip">统计数据保留时间，超过将自动清理</div>
               </el-form-item>
 
               <el-form-item label="跟踪匿名用户">
-                <el-switch
-                  v-model="settings.analytics.trackAnonymous"
-                  active-text="跟踪"
-                  inactive-text="不跟踪"
-                />
+                <el-switch v-model="settings.analytics.trackAnonymous" active-text="跟踪" inactive-text="不跟踪" />
                 <div class="form-tip">是否记录未登录用户的使用数据</div>
               </el-form-item>
             </el-form>
@@ -140,28 +121,21 @@
           <el-card class="settings-card">
             <template #header>
               <div class="card-header">
-                <el-icon><Cpu /></el-icon>
+                <el-icon>
+                  <Cpu />
+                </el-icon>
                 <span>缓存设置</span>
               </div>
             </template>
 
             <el-form :model="settings.cache" label-width="120px">
               <el-form-item label="启用缓存">
-                <el-switch
-                  v-model="settings.cache.enabled"
-                  active-text="启用"
-                  inactive-text="禁用"
-                />
+                <el-switch v-model="settings.cache.enabled" active-text="启用" inactive-text="禁用" />
                 <div class="form-tip">启用缓存可以提高响应速度</div>
               </el-form-item>
 
               <el-form-item label="缓存时间(秒)">
-                <el-input-number
-                  v-model="settings.cache.ttl"
-                  :min="60"
-                  :max="86400"
-                  style="width: 200px"
-                />
+                <el-input-number v-model="settings.cache.ttl" :min="60" :max="86400" style="width: 200px" />
                 <div class="form-tip">缓存数据的有效时间</div>
               </el-form-item>
             </el-form>
@@ -173,38 +147,27 @@
           <el-card class="settings-card">
             <template #header>
               <div class="card-header">
-                <el-icon><Lock /></el-icon>
+                <el-icon>
+                  <Lock />
+                </el-icon>
                 <span>安全设置</span>
               </div>
             </template>
 
             <el-form :model="settings.security" label-width="120px">
               <el-form-item label="频率限制">
-                <el-switch
-                  v-model="settings.security.rateLimitEnabled"
-                  active-text="启用"
-                  inactive-text="禁用"
-                />
+                <el-switch v-model="settings.security.rateLimitEnabled" active-text="启用" inactive-text="禁用" />
                 <div class="form-tip">防止恶意频繁请求</div>
               </el-form-item>
 
               <el-form-item label="限制窗口(秒)">
-                <el-input-number
-                  v-model="settings.security.rateLimitWindow"
-                  :min="60"
-                  :max="3600"
-                  style="width: 200px"
-                />
+                <el-input-number v-model="settings.security.rateLimitWindow" :min="60" :max="3600"
+                  style="width: 200px" />
                 <div class="form-tip">频率限制的时间窗口</div>
               </el-form-item>
 
               <el-form-item label="最大请求数">
-                <el-input-number
-                  v-model="settings.security.rateLimitMax"
-                  :min="10"
-                  :max="1000"
-                  style="width: 200px"
-                />
+                <el-input-number v-model="settings.security.rateLimitMax" :min="10" :max="1000" style="width: 200px" />
                 <div class="form-tip">时间窗口内的最大请求次数</div>
               </el-form-item>
             </el-form>
@@ -218,30 +181,22 @@
           <el-card class="settings-card">
             <template #header>
               <div class="card-header">
-                <el-icon><Upload /></el-icon>
+                <el-icon>
+                  <Upload />
+                </el-icon>
                 <span>文件上传设置</span>
               </div>
             </template>
 
             <el-form :model="settings.upload" label-width="120px">
               <el-form-item label="最大文件大小">
-                <el-input-number
-                  v-model="settings.upload.maxFileSize"
-                  :min="1"
-                  :max="100"
-                  style="width: 200px"
-                />
+                <el-input-number v-model="settings.upload.maxFileSize" :min="1" :max="100" style="width: 200px" />
                 <span style="margin-left: 8px">MB</span>
                 <div class="form-tip">单个文件的最大上传大小</div>
               </el-form-item>
 
               <el-form-item label="允许的文件类型">
-                <el-select
-                  v-model="settings.upload.allowedTypes"
-                  multiple
-                  placeholder="选择允许的文件类型"
-                  style="width: 100%"
-                >
+                <el-select v-model="settings.upload.allowedTypes" multiple placeholder="选择允许的文件类型" style="width: 100%">
                   <el-option label="图片 (JPEG)" value="image/jpeg" />
                   <el-option label="图片 (PNG)" value="image/png" />
                   <el-option label="图片 (GIF)" value="image/gif" />
@@ -260,27 +215,21 @@
           <el-card class="settings-card">
             <template #header>
               <div class="card-header">
-                <el-icon><Bell /></el-icon>
+                <el-icon>
+                  <Bell />
+                </el-icon>
                 <span>通知设置</span>
               </div>
             </template>
 
             <el-form :model="settings.notifications" label-width="120px">
               <el-form-item label="启用通知">
-                <el-switch
-                  v-model="settings.notifications.enabled"
-                  active-text="启用"
-                  inactive-text="禁用"
-                />
+                <el-switch v-model="settings.notifications.enabled" active-text="启用" inactive-text="禁用" />
                 <div class="form-tip">系统通知功能开关</div>
               </el-form-item>
 
               <el-form-item label="邮件通知">
-                <el-switch
-                  v-model="settings.notifications.emailEnabled"
-                  active-text="启用"
-                  inactive-text="禁用"
-                />
+                <el-switch v-model="settings.notifications.emailEnabled" active-text="启用" inactive-text="禁用" />
                 <div class="form-tip">是否发送邮件通知</div>
               </el-form-item>
             </el-form>
@@ -376,43 +325,46 @@ export default {
       }
     }
 
-    // 恢复默认设置
+    // 恢复默认设置 - 已禁用防止误删数据
     const resetToDefaults = async () => {
       try {
-        await ElMessageBox.confirm(
-          '确定要恢复所有设置为默认值吗？此操作不可恢复。',
-          '确认恢复默认',
-          {
-            confirmButtonText: '恢复',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        )
+        ElMessage.warning('恢复默认设置功能已禁用，防止误删数据')
+        return
 
-        // 重置各个配置项
-        const configKeys = [
-          'tools.enabled',
-          'tools.requireAuth',
-          'tools.maxUsagePerDay',
-          'tools.maxUsagePerUser',
-          'analytics.enabled',
-          'analytics.retentionDays',
-          'analytics.trackAnonymous',
-          'cache.enabled',
-          'cache.ttl',
-          'security.rateLimitEnabled',
-          'security.rateLimitWindow',
-          'security.rateLimitMax'
-        ]
+        // await ElMessageBox.confirm(
+        //   '确定要恢复所有设置为默认值吗？此操作不可恢复。',
+        //   '确认恢复默认',
+        //   {
+        //     confirmButtonText: '恢复',
+        //     cancelButtonText: '取消',
+        //     type: 'warning'
+        //   }
+        // )
 
-        // 批量重置配置
-        for (const key of configKeys) {
-          try {
-            await resetConfig(key)
-          } catch (error) {
-            console.warn(`重置配置 ${key} 失败:`, error)
-          }
-        }
+        // // 重置各个配置项
+        // const configKeys = [
+        //   'tools.enabled',
+        //   'tools.requireAuth',
+        //   'tools.maxUsagePerDay',
+        //   'tools.maxUsagePerUser',
+        //   'analytics.enabled',
+        //   'analytics.retentionDays',
+        //   'analytics.trackAnonymous',
+        //   'cache.enabled',
+        //   'cache.ttl',
+        //   'security.rateLimitEnabled',
+        //   'security.rateLimitWindow',
+        //   'security.rateLimitMax'
+        // ]
+
+        // // 批量重置配置
+        // for (const key of configKeys) {
+        //   try {
+        //     await resetConfig(key)
+        //   } catch (error) {
+        //     console.warn(`重置配置 ${key} 失败:`, error)
+        //   }
+        // }
 
         // 重新加载设置
         await loadSettings()

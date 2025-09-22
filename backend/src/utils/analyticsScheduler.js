@@ -138,21 +138,18 @@ class AnalyticsScheduler {
   }
 
   /**
-   * 清理过期数据
+   * 清理过期数据 - 已禁用防止误删数据
    */
   async cleanupExpiredData() {
     try {
-      // 获取数据保留天数配置
-      const retentionDays = await ToolConfig.getValue('analytics.retentionDays', 90);
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
-
-      // 删除过期的使用记录
-      const deleteResult = await ToolUsage.deleteMany({
-        createdAt: { $lt: cutoffDate }
-      });
-
-      logger.info(`清理过期数据完成，删除了 ${deleteResult.deletedCount} 条记录`);
+      logger.warn('数据清理功能已禁用，防止误删数据');
+      // const retentionDays = await ToolConfig.getValue('analytics.retentionDays', 90);
+      // const cutoffDate = new Date();
+      // cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+      // const deleteResult = await ToolUsage.deleteMany({
+      //   createdAt: { $lt: cutoffDate }
+      // });
+      // logger.info(`清理过期数据完成，删除了 ${deleteResult.deletedCount} 条记录`);
     } catch (error) {
       logger.error('清理过期数据失败:', error);
     }
@@ -165,13 +162,13 @@ class AnalyticsScheduler {
     try {
       const today = new Date();
       const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-      
+
       const startOfDay = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
       // 统计昨日数据
       const dailyStats = await this.generatePeriodStats(startOfDay, endOfDay);
-      
+
       // 保存报告（可以存储到数据库或发送邮件）
       logger.info('日报生成完成:', {
         date: yesterday.toISOString().split('T')[0],
@@ -194,7 +191,7 @@ class AnalyticsScheduler {
       const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
       const weeklyStats = await this.generatePeriodStats(lastWeek, today);
-      
+
       logger.info('周报生成完成:', {
         period: `${lastWeek.toISOString().split('T')[0]} - ${today.toISOString().split('T')[0]}`,
         totalUsage: weeklyStats.totalUsage,
@@ -217,7 +214,7 @@ class AnalyticsScheduler {
       const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
       const monthlyStats = await this.generatePeriodStats(lastMonth, thisMonth);
-      
+
       logger.info('月报生成完成:', {
         period: `${lastMonth.toISOString().split('T')[0]} - ${thisMonth.toISOString().split('T')[0]}`,
         totalUsage: monthlyStats.totalUsage,

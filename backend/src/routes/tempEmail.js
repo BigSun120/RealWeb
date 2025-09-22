@@ -427,41 +427,38 @@ router.get('/all-emails', auth, requireTempEmailAccess, async (req, res) => {
 
 
 /**
- * 清空指定邮箱的所有邮件
+ * 清空指定邮箱的所有邮件 - 已禁用防止误删数据
  * DELETE /api/temp-email/:email/clear
  */
 router.delete('/:email/clear', auth, requireTempEmailAccess, async (req, res) => {
   try {
     const { email } = req.params;
 
-    // 获取邮箱所有邮件
-    const messagesResponse = await axios.get(`${INBUCKET_API}/mailbox/${email}`, {
-      timeout: 5000
-    });
-
-    const messages = messagesResponse.data || [];
-    let deletedCount = 0;
-
-    // 逐个删除邮件
-    for (const message of messages) {
-      try {
-        await axios.delete(`${INBUCKET_API}/mailbox/${email}/${message.id}`, {
-          timeout: 3000
-        });
-        deletedCount++;
-      } catch (error) {
-        console.error(`删除邮件 ${message.id} 失败:`, error.message);
-      }
-    }
+    // 禁用删除操作，防止误删数据
+    // const messagesResponse = await axios.get(`${INBUCKET_API}/mailbox/${email}`, {
+    //   timeout: 5000
+    // });
+    // const messages = messagesResponse.data || [];
+    // let deletedCount = 0;
+    // for (const message of messages) {
+    //   try {
+    //     await axios.delete(`${INBUCKET_API}/mailbox/${email}/${message.id}`, {
+    //       timeout: 3000
+    //     });
+    //     deletedCount++;
+    //   } catch (error) {
+    //     console.error(`删除邮件 ${message.id} 失败:`, error.message);
+    //   }
+    // }
 
     res.json({
-      success: true,
+      success: false,
       data: {
         email,
-        deletedCount,
-        totalCount: messages.length
+        deletedCount: 0,
+        totalCount: 0
       },
-      message: `成功清空邮箱，删除了 ${deletedCount} 封邮件`
+      message: `邮箱清空功能已禁用，防止误删数据`
     });
   } catch (error) {
     console.error('清空邮箱失败:', error);

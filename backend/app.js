@@ -8,14 +8,14 @@ require('dotenv').config({ path: '../.env' });
 
 const connectDB = require('./src/config/database');
 const logger = require('./src/utils/logger');
-const { initDefaultAdmin } = require('./src/utils/initAdmin');
+// const { initDefaultAdmin } = require('./src/utils/initAdmin');
 const ActivityLogger = require('./src/middleware/activityLogger');
-const { initActivityData } = require('./src/utils/initActivityData');
-const { initAllData } = require('./src/utils/initData');
-const { initToolsData } = require('./src/utils/initTools');
+// const { initActivityData } = require('./src/utils/initActivityData');
+// const { initAllData } = require('./src/utils/initData');
+// const { initToolsData } = require('./src/utils/initTools');
 const analyticsScheduler = require('./src/utils/analyticsScheduler');
 const errorHandler = require('./src/middleware/errorHandler');
-const initPublicNoticeReadStatus = require('./src/scripts/initPublicNoticeReadStatus');
+// const initPublicNoticeReadStatus = require('./src/scripts/initPublicNoticeReadStatus');
 const { scheduleTokenPoolCleanup } = require('./src/jobs/tokenPoolCleanup');
 const databaseBackup = require('./src/utils/databaseBackup');
 
@@ -56,7 +56,7 @@ const initializeDatabase = async () => {
 
     // 检查数据库连接状态
     if (mongoose.connection.readyState === 1) {
-      logger.info('数据库连接成功，开始检查初始化状态...');
+      logger.info('数据库连接成功');
 
       // 检查数据库是否为空（安全检查）
       const User = require('./src/models/User');
@@ -75,34 +75,25 @@ const initializeDatabase = async () => {
       await SecurityConfig.initializeDefaults();
       logger.info('安全配置初始化完成');
 
-      // 初始化默认管理员（总是执行，确保管理员存在）
-      await initDefaultAdmin();
+      // 注释掉所有数据初始化代码，防止清理数据库
+      // await initDefaultAdmin();
+      // if (isEmptyDatabase) {
+      //   logger.info('检测到空数据库，执行完整初始化...');
+      //   await initActivityData();
+      //   await initAllData();
+      //   await initToolsData();
+      //   logger.info('空数据库初始化完成');
+      // } else {
+      //   logger.info('数据库已有数据，跳过数据初始化');
+      // }
 
-      // 只在空数据库时执行数据初始化
-      if (isEmptyDatabase) {
-        logger.info('检测到空数据库，执行完整初始化...');
-
-        // 初始化活动日志测试数据
-        await initActivityData();
-
-        // 初始化分类和标签数据
-        await initAllData();
-
-        // 初始化工具箱数据
-        await initToolsData();
-
-        logger.info('空数据库初始化完成');
-      } else {
-        logger.info('数据库已有数据，跳过数据初始化');
-      }
-
-      // 初始化公告阅读状态（总是检查）
-      try {
-        await initPublicNoticeReadStatus();
-        logger.info('公告阅读状态初始化完成');
-      } catch (error) {
-        logger.warn('公告阅读状态初始化失败:', error.message);
-      }
+      // 注释掉公告阅读状态初始化
+      // try {
+      //   await initPublicNoticeReadStatus();
+      //   logger.info('公告阅读状态初始化完成');
+      // } catch (error) {
+      //   logger.warn('公告阅读状态初始化失败:', error.message);
+      // }
 
       // 启动工具箱分析调度器
       analyticsScheduler.start();

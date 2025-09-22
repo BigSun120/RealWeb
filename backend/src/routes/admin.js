@@ -1178,29 +1178,26 @@ router.post('/activity-log/generate', async (req, res, next) => {
   }
 });
 
-// 清理测试活动数据
-router.delete('/activity-log/test-data', async (req, res, next) => {
-  try {
-    const deletedCount = await clearTestActivityData();
-
-    // 记录管理员操作
-    await ActivityLogger.logAdminAction(
-      req.user._id,
-      'clear_test_activity_data',
-      `清理了 ${deletedCount} 条测试活动数据`,
-      req
-    );
-
-    res.json({
-      code: 200,
-      message: `成功清理 ${deletedCount} 条测试数据`,
-      data: { deletedCount }
-    });
-  } catch (error) {
-    logger.error('清理测试数据失败:', error);
-    next(error);
-  }
-});
+// 清理测试活动数据 - 已禁用防止误删数据
+// router.delete('/activity-log/test-data', async (req, res, next) => {
+//   try {
+//     const deletedCount = await clearTestActivityData();
+//     await ActivityLogger.logAdminAction(
+//       req.user._id,
+//       'clear_test_activity_data',
+//       `清理了 ${deletedCount} 条测试活动数据`,
+//       req
+//     );
+//     res.json({
+//       code: 200,
+//       message: `成功清理 ${deletedCount} 条测试数据`,
+//       data: { deletedCount }
+//     });
+//   } catch (error) {
+//     logger.error('清理测试数据失败:', error);
+//     next(error);
+//   }
+// });
 
 // 设置用户角色
 router.put('/users/:id/role', async (req, res, next) => {

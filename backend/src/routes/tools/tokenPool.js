@@ -405,7 +405,7 @@ router.post('/cleanup', auth, async (req, res) => {
   }
 })
 
-// 清空所有令牌（管理员）
+// 清空所有令牌（管理员）- 已禁用防止误删数据
 router.delete('/clear-all', auth, async (req, res) => {
   try {
     // 检查管理员权限
@@ -416,14 +416,15 @@ router.delete('/clear-all', auth, async (req, res) => {
       })
     }
 
-    const result = await TokenPool.deleteMany({})
+    // 禁用删除操作，防止误删数据
+    // const result = await TokenPool.deleteMany({})
 
-    logger.info(`All tokens cleared by admin ${req.user.email}, deleted ${result.deletedCount} tokens`)
+    logger.warn(`Admin ${req.user.email} attempted to clear all tokens, but function is disabled`)
 
     res.json({
-      success: true,
-      message: `已清空所有令牌，共删除 ${result.deletedCount} 个`,
-      data: { deletedCount: result.deletedCount }
+      success: false,
+      message: '清空令牌功能已禁用，防止误删数据',
+      data: { deletedCount: 0 }
     })
   } catch (error) {
     logger.error('Clear all tokens error:', error)

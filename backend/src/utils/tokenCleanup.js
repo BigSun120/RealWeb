@@ -54,32 +54,28 @@ class TokenCleanup {
 
     this.isRunning = true;
     const startTime = Date.now();
-    
+
     try {
-      logger.info('Starting token cleanup...');
-      
+      logger.warn('Token cleanup disabled to prevent data loss');
+
       let totalCleaned = 0;
-      
-      // 清理过期的邮箱验证令牌
-      const expiredTokensResult = await this.cleanupExpiredTokens();
-      totalCleaned += expiredTokensResult;
-      
-      // 清理过期的重发记录
-      const expiredResendResult = await this.cleanupExpiredResendRecords();
-      totalCleaned += expiredResendResult;
-      
-      // 清理孤立的验证记录
-      const orphanedResult = await this.cleanupOrphanedRecords();
-      totalCleaned += orphanedResult;
-      
+
+      // 禁用所有清理操作，防止误删数据
+      // const expiredTokensResult = await this.cleanupExpiredTokens();
+      // totalCleaned += expiredTokensResult;
+      // const expiredResendResult = await this.cleanupExpiredResendRecords();
+      // totalCleaned += expiredResendResult;
+      // const orphanedResult = await this.cleanupOrphanedRecords();
+      // totalCleaned += orphanedResult;
+
       // 更新统计信息
       const duration = Date.now() - startTime;
       this.updateStats(totalCleaned, duration);
-      
+
       // 记录清理结果
       SecurityLogger.logTokenCleanup(totalCleaned);
-      logger.info(`Token cleanup completed: ${totalCleaned} records cleaned in ${duration}ms`);
-      
+      logger.info(`Token cleanup skipped (disabled): ${totalCleaned} records cleaned in ${duration}ms`);
+
     } catch (error) {
       logger.error('Token cleanup failed:', error);
     } finally {
@@ -96,15 +92,15 @@ class TokenCleanup {
     }
 
     this.isRunning = true;
-    
+
     try {
       // 只清理明显过期的令牌
       const result = await User.cleanupExpiredTokens();
-      
+
       if (result.modifiedCount > 0) {
         logger.info(`Light cleanup: ${result.modifiedCount} expired tokens cleaned`);
       }
-      
+
     } catch (error) {
       logger.error('Light cleanup failed:', error);
     } finally {
@@ -129,10 +125,10 @@ class TokenCleanup {
           }
         }
       );
-      
+
       logger.info(`Cleaned up ${result.modifiedCount} expired verification tokens`);
       return result.modifiedCount;
-      
+
     } catch (error) {
       logger.error('Failed to cleanup expired tokens:', error);
       return 0;
@@ -146,7 +142,7 @@ class TokenCleanup {
     try {
       // 清理7天前的重发记录
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      
+
       const result = await User.updateMany(
         {
           lastVerificationEmailSent: { $lt: sevenDaysAgo }
@@ -157,10 +153,10 @@ class TokenCleanup {
           }
         }
       );
-      
+
       logger.info(`Cleaned up ${result.modifiedCount} expired resend records`);
       return result.modifiedCount;
-      
+
     } catch (error) {
       logger.error('Failed to cleanup expired resend records:', error);
       return 0;
@@ -188,10 +184,10 @@ class TokenCleanup {
           }
         }
       );
-      
+
       logger.info(`Cleaned up ${result.modifiedCount} orphaned verification records`);
       return result.modifiedCount;
-      
+
     } catch (error) {
       logger.error('Failed to cleanup orphaned records:', error);
       return 0;
@@ -227,7 +223,7 @@ class TokenCleanup {
     if (this.isRunning) {
       throw new Error('Cleanup is already running');
     }
-    
+
     await this.runCleanup();
     return this.getStats();
   }
