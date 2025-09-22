@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+type: "always_apply"
 ---
 
 #!/bin/bash

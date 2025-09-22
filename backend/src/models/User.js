@@ -240,15 +240,23 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 userSchema.methods.generateAuthToken = function (options = {}) {
   const jwt = require('jsonwebtoken');
 
+  // 根据rememberMe参数决定过期时间
+  const rememberMe = options.rememberMe || false;
+  const expiresIn = rememberMe ? '30d' : '7d'; // 记住我30天，否则7天
+
   // 默认配置
   const defaultOptions = {
-    expiresIn: '7d', // 延长到7天，减少频繁过期
+    expiresIn,
     issuer: 'personal-website',
     audience: 'web-client'
   };
 
-  // 合并选项
-  const tokenOptions = { ...defaultOptions, ...options };
+  // 合并选项（但保持expiresIn的逻辑）
+  const tokenOptions = {
+    ...defaultOptions,
+    ...options,
+    expiresIn // 确保expiresIn不被覆盖
+  };
 
   // Token payload
   const payload = {
@@ -256,6 +264,7 @@ userSchema.methods.generateAuthToken = function (options = {}) {
     username: this.username,
     email: this.email,
     isAdmin: this.isAdmin,
+    rememberMe, // 添加rememberMe标识到payload中
     iat: Math.floor(Date.now() / 1000), // 签发时间
     // 添加一些额外信息用于调试
     version: '1.0'

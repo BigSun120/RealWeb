@@ -3,9 +3,20 @@ import { ref, computed } from 'vue';
 import api from '@/api';
 
 export const useUserStore = defineStore('user', () => {
+  // 获取token的辅助函数
+  const getStoredToken = () => {
+    // 优先从localStorage获取（记住我的情况）
+    const localToken = localStorage.getItem('token');
+    if (localToken) return localToken;
+
+    // 然后从sessionStorage获取（不记住我的情况）
+    const sessionToken = sessionStorage.getItem('token');
+    return sessionToken || '';
+  };
+
   // 状态
   const user = ref(null);
-  const token = ref(localStorage.getItem('token') || '');
+  const token = ref(getStoredToken());
 
   // 计算属性
   const isLoggedIn = computed(() => !!token.value && !!user.value);
@@ -15,14 +26,25 @@ export const useUserStore = defineStore('user', () => {
   const login = async credentials => {
     try {
       const response = await api.post('/auth/login', credentials);
-      const { token: newToken, user: userData } = response.data.data;
+      const { token: newToken, user: userData, rememberMe } = response.data.data;
 
       token.value = newToken;
       user.value = userData;
 
-      localStorage.setItem('token', newToken);
+      // 根据rememberMe决定存储位置
+      if (rememberMe) {
+        // 记住我：存储到localStorage（持久化）
+        localStorage.setItem('token', newToken);
+        // 清除sessionStorage中可能存在的token
+        sessionStorage.removeItem('token');
+      } else {
+        // 不记住我：存储到sessionStorage（浏览器关闭后清除）
+        sessionStorage.setItem('token', newToken);
+        // 清除localStorage中可能存在的token
+        localStorage.removeItem('token');
+      }
 
-      return { success: true };
+      return { success: true, rememberMe };
     } catch (error) {
       return {
         success: false,
@@ -50,7 +72,9 @@ export const useUserStore = defineStore('user', () => {
   const logout = () => {
     user.value = null;
     token.value = '';
+    // 清除两个存储位置的token
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
   };
 
   const fetchUserInfo = async () => {

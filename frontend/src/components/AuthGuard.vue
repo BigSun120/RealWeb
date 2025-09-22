@@ -81,15 +81,27 @@ onMounted(() => {
   // 监听存储变化（多标签页同步）
   const handleStorageChange = (e) => {
     if (e.key === 'token') {
-      if (!e.newValue && userStore.token) {
+      // 获取当前存储的token（检查两个位置）
+      const currentStoredToken = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+
+      if (!currentStoredToken && userStore.token) {
         // token被其他标签页清除
         console.log('Token被其他标签页清除')
         userStore.logout()
-      } else if (e.newValue && !userStore.token) {
+      } else if (currentStoredToken && !userStore.token) {
         // 其他标签页登录了
         console.log('其他标签页登录了')
-        userStore.token = e.newValue
+        userStore.token = currentStoredToken
         userStore.fetchUserInfo()
+      } else if (currentStoredToken !== userStore.token) {
+        // token发生了变化
+        console.log('Token发生变化，同步状态')
+        userStore.token = currentStoredToken
+        if (currentStoredToken) {
+          userStore.fetchUserInfo()
+        } else {
+          userStore.logout()
+        }
       }
     }
   }

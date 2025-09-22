@@ -139,7 +139,7 @@
                 <template #default="{ row }">
                   <div class="uploader-info">
                     <el-text size="small" style="color: #666;">
-                      {{ row.originalUploader || row.uploaderUsername || '未知' }}
+                      {{ row.originalUploader || row.uploaderId?.username || row.uploaderUsername || '未知' }}
                     </el-text>
                   </div>
                 </template>
@@ -1169,7 +1169,7 @@ const claimToken = async (token) => {
 • 令牌将添加到您的个人列表中
 
 令牌信息：${token.email_note || token.emailNote || '未命名'}
-原始上传者：${token.originalUploader || '未知'}`,
+原始上传者：${token.originalUploader || token.uploaderId?.username || '未知'}`,
       '确认领取令牌',
       {
         type: 'info',
@@ -1286,7 +1286,7 @@ const adminDeleteToken = async (token) => {
 
 ⚠️ 管理员操作提醒：
 • 此操作将永久删除令牌池中的令牌
-• 原始上传者：${token.originalUploader || '未知'}
+• 原始上传者：${token.originalUploader || token.uploaderId?.username || '未知'}
 • 上传时间：${formatDate(token.uploadedAt)}
 • 当前状态：${token.status === 'available' ? '可领取' : '已被领取'}
 
@@ -1778,7 +1778,7 @@ const refreshTokenPortalInfo = async (token) => {
 // 生命周期 - 页面加载时仅获取数据库中的令牌数据，不主动刷新Portal信息
 onMounted(() => {
   console.log('页面加载，检查用户认证状态...')
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token')
   console.log('用户token:', token ? '已存在' : '不存在')
 
   // 仅加载数据库中存储的令牌数据（包括已保存的Portal信息）

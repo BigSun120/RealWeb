@@ -91,6 +91,12 @@ const routes = [
     meta: { title: '我的收藏', requiresAuth: true }
   },
   {
+    path: '/test/remember-me',
+    name: 'RememberMeTest',
+    component: () => import('@/views/test/RememberMeTest.vue'),
+    meta: { title: '记住我功能测试' }
+  },
+  {
     path: '/articles/new',
     name: 'ArticleCreate',
     component: () => import('@/views/ArticleEdit.vue'),

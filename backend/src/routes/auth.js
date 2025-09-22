@@ -145,7 +145,7 @@ router.post(
         });
       }
 
-      const { identifier, password } = req.body;
+      const { identifier, password, rememberMe } = req.body;
 
       // 查找用户
       const user = await User.findByEmailOrUsername(identifier);
@@ -173,8 +173,8 @@ router.post(
         });
       }
 
-      // 生成token
-      const token = user.generateAuthToken();
+      // 生成token，传递rememberMe参数
+      const token = user.generateAuthToken({ rememberMe: !!rememberMe });
 
       // 记录会话创建
       const sessionManager = require('../utils/sessionManager');
@@ -206,7 +206,8 @@ router.post(
           token,
           user: user.getPublicProfile(),
           emailVerified: user.emailVerified,
-          needsEmailVerification: !user.emailVerified
+          needsEmailVerification: !user.emailVerified,
+          rememberMe: !!rememberMe // 返回rememberMe状态给前端
         }
       });
     } catch (error) {
