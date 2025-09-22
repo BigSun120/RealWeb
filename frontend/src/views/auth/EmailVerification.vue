@@ -72,21 +72,11 @@
           <h3>重新发送验证邮件</h3>
           <el-form :model="resendForm" :rules="resendRules" ref="resendForm">
             <el-form-item prop="email">
-              <el-input
-                v-model="resendForm.email"
-                placeholder="请输入您的邮箱地址"
-                prefix-icon="fas fa-envelope"
-                size="large"
-              />
+              <el-input v-model="resendForm.email" placeholder="请输入您的邮箱地址" prefix-icon="fas fa-envelope" size="large" />
             </el-form-item>
             <el-form-item>
-              <el-button
-                type="primary"
-                size="large"
-                :loading="resending"
-                @click="handleResendVerification"
-                style="width: 100%"
-              >
+              <el-button type="primary" size="large" :loading="resending" @click="handleResendVerification"
+                style="width: 100%">
                 {{ resending ? '发送中...' : '发送验证邮件' }}
               </el-button>
             </el-form-item>
@@ -102,6 +92,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { verifyEmail, resendVerificationEmail } from '@/api/auth';
 import { useUserStore } from '@/stores/user';
+import { useEmailVerificationStore } from '@/stores/emailVerification';
+import { updateEmailVerificationStatus } from '@/utils/emailVerification';
 import { useGlobalBackgroundManager } from '@/composables/useBackgroundManager';
 
 export default {
@@ -110,6 +102,7 @@ export default {
     const router = useRouter();
     const route = useRoute();
     const userStore = useUserStore();
+    const emailVerificationStore = useEmailVerificationStore();
 
     // 背景管理
     const globalManager = useGlobalBackgroundManager();
@@ -149,6 +142,7 @@ export default {
 
     return {
       userStore,
+      emailVerificationStore,
       containerBackgroundStyle
     };
   },
@@ -192,9 +186,16 @@ export default {
         if (response.data.code === 200) {
           this.verificationStatus = 'success';
 
+          // 更新邮箱验证状态到本地存储（跨标签页同步）
+          if (response.data.data?.user?.email) {
+            updateEmailVerificationStatus(true, response.data.data.user.email);
+          }
+
           // 如果用户已登录，更新用户信息
           if (this.userStore.isLoggedIn) {
             await this.userStore.fetchUserInfo();
+            // 触发邮箱验证成功处理
+            this.emailVerificationStore.handleVerificationSuccess();
           }
 
           this.$message.success('邮箱验证成功！');
@@ -433,7 +434,4 @@ export default {
     max-width: none;
   }
 }
-
-
-
 </style>
