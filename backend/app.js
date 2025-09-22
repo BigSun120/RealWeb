@@ -152,9 +152,9 @@ if (process.env.NODE_ENV === 'production') {
   logger.info('开发环境：已禁用API限流保护');
 }
 
-// 解析中间件
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// 解析中间件 - 增加上传限制到50MB
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 静态文件服务 - 添加CORS头
 app.use(
