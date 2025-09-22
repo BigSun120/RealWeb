@@ -12,8 +12,12 @@ const api = axios.create({
 // 请求拦截器
 api.interceptors.request.use(
   config => {
+    // 根据环境确定token存储键名
+    const isDev = import.meta.env.DEV || import.meta.env.VITE_API_BASE_URL?.includes('localhost');
+    const tokenKey = isDev ? 'dev_token' : 'token';
+
     // 添加认证token - 优先从localStorage获取，然后从sessionStorage获取
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token = localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

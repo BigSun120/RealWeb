@@ -251,10 +251,13 @@ userSchema.methods.generateAuthToken = function (options = {}) {
     audience: 'web-client'
   };
 
+  // 从options中提取rememberMe，不传递给JWT选项
+  const { rememberMe: _, ...jwtOptions } = options;
+
   // 合并选项（但保持expiresIn的逻辑）
   const tokenOptions = {
     ...defaultOptions,
-    ...options,
+    ...jwtOptions,
     expiresIn // 确保expiresIn不被覆盖
   };
 

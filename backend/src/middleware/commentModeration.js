@@ -35,13 +35,13 @@ const SUSPICIOUS_PATTERNS = [
 function checkSensitiveWords(content) {
   const foundWords = [];
   const lowerContent = content.toLowerCase();
-  
+
   for (const word of SENSITIVE_WORDS) {
     if (lowerContent.includes(word.toLowerCase())) {
       foundWords.push(word);
     }
   }
-  
+
   return {
     hasSensitiveWords: foundWords.length > 0,
     foundWords,
@@ -56,7 +56,7 @@ function checkSensitiveWords(content) {
  */
 function checkSuspiciousPatterns(content) {
   const foundPatterns = [];
-  
+
   for (const pattern of SUSPICIOUS_PATTERNS) {
     const matches = content.match(pattern);
     if (matches) {
@@ -66,7 +66,7 @@ function checkSuspiciousPatterns(content) {
       });
     }
   }
-  
+
   return {
     hasSuspiciousPatterns: foundPatterns.length > 0,
     foundPatterns,
@@ -84,17 +84,17 @@ function checkSuspiciousPatterns(content) {
 async function checkUserBehavior(user, content, ipAddress) {
   const issues = [];
   let severity = 'none';
-  
+
   try {
     // 检查用户注册时间（新用户可能是垃圾账号）
     const userAge = Date.now() - new Date(user.createdAt).getTime();
     const oneDayInMs = 24 * 60 * 60 * 1000;
-    
+
     if (userAge < oneDayInMs) {
       issues.push('新注册用户');
       severity = 'medium';
     }
-    
+
     // 检查用户最近的评论频率
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const recentComments = await Comment.countDocuments({
@@ -102,7 +102,7 @@ async function checkUserBehavior(user, content, ipAddress) {
       createdAt: { $gte: oneHourAgo },
       isDeleted: false
     });
-    
+
     if (recentComments > 10) {
       issues.push('评论频率过高');
       severity = 'high';
@@ -110,7 +110,7 @@ async function checkUserBehavior(user, content, ipAddress) {
       issues.push('评论频率较高');
       severity = severity === 'none' ? 'medium' : severity;
     }
-    
+
     // 检查相同内容的评论
     const duplicateComments = await Comment.countDocuments({
       content: content,
@@ -118,28 +118,28 @@ async function checkUserBehavior(user, content, ipAddress) {
       createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, // 7天内
       isDeleted: false
     });
-    
+
     if (duplicateComments > 0) {
       issues.push('内容重复');
       severity = 'high';
     }
-    
+
     // 检查IP地址的评论频率
     const ipComments = await Comment.countDocuments({
       ipAddress: ipAddress,
       createdAt: { $gte: oneHourAgo },
       isDeleted: false
     });
-    
+
     if (ipComments > 15) {
       issues.push('IP评论频率过高');
       severity = 'high';
     }
-    
+
   } catch (error) {
-    console.error('检查用户行为失败:', error);
+    // 静默处理错误，不影响评论流程
   }
-  
+
   return {
     hasSuspiciousBehavior: issues.length > 0,
     issues,
@@ -156,12 +156,12 @@ async function checkUserBehavior(user, content, ipAddress) {
  */
 function assessRiskLevel(sensitiveCheck, patternCheck, behaviorCheck) {
   const severities = [sensitiveCheck.severity, patternCheck.severity, behaviorCheck.severity];
-  
+
   // 确定最高风险等级
   let riskLevel = 'low';
   let moderationStatus = 'auto_approved';
   let reason = [];
-  
+
   if (severities.includes('high')) {
     riskLevel = 'high';
     moderationStatus = 'pending';
@@ -169,7 +169,7 @@ function assessRiskLevel(sensitiveCheck, patternCheck, behaviorCheck) {
     riskLevel = 'medium';
     moderationStatus = 'pending';
   }
-  
+
   // 收集风险原因
   if (sensitiveCheck.hasSensitiveWords) {
     reason.push(`包含敏感词: ${sensitiveCheck.foundWords.join(', ')}`);
@@ -180,7 +180,7 @@ function assessRiskLevel(sensitiveCheck, patternCheck, behaviorCheck) {
   if (behaviorCheck.hasSuspiciousBehavior) {
     reason.push(`用户行为可疑: ${behaviorCheck.issues.join(', ')}`);
   }
-  
+
   return {
     riskLevel,
     moderationStatus,
@@ -201,7 +201,7 @@ const autoModeration = async (req, res, next) => {
     const { content } = req.body;
     const user = req.user;
     const ipAddress = req.ip;
-    
+
     // 管理员的评论直接通过
     if (user.isAdmin) {
       req.moderationResult = {
@@ -211,18 +211,18 @@ const autoModeration = async (req, res, next) => {
       };
       return next();
     }
-    
+
     // 执行各项检查
     const sensitiveCheck = checkSensitiveWords(content);
     const patternCheck = checkSuspiciousPatterns(content);
     const behaviorCheck = await checkUserBehavior(user, content, ipAddress);
-    
+
     // 综合评估
     const assessment = assessRiskLevel(sensitiveCheck, patternCheck, behaviorCheck);
-    
+
     // 将审核结果附加到请求对象
     req.moderationResult = assessment;
-    
+
     // 记录审核日志
     if (assessment.riskLevel !== 'low') {
       console.log(`[评论审核] 用户 ${user.username} 的评论需要审核:`, {
@@ -231,7 +231,7 @@ const autoModeration = async (req, res, next) => {
         content: content.substring(0, 100) + '...'
       });
     }
-    
+
     next();
   } catch (error) {
     console.error('自动审核失败:', error);

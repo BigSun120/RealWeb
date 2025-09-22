@@ -22,12 +22,9 @@ const checkAuthStatus = async () => {
 
   // 检查token有效性
   if (!userStore.checkTokenValidity()) {
-    console.warn('Token无效或即将过期')
-    
     // 尝试静默刷新
     const refreshSuccess = await userStore.silentRefresh()
     if (!refreshSuccess) {
-      console.warn('静默刷新失败，用户需要重新登录')
       // 不在这里强制登出，让具体的API请求处理401错误
     }
   }
@@ -52,8 +49,6 @@ const handleRouteChange = () => {
 watch(() => userStore.isLoggedIn, (newValue, oldValue) => {
   if (oldValue && !newValue) {
     // 用户从登录状态变为未登录状态
-    console.log('用户登录状态丢失')
-    
     // 如果当前不在登录相关页面，跳转到登录页
     const currentPath = route.path
     if (!currentPath.includes('/auth/')) {
@@ -80,22 +75,23 @@ onMounted(() => {
 
   // 监听存储变化（多标签页同步）
   const handleStorageChange = (e) => {
-    if (e.key === 'token') {
+    // 根据环境确定token存储键名
+    const isDev = import.meta.env.DEV || import.meta.env.VITE_API_BASE_URL?.includes('localhost');
+    const tokenKey = isDev ? 'dev_token' : 'token';
+
+    if (e.key === tokenKey) {
       // 获取当前存储的token（检查两个位置）
-      const currentStoredToken = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+      const currentStoredToken = localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey) || '';
 
       if (!currentStoredToken && userStore.token) {
         // token被其他标签页清除
-        console.log('Token被其他标签页清除')
         userStore.logout()
       } else if (currentStoredToken && !userStore.token) {
         // 其他标签页登录了
-        console.log('其他标签页登录了')
         userStore.token = currentStoredToken
         userStore.fetchUserInfo()
       } else if (currentStoredToken !== userStore.token) {
         // token发生了变化
-        console.log('Token发生变化，同步状态')
         userStore.token = currentStoredToken
         if (currentStoredToken) {
           userStore.fetchUserInfo()
@@ -110,14 +106,13 @@ onMounted(() => {
 
   // 监听网络状态变化
   const handleOnline = () => {
-    console.log('网络连接恢复')
     if (userStore.token) {
       checkAuthStatus()
     }
   }
 
   const handleOffline = () => {
-    console.log('网络连接断开')
+    // 网络断开处理
   }
 
   window.addEventListener('online', handleOnline)
