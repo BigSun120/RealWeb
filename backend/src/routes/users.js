@@ -157,7 +157,7 @@ router.get('/profile', auth, async (req, res, next) => {
 // 更新用户资料
 router.put('/profile', auth, async (req, res, next) => {
   try {
-    const { username, displayName, email, bio, avatar } = req.body;
+    const { username, displayName, email, bio, avatar, currentPassword } = req.body;
     const user = req.user;
 
     if (username && username !== user.username) {
@@ -186,6 +186,31 @@ router.put('/profile', auth, async (req, res, next) => {
 
     // 处理邮箱更新
     if (email && email !== user.email) {
+      // 如果当前邮箱已验证，需要验证密码
+      if (user.emailVerified && !currentPassword) {
+        return res.status(400).json({
+          code: 400,
+          message: '更改已验证的邮箱地址需要验证当前密码'
+        });
+      }
+
+      // 如果需要密码验证，验证密码
+      if (user.emailVerified && currentPassword) {
+        const bcrypt = require('bcryptjs');
+        const User = require('../models/User');
+
+        // 获取包含密码的用户信息
+        const userWithPassword = await User.findById(user._id).select('+password');
+        const isPasswordValid = await bcrypt.compare(currentPassword, userWithPassword.password);
+
+        if (!isPasswordValid) {
+          return res.status(400).json({
+            code: 400,
+            message: '当前密码不正确'
+          });
+        }
+      }
+
       // 检查邮箱是否已被使用
       const User = require('../models/User');
       const emailExists = await User.findOne({ email: email.toLowerCase(), _id: { $ne: user._id } });
