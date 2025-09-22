@@ -18,9 +18,15 @@ body {
 }
 
 .content-wrapper {
-  max-width: 1200px;
+  max-width: none;
+  /* 移除固定最大宽度限制，允许页面自定义宽度 */
   margin: 0 auto;
   padding: 0;
+}
+
+/* 博客列表页面需要宽度限制以获得更好的阅读体验 */
+.content-wrapper.blog-list {
+  max-width: 1200px;
 }
 
 // 如果需要恢复某些页面的padding，可以使用这个类

@@ -11,115 +11,127 @@
             </el-icon>
             <span class="header-title">临时邮箱助手</span>
           </div>
-          <el-button type="text" size="small" @click="$emit('close')" class="close-btn">
-            <el-icon>
-              <Close />
-            </el-icon>
-          </el-button>
+          <div class="header-actions">
+            <el-button type="text" size="small" @click="toggleCollapse" class="collapse-btn"
+              :title="isCollapsed ? '展开助手' : '收起助手'">
+              <el-icon>
+                <ArrowUp v-if="!isCollapsed" />
+                <ArrowDown v-if="isCollapsed" />
+              </el-icon>
+            </el-button>
+            <el-button type="text" size="small" @click="$emit('close')" class="close-btn" title="关闭助手">
+              <el-icon>
+                <Close />
+              </el-icon>
+            </el-button>
+          </div>
         </div>
       </template>
 
-      <!-- 权限检查 -->
-      <div v-if="!hasPermission" class="permission-required">
-        <el-alert title="需要权限" description="使用临时邮箱功能需要先激活权限" type="warning" :closable="false" show-icon />
-        <el-button type="primary" size="small" @click="$emit('permission-denied')" class="activate-btn">
-          激活权限
-        </el-button>
-      </div>
-
-      <!-- 主功能区 -->
-      <div v-else class="helper-content">
-        <!-- 智能提示 -->
-        <div class="smart-hint">
-          <el-icon class="hint-icon" color="#3182ce">
-            <InfoFilled />
-          </el-icon>
-          <span class="hint-text">
-            {{ getSmartHintText() }}
-          </span>
+      <!-- 可折叠内容区 -->
+      <div v-show="!isCollapsed" class="collapsible-content">
+        <!-- 权限检查 -->
+        <div v-if="!hasPermission" class="permission-required">
+          <el-alert title="需要权限" description="使用临时邮箱功能需要先激活权限" type="warning" :closable="false" show-icon />
+          <el-button type="primary" size="small" @click="$emit('permission-denied')" class="activate-btn">
+            激活权限
+          </el-button>
         </div>
 
-        <!-- 邮箱生成区 -->
-        <div class="email-generation">
-          <div class="generation-row">
-            <el-select v-model="selectedDomain" placeholder="选择域名" size="small" class="domain-select">
-              <el-option v-for="domain in availableDomains" :key="domain" :label="`@${domain}`" :value="domain" />
-            </el-select>
-            <el-button type="primary" size="small" @click="generateEmail" :loading="generating"
-              :disabled="!selectedDomain" class="generate-btn">
-              {{ generating ? '生成中' : '生成邮箱' }}
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 当前邮箱显示 -->
-        <div v-if="currentEmail" class="current-email">
-          <div class="email-label">
-            <el-icon class="label-icon" color="#48bb78">
-              <Message />
+        <!-- 主功能区 -->
+        <div v-else class="helper-content">
+          <!-- 智能提示 -->
+          <div class="smart-hint">
+            <el-icon class="hint-icon" color="#3182ce">
+              <InfoFilled />
             </el-icon>
-            <span>当前邮箱：</span>
+            <span class="hint-text">
+              {{ getSmartHintText() }}
+            </span>
           </div>
-          <div class="email-value">
-            <span class="email-text">{{ currentEmail }}</span>
-            <el-button type="text" size="small" @click="copyEmail" class="copy-btn">
-              <el-icon>
-                <DocumentCopy />
-              </el-icon>
-            </el-button>
-          </div>
-        </div>
 
-        <!-- 验证码显示 -->
-        <transition name="code-appear" appear>
-          <div v-if="latestVerificationCode" class="verification-code">
-            <div class="code-label">
-              <el-icon class="label-icon" color="#e53e3e">
-                <Key />
-              </el-icon>
-              <span>最新验证码：</span>
+          <!-- 邮箱生成区 -->
+          <div class="email-generation">
+            <div class="generation-row">
+              <el-select v-model="selectedDomain" placeholder="选择域名" size="small" class="domain-select">
+                <el-option v-for="domain in availableDomains" :key="domain" :label="`@${domain}`" :value="domain" />
+              </el-select>
+              <el-button type="primary" size="small" @click="generateEmail" :loading="generating"
+                :disabled="!selectedDomain" class="generate-btn">
+                {{ generating ? '生成中' : '生成邮箱' }}
+              </el-button>
             </div>
-            <div class="code-value">
-              <el-tag type="danger" size="large" class="code-tag">
-                {{ latestVerificationCode }}
-              </el-tag>
-              <el-button type="primary" size="small" @click="copyCode" class="copy-code-btn">
+          </div>
+
+          <!-- 当前邮箱显示 -->
+          <div v-if="currentEmail" class="current-email">
+            <div class="email-label">
+              <el-icon class="label-icon" color="#48bb78">
+                <Message />
+              </el-icon>
+              <span>当前邮箱：</span>
+            </div>
+            <div class="email-value">
+              <span class="email-text">{{ currentEmail }}</span>
+              <el-button type="text" size="small" @click="copyEmail" class="copy-btn">
                 <el-icon>
                   <DocumentCopy />
                 </el-icon>
-                复制验证码
               </el-button>
             </div>
-            <div v-if="codeTimestamp" class="code-time">
-              <el-icon class="time-icon" color="#718096">
-                <Clock />
-              </el-icon>
-              <span class="time-text">{{ formatTime(codeTimestamp) }}</span>
-            </div>
           </div>
-        </transition>
 
-        <!-- 状态栏 -->
-        <div class="status-bar">
-          <div class="status-left">
-            <el-icon :class="['status-icon', autoRefresh ? 'refreshing' : '']"
-              :color="autoRefresh ? '#48bb78' : '#a0aec0'">
-              <Refresh />
-            </el-icon>
-            <span class="status-text">
-              {{ autoRefresh ? '自动刷新中...' : '已暂停刷新' }}
-            </span>
-          </div>
-          <div class="status-actions">
-            <el-button type="text" size="small" @click="manualRefresh" :loading="checking" class="manual-refresh-btn"
-              title="手动刷新">
-              <el-icon>
+          <!-- 验证码显示 -->
+          <transition name="code-appear" appear>
+            <div v-if="latestVerificationCode" class="verification-code">
+              <div class="code-label">
+                <el-icon class="label-icon" color="#e53e3e">
+                  <Key />
+                </el-icon>
+                <span>最新验证码：</span>
+              </div>
+              <div class="code-value">
+                <el-tag type="danger" size="large" class="code-tag">
+                  {{ latestVerificationCode }}
+                </el-tag>
+                <el-button type="primary" size="small" @click="copyCode" class="copy-code-btn">
+                  <el-icon>
+                    <DocumentCopy />
+                  </el-icon>
+                  复制验证码
+                </el-button>
+              </div>
+              <div v-if="codeTimestamp" class="code-time">
+                <el-icon class="time-icon" color="#718096">
+                  <Clock />
+                </el-icon>
+                <span class="time-text">{{ formatTime(codeTimestamp) }}</span>
+              </div>
+            </div>
+          </transition>
+
+          <!-- 状态栏 -->
+          <div class="status-bar">
+            <div class="status-left">
+              <el-icon :class="['status-icon', autoRefresh ? 'refreshing' : '']"
+                :color="autoRefresh ? '#48bb78' : '#a0aec0'">
                 <Refresh />
               </el-icon>
-            </el-button>
-            <el-button type="text" size="small" @click="toggleAutoRefresh" class="toggle-btn">
-              {{ autoRefresh ? '暂停' : '开始' }}
-            </el-button>
+              <span class="status-text">
+                {{ autoRefresh ? '自动刷新中...' : '已暂停刷新' }}
+              </span>
+            </div>
+            <div class="status-actions">
+              <el-button type="text" size="small" @click="manualRefresh" :loading="checking" class="manual-refresh-btn"
+                title="手动刷新">
+                <el-icon>
+                  <Refresh />
+                </el-icon>
+              </el-button>
+              <el-button type="text" size="small" @click="toggleAutoRefresh" class="toggle-btn">
+                {{ autoRefresh ? '暂停' : '开始' }}
+              </el-button>
+            </div>
           </div>
         </div>
       </div>
@@ -137,7 +149,9 @@ import {
   DocumentCopy,
   Key,
   Clock,
-  Refresh
+  Refresh,
+  ArrowUp,
+  ArrowDown
 } from '@element-plus/icons-vue'
 import { tempEmailApi } from '@/api/tempEmail'
 import { tempEmailAuthApi } from '@/api/tempEmailAuth'
@@ -168,6 +182,9 @@ const emit = defineEmits([
   'copy-code',
   'permission-denied'
 ])
+
+// 折叠状态
+const isCollapsed = ref(false)
 
 // 响应式数据
 const hasPermission = ref(false)
@@ -341,6 +358,11 @@ const toggleAutoRefresh = () => {
   } else {
     stopMonitoring()
   }
+}
+
+// 切换折叠状态
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value
 }
 
 const manualRefresh = async () => {
@@ -752,6 +774,22 @@ onUnmounted(() => {
   color: #2d3748;
 }
 
+.header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.collapse-btn {
+  padding: 4px;
+  color: #718096;
+  transition: all 0.2s ease;
+}
+
+.collapse-btn:hover {
+  color: #3182ce;
+  transform: scale(1.1);
+}
+
 .close-btn {
   padding: 4px;
   color: #718096;
@@ -759,6 +797,11 @@ onUnmounted(() => {
 
 .close-btn:hover {
   color: #e53e3e;
+}
+
+.collapsible-content {
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .permission-required {

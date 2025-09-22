@@ -7,133 +7,104 @@
           <div class="unified-container">
             <!-- 主要内容 -->
             <main class="main-content">
-          <!-- 文章头部 -->
-          <header class="article-header card">
-            <div class="card-body">
-              <!-- 返回按钮 -->
-              <div class="breadcrumb">
-                <button class="btn btn-ghost btn-sm" @click="$router.go(-1)">← 返回</button>
-              </div>
-
-              <!-- 文章标题 -->
-              <h1 class="article-title">{{ article.title }}</h1>
-
-              <!-- 文章元信息 -->
-              <div class="article-meta">
-                <div class="author-section">
-                  <div
-                    class="author-avatar"
-                    :style="getAuthorAvatarStyle(article.author && article.author.avatar)"
-                    @click="goToUserProfile"
-                  >
-                    <span class="avatar-fallback">
-                      {{
-                        (
-                          (article.author &&
-                            (article.author.displayName || article.author.username)) ||
-                          '匿名'
-                        ).charAt(0)
-                      }}
-                    </span>
+              <!-- 文章头部 -->
+              <header class="article-header card">
+                <div class="card-body">
+                  <!-- 返回按钮 -->
+                  <div class="breadcrumb">
+                    <button class="btn btn-ghost btn-sm" @click="$router.go(-1)">← 返回</button>
                   </div>
-                  <div class="author-details">
-                    <span class="author-name" @click="goToUserProfile">{{
-                      (article.author && (article.author.displayName || article.author.username)) ||
-                      '匿名'
-                    }}</span>
-                    <div class="meta-info">
-                      <span class="publish-date">{{
-                        formatDate(article.publishedAt || article.createdAt)
-                      }}</span>
-                      <span class="divider"></span>
-                      <span class="read-time">约 {{ readTime }} 分钟阅读</span>
+
+                  <!-- 文章标题 -->
+                  <h1 class="article-title">{{ article.title }}</h1>
+
+                  <!-- 文章元信息 -->
+                  <div class="article-meta">
+                    <div class="author-section">
+                      <div class="author-avatar" :style="getAuthorAvatarStyle(article.author && article.author.avatar)"
+                        @click="goToUserProfile">
+                        <span class="avatar-fallback">
+                          {{
+                            (
+                              (article.author &&
+                                (article.author.displayName || article.author.username)) ||
+                              '匿名'
+                            ).charAt(0)
+                          }}
+                        </span>
+                      </div>
+                      <div class="author-details">
+                        <span class="author-name" @click="goToUserProfile">{{
+                          (article.author && (article.author.displayName || article.author.username)) ||
+                          '匿名'
+                        }}</span>
+                        <div class="meta-info">
+                          <span class="publish-date">{{
+                            formatDate(article.publishedAt || article.createdAt)
+                          }}</span>
+                          <span class="divider"></span>
+                          <span class="read-time">约 {{ readTime }} 分钟阅读</span>
+                        </div>
+                      </div>
+
+                      <!-- 关注按钮 -->
+                      <div v-if="article.author && article.author._id" class="author-actions">
+                        <FollowButton :user-id="article.author._id" :user="article.author" source="article" size="small"
+                          @follow-change="handleFollowChange" />
+                      </div>
+                    </div>
+
+                    <div class="article-stats">
+                      <span class="badge badge-gray">
+                        <i class="stat-icon">👁</i>
+                        {{ article.viewCount || 0 }} 阅读
+                      </span>
+                      <span class="badge badge-gray">
+                        <i class="stat-icon">💬</i>
+                        {{ article.commentCount || 0 }} 评论
+                      </span>
+
+                      <!-- 点赞按钮 -->
+                      <div class="like-action">
+                        <ArticleLikeButton v-if="article._id" :article-id="article._id"
+                          :initial-liked="article.isLiked || false" :initial-like-count="article.likeCount || 0"
+                          size="small" :show-text="false" @like-changed="handleLikeChange" />
+                      </div>
+
+                      <!-- 收藏按钮 -->
+                      <div class="bookmark-action">
+                        <BookmarkButton v-if="article._id" target-type="article" :target-id="article._id"
+                          :initial-bookmarked="initialBookmarked" :initial-bookmark-count="initialBookmarkCount"
+                          size="small" :show-text="false" @bookmark-changed="handleBookmarkChange" />
+                      </div>
                     </div>
                   </div>
 
-                  <!-- 关注按钮 -->
-                  <div v-if="article.author && article.author._id" class="author-actions">
-                    <FollowButton
-                      :user-id="article.author._id"
-                      :user="article.author"
-                      source="article"
-                      size="small"
-                      @follow-change="handleFollowChange"
-                    />
+                  <!-- 文章标签 -->
+                  <div v-if="article.tags && article.tags.length > 0" class="article-tags">
+                    <span v-for="tag in article.tags" :key="tag" class="badge badge-primary">
+                      {{ tag }}
+                    </span>
                   </div>
                 </div>
+              </header>
 
-                <div class="article-stats">
-                  <span class="badge badge-gray">
-                    <i class="stat-icon">👁</i>
-                    {{ article.viewCount || 0 }} 阅读
-                  </span>
-                  <span class="badge badge-gray">
-                    <i class="stat-icon">💬</i>
-                    {{ article.commentCount || 0 }} 评论
-                  </span>
-
-                  <!-- 点赞按钮 -->
-                  <div class="like-action">
-                    <ArticleLikeButton
-                      v-if="article._id"
-                      :article-id="article._id"
-                      :initial-liked="article.isLiked || false"
-                      :initial-like-count="article.likeCount || 0"
-                      size="small"
-                      :show-text="false"
-                      @like-changed="handleLikeChange"
-                    />
-                  </div>
-
-                  <!-- 收藏按钮 -->
-                  <div class="bookmark-action">
-                    <BookmarkButton
-                      v-if="article._id"
-                      target-type="article"
-                      :target-id="article._id"
-                      :initial-bookmarked="initialBookmarked"
-                      :initial-bookmark-count="initialBookmarkCount"
-                      size="small"
-                      :show-text="false"
-                      @bookmark-changed="handleBookmarkChange"
-                    />
-                  </div>
+              <!-- 文章内容 -->
+              <article class="article-content card">
+                <div class="card-body">
+                  <div class="markdown-content" v-html="renderedContent"></div>
                 </div>
-              </div>
+              </article>
 
-              <!-- 文章标签 -->
-              <div v-if="article.tags && article.tags.length > 0" class="article-tags">
-                <span v-for="tag in article.tags" :key="tag" class="badge badge-primary">
-                  {{ tag }}
-                </span>
-              </div>
-            </div>
-          </header>
-
-          <!-- 文章内容 -->
-          <article class="article-content card">
-            <div class="card-body">
-              <div class="markdown-content" v-html="renderedContent"></div>
-            </div>
-          </article>
-
-          <!-- 评论区域 -->
-          <section
-            v-if="settingsStore?.blogConfig?.enableComments !== false"
-            class="comments-section card"
-          >
-            <div class="card-header">
-              <h3>评论区</h3>
-            </div>
-            <CommentList
-              v-if="article"
-              :article-id="article._id"
-              :highlight-comment-id="highlightCommentId"
-              :target-page="targetPage"
-              @comments-loaded="handleCommentsLoaded"
-            />
-          </section>
-        </main>
+              <!-- 评论区域 -->
+              <section v-if="settingsStore?.blogConfig?.enableComments !== false" class="comments-section card">
+                <div class="card-header">
+                  <h3>评论区</h3>
+                </div>
+                <CommentList v-if="article" :article-id="article._id" :highlight-comment-id="highlightCommentId"
+                  :target-page="targetPage" @comments-loaded="handleCommentsLoaded" />
+              </section>
+            </main>
           </div>
         </div>
 
@@ -148,49 +119,38 @@
           <!-- 侧边栏内容 -->
           <div class="sidebar-content">
             <!-- 目录 -->
-          <div v-if="tableOfContents.length > 0" class="toc-card card">
-            <div class="card-header">
-              <h4>目录</h4>
-            </div>
-            <div class="card-body">
-              <nav class="table-of-contents">
-                <a
-                  v-for="heading in tableOfContents"
-                  :key="heading.id"
-                  :href="`#${heading.id}`"
-                  :class="[
+            <div v-if="tableOfContents.length > 0" class="toc-card card">
+              <div class="card-header">
+                <h4>目录</h4>
+              </div>
+              <div class="card-body">
+                <nav class="table-of-contents">
+                  <a v-for="heading in tableOfContents" :key="heading.id" :href="`#${heading.id}`" :class="[
                     'toc-link',
                     `toc-level-${heading.level}`,
                     { active: activeHeadingId === heading.id }
-                  ]"
-                  @click.prevent="scrollToHeading(heading.id)"
-                >
-                  {{ heading.text }}
-                </a>
-              </nav>
-            </div>
-          </div>
-
-          <!-- 相关文章 -->
-          <div v-if="relatedArticles.length > 0" class="related-articles card">
-            <div class="card-header">
-              <h4>相关文章</h4>
-            </div>
-            <div class="card-body">
-              <div class="related-list">
-                <a
-                  v-for="related in relatedArticles"
-                  :key="related._id"
-                  :href="`/blog/${related._id}`"
-                  class="related-item"
-                  @click.prevent="$router.push(`/blog/${related._id}`)"
-                >
-                  <h5 class="related-title">{{ related.title }}</h5>
-                  <span class="related-date">{{ formatDate(related.createdAt) }}</span>
-                </a>
+                  ]" @click.prevent="scrollToHeading(heading.id)">
+                    {{ heading.text }}
+                  </a>
+                </nav>
               </div>
             </div>
-          </div>
+
+            <!-- 相关文章 -->
+            <div v-if="relatedArticles.length > 0" class="related-articles card">
+              <div class="card-header">
+                <h4>相关文章</h4>
+              </div>
+              <div class="card-body">
+                <div class="related-list">
+                  <a v-for="related in relatedArticles" :key="related._id" :href="`/blog/${related._id}`"
+                    class="related-item" @click.prevent="$router.push(`/blog/${related._id}`)">
+                    <h5 class="related-title">{{ related.title }}</h5>
+                    <span class="related-date">{{ formatDate(related.createdAt) }}</span>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </aside>
       </div>
@@ -564,7 +524,9 @@ export default {
       if (window.innerWidth > 1200) {
         if (sidebarHidden.value) {
           unifiedContainer.style.setProperty('--js-margin-right', '0px');
-          unifiedContainer.style.setProperty('--js-max-width', '1000px');
+          // 隐藏侧边栏时，使用更大的最大宽度，充分利用屏幕空间
+          const maxWidth = Math.min(window.innerWidth - 100, 1400); // 减去100px边距，最大1400px
+          unifiedContainer.style.setProperty('--js-max-width', `${maxWidth}px`);
           unifiedContainer.classList.add('js-layout-controlled');
         } else {
           // 动态计算边距：侧边栏宽度 + 间距
@@ -621,11 +583,12 @@ export default {
           // 添加CSS类来强制应用样式
           unifiedContainer.classList.add('js-layout-controlled');
 
-          // 确保父容器没有限制
+          // 确保父容器支持居中布局
           const mainContainer = unifiedContainer.parentElement;
           if (mainContainer && mainContainer.classList.contains('main-container')) {
-            mainContainer.style.setProperty('max-width', 'none', 'important');
-            mainContainer.style.setProperty('width', '100%', 'important');
+            // 不要强制设置width和max-width，让CSS的居中布局生效
+            mainContainer.style.removeProperty('max-width');
+            mainContainer.style.removeProperty('width');
           }
 
           // 强制重新计算布局
@@ -778,9 +741,11 @@ export default {
 }
 
 .page-container {
-  max-width: 1200px;
+  max-width: none;
+  /* 移除固定最大宽度限制，允许充分利用屏幕空间 */
   margin: 0 auto;
   padding: var(--spacing-6) var(--spacing-4);
+  background: transparent;
 }
 
 /* 统一容器样式 */
@@ -830,13 +795,15 @@ export default {
   right: 20px;
   width: 280px;
   max-height: calc(100vh - 140px);
-  overflow: visible; /* 改为visible，让按钮可以显示在容器外 */
+  overflow: visible;
+  /* 改为visible，让按钮可以显示在容器外 */
   z-index: 100;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
-  padding: 8px 5px; /* 左右内边距不超过5px */
+  padding: 8px 5px;
+  /* 左右内边距不超过5px */
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
@@ -844,7 +811,8 @@ export default {
 .floating-sidebar .sidebar-content {
   max-height: calc(100vh - 200px);
   overflow-y: auto;
-  padding: 8px 3px; /* 左右内边距不超过5px */
+  padding: 8px 3px;
+  /* 左右内边距不超过5px */
   box-sizing: border-box;
 }
 
@@ -853,6 +821,8 @@ export default {
   .unified-container {
     /* 宽度和边距由JavaScript动态控制 */
     transition: margin-right 0.3s ease, max-width 0.3s ease;
+    /* 移除固定最大宽度限制，由JavaScript动态控制 */
+    /* max-width: 1200px !important; */
   }
 
   /* 当屏幕很宽时，内容居中显示 */
@@ -930,19 +900,14 @@ export default {
   border-radius: 50%;
   background-size: cover;
   background-position: center;
-  background-color: var(--color-bg-tertiary);
   border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s ease;
 }
 
-.author-avatar:hover {
-  transform: scale(1.05);
-}
 
 .avatar-fallback {
   color: var(--color-text-primary);
@@ -1032,17 +997,20 @@ export default {
 .floating-sidebar .toc-card {
   background: transparent;
   border: none;
+  backdrop-filter: none !important;
   padding: 0;
   margin-bottom: var(--spacing-4);
 }
 
 /* 重写侧边栏中的card-header和card-body默认内边距 */
 .floating-sidebar .card-header {
-  padding: var(--spacing-2) 3px; /* 左右内边距不超过5px */
+  padding: var(--spacing-2) 3px;
+  /* 左右内边距不超过5px */
 }
 
 .floating-sidebar .card-body {
-  padding: var(--spacing-1) 3px; /* 左右内边距不超过5px */
+  padding: var(--spacing-1) 3px;
+  /* 左右内边距不超过5px */
 }
 
 .table-of-contents {
@@ -1051,8 +1019,10 @@ export default {
   gap: var(--spacing-1);
   max-height: 400px;
   overflow-y: auto;
-  padding-right: 3px; /* 左右内边距不超过5px */
-  padding-left: 3px; /* 左右内边距不超过5px */
+  padding-right: 3px;
+  /* 左右内边距不超过5px */
+  padding-left: 3px;
+  /* 左右内边距不超过5px */
 }
 
 /* 目录滚动条样式 */
@@ -1076,48 +1046,55 @@ export default {
 
 .toc-link {
   display: block;
-  padding: var(--spacing-1) 4px; /* 左右内边距不超过5px */
-  color: #34495e;
+  padding: var(--spacing-1) 4px;
+  /* 左右内边距不超过5px */
+  color: #b65151;
   text-decoration: none;
   border-radius: var(--radius-base);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
   transition: all var(--transition-fast);
   font-weight: 500;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .toc-link:hover {
   background-color: rgba(255, 255, 255, 0.2);
-  color: #2c3e50;
+  color: #000000;
 }
 
 .toc-link.active {
   background-color: #3498db;
-  color: white;
+  color: rgb(255, 255, 255);
   font-weight: var(--font-weight-medium);
-  border: 2px solid #2980b9; /* 选中时额外蓝色边框，使用更深的蓝色 */
-  box-shadow: 0 0 0 1px #3498db; /* 外层阴影模拟边框，确保可见 */
+  border: 2px solid #2980b9;
+  /* 选中时额外蓝色边框，使用更深的蓝色 */
+  box-shadow: 0 0 0 1px #3498db;
+  /* 外层阴影模拟边框，确保可见 */
 }
 
 /* 防止目录项高亮或聚焦描边被裁剪 */
 .toc-link {
   border-radius: 8px;
   outline-offset: 2px;
-  margin: 4px 2px; /* 增加上下外边距，为边框和阴影留出更多空间 */
+  margin: 4px 2px;
+  /* 增加上下外边距，为边框和阴影留出更多空间 */
   box-sizing: border-box;
-  position: relative; /* 为阴影定位 */
+  position: relative;
+  /* 为阴影定位 */
 }
 
 .toc-level-1 {
   padding-left: var(--spacing-3);
 }
+
 .toc-level-2 {
   padding-left: var(--spacing-5);
 }
+
 .toc-level-3 {
   padding-left: var(--spacing-6);
 }
+
 .toc-level-4 {
   padding-left: var(--spacing-8);
 }
@@ -1135,19 +1112,21 @@ export default {
 .floating-sidebar .related-articles {
   background: transparent;
   border: none;
+  backdrop-filter: none !important;
   padding: 0;
   margin-bottom: 0;
 }
 
 /* 浮动侧边栏标题 */
 .floating-sidebar .card-header h4 {
-  color: #2c3e50;
+  color: #61d12e;
   font-size: var(--font-size-base);
   font-weight: 600;
   margin-bottom: var(--spacing-2);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
   border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 0 3px var(--spacing-1); /* 左右内边距不超过5px */
+  padding: 0 3px var(--spacing-1);
+  /* 左右内边距不超过5px */
 }
 
 /* 浮动侧边栏滚动条美化 */
@@ -1192,13 +1171,13 @@ export default {
 
 .sidebar-toggle:hover {
   background: rgba(255, 255, 255, 1);
-  transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* 侧边栏隐藏状态 */
 .floating-sidebar.sidebar-hidden {
-  transform: translateX(calc(100% - 32px)); /* 只隐藏内容，保留按钮可见 */
+  transform: translateX(calc(100% - 32px));
+  /* 只隐藏内容，保留按钮可见 */
 }
 
 .floating-sidebar.sidebar-hidden .sidebar-content {
@@ -1223,12 +1202,14 @@ export default {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
-  padding: 0 3px; /* 左右内边距不超过5px */
+  padding: 0 3px;
+  /* 左右内边距不超过5px */
 }
 
 .related-item {
   display: block;
-  padding: var(--spacing-2) 4px; /* 左右内边距不超过5px */
+  padding: var(--spacing-2) 4px;
+  /* 左右内边距不超过5px */
   border-radius: var(--radius-base);
   text-decoration: none;
   transition: all 0.3s ease;
@@ -1238,13 +1219,12 @@ export default {
 .related-item:hover {
   background-color: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
 }
 
 .related-title {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: #2c3e50;
+  color: #502c2c;
   margin-bottom: var(--spacing-1);
   line-height: var(--line-height-tight);
   display: -webkit-box;
@@ -1277,7 +1257,8 @@ export default {
 /* 中等屏幕下的浮动侧边栏调整 */
 @media (max-width: 1200px) and (min-width: 769px) {
   .unified-container {
-    margin-right: 0; /* 移除右边距 */
+    margin-right: 0;
+    /* 移除右边距 */
   }
 
   .floating-sidebar {
@@ -1298,16 +1279,19 @@ export default {
   .floating-sidebar .sidebar-content {
     max-height: calc(70vh - 60px);
     overflow-y: auto;
-    padding: 6px 2px; /* 左右内边距不超过5px */
+    padding: 6px 2px;
+    /* 左右内边距不超过5px */
   }
 
   /* 中等屏幕重写card默认内边距 */
   .floating-sidebar .card-header {
-    padding: var(--spacing-2) 3px; /* 左右内边距不超过5px */
+    padding: var(--spacing-2) 3px;
+    /* 左右内边距不超过5px */
   }
 
   .floating-sidebar .card-body {
-    padding: var(--spacing-1) 2px; /* 左右内边距不超过5px */
+    padding: var(--spacing-1) 2px;
+    /* 左右内边距不超过5px */
   }
 
   .article-title {
@@ -1324,6 +1308,7 @@ export default {
 @media (max-width: 768px) {
   .page-container {
     padding: var(--spacing-4) var(--spacing-3);
+    max-width: 1200px;
   }
 
   .unified-container {
@@ -1384,7 +1369,8 @@ export default {
   .floating-sidebar .sidebar-content {
     opacity: 0;
     pointer-events: none;
-    padding: 50px 3px 8px; /* 左右内边距不超过5px */
+    padding: 50px 3px 8px;
+    /* 左右内边距不超过5px */
     max-height: calc(60vh - 50px);
     overflow-y: auto;
   }
@@ -1400,32 +1386,39 @@ export default {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    margin-bottom: var(--spacing-2); /* 减少下边距 */
+    backdrop-filter: none !important;
+    margin-bottom: var(--spacing-2);
+    /* 减少下边距 */
   }
 
   /* 移动端重写card默认内边距 */
   .floating-sidebar .card-header {
-    padding: var(--spacing-1) 3px; /* 左右内边距不超过5px */
+    padding: var(--spacing-1) 3px;
+    /* 左右内边距不超过5px */
   }
 
   .floating-sidebar .card-body {
-    padding: var(--spacing-1) 2px; /* 左右内边距不超过5px */
+    padding: var(--spacing-1) 2px;
+    /* 左右内边距不超过5px */
   }
 
   .floating-sidebar .card-header h4 {
     font-size: var(--font-size-sm);
     margin-bottom: var(--spacing-1);
-    padding: 0; /* 移除额外内边距 */
+    padding: 0;
+    /* 移除额外内边距 */
   }
 
   .floating-sidebar .toc-link {
-    padding: var(--spacing-1) 2px; /* 左右内边距不超过5px */
+    padding: var(--spacing-1) 2px;
+    /* 左右内边距不超过5px */
     font-size: var(--font-size-xs);
     line-height: 1.3;
   }
 
   .floating-sidebar .related-item {
-    padding: var(--spacing-1) 2px; /* 左右内边距不超过5px */
+    padding: var(--spacing-1) 2px;
+    /* 左右内边距不超过5px */
   }
 
   .floating-sidebar .related-title {
@@ -1435,7 +1428,8 @@ export default {
 
   /* 移动端相关文章列表内边距 */
   .floating-sidebar .related-list {
-    padding: 0 2px; /* 左右内边距不超过5px */
+    padding: 0 2px;
+    /* 左右内边距不超过5px */
   }
 
   .article-meta {
@@ -1481,12 +1475,15 @@ export default {
 .markdown-content h1 {
   font-size: var(--font-size-3xl);
 }
+
 .markdown-content h2 {
   font-size: var(--font-size-2xl);
 }
+
 .markdown-content h3 {
   font-size: var(--font-size-xl);
 }
+
 .markdown-content h4 {
   font-size: var(--font-size-lg);
 }

@@ -23,7 +23,8 @@
         <PublicNoticeBanner :placements="uiPlacements" />
         <!-- 邮箱验证横幅 - 只在特定页面显示 -->
         <EmailVerificationBanner v-if="shouldShowEmailVerificationBanner" />
-        <main class="main-content content-wrapper" :class="{ 'tools-page': isToolsRoute }">
+        <main class="main-content content-wrapper"
+          :class="{ 'tools-page': isToolsRoute, 'blog-list': isBlogListRoute }">
           <router-view />
         </main>
         <!-- 公告预览大弹窗（全局） -->
@@ -66,6 +67,8 @@ export default {
     const isAuthRoute = computed(() => route.path.startsWith('/auth'));
     // 判断是否为工具页面
     const isToolsRoute = computed(() => route.path.startsWith('/tools'));
+    // 判断是否为博客列表页面
+    const isBlogListRoute = computed(() => route.path === '/blog' || route.path.startsWith('/blog?'));
 
     // 判断是否应该显示邮箱验证横幅
     // 只在需要邮箱验证的功能页面显示，不在首页显示
@@ -83,12 +86,13 @@ export default {
     });
 
     // 公告展示位置设置（公开读接口）
-    const uiPlacements = computed(() => window.__PUBLIC_NOTICE_PLACEMENTS__ || ['banner','dropdown']);
+    const uiPlacements = computed(() => window.__PUBLIC_NOTICE_PLACEMENTS__ || ['banner', 'dropdown']);
 
     return {
       isAdminRoute,
       isAuthRoute,
       isToolsRoute,
+      isBlogListRoute,
       shouldShowEmailVerificationBanner,
       uiPlacements
     };
