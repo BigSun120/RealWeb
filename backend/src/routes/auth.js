@@ -176,20 +176,30 @@ router.post(
       // 生成token，传递rememberMe参数
       const token = user.generateAuthToken({ rememberMe: !!rememberMe });
 
-      // 记录会话创建
-      const sessionManager = require('../utils/sessionManager');
-      sessionManager.recordSessionCreation(
-        user._id,
-        token,
-        req.get('User-Agent'),
-        req.ip
-      );
+      // 记录会话创建（添加错误处理）
+      try {
+        const sessionManager = require('../utils/sessionManager');
+        sessionManager.recordSessionCreation(
+          user._id,
+          token,
+          req.get('User-Agent'),
+          req.ip
+        );
+      } catch (sessionError) {
+        logger.warn('记录会话创建失败:', sessionError);
+        // 不影响登录流程
+      }
 
       // 更新登录信息
       await user.updateLoginInfo();
 
-      // 记录登录活动
-      await ActivityLogger.logUserLogin(user._id, req);
+      // 记录登录活动（添加错误处理）
+      try {
+        await ActivityLogger.logUserLogin(user._id, req);
+      } catch (activityError) {
+        logger.warn('记录登录活动失败:', activityError);
+        // 不影响登录流程
+      }
 
       logger.info('User logged in', { userId: user._id, username: user.username });
 

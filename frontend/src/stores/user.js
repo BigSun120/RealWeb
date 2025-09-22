@@ -3,14 +3,21 @@ import { ref, computed } from 'vue';
 import api from '@/api';
 
 export const useUserStore = defineStore('user', () => {
+  // 根据环境确定token存储键名
+  const getTokenKey = () => {
+    const isDev = import.meta.env.DEV || import.meta.env.VITE_API_BASE_URL?.includes('localhost');
+    return isDev ? 'dev_token' : 'token';
+  };
+
   // 获取token的辅助函数
   const getStoredToken = () => {
+    const tokenKey = getTokenKey();
     // 优先从localStorage获取（记住我的情况）
-    const localToken = localStorage.getItem('token');
+    const localToken = localStorage.getItem(tokenKey);
     if (localToken) return localToken;
 
     // 然后从sessionStorage获取（不记住我的情况）
-    const sessionToken = sessionStorage.getItem('token');
+    const sessionToken = sessionStorage.getItem(tokenKey);
     return sessionToken || '';
   };
 
@@ -32,16 +39,17 @@ export const useUserStore = defineStore('user', () => {
       user.value = userData;
 
       // 根据rememberMe决定存储位置
+      const tokenKey = getTokenKey();
       if (rememberMe) {
         // 记住我：存储到localStorage（持久化）
-        localStorage.setItem('token', newToken);
+        localStorage.setItem(tokenKey, newToken);
         // 清除sessionStorage中可能存在的token
-        sessionStorage.removeItem('token');
+        sessionStorage.removeItem(tokenKey);
       } else {
         // 不记住我：存储到sessionStorage（浏览器关闭后清除）
-        sessionStorage.setItem('token', newToken);
+        sessionStorage.setItem(tokenKey, newToken);
         // 清除localStorage中可能存在的token
-        localStorage.removeItem('token');
+        localStorage.removeItem(tokenKey);
       }
 
       return { success: true, rememberMe };
@@ -70,11 +78,12 @@ export const useUserStore = defineStore('user', () => {
   };
 
   const logout = () => {
+    const tokenKey = getTokenKey();
     user.value = null;
     token.value = '';
     // 清除两个存储位置的token
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('token');
+    localStorage.removeItem(tokenKey);
+    sessionStorage.removeItem(tokenKey);
   };
 
   const fetchUserInfo = async () => {

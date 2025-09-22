@@ -49,7 +49,7 @@ export function useToolAnalytics(toolId) {
           ...additionalMetadata
         }
       })
-      
+
       console.log(`工具 ${toolId} 使用记录已保存，使用时长: ${duration}秒`)
     } catch (error) {
       console.error('记录工具使用失败:', error)
@@ -73,10 +73,10 @@ export function useToolAnalytics(toolId) {
           ...metadata
         }
       })
-      
-      console.log(`工具 ${toolId} 使用记录已保存`)
+
+      // 记录成功，无需日志输出
     } catch (error) {
-      console.error('记录工具使用失败:', error)
+      // 静默处理错误，避免影响用户体验
     }
   }
 
@@ -133,10 +133,10 @@ export function useToolAnalytics(toolId) {
   // 组件挂载时自动记录查看
   onMounted(() => {
     recordView()
-    
+
     // 监听页面可见性变化
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    
+
     // 监听页面卸载
     window.addEventListener('beforeunload', handleBeforeUnload)
   })
@@ -146,7 +146,7 @@ export function useToolAnalytics(toolId) {
     if (isTracking.value) {
       stopTracking({ reason: 'component_unmount' })
     }
-    
+
     // 移除事件监听器
     document.removeEventListener('visibilitychange', handleVisibilityChange)
     window.removeEventListener('beforeunload', handleBeforeUnload)

@@ -1778,7 +1778,10 @@ const refreshTokenPortalInfo = async (token) => {
 // 生命周期 - 页面加载时仅获取数据库中的令牌数据，不主动刷新Portal信息
 onMounted(() => {
   console.log('页面加载，检查用户认证状态...')
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+  // 根据环境确定token存储键名
+  const isDev = import.meta.env.DEV || import.meta.env.VITE_API_BASE_URL?.includes('localhost');
+  const tokenKey = isDev ? 'dev_token' : 'token';
+  const token = localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey)
   console.log('用户token:', token ? '已存在' : '不存在')
 
   // 仅加载数据库中存储的令牌数据（包括已保存的Portal信息）

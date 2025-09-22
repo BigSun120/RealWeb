@@ -245,7 +245,6 @@ export default {
         });
 
       } catch (error) {
-        console.error('加载系统状态失败:', error);
         ElMessage.error('加载系统状态失败');
 
         // 模拟数据用于开发测试
