@@ -75,7 +75,7 @@
           </div>
 
           <div v-else class="pool-table-container">
-            <el-table :data="poolTokens" style="width: 100%" :header-cell-style="{
+            <el-table :data="sortedPoolTokens" style="width: 100%" :header-cell-style="{
               background: '#f8fafc',
               color: '#000000',
               fontWeight: '600',
@@ -106,6 +106,14 @@
               </el-table-column>
 
               <el-table-column label="过期时间" min-width="140" align="center">
+                <template #header>
+                  <div class="sortable-header" @click="toggleSort('pool', 'expiryDate')">
+                    <span>过期时间</span>
+                    <el-icon class="sort-icon" :class="getSortIconClass('pool', 'expiryDate')">
+                      <Sort />
+                    </el-icon>
+                  </div>
+                </template>
                 <template #default="{ row }">
                   <div class="expiry-info">
                     <el-text :class="getExpiryClass(row)" size="small">
@@ -145,20 +153,25 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="操作" :min-width="isAdmin ? 200 : 140" align="center">
+              <el-table-column label="操作" :min-width="isAdmin ? 160 : 120" align="center">
                 <template #default="{ row }">
-                  <div class="action-buttons">
-                    <el-button type="primary" size="small" @click="claimToken(row)" :loading="row._claiming"
-                      :disabled="row.status !== 'available'" round>
-                      领取
-                    </el-button>
-                    <el-button :icon="Refresh" size="small" @click="refreshTokenPortalInfo(row)"
-                      :loading="row._refreshing" title="刷新Portal信息" round plain>
-                    </el-button>
+                  <div class="action-buttons compact-actions">
+                    <el-tooltip content="领取令牌" placement="top">
+                      <el-button type="primary" size="small" @click="claimToken(row)" :loading="row._claiming"
+                        :disabled="row.status !== 'available'" :icon="Download" circle>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="刷新Portal信息" placement="top">
+                      <el-button :icon="Refresh" size="small" @click="refreshTokenPortalInfo(row)"
+                        :loading="row._refreshing" circle plain>
+                      </el-button>
+                    </el-tooltip>
                     <!-- 管理员删除按钮 -->
-                    <el-button v-if="isAdmin" type="danger" size="small" @click="adminDeleteToken(row)"
-                      :loading="row._deleting" title="管理员删除" :icon="Delete" round plain>
-                    </el-button>
+                    <el-tooltip v-if="isAdmin" content="管理员删除" placement="top">
+                      <el-button type="danger" size="small" @click="adminDeleteToken(row)"
+                        :loading="row._deleting" :icon="Delete" circle plain>
+                      </el-button>
+                    </el-tooltip>
                   </div>
                 </template>
               </el-table-column>
@@ -191,7 +204,7 @@
           </div>
 
           <div v-else class="uploads-table-container">
-            <el-table :data="myUploads" style="width: 100%" :header-cell-style="{
+            <el-table :data="sortedMyUploads" style="width: 100%" :header-cell-style="{
               background: '#f8fafc',
               color: '#000000',
               fontWeight: '600',
@@ -222,6 +235,14 @@
               </el-table-column>
 
               <el-table-column label="过期时间" min-width="140" align="center">
+                <template #header>
+                  <div class="sortable-header" @click="toggleSort('uploads', 'expiryDate')">
+                    <span>过期时间</span>
+                    <el-icon class="sort-icon" :class="getSortIconClass('uploads', 'expiryDate')">
+                      <Sort />
+                    </el-icon>
+                  </div>
+                </template>
                 <template #default="{ row }">
                   <div class="expiry-info">
                     <el-text :class="getExpiryClass(row)" size="small">
@@ -329,7 +350,7 @@
           </div>
 
           <div v-else class="tokens-table-container">
-            <el-table :data="tokens" style="width: 100%" :row-key="row => row.id" table-layout="auto"
+            <el-table :data="sortedTokens" style="width: 100%" :row-key="row => row.id" table-layout="auto"
               @selection-change="handleSelectionChange" ref="tokenTable" :header-cell-style="{
                 background: '#f8fafc',
                 color: '#000000',
@@ -361,6 +382,14 @@
               </el-table-column>
 
               <el-table-column label="过期时间" min-width="140" align="center">
+                <template #header>
+                  <div class="sortable-header" @click="toggleSort('saved', 'expiryDate')">
+                    <span>过期时间</span>
+                    <el-icon class="sort-icon" :class="getSortIconClass('saved', 'expiryDate')">
+                      <Sort />
+                    </el-icon>
+                  </div>
+                </template>
                 <template #default="{ row }">
                   <div class="expiry-info">
                     <el-text :class="getExpiryClass(row)" size="small">
@@ -428,26 +457,31 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="操作" min-width="240" fixed="right" align="center">
+              <el-table-column label="操作" min-width="200" fixed="right" align="center">
                 <template #default="{ row }">
-                  <div class="action-buttons">
-                    <el-button type="primary" size="small" @click="refreshPortalInfo(row)" :loading="row._refreshing"
-                      :icon="Refresh" round plain>
-                      刷新
-                    </el-button>
-                    <el-button type="info" size="small" @click="uploadTokenToPool(row)" :loading="row._uploading"
-                      :icon="Upload" round plain>
-                      上传到池
-                    </el-button>
-                    <el-button type="warning" size="small" @click="editToken(row)" :icon="Edit" round plain>
-                      编辑
-                    </el-button>
-                    <el-button type="success" size="small" @click="exportToken(row)" :icon="Download" round plain>
-                      导出
-                    </el-button>
-                    <el-button type="danger" size="small" @click="deleteToken(row)" :icon="Delete" round plain>
-                      删除
-                    </el-button>
+                  <div class="action-buttons compact-actions">
+                    <el-tooltip content="刷新Portal信息" placement="top">
+                      <el-button type="primary" size="small" @click="refreshPortalInfo(row)" :loading="row._refreshing"
+                        :icon="Refresh" circle plain>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="上传到池" placement="top">
+                      <el-button type="info" size="small" @click="uploadTokenToPool(row)" :loading="row._uploading"
+                        :icon="Upload" circle plain>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="编辑令牌" placement="top">
+                      <el-button type="warning" size="small" @click="editToken(row)" :icon="Edit" circle plain>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="导出令牌" placement="top">
+                      <el-button type="success" size="small" @click="exportToken(row)" :icon="Download" circle plain>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="删除令牌" placement="top">
+                      <el-button type="danger" size="small" @click="deleteToken(row)" :icon="Delete" circle plain>
+                      </el-button>
+                    </el-tooltip>
                   </div>
                 </template>
               </el-table-column>
@@ -689,7 +723,8 @@ import {
   Download,
   Coin,
   User,
-  Plus
+  Plus,
+  Sort
 } from '@element-plus/icons-vue'
 import { useAugmentAuth } from '@/composables/useAugmentAuth'
 import { useUserStore } from '@/stores/user'
@@ -735,6 +770,19 @@ const poolStatsComputed = computed(() => {
   }
 })
 
+// 排序后的数据
+const sortedPoolTokens = computed(() => {
+  return sortTokens(poolTokens.value, 'pool')
+})
+
+const sortedMyUploads = computed(() => {
+  return sortTokens(myUploads.value, 'uploads')
+})
+
+const sortedTokens = computed(() => {
+  return sortTokens(tokens.value, 'saved')
+})
+
 // 判断是否为管理员
 const isAdmin = computed(() => {
   return userStore.user && userStore.user.isAdmin
@@ -774,6 +822,13 @@ const isGenerating = ref(false)
 const isGettingToken = ref(false)
 const isSaving = ref(false)
 const isRefreshing = ref(false)
+
+// 排序状态
+const sortConfig = ref({
+  pool: { field: null, order: null },
+  uploads: { field: null, order: null },
+  saved: { field: null, order: null }
+})
 
 // 使用组合式函数
 const {
@@ -1121,6 +1176,84 @@ const getCreditsType = (token) => {
   if (credits <= 10) return 'warning'
   if (credits <= 50) return 'primary'
   return 'success'
+}
+
+// 排序相关方法
+const toggleSort = (table, field) => {
+  const currentSort = sortConfig.value[table]
+
+  if (currentSort.field === field) {
+    // 如果是同一个字段，切换排序方向
+    if (currentSort.order === 'asc') {
+      currentSort.order = 'desc'
+    } else if (currentSort.order === 'desc') {
+      currentSort.order = null
+      currentSort.field = null
+    } else {
+      currentSort.order = 'asc'
+    }
+  } else {
+    // 如果是不同字段，设置为升序
+    currentSort.field = field
+    currentSort.order = 'asc'
+  }
+}
+
+const getSortIconClass = (table, field) => {
+  const currentSort = sortConfig.value[table]
+  if (currentSort.field !== field) return ''
+
+  return {
+    'sort-asc': currentSort.order === 'asc',
+    'sort-desc': currentSort.order === 'desc'
+  }
+}
+
+const sortTokens = (tokens, table) => {
+  const currentSort = sortConfig.value[table]
+  if (!currentSort.field || !currentSort.order) return tokens
+
+  return [...tokens].sort((a, b) => {
+    let aValue, bValue
+
+    if (currentSort.field === 'expiryDate') {
+      // 处理过期时间排序
+      aValue = getExpiryDateForSort(a)
+      bValue = getExpiryDateForSort(b)
+    }
+
+    // 处理空值
+    if (aValue === null && bValue === null) return 0
+    if (aValue === null) return 1
+    if (bValue === null) return -1
+
+    let result = 0
+    if (aValue < bValue) result = -1
+    else if (aValue > bValue) result = 1
+
+    return currentSort.order === 'desc' ? -result : result
+  })
+}
+
+const getExpiryDateForSort = (token) => {
+  // 对于令牌池和我的上传，使用 expiryDate 字段
+  if (token.expiryDate) {
+    return new Date(token.expiryDate)
+  }
+
+  // 对于已保存的令牌，从 portal_info 中解析
+  if (token.portal_info) {
+    try {
+      const info = JSON.parse(token.portal_info)
+      if (info.expiry_date) {
+        return new Date(info.expiry_date)
+      }
+    } catch {
+      // 解析失败，返回null
+    }
+  }
+
+  return null
 }
 
 // 滚动到生成器
@@ -2506,6 +2639,54 @@ body {
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.compact-actions {
+  gap: 4px;
+}
+
+.compact-actions .el-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  min-width: 28px;
+}
+
+.compact-actions .el-button.is-circle {
+  border-radius: 50%;
+}
+
+/* 排序相关样式 */
+.sortable-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.sortable-header:hover {
+  color: #409eff;
+}
+
+.sort-icon {
+  font-size: 12px;
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.sort-icon.sort-asc {
+  opacity: 1;
+  color: #409eff;
+  transform: rotate(0deg);
+}
+
+.sort-icon.sort-desc {
+  opacity: 1;
+  color: #409eff;
+  transform: rotate(180deg);
 }
 
 .credits-info {
