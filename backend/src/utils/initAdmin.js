@@ -15,27 +15,41 @@ const DEFAULT_ADMIN = {
  */
 const ensureDefaultAdmin = async () => {
   try {
-    // 先删除现有的管理员（如果存在）以确保重新创建
-    await User.deleteMany({
+    // 查找现有的管理员
+    let user = await User.findOne({
       $or: [
         { username: DEFAULT_ADMIN.username },
         { email: DEFAULT_ADMIN.email }
       ]
-    });
-    logger.info('已清理现有管理员账户');
+    }).select('+password');
 
-    // 创建新的超级管理员
-    const user = new User({
-      username: DEFAULT_ADMIN.username,
-      displayName: DEFAULT_ADMIN.displayName,
-      email: DEFAULT_ADMIN.email,
-      password: DEFAULT_ADMIN.password, // 将在pre('save')中被加密
-      bio: DEFAULT_ADMIN.bio,
-      isAdmin: true,
-      isActive: true,
-      emailVerified: true,
-      role: 'admin'
-    });
+    if (user) {
+      // 更新现有管理员的密码和信息
+      user.password = DEFAULT_ADMIN.password; // 将在pre('save')中被加密
+      user.isAdmin = true;
+      user.isActive = true;
+      user.emailVerified = true;
+      user.role = 'admin';
+      user.displayName = DEFAULT_ADMIN.displayName;
+      user.bio = DEFAULT_ADMIN.bio;
+
+      logger.info('更新现有管理员账户');
+    } else {
+      // 创建新的超级管理员
+      user = new User({
+        username: DEFAULT_ADMIN.username,
+        displayName: DEFAULT_ADMIN.displayName,
+        email: DEFAULT_ADMIN.email,
+        password: DEFAULT_ADMIN.password, // 将在pre('save')中被加密
+        bio: DEFAULT_ADMIN.bio,
+        isAdmin: true,
+        isActive: true,
+        emailVerified: true,
+        role: 'admin'
+      });
+
+      logger.info('创建新的管理员账户');
+    }
 
     // 设置角色为admin（会自动分配权限）
     if (typeof user.setRole === 'function') {
@@ -45,7 +59,7 @@ const ensureDefaultAdmin = async () => {
     await user.save();
 
     // 输出创建成功信息
-    logger.info(`🎉 超级管理员创建成功！`);
+    logger.info(`🎉 超级管理员创建/更新成功！`);
     logger.info(`📧 邮箱: ${user.email}`);
     logger.info(`👤 用户名: ${user.username}`);
     logger.info(`🔑 密码: ${DEFAULT_ADMIN.password}`);
