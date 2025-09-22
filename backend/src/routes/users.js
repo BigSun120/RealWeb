@@ -4,7 +4,7 @@ const baseUploadDir = path.resolve(
   process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads')
 );
 const { auth } = require('../middleware/auth');
-const { uploadAvatar, handleUploadError, deleteFile, createUpload } = require('../middleware/upload');
+const { uploadAvatar, handleUploadError, deleteFile, createUpload, createApiResponse } = require('../middleware/upload');
 const SecurityConfig = require('../models/SecurityConfig');
 const User = require('../models/User');
 const logger = require('../utils/logger');
@@ -234,10 +234,7 @@ router.post('/avatar', auth, async (req, res, next) => {
 
       try {
         if (!req.file) {
-          return res.status(400).json({
-            code: 400,
-            message: '请选择要上传的头像文件'
-          });
+          return res.status(400).json(createApiResponse(false, null, '请选择要上传的头像文件', 400));
         }
 
         const user = req.user;
@@ -258,14 +255,13 @@ router.post('/avatar', auth, async (req, res, next) => {
 
         logger.info(`用户 ${user.username} 上传头像成功: ${avatarUrl}`);
 
-        res.json({
-          code: 200,
-          message: '头像上传成功',
-          data: {
-            avatar: avatarUrl,
-            user: user.getPublicProfile()
-          }
-        });
+        res.json(createApiResponse(true, {
+          avatar: avatarUrl,
+          user: user.getPublicProfile(),
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          size: req.file.size
+        }, '头像上传成功'));
       } catch (error) {
         // 如果保存失败，删除已上传的文件
         if (req.file) {
@@ -301,13 +297,9 @@ router.delete('/avatar', auth, async (req, res, next) => {
 
     logger.info(`用户 ${user.username} 删除头像成功`);
 
-    res.json({
-      code: 200,
-      message: '头像删除成功',
-      data: {
-        user: user.getPublicProfile()
-      }
-    });
+    res.json(createApiResponse(true, {
+      user: user.getPublicProfile()
+    }, '头像删除成功'));
   } catch (error) {
     next(error);
   }

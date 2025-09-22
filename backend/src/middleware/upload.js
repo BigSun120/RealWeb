@@ -107,6 +107,25 @@ const upload = multer({
 // 头像上传中间件
 const uploadAvatar = upload.single('avatar');
 
+// 统一的API响应格式
+const createApiResponse = (success, data = null, message = '', code = null) => {
+  if (success) {
+    return {
+      code: code || 200,
+      message: message || '操作成功',
+      data,
+      success: true
+    };
+  } else {
+    return {
+      code: code || 400,
+      message: message || '操作失败',
+      success: false,
+      ...(data && { errors: data })
+    };
+  }
+};
+
 // 错误处理中间件
 const handleUploadError = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
@@ -123,44 +142,26 @@ const handleUploadError = (error, req, res, next) => {
       };
 
       getErrorMessage().then(message => {
-        return res.status(400).json({
-          code: 400,
-          message
-        });
+        return res.status(400).json(createApiResponse(false, null, message, 400));
       }).catch(() => {
-        return res.status(400).json({
-          code: 400,
-          message: '文件大小超过限制'
-        });
+        return res.status(400).json(createApiResponse(false, null, '文件大小超过限制', 400));
       });
       return;
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
-      return res.status(400).json({
-        code: 400,
-        message: '一次只能上传一个文件'
-      });
+      return res.status(400).json(createApiResponse(false, null, '一次只能上传一个文件', 400));
     }
     if (error.code === 'LIMIT_UNEXPECTED_FILE') {
-      return res.status(400).json({
-        code: 400,
-        message: '不支持的文件字段'
-      });
+      return res.status(400).json(createApiResponse(false, null, '不支持的文件字段', 400));
     }
   }
 
   if (error.message) {
-    return res.status(400).json({
-      code: 400,
-      message: error.message
-    });
+    return res.status(400).json(createApiResponse(false, null, error.message, 400));
   }
 
   logger.error('文件上传错误:', error);
-  res.status(500).json({
-    code: 500,
-    message: '文件上传失败'
-  });
+  res.status(500).json(createApiResponse(false, null, '文件上传失败', 500));
 };
 
 // 删除文件的工具函数
@@ -243,5 +244,6 @@ module.exports = {
   deleteFile,
   createUpload,
   createArticleImageUpload,
-  getFileSizeLimit
+  getFileSizeLimit,
+  createApiResponse
 };

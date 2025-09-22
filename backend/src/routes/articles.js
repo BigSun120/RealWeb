@@ -2,7 +2,7 @@ const express = require('express');
 const Article = require('../models/Article');
 const ArticleLike = require('../models/ArticleLike');
 const { auth, optionalAuth, adminAuth } = require('../middleware/auth');
-const { uploadArticleImage, handleUploadError, createArticleImageUpload } = require('../middleware/upload');
+const { uploadArticleImage, handleUploadError, createArticleImageUpload, createApiResponse } = require('../middleware/upload');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -473,10 +473,7 @@ router.post('/upload-image', auth, async (req, res, next) => {
       }
 
       if (!req.file) {
-        return res.status(400).json({
-          code: 400,
-          message: '请选择要上传的图片'
-        });
+        return res.status(400).json(createApiResponse(false, null, '请选择要上传的图片', 400));
       }
 
       const imageUrl = `/uploads/articles/${req.file.filename}`;
@@ -484,23 +481,18 @@ router.post('/upload-image', auth, async (req, res, next) => {
       logger.info(`[UploadArticle] saved: path=${req.file.path}, dest=${req.file.destination}, filename=${req.file.filename}, size=${req.file.size}`);
       logger.info(`用户 ${req.user.username} 上传文章图片成功: ${imageUrl}`);
 
-      res.json({
-        code: 200,
-        message: '图片上传成功',
-        data: {
-          url: imageUrl,
-          filename: req.file.filename,
-          originalName: req.file.originalname,
-          size: req.file.size
-        }
-      });
+      res.json(createApiResponse(true, {
+        url: imageUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        type: 'image',
+        mimetype: req.file.mimetype
+      }, '图片上传成功'));
     });
   } catch (error) {
     console.error('创建文章图片上传配置失败:', error);
-    res.status(500).json({
-      code: 500,
-      message: '服务器内部错误'
-    });
+    res.status(500).json(createApiResponse(false, null, '服务器内部错误', 500));
   }
 });
 
