@@ -553,14 +553,9 @@ const checkForNewMessages = async () => {
 
 
 
-    // 邮件去重：基于邮件ID、主题、发件人和时间进行去重
+    // 邮件去重：仅基于邮件ID进行去重，避免过度过滤
     const uniqueMessages = messages.filter((message, index, self) => {
-      return index === self.findIndex(m =>
-        m.id === message.id ||
-        (m.subject === message.subject &&
-          m.from === message.from &&
-          Math.abs(new Date(m.date) - new Date(message.date)) < 60000) // 1分钟内的相同邮件视为重复
-      )
+      return index === self.findIndex(m => m.id === message.id)
     })
 
     if (uniqueMessages.length > 0) {

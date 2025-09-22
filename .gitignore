@@ -148,3 +148,21 @@ ecosystem.config.js
 # MCP 相关文件
 mcp-config-*.json
 start-mcp-*.bat
+
+# 服务器特定配置文件（防止意外覆盖）
+docker-compose.override.yml
+nginx.conf.local
+*.local.conf
+server-config.json
+deployment-config.json
+
+# 数据库相关
+mongodb.conf
+mongod.conf
+*.dump
+*.restore
+
+# 部署脚本生成的临时文件
+deploy-*.log
+deployment-*.log
+server-*.log
