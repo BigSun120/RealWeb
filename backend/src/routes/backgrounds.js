@@ -8,6 +8,7 @@ const ToolConfig = require('../models/ToolConfig');
 const { auth: requireAuth, adminAuth: requireAdmin } = require('../middleware/auth');
 const { validateRequest } = require('../middleware/validation');
 const { body, param, query } = require('express-validator');
+const { createApiResponse } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -356,20 +357,13 @@ router.post('/admin/upload', requireAuth, requireAdmin, async (req, res, next) =
     dynamicUpload.single('file')(req, res, (err) => {
       if (err) {
         console.error('Multer error:', err);
-        return res.status(400).json({
-          success: false,
-          message: err.message || '文件上传失败',
-          error: err.code || 'UPLOAD_ERROR'
-        });
+        return res.status(400).json(createApiResponse(false, null, err.message || '文件上传失败', 400));
       }
       next();
     });
   } catch (error) {
     console.error('创建上传配置失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '服务器内部错误'
-    });
+    res.status(500).json(createApiResponse(false, null, '服务器内部错误', 500));
   }
 }, async (req, res) => {
   try {
@@ -442,11 +436,7 @@ router.post('/admin/upload', requireAuth, requireAdmin, async (req, res, next) =
       mimetype: file.mimetype
     };
 
-    res.json({
-      success: true,
-      data: fileData,
-      message: isVideo ? '视频上传成功' : '图片上传成功'
-    });
+    res.json(createApiResponse(true, fileData, isVideo ? '视频上传成功' : '图片上传成功'));
   } catch (error) {
     console.error('图片上传失败:', error);
 
@@ -459,10 +449,7 @@ router.post('/admin/upload', requireAuth, requireAdmin, async (req, res, next) =
       }
     }
 
-    res.status(500).json({
-      success: false,
-      message: '图片上传失败'
-    });
+    res.status(500).json(createApiResponse(false, null, '图片上传失败', 500));
   }
 });
 
