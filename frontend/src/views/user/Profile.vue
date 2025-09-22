@@ -355,11 +355,23 @@ export default {
       // 获取最新的统计信息
       fetchUserStats();
       fetchBookmarkStats();
-    });
 
-    // 组件卸载时清理
-    onUnmounted(() => {
-      document.body.classList.remove('profile-page');
+      // 监听邮箱验证状态变化
+      const handleEmailVerificationChange = (event) => {
+        const { verified, email } = event.detail;
+        if (verified && email === userStore.user?.email) {
+          // 邮箱验证成功，刷新用户信息
+          userStore.fetchUserInfo();
+        }
+      };
+
+      window.addEventListener('emailVerificationChanged', handleEmailVerificationChange);
+
+      // 清理函数
+      onUnmounted(() => {
+        window.removeEventListener('emailVerificationChanged', handleEmailVerificationChange);
+        document.body.classList.remove('profile-page');
+      });
     });
 
     return {
