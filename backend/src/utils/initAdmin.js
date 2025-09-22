@@ -5,7 +5,7 @@ const logger = require('./logger');
 const DEFAULT_ADMIN = {
   email: process.env.ADMIN_EMAIL || 'admin@godaug.fun',
   username: process.env.ADMIN_USERNAME || 'godaug_admin',
-  password: process.env.ADMIN_PASSWORD || 'GodAug2024!SuperAdmin',
+  password: process.env.ADMIN_PASSWORD || 'GodAug2024Admin',
   displayName: '超级管理员',
   bio: '系统默认超级管理员账户'
 };
