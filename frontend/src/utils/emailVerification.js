@@ -68,19 +68,19 @@ const handleResendVerification = async (email, instance, done) => {
 
   try {
     await resendVerificationEmail(email)
-    
+
     ElNotification({
       title: '发送成功',
       message: '验证邮件已重新发送，请检查您的邮箱',
       type: 'success',
       duration: 5000
     })
-    
+
     done()
   } catch (error) {
     console.error('重发验证邮件失败:', error)
     ElMessage.error(error.response?.data?.message || '发送失败，请稍后重试')
-    
+
     // 恢复按钮状态
     instance.confirmButtonLoading = false
     instance.confirmButtonText = '重新发送验证邮件'
@@ -107,10 +107,10 @@ export const showFeatureRestrictedNotification = (feature = '此功能', reason 
  * @param {Object} options - 配置选项
  */
 export const showVerificationSuccessNotification = (options = {}) => {
-  const { 
-    title = '邮箱验证成功', 
+  const {
+    title = '邮箱验证成功',
     message = '恭喜！您现在可以使用所有功能了',
-    duration = 5000 
+    duration = 5000
   } = options
 
   ElNotification({
@@ -181,9 +181,9 @@ export const updateEmailVerificationStatus = (verified, email) => {
     email,
     timestamp: Date.now()
   }
-  
+
   localStorage.setItem('emailVerificationStatus', JSON.stringify(status))
-  
+
   // 触发自定义事件
   window.dispatchEvent(new CustomEvent('emailVerificationChanged', {
     detail: status
@@ -203,7 +203,7 @@ export const getEmailVerificationHints = (user) => {
   const hints = {
     banner: {
       title: '📧 邮箱验证提醒',
-      message: `您的邮箱 ${user.email} 尚未验证。验证后可享受完整功能！`,
+      message: `您的邮箱 ${user.email} 尚未验证。验证后可使用完整功能！`,
       action: '立即验证'
     },
     feature: {

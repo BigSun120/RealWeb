@@ -6,12 +6,8 @@
         <div class="user-card">
           <!-- 用户头像 -->
           <div class="user-avatar-section">
-            <AvatarUpload
-              :avatar="(userStore.user && userStore.user.avatar) || ''"
-              :size="100"
-              @upload-success="handleAvatarUpload"
-              @delete-success="handleAvatarDelete"
-            />
+            <AvatarUpload :avatar="(userStore.user && userStore.user.avatar) || ''" :size="100"
+              @upload-success="handleAvatarUpload" @delete-success="handleAvatarDelete" />
           </div>
 
           <!-- 用户信息 -->
@@ -48,7 +44,9 @@
             <!-- 加入时间 -->
             <div class="user-meta">
               <span class="join-date">
-                <el-icon><Calendar /></el-icon>
+                <el-icon>
+                  <Calendar />
+                </el-icon>
                 加入时间：{{ formatDate(userStore.user && userStore.user.createdAt) }}
               </span>
             </div>
@@ -57,17 +55,17 @@
 
         <!-- 导航菜单 -->
         <div class="nav-menu">
-          <el-menu
-            :default-active="activeMenu"
-            @select="handleMenuSelect"
-            class="profile-menu"
-          >
+          <el-menu :default-active="activeMenu" @select="handleMenuSelect" class="profile-menu">
             <el-menu-item index="profile">
-              <el-icon><User /></el-icon>
+              <el-icon>
+                <User />
+              </el-icon>
               <span>个人资料</span>
             </el-menu-item>
             <el-menu-item index="security">
-              <el-icon><Lock /></el-icon>
+              <el-icon>
+                <Lock />
+              </el-icon>
               <span>账户安全</span>
             </el-menu-item>
           </el-menu>
@@ -78,81 +76,68 @@
       <div class="profile-content">
         <!-- 个人资料编辑 -->
         <div v-if="activeMenu === 'profile'" class="content-section">
-        <div class="section-header">
-          <h2>
-            <el-icon><User /></el-icon>
-            个人资料
-          </h2>
-          <p class="section-desc">管理您的个人信息</p>
-        </div>
-        <div class="section-content">
-          <el-form :model="form" ref="formRef" label-position="top">
-            <div class="form-row">
-              <el-form-item label="展示名（显示在页面上，可留空）" class="form-item">
-                <el-input
-                  v-model="form.displayName"
-                  placeholder="请输入展示名（支持中文/空格/emoji）"
-                />
-              </el-form-item>
-            </div>
-            <div class="form-row">
-              <el-form-item label="账号名（用于登录，不可修改）" class="form-item">
-                <el-input v-model="form.username" placeholder="请输入账号名" readonly disabled />
-              </el-form-item>
-            </div>
-            <div class="form-row">
-              <el-form-item class="form-item email-form-item">
-                <template #label>
-                  <div class="email-label-section">
-                    <span>邮箱地址</span>
-                    <el-button
-                      v-if="!userStore.user?.emailVerified || emailChanged"
-                      type="primary"
-                      size="small"
-                      @click="sendVerificationEmail"
-                      :loading="verificationLoading"
-                      class="verify-btn"
-                    >
-                      {{ emailChanged ? '重新验证' : '验证邮箱' }}
-                    </el-button>
+          <div class="section-header">
+            <h2>
+              <el-icon>
+                <User />
+              </el-icon>
+              个人资料
+            </h2>
+            <p class="section-desc">管理您的个人信息</p>
+          </div>
+          <div class="section-content">
+            <el-form :model="form" ref="formRef" label-position="top">
+              <div class="form-row">
+                <el-form-item label="展示名（显示在页面上，可留空）" class="form-item">
+                  <el-input v-model="form.displayName" placeholder="请输入展示名（支持中文/空格/emoji）" />
+                </el-form-item>
+              </div>
+              <div class="form-row">
+                <el-form-item label="账号名（用于登录，不可修改）" class="form-item">
+                  <el-input v-model="form.username" placeholder="请输入账号名" readonly disabled />
+                </el-form-item>
+              </div>
+              <div class="form-row">
+                <el-form-item class="form-item email-form-item">
+                  <template #label>
+                    <div class="email-label-section">
+                      <span>邮箱地址</span>
+                      <el-button v-if="!userStore.user?.emailVerified || emailChanged" type="primary" size="small"
+                        @click="sendVerificationEmail" :loading="verificationLoading" class="verify-btn">
+                        {{ emailChanged ? '重新验证' : '验证邮箱' }}
+                      </el-button>
+                    </div>
+                  </template>
+                  <el-input v-model="form.email" placeholder="请输入邮箱地址" type="email" />
+                  <div class="form-tip">
+                    <span v-if="userStore.user?.emailVerified && !emailChanged" class="verified-tip">
+                      <el-icon>
+                        <Check />
+                      </el-icon>
+                      邮箱已验证
+                    </span>
+                    <span v-else class="unverified-tip">
+                      <el-icon>⚠️</el-icon>
+                      {{ emailChanged ? '邮箱已更改，请重新验证' : '邮箱未验证，验证后可使用完整功能' }}
+                    </span>
                   </div>
-                </template>
-                <el-input
-                  v-model="form.email"
-                  placeholder="请输入邮箱地址"
-                  type="email"
-                />
-                <div class="form-tip">
-                  <span v-if="userStore.user?.emailVerified && !emailChanged" class="verified-tip">
-                    <el-icon><Check /></el-icon>
-                    邮箱已验证
-                  </span>
-                  <span v-else class="unverified-tip">
-                    <el-icon>⚠️</el-icon>
-                    {{ emailChanged ? '邮箱已更改，请重新验证' : '邮箱未验证，请验证后享受完整功能' }}
-                  </span>
-                </div>
-              </el-form-item>
-            </div>
-            <div class="form-row">
-              <el-form-item label="个人简介" class="form-item">
-                <el-input
-                  v-model="form.bio"
-                  type="textarea"
-                  :rows="4"
-                  placeholder="介绍一下自己吧..."
-                  maxlength="200"
-                  show-word-limit
-                />
-              </el-form-item>
-            </div>
-            <div class="form-actions">
-              <el-button type="primary" @click="handleUpdate" :loading="loading">
-                <el-icon><Check /></el-icon>
-                保存更改
-              </el-button>
-            </div>
-          </el-form>
+                </el-form-item>
+              </div>
+              <div class="form-row">
+                <el-form-item label="个人简介" class="form-item">
+                  <el-input v-model="form.bio" type="textarea" :rows="4" placeholder="介绍一下自己吧..." maxlength="200"
+                    show-word-limit />
+                </el-form-item>
+              </div>
+              <div class="form-actions">
+                <el-button type="primary" @click="handleUpdate" :loading="loading">
+                  <el-icon>
+                    <Check />
+                  </el-icon>
+                  保存更改
+                </el-button>
+              </div>
+            </el-form>
           </div>
         </div>
 
@@ -677,9 +662,4 @@ export default {
     gap: 0;
   }
 }
-
-
-
-
-
 </style>

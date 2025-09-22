@@ -46,11 +46,11 @@ const checkEmailVerification = (req, res, next) => {
   if (req.user && !req.user.emailVerified && !req.user.isAdmin) {
     // 在响应中添加邮箱验证提醒
     const originalJson = res.json;
-    res.json = function(data) {
+    res.json = function (data) {
       if (data && typeof data === 'object') {
         data.emailVerificationReminder = {
           needsVerification: true,
-          message: '您的邮箱尚未验证，验证后可享受完整功能',
+          message: '您的邮箱尚未验证，验证后可使用完整功能',
           canResendVerificationEmail: req.user.canResendVerificationEmail()
         };
       }
@@ -67,7 +67,7 @@ const checkEmailVerification = (req, res, next) => {
 const getEmailVerificationRequiredPermissions = () => {
   return [
     'blog:create',
-    'blog:edit', 
+    'blog:edit',
     'blog:delete',
     'blog:publish',
     'comment:create',

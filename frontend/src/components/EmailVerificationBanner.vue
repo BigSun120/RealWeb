@@ -8,17 +8,12 @@
         <h4>📧 邮箱验证提醒</h4>
         <p>
           您的邮箱 <strong>{{ userEmail }}</strong> 尚未验证。
-          <span class="highlight">验证后可享受完整功能！</span>
+          <span class="highlight">验证后可使用完整功能！</span>
         </p>
       </div>
       <div class="banner-actions">
-        <el-button
-          type="primary"
-          size="small"
-          :loading="isResending"
-          :disabled="!canResend"
-          @click="handleResendVerification"
-        >
+        <el-button type="primary" size="small" :loading="isResending" :disabled="!canResend"
+          @click="handleResendVerification">
           {{ resendButtonText }}
         </el-button>
         <el-button type="text" size="small" @click="handleDismiss"> 暂时忽略 </el-button>
@@ -119,6 +114,7 @@ export default {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
