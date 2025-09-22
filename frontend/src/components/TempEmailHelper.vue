@@ -520,14 +520,40 @@ const checkForNewMessages = async () => {
 
   try {
     const response = await tempEmailApi.getMessages(currentEmail.value)
-    const messages = response.data.messages || []
 
-    if (messages.length > 0) {
+    // 检查API响应结构
+    if (!response.data.success) {
+      console.warn('获取邮件失败:', response.data.message)
+      return
+    }
+
+    const messages = response.data.data?.messages || []
+
+
+
+    // 邮件去重：基于邮件ID、主题、发件人和时间进行去重
+    const uniqueMessages = messages.filter((message, index, self) => {
+      return index === self.findIndex(m =>
+        m.id === message.id ||
+        (m.subject === message.subject &&
+          m.from === message.from &&
+          Math.abs(new Date(m.date) - new Date(message.date)) < 60000) // 1分钟内的相同邮件视为重复
+      )
+    })
+
+    if (uniqueMessages.length > 0) {
       // 检查所有新邮件，不只是最新的一封
-      for (const message of messages.slice(0, 3)) { // 检查最新的3封邮件
+      for (const message of uniqueMessages.slice(0, 3)) { // 检查最新的3封邮件
         try {
           const detailResponse = await tempEmailApi.getMessage(currentEmail.value, message.id)
-          const messageDetail = detailResponse.data
+
+          // 检查邮件详情API响应结构
+          if (!detailResponse.data.success) {
+            console.warn('获取邮件详情失败:', detailResponse.data.message)
+            continue
+          }
+
+          const messageDetail = detailResponse.data.data
 
           // 智能提取验证码 - 尝试多种内容源
           let emailContent = ''
