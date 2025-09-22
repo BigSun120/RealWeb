@@ -362,7 +362,7 @@
               whiteSpace: 'nowrap',
               borderBottom: '2px solid #e5e7eb',
               fontSize: '14px'
-            }" :cell-style="{ textAlign: 'center', padding: '16px 12px', fontSize: '13px' }" stripe border
+            }" :cell-style="{ textAlign: 'center', padding: '16px 12px', fontSize: '12px' }" stripe border
               class="modern-table" @selection-change="handleAllTokensSelectionChange">
               <!-- 选择列 -->
               <el-table-column type="selection" width="55" align="center" />
@@ -2635,10 +2635,6 @@ body {
   font-size: 12px;
 }
 
-.action-buttons .el-button+.el-button {
-  margin-left: 4px;
-}
-
 .compact-header {
   padding: 12px 0;
 }
@@ -2708,7 +2704,7 @@ body {
 /* 表格样式 */
 .tokens-table-container {
   overflow-x: auto;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
 }
 
@@ -2957,10 +2953,6 @@ body {
 
 .url-section {
   margin-top: 16px;
-}
-
-.action-buttons {
-  margin-top: 12px;
 }
 
 @media (max-width: 768px) {
@@ -3521,9 +3513,9 @@ body {
 
 /* 现代化表格容器 */
 .all-tokens-table-container-modern {
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(190, 53, 53, 0.1);
   background: white;
 }
 
