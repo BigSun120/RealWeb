@@ -14,12 +14,21 @@ async function initActivityData() {
       return;
     }
 
+    // 额外安全检查：确保这是真正的空数据库初始化
+    const userCount = await User.countDocuments();
+    if (userCount > 1) { // 只有管理员用户时才初始化测试数据
+      logger.info('检测到多个用户，跳过测试数据初始化');
+      return;
+    }
+
     // 获取所有用户
     const users = await User.find().limit(10);
     if (users.length === 0) {
       logger.warn('没有用户数据，无法创建活动日志');
       return;
     }
+
+    logger.info('开始初始化活动日志测试数据（仅限空数据库）...');
 
     const activities = [];
     const now = new Date();

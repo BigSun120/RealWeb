@@ -17,6 +17,7 @@ const analyticsScheduler = require('./src/utils/analyticsScheduler');
 const errorHandler = require('./src/middleware/errorHandler');
 const initPublicNoticeReadStatus = require('./src/scripts/initPublicNoticeReadStatus');
 const { scheduleTokenPoolCleanup } = require('./src/jobs/tokenPoolCleanup');
+const databaseBackup = require('./src/utils/databaseBackup');
 
 // 路由导入
 const authRoutes = require('./src/routes/auth');
@@ -55,24 +56,47 @@ const initializeDatabase = async () => {
 
     // 检查数据库连接状态
     if (mongoose.connection.readyState === 1) {
-      // 初始化安全配置
+      logger.info('数据库连接成功，开始检查初始化状态...');
+
+      // 检查数据库是否为空（安全检查）
+      const User = require('./src/models/User');
+      const userCount = await User.countDocuments();
+      const isEmptyDatabase = userCount === 0;
+
+      logger.info(`数据库状态检查: 用户数量=${userCount}, 是否为空数据库=${isEmptyDatabase}`);
+
+      // 如果不是空数据库，创建启动前备份
+      if (!isEmptyDatabase) {
+        await databaseBackup.autoBackupBeforeStart();
+      }
+
+      // 初始化安全配置（总是执行，因为有upsert逻辑）
       const SecurityConfig = require('./src/models/SecurityConfig');
       await SecurityConfig.initializeDefaults();
       logger.info('安全配置初始化完成');
 
-      // 初始化默认管理员
+      // 初始化默认管理员（总是执行，确保管理员存在）
       await initDefaultAdmin();
 
-      // 初始化活动日志测试数据
-      await initActivityData();
+      // 只在空数据库时执行数据初始化
+      if (isEmptyDatabase) {
+        logger.info('检测到空数据库，执行完整初始化...');
 
-      // 初始化分类和标签数据
-      await initAllData();
+        // 初始化活动日志测试数据
+        await initActivityData();
 
-      // 初始化工具箱数据
-      await initToolsData();
+        // 初始化分类和标签数据
+        await initAllData();
 
-      // 初始化公告阅读状态
+        // 初始化工具箱数据
+        await initToolsData();
+
+        logger.info('空数据库初始化完成');
+      } else {
+        logger.info('数据库已有数据，跳过数据初始化');
+      }
+
+      // 初始化公告阅读状态（总是检查）
       try {
         await initPublicNoticeReadStatus();
         logger.info('公告阅读状态初始化完成');
@@ -87,7 +111,9 @@ const initializeDatabase = async () => {
       await ActivityLogger.logSystemEvent('系统启动', '网站系统成功启动', {
         environment: process.env.NODE_ENV || 'development',
         port: PORT,
-        startTime: new Date()
+        startTime: new Date(),
+        userCount,
+        isEmptyDatabase
       });
 
       logger.info('数据库初始化完成');

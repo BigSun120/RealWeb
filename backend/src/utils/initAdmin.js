@@ -24,16 +24,28 @@ const ensureDefaultAdmin = async () => {
     }).select('+password');
 
     if (user) {
-      // 更新现有管理员的密码和信息
-      user.password = DEFAULT_ADMIN.password; // 将在pre('save')中被加密
-      user.isAdmin = true;
-      user.isActive = true;
-      user.emailVerified = true;
-      user.role = 'admin';
-      user.displayName = DEFAULT_ADMIN.displayName;
-      user.bio = DEFAULT_ADMIN.bio;
+      // 检查是否需要更新管理员信息
+      const needsUpdate = !user.isAdmin || !user.isActive || !user.emailVerified || user.role !== 'admin';
 
-      logger.info('更新现有管理员账户');
+      if (needsUpdate) {
+        user.isAdmin = true;
+        user.isActive = true;
+        user.emailVerified = true;
+        user.role = 'admin';
+        user.displayName = DEFAULT_ADMIN.displayName;
+        user.bio = DEFAULT_ADMIN.bio;
+
+        // 只在生产环境或明确需要时更新密码
+        if (process.env.NODE_ENV !== 'production' || process.env.FORCE_ADMIN_PASSWORD_UPDATE === 'true') {
+          user.password = DEFAULT_ADMIN.password; // 将在pre('save')中被加密
+          logger.info('更新管理员密码');
+        }
+
+        logger.info('更新现有管理员账户权限');
+      } else {
+        logger.info('管理员账户已存在且配置正确，跳过更新');
+        return user;
+      }
     } else {
       // 创建新的超级管理员
       user = new User({
@@ -62,8 +74,10 @@ const ensureDefaultAdmin = async () => {
     logger.info(`🎉 超级管理员创建/更新成功！`);
     logger.info(`📧 邮箱: ${user.email}`);
     logger.info(`👤 用户名: ${user.username}`);
-    logger.info(`🔑 密码: ${DEFAULT_ADMIN.password}`);
-    logger.warn(`⚠️  请及时修改默认密码！`);
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info(`🔑 密码: ${DEFAULT_ADMIN.password}`);
+      logger.warn(`⚠️  请及时修改默认密码！`);
+    }
 
     // 验证密码是否正确设置
     const savedUser = await User.findById(user._id).select('+password');

@@ -7,9 +7,11 @@ const initCategories = async () => {
   try {
     const existingCount = await Category.countDocuments();
     if (existingCount > 0) {
-      logger.info('分类数据已存在，跳过初始化');
+      logger.info(`分类数据已存在 (${existingCount} 个)，跳过初始化`);
       return;
     }
+
+    logger.info('开始初始化默认分类数据...');
 
     const defaultCategories = [
       {
@@ -61,9 +63,11 @@ const initTags = async () => {
   try {
     const existingCount = await Tag.countDocuments();
     if (existingCount > 0) {
-      logger.info('标签数据已存在，跳过初始化');
+      logger.info(`标签数据已存在 (${existingCount} 个)，跳过初始化`);
       return;
     }
+
+    logger.info('开始初始化默认标签数据...');
 
     const defaultTags = [
       // 技术标签
@@ -79,13 +83,13 @@ const initTags = async () => {
       { name: 'MongoDB', color: '#47A248', isHot: false, sort: 10 },
       { name: 'MySQL', color: '#4479A1', isHot: false, sort: 11 },
       { name: 'Git', color: '#F05032', isHot: false, sort: 12 },
-      
+
       // 框架和工具
       { name: 'Express', color: '#000000', isHot: false, sort: 13 },
       { name: 'Webpack', color: '#8DD6F9', isHot: false, sort: 14 },
       { name: 'Vite', color: '#646CFF', isHot: false, sort: 15 },
       { name: 'Docker', color: '#2496ED', isHot: false, sort: 16 },
-      
+
       // 其他
       { name: '前端开发', color: '#FF6B6B', isHot: true, sort: 17 },
       { name: '后端开发', color: '#4ECDC4', isHot: true, sort: 18 },

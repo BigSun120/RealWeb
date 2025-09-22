@@ -8,6 +8,19 @@ const logger = require('./logger');
  */
 const initToolsData = async () => {
   try {
+    logger.info('开始检查工具箱数据初始化状态...');
+
+    // 检查是否已有工具数据
+    const toolCount = await Tool.countDocuments();
+    const categoryCount = await ToolCategory.countDocuments();
+
+    if (toolCount > 0 || categoryCount > 0) {
+      logger.info(`工具箱数据已存在 (工具: ${toolCount}, 分类: ${categoryCount})，跳过初始化`);
+      // 仍然初始化配置，因为配置有upsert逻辑
+      await ToolConfig.initializeDefaults();
+      return;
+    }
+
     logger.info('开始初始化工具箱数据...');
 
     // 初始化工具分类
