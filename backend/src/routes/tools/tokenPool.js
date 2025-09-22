@@ -144,6 +144,8 @@ router.post('/upload', auth, async (req, res) => {
           portalUrl: portalUrl || '',
           uploaderId: req.user._id,
           uploaderEmail: req.user.email,
+          originalUploader: req.user.username, // 添加原始上传者用户名
+          email_note: emailNote || '', // 添加邮箱备注
           portalInfo: JSON.stringify(tokenValidation.portalInfo), // 确保存储为JSON字符串
           creditsBalance: tokenValidation.creditsBalance,
           expiryDate: tokenValidation.expiryDate,

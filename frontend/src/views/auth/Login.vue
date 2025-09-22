@@ -86,7 +86,8 @@ export default {
     const router = useRouter();
     const formRef = ref();
     const loading = ref(false);
-    const rememberMe = ref(false);
+    // 从localStorage恢复上次的"记住我"选择
+    const rememberMe = ref(localStorage.getItem('rememberMePreference') === 'true');
 
     // 背景管理器
     const globalManager = useGlobalBackgroundManager();
@@ -123,16 +124,27 @@ export default {
 
     const handleLogin = async () => {
       if (!formRef.value) return;
-      
+
       const valid = await formRef.value.validate();
       if (!valid) return;
 
       loading.value = true;
-      const result = await userStore.login(form.value);
+      // 将rememberMe状态添加到登录凭据中
+      const credentials = {
+        ...form.value,
+        rememberMe: rememberMe.value
+      };
+      const result = await userStore.login(credentials);
       loading.value = false;
 
       if (result.success) {
-        ElMessage.success('登录成功');
+        // 保存用户的"记住我"偏好
+        localStorage.setItem('rememberMePreference', rememberMe.value.toString());
+
+        const message = result.rememberMe
+          ? '登录成功，已为您保存登录状态30天'
+          : '登录成功';
+        ElMessage.success(message);
         router.push('/');
       } else {
         ElMessage.error(result.message);
