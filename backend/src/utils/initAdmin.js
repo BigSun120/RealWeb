@@ -1,13 +1,13 @@
 const User = require('../models/User');
 const logger = require('./logger');
 
-// 默认超级管理员配置（固定账号，确保数据持久化）
+// 默认超级管理员配置（从环境变量读取，确保安全）
 const DEFAULT_ADMIN = {
-  email: process.env.ADMIN_EMAIL || 'admin@godaug.fun',
-  username: process.env.ADMIN_USERNAME || 'godaug_admin',
-  password: process.env.ADMIN_PASSWORD || 'GodAug2024Admin',
-  displayName: '超级管理员',
-  bio: '系统默认超级管理员账户'
+  email: process.env.ADMIN_EMAIL || 'admin@example.com',
+  username: process.env.ADMIN_USERNAME || 'admin',
+  password: process.env.ADMIN_PASSWORD || 'change_me_please',
+  displayName: process.env.ADMIN_DISPLAY_NAME || '系统管理员',
+  bio: process.env.ADMIN_BIO || '系统默认管理员账户'
 };
 
 /**
