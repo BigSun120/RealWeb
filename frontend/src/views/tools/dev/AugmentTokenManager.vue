@@ -927,6 +927,11 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 临时邮箱助手 -->
+    <TempEmailHelper :visible="showTempEmailHelper" position="right" @close="handleTempEmailHelperClose"
+      @email-generated="handleEmailGenerated" @verification-code="handleVerificationCode" @copy-email="handleCopyEmail"
+      @copy-code="handleCopyCode" @permission-denied="handlePermissionDenied" />
   </div>
 </template>
 
@@ -958,6 +963,7 @@ import { useUserStore } from '@/stores/user'
 import { useProtocolSwitcher } from '@/composables/useProtocolSwitcher'
 import TokenImportDialog from './components/TokenImportDialog.vue'
 import TokenEditDialog from './components/TokenEditDialog.vue'
+import TempEmailHelper from '@/components/TempEmailHelper.vue'
 import { tokenPoolService } from '@/services/tokenPoolService'
 import * as adminTokensApi from '@/api/adminTokens'
 
@@ -972,6 +978,9 @@ const showEditDialog = ref(false)
 const editingToken = ref(null)
 const selectedTokens = ref([])
 const tokenTable = ref(null)
+
+// 临时邮箱助手相关
+const showTempEmailHelper = ref(false)
 
 // 用户store
 const userStore = useUserStore()
@@ -1122,6 +1131,9 @@ const generateAuthUrl = async () => {
     const result = await generateUrl()
     authUrl.value = result.auth_url
     ElMessage.success('授权URL生成成功')
+
+    // 显示临时邮箱助手
+    showTempEmailHelper.value = true
   } catch (error) {
     ElMessage.error(`生成授权URL失败: ${error.message}`)
   } finally {
@@ -1207,6 +1219,32 @@ const openAuthUrl = () => {
   if (authUrl.value) {
     window.open(authUrl.value, '_blank')
   }
+}
+
+// 临时邮箱助手事件处理
+const handleTempEmailHelperClose = () => {
+  showTempEmailHelper.value = false
+}
+
+const handleEmailGenerated = (email) => {
+  ElMessage.success(`临时邮箱生成成功: ${email}`)
+}
+
+const handleVerificationCode = (code) => {
+  ElMessage.success(`检测到验证码: ${code}`)
+}
+
+const handleCopyEmail = () => {
+  ElMessage.success('邮箱已复制到剪贴板')
+}
+
+const handleCopyCode = () => {
+  ElMessage.success('验证码已复制到剪贴板')
+}
+
+const handlePermissionDenied = () => {
+  ElMessage.warning('需要激活临时邮箱权限')
+  // 可以在这里添加跳转到临时邮箱页面的逻辑
 }
 
 // 仅加载数据库中的令牌数据（页面初始化用）
