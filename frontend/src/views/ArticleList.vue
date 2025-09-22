@@ -5,22 +5,13 @@
         <h1>{{ pageTitle }}</h1>
         <div class="filter-tabs">
           <el-button-group>
-            <el-button
-              :type="activeTab === 'all' ? 'primary' : ''"
-              @click="activeTab = 'all'"
-            >
+            <el-button :type="activeTab === 'all' ? 'primary' : ''" @click="activeTab = 'all'">
               全部 ({{ stats.total }})
             </el-button>
-            <el-button
-              :type="activeTab === 'published' ? 'primary' : ''"
-              @click="activeTab = 'published'"
-            >
+            <el-button :type="activeTab === 'published' ? 'primary' : ''" @click="activeTab = 'published'">
               已发布 ({{ stats.published }})
             </el-button>
-            <el-button
-              :type="activeTab === 'draft' ? 'primary' : ''"
-              @click="activeTab = 'draft'"
-            >
+            <el-button :type="activeTab === 'draft' ? 'primary' : ''" @click="activeTab = 'draft'">
               草稿 ({{ stats.draft }})
             </el-button>
           </el-button-group>
@@ -28,7 +19,9 @@
       </div>
       <div class="header-right">
         <el-button type="primary" @click="$router.push('/articles/new')">
-          <el-icon><EditPen /></el-icon>
+          <el-icon>
+            <EditPen />
+          </el-icon>
           写文章
         </el-button>
       </div>
@@ -48,20 +41,13 @@
       </div>
 
       <div v-else class="articles-grid">
-        <div
-          v-for="article in filteredArticles"
-          :key="article.id"
-          class="article-card"
-        >
+        <div v-for="article in filteredArticles" :key="article.id" class="article-card">
           <div class="card-header">
             <h3 class="article-title" @click="editArticle(article)">
               {{ article.title || '无标题' }}
             </h3>
             <div class="article-status">
-              <el-tag
-                :type="article.status === 'published' ? 'success' : 'info'"
-                size="small"
-              >
+              <el-tag :type="article.status === 'published' ? 'success' : 'info'" size="small">
                 {{ article.status === 'published' ? '已发布' : '草稿' }}
               </el-tag>
             </div>
@@ -74,26 +60,27 @@
 
             <div class="article-meta">
               <span class="meta-item">
-                <el-icon><Calendar /></el-icon>
+                <el-icon>
+                  <Calendar />
+                </el-icon>
                 {{ formatDate(article.updatedAt) }}
               </span>
               <span class="meta-item">
-                <el-icon><Document /></el-icon>
+                <el-icon>
+                  <Document />
+                </el-icon>
                 {{ getWordCount(article.content) }} 字
               </span>
               <span v-if="article.category" class="meta-item">
-                <el-icon><Collection /></el-icon>
+                <el-icon>
+                  <Collection />
+                </el-icon>
                 {{ getCategoryName(article.category) }}
               </span>
             </div>
 
             <div v-if="article.tags && article.tags.length > 0" class="article-tags">
-              <el-tag
-                v-for="tag in article.tags.slice(0, 3)"
-                :key="tag"
-                size="small"
-                effect="plain"
-              >
+              <el-tag v-for="tag in article.tags.slice(0, 3)" :key="tag" size="small" effect="plain">
                 {{ tag }}
               </el-tag>
               <span v-if="article.tags.length > 3" class="more-tags">
@@ -106,19 +93,10 @@
             <el-button size="small" @click="editArticle(article)">
               编辑
             </el-button>
-            <el-button
-              v-if="article.status === 'draft'"
-              size="small"
-              type="primary"
-              @click="publishArticle(article)"
-            >
+            <el-button v-if="article.status === 'draft'" size="small" type="primary" @click="publishArticle(article)">
               发布
             </el-button>
-            <el-button
-              size="small"
-              type="danger"
-              @click="deleteArticleHandler(article)"
-            >
+            <el-button size="small" type="danger" @click="deleteArticleHandler(article)">
               删除
             </el-button>
           </div>
@@ -336,7 +314,6 @@ export default {
 
 .loading-container,
 .empty-container {
-  background: white;
   padding: 40px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

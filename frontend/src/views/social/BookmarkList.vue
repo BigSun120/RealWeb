@@ -7,7 +7,7 @@
           <h1 class="page-title">我的收藏</h1>
           <p class="page-description">管理您收藏的文章和评论</p>
         </div>
-        
+
         <!-- 统计信息 -->
         <div v-if="stats" class="stats-cards">
           <div class="stat-card">
@@ -34,7 +34,7 @@
             <el-radio-button label="comment">评论</el-radio-button>
           </el-radio-group>
         </div>
-        
+
         <div class="sort-controls">
           <el-select v-model="sortBy" @change="handleSortChange" placeholder="排序方式">
             <el-option label="收藏时间" value="createdAt" />
@@ -57,74 +57,70 @@
               </el-button>
             </el-empty>
           </div>
-          
+
           <div v-else class="bookmarks-grid">
-            <div
-              v-for="bookmark in bookmarks"
-              :key="bookmark._id"
-              class="bookmark-item"
-            >
+            <div v-for="bookmark in bookmarks" :key="bookmark._id" class="bookmark-item">
               <!-- 文章收藏 -->
               <div v-if="bookmark.targetType === 'article'" class="article-bookmark">
                 <div class="bookmark-header">
                   <span class="bookmark-type">文章</span>
                   <span class="bookmark-date">{{ formatDate(bookmark.createdAt) }}</span>
-                  <el-button
-                    type="text"
-                    size="small"
-                    @click="removeBookmark(bookmark)"
-                    class="remove-btn"
-                  >
-                    <el-icon><Delete /></el-icon>
+                  <el-button type="text" size="small" @click="removeBookmark(bookmark)" class="remove-btn">
+                    <el-icon>
+                      <Delete />
+                    </el-icon>
                   </el-button>
                 </div>
-                
+
                 <div class="bookmark-content" @click="goToArticle(bookmark.target)">
                   <h3 class="content-title">{{ bookmark.target?.title || '文章已删除' }}</h3>
                   <p class="content-excerpt">{{ getExcerpt(bookmark.target?.content) }}</p>
-                  
+
                   <div v-if="bookmark.target" class="content-meta">
-                    <span class="author">{{ bookmark.target.author?.displayName || bookmark.target.author?.username }}</span>
+                    <span class="author">{{ bookmark.target.author?.displayName || bookmark.target.author?.username
+                      }}</span>
                     <span class="divider">·</span>
                     <span class="publish-date">{{ formatDate(bookmark.target.publishedAt) }}</span>
                   </div>
                 </div>
-                
+
                 <!-- 收藏备注 -->
                 <div v-if="bookmark.note" class="bookmark-note">
-                  <el-icon><EditPen /></el-icon>
+                  <el-icon>
+                    <EditPen />
+                  </el-icon>
                   <span>{{ bookmark.note }}</span>
                 </div>
               </div>
-              
+
               <!-- 评论收藏 -->
               <div v-else-if="bookmark.targetType === 'comment'" class="comment-bookmark">
                 <div class="bookmark-header">
                   <span class="bookmark-type">评论</span>
                   <span class="bookmark-date">{{ formatDate(bookmark.createdAt) }}</span>
-                  <el-button
-                    type="text"
-                    size="small"
-                    @click="removeBookmark(bookmark)"
-                    class="remove-btn"
-                  >
-                    <el-icon><Delete /></el-icon>
+                  <el-button type="text" size="small" @click="removeBookmark(bookmark)" class="remove-btn">
+                    <el-icon>
+                      <Delete />
+                    </el-icon>
                   </el-button>
                 </div>
-                
+
                 <div class="bookmark-content" @click="goToComment(bookmark.target)">
                   <div class="comment-content">{{ bookmark.target?.content || '评论已删除' }}</div>
-                  
+
                   <div v-if="bookmark.target" class="content-meta">
-                    <span class="author">{{ bookmark.target.author?.displayName || bookmark.target.author?.username }}</span>
+                    <span class="author">{{ bookmark.target.author?.displayName || bookmark.target.author?.username
+                      }}</span>
                     <span class="divider">·</span>
                     <span class="comment-date">{{ formatDate(bookmark.target.createdAt) }}</span>
                   </div>
                 </div>
-                
+
                 <!-- 收藏备注 -->
                 <div v-if="bookmark.note" class="bookmark-note">
-                  <el-icon><EditPen /></el-icon>
+                  <el-icon>
+                    <EditPen />
+                  </el-icon>
                   <span>{{ bookmark.note }}</span>
                 </div>
               </div>
@@ -134,15 +130,9 @@
 
         <!-- 分页 -->
         <div v-if="pagination.total > 0" class="pagination-section">
-          <el-pagination
-            v-model:current-page="pagination.page"
-            v-model:page-size="pagination.limit"
-            :total="pagination.total"
-            :page-sizes="[10, 20, 50]"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="handlePageSizeChange"
-            @current-change="handlePageChange"
-          />
+          <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
+            :total="pagination.total" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handlePageSizeChange" @current-change="handlePageChange" />
         </div>
       </div>
     </div>
@@ -214,7 +204,7 @@ const fetchBookmarks = async () => {
       sortBy: sortBy.value,
       sortOrder: sortOrder.value
     };
-    
+
     if (activeFilter.value) {
       params.targetType = activeFilter.value;
     }
@@ -282,7 +272,7 @@ const removeBookmark = async (bookmark) => {
 
     await deleteBookmark(bookmark._id);
     ElMessage.success('已取消收藏');
-    
+
     // 重新获取数据
     fetchBookmarks();
     fetchStats();
@@ -490,7 +480,6 @@ watch(isLoggedIn, (newValue) => {
   align-items: center;
   gap: var(--spacing-2);
   padding: var(--spacing-3) var(--spacing-4);
-  background: var(--color-bg-tertiary);
   border-top: 1px solid var(--color-border);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
@@ -509,12 +498,12 @@ watch(isLoggedIn, (newValue) => {
     flex-direction: column;
     gap: var(--spacing-4);
   }
-  
+
   .stats-cards {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .sort-controls {
     width: 100%;
   }

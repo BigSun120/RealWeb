@@ -25,12 +25,8 @@
         </div>
 
         <div v-else class="article-cards">
-          <div
-            v-for="(article, index) in articles"
-            :key="article._id"
-            class="article-card"
-            @click="goToArticle(article._id)"
-          >
+          <div v-for="(article, index) in articles" :key="article._id" class="article-card"
+            @click="goToArticle(article._id)">
             <!-- 排名标识 -->
             <div class="rank-badge" :class="getRankClass(index + 1)">
               {{ index + 1 }}
@@ -51,11 +47,8 @@
               <!-- 作者信息 -->
               <div class="article-meta">
                 <div class="author-info">
-                  <img
-                    :src="getAuthorAvatar(article.author)"
-                    :alt="article.author.displayName || article.author.username"
-                    class="author-avatar"
-                  />
+                  <img :src="getAuthorAvatar(article.author)"
+                    :alt="article.author.displayName || article.author.username" class="author-avatar" />
                   <span class="author-name">
                     {{ article.author.displayName || article.author.username }}
                   </span>
@@ -63,15 +56,21 @@
 
                 <div class="article-stats">
                   <span class="stat-item">
-                    <el-icon><Star /></el-icon>
+                    <el-icon>
+                      <Star />
+                    </el-icon>
                     {{ article.likeCount }}
                   </span>
                   <span class="stat-item">
-                    <el-icon><View /></el-icon>
+                    <el-icon>
+                      <View />
+                    </el-icon>
                     {{ article.viewCount || 0 }}
                   </span>
                   <span class="stat-item">
-                    <el-icon><Clock /></el-icon>
+                    <el-icon>
+                      <Clock />
+                    </el-icon>
                     {{ formatDate(article.publishedAt) }}
                   </span>
                 </div>
@@ -214,9 +213,12 @@ export default {
 </script>
 
 <style scoped>
+:deep(.el-loading-mask) {
+  background-color: transparent !important;
+}
+
 .popular-articles-page {
   min-height: 100vh;
-  background-color: var(--color-bg-soft);
   padding: var(--spacing-6) 0;
 }
 
@@ -262,27 +264,35 @@ export default {
 }
 
 @keyframes gradientShift {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
 }
 
 @keyframes fireFlicker {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1) rotate(0deg);
     filter: drop-shadow(0 0 10px rgba(255, 165, 0, 0.5));
   }
+
   25% {
     transform: scale(1.1) rotate(-2deg);
     filter: drop-shadow(0 0 15px rgba(255, 69, 0, 0.7));
   }
+
   50% {
     transform: scale(1.05) rotate(1deg);
     filter: drop-shadow(0 0 20px rgba(255, 140, 0, 0.6));
   }
+
   75% {
     transform: scale(1.08) rotate(-1deg);
     filter: drop-shadow(0 0 12px rgba(255, 99, 71, 0.8));
@@ -315,7 +325,6 @@ export default {
 
 .article-card {
   display: flex;
-  background: white;
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
   padding: var(--spacing-4);

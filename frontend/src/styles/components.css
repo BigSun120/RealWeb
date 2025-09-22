@@ -205,6 +205,11 @@
   animation: spin 1s linear infinite;
 }
 
+/* Element Plus loading 遮罩透明背景 */
+.el-loading-mask {
+  background-color: transparent !important;
+}
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);
