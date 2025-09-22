@@ -84,13 +84,12 @@
               borderBottom: '2px solid #e5e7eb'
             }" :cell-style="{ textAlign: 'center', padding: '12px 8px' }" stripe border>
 
-              <el-table-column label="邮箱备注" min-width="140" align="center">
+              <el-table-column label="邮箱备注" min-width="160" align="center">
                 <template #default="{ row }">
-                  <div class="email-note">
-                    <el-icon class="email-icon">
-                      <Message />
-                    </el-icon>
-                    <span>{{ row.email_note || row.emailNote || '未设置' }}</span>
+                  <div class="email-note-simple">
+                    <div class="email-text" :title="maskEmailForPool(row.email_note || row.emailNote || '未设置')">
+                      {{ maskEmailForPool(row.email_note || row.emailNote || '未设置') }}
+                    </div>
                   </div>
                 </template>
               </el-table-column>
@@ -168,8 +167,8 @@
                     </el-tooltip>
                     <!-- 管理员删除按钮 -->
                     <el-tooltip v-if="isAdmin" content="管理员删除" placement="top">
-                      <el-button type="danger" size="small" @click="adminDeleteToken(row)"
-                        :loading="row._deleting" :icon="Delete" circle plain>
+                      <el-button type="danger" size="small" @click="adminDeleteToken(row)" :loading="row._deleting"
+                        :icon="Delete" circle plain>
                       </el-button>
                     </el-tooltip>
                   </div>
@@ -213,13 +212,17 @@
               borderBottom: '2px solid #e5e7eb'
             }" :cell-style="{ textAlign: 'center', padding: '12px 8px' }" stripe border>
 
-              <el-table-column label="邮箱备注" min-width="140" align="center">
+              <el-table-column label="邮箱备注" min-width="160" align="center">
                 <template #default="{ row }">
-                  <div class="email-note">
-                    <el-icon class="email-icon">
-                      <Message />
-                    </el-icon>
-                    <span>{{ getTokenEmailNote(row, false) }}</span>
+                  <div class="email-note-modern">
+                    <div class="email-text" :title="getTokenEmailNote(row, false)">
+                      {{ getTokenEmailNote(row, false) }}
+                    </div>
+                    <el-button v-if="row.email_note || row.emailNote"
+                      @click="copyToClipboard(getTokenEmailNote(row, false))" size="small" text class="copy-btn"
+                      title="复制邮箱备注">
+                      复制
+                    </el-button>
                   </div>
                 </template>
               </el-table-column>
@@ -285,6 +288,182 @@
                   <el-tag v-else type="info" size="small" round>
                     等待领取
                   </el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-card>
+      </el-tab-pane>
+
+      <!-- 全部令牌（管理员专用） -->
+      <el-tab-pane v-if="isAdmin" label="全部令牌" name="all">
+        <el-card class="all-tokens-card" shadow="hover">
+          <template #header>
+            <div class="card-header-with-actions">
+              <div class="card-title">
+                <el-icon class="card-icon">
+                  <Monitor />
+                </el-icon>
+                <h2>全部令牌管理</h2>
+                <span class="card-subtitle">管理员专用 - 查看和管理所有用户的令牌</span>
+              </div>
+              <div class="card-actions">
+                <el-button @click="refreshAllTokens" :icon="Refresh" :loading="isRefreshingAll" size="small">
+                  刷新
+                </el-button>
+              </div>
+            </div>
+          </template>
+
+          <!-- 批量操作工具栏 -->
+          <div v-show="selectedAllTokens.length > 0" class="batch-operations-modern">
+            <div class="selected-info-modern">
+              <el-icon class="selected-icon"><Select /></el-icon>
+              <span>已选择 <strong>{{ selectedAllTokens.length }}</strong> 个令牌</span>
+            </div>
+            <div class="operation-buttons-modern">
+              <el-button @click="batchRefreshPortal" :loading="batchRefreshing" size="small" class="op-btn refresh-btn">
+                <el-icon>
+                  <Refresh />
+                </el-icon>
+                强制刷新
+              </el-button>
+              <el-button @click="showTransferDialog = true" size="small" class="op-btn transfer-btn">
+                <el-icon>
+                  <User />
+                </el-icon>
+                转移所有权
+              </el-button>
+              <el-button @click="batchReclaim" size="small" class="op-btn reclaim-btn">
+                <el-icon>
+                  <Upload />
+                </el-icon>
+                强制回收到池
+              </el-button>
+              <el-button type="danger" @click="batchDelete" size="small" class="op-btn delete-btn">
+                <el-icon>
+                  <Delete />
+                </el-icon>
+                批量删除
+              </el-button>
+            </div>
+          </div>
+
+          <div v-if="allTokens.length === 0" class="empty-state">
+            <el-empty description="暂无令牌数据" />
+          </div>
+
+          <div v-else class="all-tokens-table-container-modern">
+            <el-table ref="allTokensTable" :data="sortedAllTokens" style="width: 100%" :header-cell-style="{
+              background: '#f8fafc',
+              color: '#374151',
+              fontWeight: '600',
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+              borderBottom: '2px solid #e5e7eb',
+              fontSize: '14px'
+            }" :cell-style="{ textAlign: 'center', padding: '16px 12px', fontSize: '13px' }" stripe border
+              class="modern-table" @selection-change="handleAllTokensSelectionChange">
+              <!-- 选择列 -->
+              <el-table-column type="selection" width="55" align="center" />
+
+              <!-- 序号 -->
+              <el-table-column label="序号" width="60" align="center">
+                <template #default="{ $index }">
+                  {{ $index + 1 }}
+                </template>
+              </el-table-column>
+
+              <!-- 邮箱备注 -->
+              <el-table-column label="邮箱备注" min-width="160" align="center">
+                <template #default="{ row }">
+                  <div class="email-note-modern">
+                    <div class="email-text" :title="row.emailNote || '未设置'">
+                      {{ row.emailNote || '未设置' }}
+                    </div>
+                    <el-button v-if="row.emailNote" @click="copyToClipboard(row.emailNote)" size="small" text
+                      class="copy-btn" title="复制邮箱备注">
+                      复制
+                    </el-button>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <!-- 所属用户 -->
+              <el-table-column label="所属用户" min-width="120" align="center">
+                <template #default="{ row }">
+                  <div class="owner-info">
+                    <el-icon class="user-icon">
+                      <User />
+                    </el-icon>
+                    <div class="user-details">
+                      <div class="username">{{ row.ownerInfo?.username || '未知' }}</div>
+                      <div class="user-email">{{ row.ownerInfo?.email || '未知' }}</div>
+                    </div>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <!-- 过期时间 -->
+              <el-table-column label="过期时间" min-width="140" align="center">
+                <template #header>
+                  <div class="sortable-header" @click="toggleSort('all', 'expiryDate')">
+                    <span>过期时间</span>
+                    <el-icon class="sort-icon" :class="getSortIconClass('all', 'expiryDate')">
+                      <Sort />
+                    </el-icon>
+                  </div>
+                </template>
+                <template #default="{ row }">
+                  <div class="expiry-info">
+                    <el-text :class="getExpiryClass(row)" size="small">
+                      {{ formatDate(row.expiryDate) || '未知' }}
+                    </el-text>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <!-- 剩余次数 -->
+              <el-table-column label="剩余次数" min-width="110" align="center">
+                <template #default="{ row }">
+                  <div class="credits-info">
+                    <el-tag :type="getCreditsTagType(row.creditsBalance)" size="small">
+                      {{ row.creditsBalance || 0 }}
+                    </el-tag>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <!-- 账号状态 -->
+              <el-table-column label="账号状态" min-width="110" align="center">
+                <template #default="{ row }">
+                  <div class="account-status">
+                    <el-tag :type="getAccountStatusTagType(row.accountStatus)" size="small">
+                      {{ getAccountStatusText(row.accountStatus) }}
+                    </el-tag>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <!-- 令牌状态 -->
+              <el-table-column label="令牌状态" min-width="120" align="center">
+                <template #default="{ row }">
+                  <div class="token-status">
+                    <el-tag :type="getTokenStatusTagType(row.tokenStatus)" size="small">
+                      {{ getTokenStatusText(row.tokenStatus) }}
+                    </el-tag>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <!-- 最后活跃 -->
+              <el-table-column label="最后活跃" min-width="140" align="center">
+                <template #default="{ row }">
+                  <div class="last-active">
+                    <el-text size="small" style="color: #666;">
+                      {{ formatDate(row.lastActive) || '未知' }}
+                    </el-text>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -360,13 +539,17 @@
                 borderBottom: '2px solid #e5e7eb'
               }" :cell-style="{ textAlign: 'center', padding: '12px 8px' }" stripe border>
               <el-table-column type="selection" width="50" align="center" />
-              <el-table-column prop="email_note" label="邮箱备注" min-width="140" align="center">
+              <el-table-column prop="email_note" label="邮箱备注" min-width="160" align="center">
                 <template #default="{ row }">
-                  <div class="email-note">
-                    <el-icon class="email-icon">
-                      <Message />
-                    </el-icon>
-                    <span>{{ row.email_note || row.emailNote || '未设置' }}</span>
+                  <div class="email-note-modern">
+                    <div class="email-text" :title="row.email_note || row.emailNote || '未设置'">
+                      {{ row.email_note || row.emailNote || '未设置' }}
+                    </div>
+                    <el-button v-if="row.email_note || row.emailNote"
+                      @click="copyToClipboard(row.email_note || row.emailNote)" size="small" text class="copy-btn"
+                      title="复制邮箱备注">
+                      复制
+                    </el-button>
                   </div>
                 </template>
               </el-table-column>
@@ -618,6 +801,49 @@
       </el-tab-pane>
     </el-tabs>
 
+    <!-- 批量刷新进度条对话框 -->
+    <el-dialog v-model="refreshProgress.visible" title="批量刷新Portal信息" :closable="false" width="500px">
+      <div class="progress-container">
+        <el-progress :percentage="progressPercentage" :status="refreshProgress.status" :stroke-width="8" text-inside />
+        <div class="progress-info">
+          <p>正在刷新令牌Portal信息...</p>
+          <p>进度: {{ refreshProgress.current }} / {{ refreshProgress.total }}</p>
+          <div v-if="refreshProgress.errors.length > 0" class="error-list">
+            <p>失败的令牌:</p>
+            <ul>
+              <li v-for="error in refreshProgress.errors" :key="error.tokenId">
+                {{ error.emailNote }}: {{ error.error }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 转移所有权对话框 -->
+    <el-dialog v-model="showTransferDialog" title="转移令牌所有权" width="600px">
+      <div class="transfer-dialog">
+        <p>将选中的 {{ selectedAllTokens.length }} 个令牌转移给其他用户</p>
+        <el-form :model="transferForm" label-width="100px">
+          <el-form-item label="目标用户">
+            <el-select v-model="transferForm.targetUserId" placeholder="请选择目标用户" filterable remote
+              :remote-method="searchUsers" :loading="searchingUsers" style="width: 100%">
+              <el-option v-for="user in availableUsers" :key="user._id" :label="`${user.username} (${user.email})`"
+                :value="user._id" />
+            </el-select>
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showTransferDialog = false">取消</el-button>
+          <el-button type="primary" @click="confirmTransfer" :loading="transferring">
+            确认转移
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
     <!-- 上传令牌到池子对话框 -->
     <el-dialog v-model="showUploadDialog" title="上传令牌到池子" width="800px" :close-on-click-modal="false">
       <div class="upload-dialog">
@@ -715,7 +941,7 @@ import {
   CopyDocument,
   Refresh,
   Delete,
-  Message,
+
   Upload,
   Monitor,
   ArrowDown,
@@ -724,7 +950,8 @@ import {
   Coin,
   User,
   Plus,
-  Sort
+  Sort,
+  Select
 } from '@element-plus/icons-vue'
 import { useAugmentAuth } from '@/composables/useAugmentAuth'
 import { useUserStore } from '@/stores/user'
@@ -732,6 +959,7 @@ import { useProtocolSwitcher } from '@/composables/useProtocolSwitcher'
 import TokenImportDialog from './components/TokenImportDialog.vue'
 import TokenEditDialog from './components/TokenEditDialog.vue'
 import { tokenPoolService } from '@/services/tokenPoolService'
+import * as adminTokensApi from '@/api/adminTokens'
 
 // 响应式数据
 const authUrl = ref('')
@@ -747,6 +975,11 @@ const tokenTable = ref(null)
 
 // 用户store
 const userStore = useUserStore()
+
+// 管理员权限计算属性
+const isAdmin = computed(() => {
+  return userStore.user && userStore.user.isAdmin
+})
 
 // 令牌池相关数据
 const activeTab = ref('saved')
@@ -783,9 +1016,14 @@ const sortedTokens = computed(() => {
   return sortTokens(tokens.value, 'saved')
 })
 
-// 判断是否为管理员
-const isAdmin = computed(() => {
-  return userStore.user && userStore.user.isAdmin
+const sortedAllTokens = computed(() => {
+  return sortTokens(allTokens.value, 'all')
+})
+
+// 进度条百分比计算
+const progressPercentage = computed(() => {
+  if (refreshProgress.value.total === 0) return 0
+  return Math.round((refreshProgress.value.current / refreshProgress.value.total) * 100)
 })
 
 
@@ -827,8 +1065,34 @@ const isRefreshing = ref(false)
 const sortConfig = ref({
   pool: { field: null, order: null },
   uploads: { field: null, order: null },
-  saved: { field: null, order: null }
+  saved: { field: null, order: null },
+  all: { field: null, order: null }
 })
+
+// 管理员令牌管理相关数据
+const allTokens = ref([])
+const selectedAllTokens = ref([])
+const allTokensTable = ref(null)
+const isRefreshingAll = ref(false)
+const batchRefreshing = ref(false)
+const showTransferDialog = ref(false)
+const availableUsers = ref([])
+
+// 进度条相关
+const refreshProgress = ref({
+  visible: false,
+  current: 0,
+  total: 0,
+  status: 'active',
+  errors: []
+})
+
+// 转移相关
+const transferForm = ref({
+  targetUserId: null
+})
+const transferring = ref(false)
+const searchingUsers = ref(false)
 
 // 使用组合式函数
 const {
@@ -1345,70 +1609,9 @@ const claimToken = async (token) => {
   }
 }
 
-const returnToken = async (token) => {
-  token._returning = true
-  try {
-    await tokenPoolService.returnToken(token._id || token.id)
-    ElMessage.success('令牌已归还到池子')
 
-    // 立即更新本地数据
-    const tokenIndex = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
-    if (tokenIndex !== -1) {
-      myUploads.value[tokenIndex].status = 'available'
-    }
 
-    // 刷新完整数据：令牌池、我的上传、已保存的令牌
-    await Promise.all([
-      refreshPool(),
-      refreshTokens() // 刷新已保存的令牌列表
-    ])
-  } catch (error) {
-    console.error('归还失败:', error)
-    ElMessage.error(error.message || '归还失败')
-  } finally {
-    token._returning = false
-  }
-}
 
-const deletePoolToken = async (token) => {
-  try {
-    await ElMessageBox.confirm('确定要删除这个令牌吗？', '确认删除', {
-      type: 'warning'
-    })
-
-    token._deleting = true
-    await tokenPoolService.deleteToken(token._id || token.id)
-    ElMessage.success('令牌已删除')
-
-    // 立即更新本地数据 - 从所有相关数组中移除
-    const tokenId = token._id || token.id
-
-    // 从池子令牌中移除
-    const poolIndex = poolTokens.value.findIndex(t => (t._id || t.id) === tokenId)
-    if (poolIndex !== -1) {
-      poolTokens.value.splice(poolIndex, 1)
-    }
-
-    // 从我的上传中移除
-    const uploadIndex = myUploads.value.findIndex(t => (t._id || t.id) === tokenId)
-    if (uploadIndex !== -1) {
-      myUploads.value.splice(uploadIndex, 1)
-    }
-
-    // 刷新完整数据以确保同步：令牌池、我的上传、已保存的令牌
-    await Promise.all([
-      refreshPool(),
-      refreshTokens() // 刷新已保存的令牌列表
-    ])
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除失败:', error)
-      ElMessage.error(error.message || '删除失败')
-    }
-  } finally {
-    token._deleting = false
-  }
-}
 
 // 管理员删除令牌池中的令牌
 const adminDeleteToken = async (token) => {
@@ -1484,29 +1687,38 @@ const getStatusText = (token) => {
   }
 }
 
-const maskEmail = (email) => {
-  if (!email) return '未知'
-  const [localPart, domain] = email.split('@')
-  if (!domain) return '未知'
+// 专门用于可用令牌池的邮箱脱敏函数：@符号前后2位替换为*
+const maskEmailForPool = (email) => {
+  if (!email || email === '未设置') return email
 
-  let maskedLocal = localPart
-  let maskedDomain = domain
+  const atIndex = email.indexOf('@')
+  if (atIndex === -1) return email
 
-  // @前4位改为星号
-  if (localPart.length > 4) {
-    maskedLocal = localPart.substring(0, localPart.length - 4) + '****'
+  let result = ''
+
+  // 处理@前的部分
+  const localPart = email.substring(0, atIndex)
+  if (localPart.length <= 2) {
+    // 如果@前不足2位，全部替换为*
+    result += '*'.repeat(localPart.length)
   } else {
-    maskedLocal = '****'
+    // @前超过2位，只替换最后2位
+    result += localPart.substring(0, localPart.length - 2) + '**'
   }
 
-  // @后4位改为星号
-  if (domain.length > 4) {
-    maskedDomain = '****' + domain.substring(4)
+  result += '@'
+
+  // 处理@后的部分
+  const domainPart = email.substring(atIndex + 1)
+  if (domainPart.length <= 2) {
+    // 如果@后不足2位，全部替换为*
+    result += '*'.repeat(domainPart.length)
   } else {
-    maskedDomain = '****'
+    // @后超过2位，只替换前2位
+    result += '**' + domainPart.substring(2)
   }
 
-  return `${maskedLocal}@${maskedDomain}`
+  return result
 }
 
 // 获取令牌邮箱备注的显示文本（简化版，显示完整内容）
@@ -1521,6 +1733,306 @@ const getTokenEmailNote = (token, isMyUpload = false) => {
 }
 
 // 这个函数已不再需要，因为我们简化了显示逻辑
+
+// ==================== 管理员令牌管理方法 ====================
+
+// 获取所有令牌
+const refreshAllTokens = async () => {
+  if (!isAdmin.value) return
+
+  isRefreshingAll.value = true
+  try {
+    const response = await adminTokensApi.getAllTokens()
+    allTokens.value = response.data.tokens || []
+
+    if (allTokens.value.length > 0) {
+      ElMessage.success(`刷新成功，加载了 ${allTokens.value.length} 个令牌`)
+    } else {
+      ElMessage.info('当前系统中没有令牌数据')
+    }
+  } catch (error) {
+    console.error('加载全部令牌失败:', error)
+    ElMessage.error(`刷新失败: ${error.message}`)
+  } finally {
+    isRefreshingAll.value = false
+  }
+}
+
+// 处理全部令牌表格选择变化
+const handleAllTokensSelectionChange = (selection) => {
+  selectedAllTokens.value = selection
+}
+
+// 批量刷新Portal信息
+const batchRefreshPortal = async () => {
+  if (selectedAllTokens.value.length === 0) {
+    ElMessage.warning('请选择要刷新的令牌')
+    return
+  }
+
+  batchRefreshing.value = true
+  refreshProgress.value = {
+    visible: true,
+    current: 0,
+    total: selectedAllTokens.value.length,
+    status: 'active',
+    errors: []
+  }
+
+  try {
+    const tokenIds = selectedAllTokens.value.map(token => token.id)
+    const response = await adminTokensApi.batchRefreshPortalInfo(tokenIds)
+
+    // 更新进度
+    refreshProgress.value.current = response.data.successCount
+    refreshProgress.value.status = response.data.failCount > 0 ? 'exception' : 'success'
+
+    // 更新本地数据
+    if (response.data.results) {
+      response.data.results.forEach(result => {
+        if (result.success) {
+          const tokenIndex = allTokens.value.findIndex(t => t.id === result.tokenId)
+          if (tokenIndex !== -1) {
+            // 更新令牌信息
+            allTokens.value[tokenIndex].creditsBalance = result.data.credits_balance || 0
+            allTokens.value[tokenIndex].expiryDate = result.data.expiry_date
+            allTokens.value[tokenIndex].lastActive = new Date().toISOString()
+          }
+        }
+      })
+    }
+
+    ElMessage.success(`批量刷新完成，成功 ${response.data.data.successCount} 个，失败 ${response.data.data.failCount} 个`)
+
+    // 刷新其他表格数据
+    await Promise.all([
+      refreshPool(),
+      refreshTokens()
+    ])
+  } catch (error) {
+    refreshProgress.value.status = 'exception'
+    ElMessage.error(`批量刷新失败: ${error.message}`)
+  } finally {
+    batchRefreshing.value = false
+    // 3秒后隐藏进度条
+    setTimeout(() => {
+      refreshProgress.value.visible = false
+    }, 3000)
+  }
+}
+
+// 批量回收到池
+const batchReclaim = async () => {
+  if (selectedAllTokens.value.length === 0) {
+    ElMessage.warning('请选择要回收的令牌')
+    return
+  }
+
+  const personalTokens = selectedAllTokens.value.filter(token => token.source === 'personal')
+  if (personalTokens.length === 0) {
+    ElMessage.warning('请选择个人令牌进行回收')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要将选中的 ${personalTokens.length} 个个人令牌回收到令牌池吗？`,
+      '确认回收',
+      { type: 'warning' }
+    )
+
+    const tokenIds = personalTokens.map(token => token.id)
+    const response = await adminTokensApi.batchReclaimToPool(tokenIds)
+
+    // 更新本地数据
+    personalTokens.forEach(token => {
+      const tokenIndex = allTokens.value.findIndex(t => t.id === token.id)
+      if (tokenIndex !== -1) {
+        allTokens.value[tokenIndex].source = 'pool'
+        allTokens.value[tokenIndex].tokenStatus = 'pool_available'
+        allTokens.value[tokenIndex].ownerInfo = null
+      }
+    })
+
+    ElMessage.success(`批量回收完成，成功 ${response.data.data.successCount} 个，失败 ${response.data.data.failCount} 个`)
+
+    // 刷新其他表格数据
+    await Promise.all([
+      refreshPool(),
+      refreshTokens()
+    ])
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(`批量回收失败: ${error.message}`)
+    }
+  }
+}
+
+
+
+// 批量删除
+const batchDelete = async () => {
+  if (selectedAllTokens.value.length === 0) {
+    ElMessage.warning('请选择要删除的令牌')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedAllTokens.value.length} 个令牌吗？此操作不可恢复！`,
+      '确认删除',
+      {
+        type: 'warning',
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消'
+      }
+    )
+
+    const tokenIds = selectedAllTokens.value.map(token => token.id)
+    const response = await adminTokensApi.batchDeleteTokens(tokenIds)
+
+    // 从本地数据中移除已删除的令牌
+    const deletedIds = new Set(response.data.deletedIds)
+    allTokens.value = allTokens.value.filter(token => !deletedIds.has(token.id))
+    selectedAllTokens.value = []
+
+    ElMessage.success(`批量删除完成，成功 ${response.data.data.successCount} 个，失败 ${response.data.data.failCount} 个`)
+
+    // 刷新其他表格数据
+    await Promise.all([
+      refreshPool(),
+      refreshTokens()
+    ])
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(`批量删除失败: ${error.message}`)
+    }
+  }
+}
+
+// 获取账号状态标签类型
+const getAccountStatusTagType = (status) => {
+  switch (status) {
+    case 'ACTIVE': return 'success'
+    case 'SUSPENDED': return 'danger'
+    case 'BANNED': return 'danger'
+    default: return 'info'
+  }
+}
+
+// 获取账号状态文本
+const getAccountStatusText = (status) => {
+  switch (status) {
+    case 'ACTIVE': return '正常'
+    case 'SUSPENDED': return '暂停'
+    case 'BANNED': return '封禁'
+    default: return '未知'
+  }
+}
+
+// 获取令牌状态标签类型
+const getTokenStatusTagType = (status) => {
+  switch (status) {
+    case 'personal': return 'primary'
+    case 'pool_available': return 'success'
+    case 'pool_claimed': return 'warning'
+    case 'pool_expired': return 'danger'
+    case 'disabled': return 'info'
+    default: return 'info'
+  }
+}
+
+// 获取令牌状态文本
+const getTokenStatusText = (status) => {
+  switch (status) {
+    case 'personal': return '个人令牌'
+    case 'pool_available': return '池中可用'
+    case 'pool_claimed': return '池中已领取'
+    case 'pool_expired': return '池中过期'
+
+    default: return '未知'
+  }
+}
+
+// 获取剩余次数标签类型
+const getCreditsTagType = (credits) => {
+  if (credits > 100) return 'success'
+  if (credits > 50) return 'primary'
+  if (credits > 10) return 'warning'
+  return 'danger'
+}
+
+// 搜索用户
+const searchUsers = async (query) => {
+  if (!query) {
+    availableUsers.value = []
+    return
+  }
+
+  searchingUsers.value = true
+  try {
+    const response = await adminTokensApi.getUsersForTransfer(query)
+    availableUsers.value = response.data || []
+  } catch (error) {
+    ElMessage.error(`搜索用户失败: ${error.message}`)
+  } finally {
+    searchingUsers.value = false
+  }
+}
+
+// 确认转移
+const confirmTransfer = async () => {
+  if (!transferForm.value.targetUserId) {
+    ElMessage.warning('请选择目标用户')
+    return
+  }
+
+  const targetUser = availableUsers.value.find(user => user._id === transferForm.value.targetUserId)
+  if (!targetUser) {
+    ElMessage.warning('目标用户不存在')
+    return
+  }
+
+  transferring.value = true
+  try {
+    const tokenIds = selectedAllTokens.value.map(token => token.id)
+    const response = await adminTokensApi.batchTransferOwnership({
+      tokenIds,
+      targetUserId: transferForm.value.targetUserId,
+      targetUsername: targetUser.username
+    })
+
+    // 更新本地数据
+    selectedAllTokens.value.forEach(token => {
+      const tokenIndex = allTokens.value.findIndex(t => t.id === token.id)
+      if (tokenIndex !== -1) {
+        allTokens.value[tokenIndex].ownerInfo = {
+          userId: transferForm.value.targetUserId,
+          username: targetUser.username,
+          email: targetUser.email
+        }
+        allTokens.value[tokenIndex].tokenStatus = 'personal'
+      }
+    })
+
+    ElMessage.success(`转移完成，成功 ${response.data.data.successCount} 个，失败 ${response.data.data.failCount} 个`)
+    showTransferDialog.value = false
+    transferForm.value.targetUserId = null
+
+    // 刷新其他表格数据
+    await Promise.all([
+      refreshPool(),
+      refreshTokens()
+    ])
+    availableUsers.value = []
+  } catch (error) {
+    ElMessage.error(`转移失败: ${error.message}`)
+  } finally {
+    transferring.value = false
+  }
+}
+
+// ==================== 管理员令牌管理方法结束 ====================
 
 // 上传对话框相关方法
 const handleUploadModeChange = () => {
@@ -1910,17 +2422,16 @@ const refreshTokenPortalInfo = async (token) => {
 
 // 生命周期 - 页面加载时仅获取数据库中的令牌数据，不主动刷新Portal信息
 onMounted(() => {
-  console.log('页面加载，检查用户认证状态...')
-  // 根据环境确定token存储键名
-  const isDev = import.meta.env.DEV || import.meta.env.VITE_API_BASE_URL?.includes('localhost');
-  const tokenKey = isDev ? 'dev_token' : 'token';
-  const token = localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey)
-  console.log('用户token:', token ? '已存在' : '不存在')
 
   // 仅加载数据库中存储的令牌数据（包括已保存的Portal信息）
   loadTokensOnly()
   // 加载令牌池数据
   refreshPool()
+
+  // 如果是管理员，加载所有令牌数据
+  if (isAdmin.value) {
+    refreshAllTokens()
+  }
 })
 </script>
 
@@ -2794,6 +3305,146 @@ body {
   white-space: pre-wrap;
 }
 
+/* 批量操作工具栏样式 */
+.batch-operations-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.selected-info {
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.batch-actions .el-button {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.batch-actions .el-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.batch-actions .el-button.is-danger {
+  background: rgba(245, 101, 101, 0.2);
+  border-color: rgba(245, 101, 101, 0.5);
+}
+
+.batch-actions .el-button.is-danger:hover {
+  background: rgba(245, 101, 101, 0.3);
+  border-color: rgba(245, 101, 101, 0.7);
+}
+
+/* 所属用户信息样式 */
+.owner-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-icon {
+  color: #6366f1;
+  font-size: 16px;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.username {
+  font-weight: 500;
+  color: #374151;
+  font-size: 13px;
+}
+
+.user-email {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* 账号状态和令牌状态样式 */
+.account-status,
+.token-status {
+  display: flex;
+  justify-content: center;
+}
+
+/* 最后活跃时间样式 */
+.last-active {
+  display: flex;
+  justify-content: center;
+}
+
+/* 进度条对话框样式 */
+.progress-container {
+  padding: 20px 0;
+}
+
+.progress-info {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.progress-info p {
+  margin: 8px 0;
+  color: #666;
+}
+
+.error-list {
+  margin-top: 16px;
+  text-align: left;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.error-list p {
+  color: #dc2626;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.error-list ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.error-list li {
+  color: #dc2626;
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+/* 转移对话框样式 */
+.transfer-dialog {
+  padding: 20px 0;
+}
+
+.transfer-dialog p {
+  margin-bottom: 20px;
+  color: #666;
+  text-align: center;
+}
+
 /* 修复对话框背景问题 */
 :deep(.el-dialog__wrapper) {
   position: fixed !important;
@@ -2802,5 +3453,164 @@ body {
   width: 100vw !important;
   height: 100vh !important;
   z-index: 2000 !important;
+}
+
+/* ==================== 现代化样式 ==================== */
+
+/* 现代化批量操作工具栏 */
+.batch-operations-modern {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 20px rgba(240, 147, 251, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideInDown 0.3s ease-out;
+}
+
+.selected-info-modern {
+  display: flex;
+  align-items: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.selected-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.operation-buttons-modern {
+  display: flex;
+  gap: 8px;
+}
+
+.op-btn {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+.op-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.refresh-btn:hover {
+  background: rgba(34, 197, 94, 0.2) !important;
+}
+
+.transfer-btn:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+}
+
+.reclaim-btn:hover {
+  background: rgba(245, 158, 11, 0.2) !important;
+}
+
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* 现代化表格容器 */
+.all-tokens-table-container-modern {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+.modern-table {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+
+
+/* 现代化邮箱备注样式 */
+.email-note-modern {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+/* 简化邮箱备注样式（无复制按钮） */
+.email-note-simple {
+  padding: 4px 0;
+}
+
+.email-text {
+  word-break: break-all;
+  white-space: pre-wrap;
+  line-height: 1.4;
+  font-size: 13px;
+  color: #374151;
+  max-width: 100%;
+}
+
+.copy-btn {
+  padding: 2px 8px !important;
+  height: 22px !important;
+  font-size: 11px !important;
+  border-radius: 4px !important;
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+  border: 1px solid #a7f3d0 !important;
+  transition: all 0.2s ease !important;
+}
+
+.copy-btn:hover {
+  background: #a7f3d0 !important;
+  color: #064e3b !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2) !important;
+}
+
+/* 动画效果 */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 表格行悬停效果 */
+:deep(.el-table__row:hover) {
+  background-color: #f8fafc !important;
+  transform: scale(1.001);
+  transition: all 0.2s ease;
+}
+
+/* 表格边框美化 */
+:deep(.el-table) {
+  border-radius: 12px !important;
+}
+
+:deep(.el-table__header) {
+  border-radius: 12px 12px 0 0 !important;
+}
+
+/* 选择框美化 */
+:deep(.el-checkbox) {
+  transform: scale(1.1);
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+  border-color: #f093fb !important;
 }
 </style>
