@@ -423,6 +423,7 @@ const handleCopyToken = async () => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 4px 0;
 }
 
 .refresh-option-btn {
@@ -431,6 +432,8 @@ const handleCopyToken = async () => {
   padding: 8px 12px;
   border-radius: 4px;
   transition: background-color 0.3s;
+  text-align: left;
+  margin: 0;
 }
 
 .refresh-option-btn:hover {

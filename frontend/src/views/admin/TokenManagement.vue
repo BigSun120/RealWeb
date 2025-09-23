@@ -149,14 +149,7 @@
       </div>
     </div>
 
-    <!-- 进度条 -->
-    <div v-if="progress.visible" class="progress-container">
-      <el-progress :percentage="progressPercentage" :status="progress.status" :stroke-width="8" text-inside>
-        <template #default="{ percentage }">
-          {{ progress.current }}/{{ progress.total }} ({{ percentage }}%)
-        </template>
-      </el-progress>
-    </div>
+    <!-- 进度条已移除 -->
 
     <!-- 令牌表格 -->
     <el-card class="table-card" shadow="never">
@@ -315,13 +308,7 @@ const pagination = ref({
   size: 20
 })
 
-// 进度条
-const progress = ref({
-  visible: false,
-  current: 0,
-  total: 0,
-  status: 'active'
-})
+// 进度条相关代码已移除
 
 // 计算属性
 const statistics = computed(() => {
@@ -379,10 +366,7 @@ const paginatedTokens = computed(() => {
   return filteredTokens.value.slice(start, end)
 })
 
-const progressPercentage = computed(() => {
-  if (progress.value.total === 0) return 0
-  return Math.round((progress.value.current / progress.value.total) * 100)
-})
+// progressPercentage 计算属性已移除
 
 // 表格样式
 const tableHeaderStyle = {
@@ -441,18 +425,12 @@ const handleBatchRefreshInfo = async () => {
   }
 
   loading.value.batchRefresh = true
-  progress.value = {
-    visible: true,
-    current: 0,
-    total: selectedTokens.value.length,
-    status: 'active'
-  }
 
   try {
     let successCount = 0
     let failCount = 0
 
-    // 顺序刷新（不要并发），逐个请求并更新进度
+    // 顺序刷新（不要并发），逐个请求
     for (const token of selectedTokens.value) {
       try {
         const resp = await adminTokensApi.batchRefreshPortalInfo([token.id])
@@ -465,26 +443,17 @@ const handleBatchRefreshInfo = async () => {
         }
       } catch (e) {
         failCount += 1
-      } finally {
-        progress.value.current += 1
       }
     }
 
-    progress.value.status = failCount > 0 ? 'exception' : 'success'
     ElMessage[failCount > 0 ? 'warning' : 'success'](`批量刷新完成，成功 ${successCount} 个，失败 ${failCount} 个`)
 
     // 刷新数据，确保表格内的剩余次数/账号状态等最新
-
-
     await refreshAllTokens()
   } catch (error) {
-    progress.value.status = 'exception'
     ElMessage.error(`批量刷新失败: ${error.message}`)
   } finally {
     loading.value.batchRefresh = false
-    setTimeout(() => {
-      progress.value.visible = false
-    }, 1500)
   }
 }
 
@@ -726,12 +695,6 @@ const handleBatchRefreshStatus = async () => {
   }
 
   loading.value.batchRefresh = true
-  progress.value = {
-    visible: true,
-    current: 0,
-    total: selectedTokens.value.length,
-    status: 'active'
-  }
 
   try {
     let successCount = 0
@@ -748,12 +711,9 @@ const handleBatchRefreshStatus = async () => {
         }
       } catch (e) {
         failCount += 1
-      } finally {
-        progress.value.current += 1
       }
     }
 
-    progress.value.status = failCount > 0 ? 'exception' : 'success'
     ElMessage[failCount > 0 ? 'warning' : 'success'](`批量刷新完成，成功 ${successCount} 个，失败 ${failCount} 个`)
 
     await refreshAllTokens()
@@ -761,9 +721,6 @@ const handleBatchRefreshStatus = async () => {
     ElMessage.error(error.message || '批量刷新失败')
   } finally {
     loading.value.batchRefresh = false
-    setTimeout(() => {
-      progress.value.visible = false
-    }, 600)
   }
 }
 
@@ -938,32 +895,7 @@ const handleBatchRefreshStatus = async () => {
   gap: 8px;
 }
 
-/* 进度条 */
-.progress-container {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 2000;
-  width: 360px;
-  padding: 12px 14px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-}
-
-:deep(.progress-container .el-progress) {
-  width: 100%;
-}
-
-:deep(.progress-container .el-progress-bar__outer) {
-  overflow: visible;
-}
-
-:deep(.progress-container .el-progress__text) {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
+/* 进度条样式已移除 */
 
 /* 表格卡片 */
 .table-card {
