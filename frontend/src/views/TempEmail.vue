@@ -229,7 +229,7 @@
             <h3>📬 所有邮件</h3>
             <div class="list-actions">
               <el-tag v-if="allMessages.length >= 20" type="info" size="small" style="margin-right: 8px;">
-                仅显示最新20条
+                显示最新20条
               </el-tag>
               <el-button @click="refreshAllMessages" :loading="loading" icon="Refresh" type="primary" size="small">
                 刷新全部
@@ -402,11 +402,10 @@ const allMessages = ref([])
 // 临时邮箱公告
 const tempEmailNotice = ref(null)
 
-// 计算属性：显示的邮件列表（限制最多20条，按时间排序）
+// 计算属性：显示的邮件列表（按时间排序，后端已限制20条）
 const displayMessages = computed(() => {
   return allMessages.value
     .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 20)
 })
 
 // 页面头部统计数据
@@ -596,20 +595,14 @@ const refreshAllMessages = async () => {
         })
       })
 
-      // 按时间排序，最新的在前，并限制最多20条
+      // 按时间排序，最新的在前（后端已限制20条）
       allMessages.value.sort((a, b) => new Date(b.date) - new Date(a.date))
       const totalMessages = allMessages.value.length
-      allMessages.value = allMessages.value.slice(0, 20)
 
       // 异步补充最近5封的验证码（从正文提取），不阻塞主列表刷新
       await enrichLatestCodes()
 
-      const displayedCount = allMessages.value.length
-      if (totalMessages > displayedCount) {
-        ElMessage.success(`已加载最新 ${displayedCount} 封邮件（共 ${totalMessages} 封）`)
-      } else {
-        ElMessage.success(`已加载 ${displayedCount} 封邮件`)
-      }
+      ElMessage.success(`已加载 ${totalMessages} 封邮件`)
     }
   } catch (error) {
     console.error('获取全部邮件失败:', error)
@@ -657,9 +650,9 @@ const extractCode = (msgOrString) => {
   return '';
 }
 
-// 批量补充最近10封的验证码（从正文获取）
+// 批量补充最近5封的验证码（从正文获取，减少API调用）
 const enrichLatestCodes = async () => {
-  const top = displayMessages.value.slice(0, 10);
+  const top = displayMessages.value.slice(0, 5);
   const tasks = top.map(async (row) => {
     try {
       const email = row.email || currentEmail.value;
@@ -669,7 +662,9 @@ const enrichLatestCodes = async () => {
         const code = extractCode(body.text) || extractCode(body.html);
         if (code) row.code = code;
       }
-    } catch (e) { /* 忽略单条失败 */ }
+    } catch (e) {
+      console.warn(`获取邮件 ${row.id} 详情失败:`, e.message);
+    }
   });
   await Promise.allSettled(tasks);
 }

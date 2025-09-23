@@ -508,33 +508,8 @@ const extractVerificationCode = (emailContent) => {
   // 按优先级排序，选择最佳候选
   candidates.sort((a, b) => b.priority - a.priority)
 
-  // 过滤掉明显不是验证码的内容
-  const filteredCandidates = candidates.filter(candidate => {
-    const code = candidate.code
-
-    // 排除全是相同字符的代码（如：1111, AAAA）
-    if (/^(.)\1+$/.test(code)) {
-      return false
-    }
-
-    // 排除明显的时间格式（如：2024, 1200）
-    if (/^(19|20)\d{2}$/.test(code) || /^[0-2]\d[0-5]\d$/.test(code)) {
-      return false
-    }
-
-    // 排除常见的非验证码数字（如：电话号码片段）
-    if (code.length === 4 && /^[0-9]{4}$/.test(code)) {
-      const num = parseInt(code)
-      if (num < 1000 || num === 1234 || num === 4321) {
-        return false
-      }
-    }
-
-    return true
-  })
-
-  // 返回最佳候选验证码
-  return filteredCandidates.length > 0 ? filteredCandidates[0].code : null
+  // 移除过滤逻辑，直接返回最佳候选验证码
+  return candidates.length > 0 ? candidates[0].code : null
 }
 
 const checkForNewMessages = async () => {
@@ -553,7 +528,7 @@ const checkForNewMessages = async () => {
 
 
 
-    // 邮件去重：仅基于邮件ID进行去重，避免过度过滤
+    // 邮件去重：仅基于邮件ID进行去重
     const uniqueMessages = messages.filter((message, index, self) => {
       return index === self.findIndex(m => m.id === message.id)
     })

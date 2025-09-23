@@ -353,66 +353,97 @@ router.get('/my-emails', auth, requireTempEmailAccess, async (req, res) => {
 });
 
 /**
- * 获取所有邮箱的邮件概览
+ * 获取所有邮箱的邮件概览（优化版）
  * GET /api/temp-email/all-emails
  */
 router.get('/all-emails', auth, requireTempEmailAccess, async (req, res) => {
   try {
-    const allEmails = [];
+    const allMessages = [];
+    const emailBoxStats = [];
 
-    // 从数据库获取用户的邮箱
-    const userEmailBoxes = await TempEmailBox.getUserActiveEmails(req.user._id, 100);
+    // 从数据库获取用户的邮箱（限制最近使用的50个）
+    const userEmailBoxes = await TempEmailBox.getUserActiveEmails(req.user._id, 50);
 
-    // 检查每个邮箱的邮件
-    for (const emailBox of userEmailBoxes) {
+    // 并发检查邮箱邮件，提高性能
+    const emailPromises = userEmailBoxes.map(async (emailBox) => {
       try {
         const response = await axios.get(`${INBUCKET_API}/mailbox/${emailBox.email}`, {
-          timeout: 3000
+          timeout: 2000 // 减少超时时间
         });
 
         const messages = response.data || [];
 
-        // 更新邮箱的邮件数量
-        await emailBox.updateMessageCount(messages.length);
+        // 异步更新邮箱的邮件数量（不阻塞响应）
+        emailBox.updateMessageCount(messages.length).catch(err =>
+          console.warn(`更新邮箱 ${emailBox.email} 邮件数量失败:`, err.message)
+        );
 
-        // 只返回有邮件的邮箱，并限制最多20条邮件
         if (messages.length > 0) {
-          const limitedMessages = messages
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .slice(0, 20)
-            .map(msg => ({
-              id: msg.id,
-              from: msg.from,
-              subject: msg.subject,
-              date: msg.date,
-              size: msg.size
-            }));
+          // 为每封邮件添加邮箱信息
+          const messagesWithEmail = messages.map(msg => ({
+            id: msg.id,
+            from: msg.from,
+            subject: msg.subject,
+            date: msg.date,
+            size: msg.size,
+            email: emailBox.email,
+            domain: emailBox.domain
+          }));
 
-          allEmails.push({
+          allMessages.push(...messagesWithEmail);
+
+          emailBoxStats.push({
             email: emailBox.email,
             domain: emailBox.domain,
             messageCount: messages.length,
-            messages: limitedMessages,
             createdAt: emailBox.createdAt,
             lastAccessedAt: emailBox.lastAccessedAt
           });
         }
-      } catch (error) {
-        // 忽略单个邮箱的错误，但记录日志
-        console.warn(`获取邮箱 ${emailBox.email} 的邮件失败:`, error.message);
-      }
-    }
 
-    // 按最后访问时间排序
-    allEmails.sort((a, b) => new Date(b.lastAccessedAt) - new Date(a.lastAccessedAt));
+        return { success: true, email: emailBox.email, count: messages.length };
+      } catch (error) {
+        console.warn(`获取邮箱 ${emailBox.email} 的邮件失败:`, error.message);
+        return { success: false, email: emailBox.email, error: error.message };
+      }
+    });
+
+    // 等待所有邮箱检查完成
+    await Promise.allSettled(emailPromises);
+
+    // 按时间排序所有邮件，并限制最多20条
+    allMessages.sort((a, b) => new Date(b.date) - new Date(a.date));
+    const limitedMessages = allMessages.slice(0, 20);
+
+    // 构造兼容的响应格式
+    const emailBoxes = [];
+    const processedEmails = new Set();
+
+    limitedMessages.forEach(msg => {
+      if (!processedEmails.has(msg.email)) {
+        const emailStat = emailBoxStats.find(stat => stat.email === msg.email);
+        if (emailStat) {
+          emailBoxes.push({
+            email: msg.email,
+            domain: msg.domain,
+            messageCount: emailStat.messageCount,
+            messages: limitedMessages.filter(m => m.email === msg.email),
+            createdAt: emailStat.createdAt,
+            lastAccessedAt: emailStat.lastAccessedAt
+          });
+          processedEmails.add(msg.email);
+        }
+      }
+    });
 
     res.json({
       code: 200,
       success: true,
       data: {
-        emailBoxes: allEmails,
-        total: allEmails.length,
-        totalMessages: allEmails.reduce((sum, box) => sum + box.messageCount, 0)
+        emailBoxes: emailBoxes,
+        total: emailBoxes.length,
+        totalMessages: allMessages.length,
+        displayedMessages: limitedMessages.length
       }
     });
   } catch (error) {

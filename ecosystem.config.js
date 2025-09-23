@@ -8,14 +8,14 @@ module.exports = {
     env_production: {
       NODE_ENV: 'production',
       PORT: 8000,
-      MONGODB_URI: 'mongodb://localhost:27017/personal_website_prod',
+      MONGODB_URI: 'mongodb://admin:SecureMongo2024!@127.0.0.1:27017/personal_website_prod?authSource=admin',
       FRONTEND_URL: 'https://godaug.fun',
       UPLOAD_PATH: '/var/www/uploads',
       JWT_SECRET: 'prod_jwt_secret_2024_secure_key_godaug',
 
       // 邮件服务配置 - 使用Postfix发送验证邮件到真实邮箱
       SMTP_HOST: 'localhost',
-      SMTP_PORT: 25,  // 使用Postfix端口25发送到外部邮箱
+      SMTP_PORT: 2500,  // 使用inbucket端口2500用于临时邮箱
       SMTP_SECURE: 'false',
       SMTP_AUTH: 'false',  // Postfix本地不需要认证
       SMTP_USER: '',
@@ -40,5 +40,21 @@ module.exports = {
     watch: false,
     max_memory_restart: '1G',
     restart_delay: 4000
+  }, {
+    name: 'website-frontend',
+    script: 'serve',
+    args: '-s frontend/dist -l 3000',
+    cwd: '/root/RealWeb',
+    instances: 1,
+    exec_mode: 'fork',
+    env_production: {
+      NODE_ENV: 'production'
+    },
+    error_file: '/root/.pm2/logs/website-frontend-error.log',
+    out_file: '/root/.pm2/logs/website-frontend-out.log',
+    log_file: '/root/.pm2/logs/website-frontend.log',
+    time: true,
+    autorestart: true,
+    watch: false
   }]
 };
