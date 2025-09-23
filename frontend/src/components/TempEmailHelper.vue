@@ -1,7 +1,14 @@
 <template>
-  <div :class="['temp-email-helper', helperClass]" v-if="visible">
-    <!-- 助手弹窗 -->
-    <el-card class="helper-card" shadow="always">
+  <div :class="['temp-email-helper', helperClass, { collapsed: isCollapsed }]" v-if="visible">
+    <!-- 折叠状态：仅显示邮件图标 -->
+    <div v-if="isCollapsed" class="collapsed-helper" @click="toggleCollapse" title="展开临时邮箱助手">
+      <el-icon class="collapsed-icon">
+        <Message />
+      </el-icon>
+    </div>
+
+    <!-- 展开状态：完整助手界面 -->
+    <el-card v-else class="helper-card" shadow="always">
       <!-- 标题栏 -->
       <template #header>
         <div class="helper-header">
@@ -12,11 +19,9 @@
             <span class="header-title">临时邮箱助手</span>
           </div>
           <div class="header-actions">
-            <el-button type="text" size="small" @click="toggleCollapse" class="collapse-btn"
-              :title="isCollapsed ? '展开助手' : '收起助手'">
+            <el-button type="text" size="small" @click="toggleCollapse" class="collapse-btn" title="收起助手">
               <el-icon>
-                <ArrowUp v-if="!isCollapsed" />
-                <ArrowDown v-if="isCollapsed" />
+                <ArrowUp />
               </el-icon>
             </el-button>
             <el-button type="text" size="small" @click="$emit('close')" class="close-btn" title="关闭助手">
@@ -28,110 +33,110 @@
         </div>
       </template>
 
-      <!-- 可折叠内容区 -->
-      <div v-show="!isCollapsed" class="collapsible-content">
-        <!-- 权限检查 -->
-        <div v-if="!hasPermission" class="permission-required">
-          <el-alert title="需要权限" description="使用临时邮箱功能需要先激活权限" type="warning" :closable="false" show-icon />
-          <el-button type="primary" size="small" @click="$emit('permission-denied')" class="activate-btn">
-            激活权限
-          </el-button>
+      <!-- 主内容区 -->
+      <!-- 权限检查 -->
+      <div v-if="!hasPermission" class="permission-required">
+        <el-alert title="需要权限" description="使用临时邮箱功能需要先激活权限" type="warning" :closable="false" show-icon />
+        <el-button type="primary" size="small" @click="$emit('permission-denied')" class="activate-btn">
+          激活权限
+        </el-button>
+      </div>
+
+      <!-- 主功能区 -->
+      <div v-else class="helper-content">
+        <!-- 邮箱生成区 -->
+        <div class="email-generation">
+          <div class="generation-row">
+            <el-input
+              v-model="emailPrefix"
+              placeholder="自定义前缀(可选)"
+              size="small"
+              class="prefix-input"
+              clearable
+              maxlength="20"
+              show-word-limit
+              @keyup.enter="generateEmail"
+              @input="validatePrefix"
+            />
+            <span class="at-symbol">@</span>
+            <el-select v-model="selectedDomain" placeholder="选择域名" size="small" class="domain-select">
+              <el-option v-for="domain in availableDomains" :key="domain" :label="domain" :value="domain" />
+            </el-select>
+            <el-button type="primary" size="small" @click="generateEmail" :loading="generating"
+              :disabled="!selectedDomain" class="generate-btn">
+              {{ generating ? '生成中' : '生成邮箱' }}
+            </el-button>
+          </div>
         </div>
 
-        <!-- 主功能区 -->
-        <div v-else class="helper-content">
-          <!-- 智能提示 -->
-          <div class="smart-hint">
-            <el-icon class="hint-icon" color="#3182ce">
-              <InfoFilled />
+        <!-- 当前邮箱显示 -->
+        <div v-if="currentEmail" class="current-email">
+          <div class="email-label">
+            <el-icon class="label-icon" color="#48bb78">
+              <Message />
             </el-icon>
-            <span class="hint-text">
-              {{ getSmartHintText() }}
-            </span>
+            <span>当前邮箱：</span>
           </div>
-
-          <!-- 邮箱生成区 -->
-          <div class="email-generation">
-            <div class="generation-row">
-              <el-select v-model="selectedDomain" placeholder="选择域名" size="small" class="domain-select">
-                <el-option v-for="domain in availableDomains" :key="domain" :label="`@${domain}`" :value="domain" />
-              </el-select>
-              <el-button type="primary" size="small" @click="generateEmail" :loading="generating"
-                :disabled="!selectedDomain" class="generate-btn">
-                {{ generating ? '生成中' : '生成邮箱' }}
-              </el-button>
-            </div>
-          </div>
-
-          <!-- 当前邮箱显示 -->
-          <div v-if="currentEmail" class="current-email">
-            <div class="email-label">
-              <el-icon class="label-icon" color="#48bb78">
-                <Message />
+          <div class="email-value">
+            <span class="email-text">{{ currentEmail }}</span>
+            <el-button type="text" size="small" @click="copyEmail" class="copy-btn">
+              <el-icon>
+                <DocumentCopy />
               </el-icon>
-              <span>当前邮箱：</span>
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 验证码显示 -->
+        <transition name="code-appear" appear>
+          <div v-if="latestVerificationCode" class="verification-code">
+            <div class="code-label">
+              <el-icon class="label-icon" color="#e53e3e">
+                <Key />
+              </el-icon>
+              <span>最新验证码：</span>
             </div>
-            <div class="email-value">
-              <span class="email-text">{{ currentEmail }}</span>
-              <el-button type="text" size="small" @click="copyEmail" class="copy-btn">
+            <div class="code-value">
+              <el-tag type="danger" size="large" class="code-tag">
+                {{ latestVerificationCode }}
+              </el-tag>
+              <el-button type="primary" size="small" @click="copyCode" class="copy-code-btn">
                 <el-icon>
                   <DocumentCopy />
                 </el-icon>
+                复制验证码
               </el-button>
+            </div>
+            <div v-if="codeTimestamp" class="code-time">
+              <el-icon class="time-icon" color="#718096">
+                <Clock />
+              </el-icon>
+              <span class="time-text">{{ formatTime(codeTimestamp) }}</span>
             </div>
           </div>
+        </transition>
 
-          <!-- 验证码显示 -->
-          <transition name="code-appear" appear>
-            <div v-if="latestVerificationCode" class="verification-code">
-              <div class="code-label">
-                <el-icon class="label-icon" color="#e53e3e">
-                  <Key />
-                </el-icon>
-                <span>最新验证码：</span>
-              </div>
-              <div class="code-value">
-                <el-tag type="danger" size="large" class="code-tag">
-                  {{ latestVerificationCode }}
-                </el-tag>
-                <el-button type="primary" size="small" @click="copyCode" class="copy-code-btn">
-                  <el-icon>
-                    <DocumentCopy />
-                  </el-icon>
-                  复制验证码
-                </el-button>
-              </div>
-              <div v-if="codeTimestamp" class="code-time">
-                <el-icon class="time-icon" color="#718096">
-                  <Clock />
-                </el-icon>
-                <span class="time-text">{{ formatTime(codeTimestamp) }}</span>
-              </div>
-            </div>
-          </transition>
-
-          <!-- 状态栏 -->
-          <div class="status-bar">
-            <div class="status-left">
-              <el-icon :class="['status-icon', autoRefresh ? 'refreshing' : '']"
-                :color="autoRefresh ? '#48bb78' : '#a0aec0'">
+        <!-- 状态栏 -->
+        <div class="status-bar">
+          <div class="status-left">
+            <el-icon :class="['status-icon', autoRefresh ? 'refreshing' : '']"
+              :color="autoRefresh ? '#48bb78' : '#a0aec0'">
+              <Refresh />
+            </el-icon>
+            <span class="status-text">
+              {{ autoRefresh ? '自动刷新中...' : '已暂停刷新' }}
+            </span>
+          </div>
+          <div class="status-actions">
+            <el-button type="text" size="small" @click="manualRefresh" :loading="checking" class="manual-refresh-btn"
+              title="手动刷新">
+              <el-icon>
                 <Refresh />
               </el-icon>
-              <span class="status-text">
-                {{ autoRefresh ? '自动刷新中...' : '已暂停刷新' }}
-              </span>
-            </div>
-            <div class="status-actions">
-              <el-button type="text" size="small" @click="manualRefresh" :loading="checking" class="manual-refresh-btn"
-                title="手动刷新">
-                <el-icon>
-                  <Refresh />
-                </el-icon>
-              </el-button>
-              <el-button type="text" size="small" @click="toggleAutoRefresh" class="toggle-btn">
-                {{ autoRefresh ? '暂停' : '开始' }}
-              </el-button>
-            </div>
+            </el-button>
+            <el-button type="text" size="small" @click="toggleAutoRefresh" class="toggle-btn">
+              {{ autoRefresh ? '暂停' : '开始' }}
+            </el-button>
           </div>
         </div>
       </div>
@@ -190,6 +195,7 @@ const isCollapsed = ref(false)
 const hasPermission = ref(false)
 const availableDomains = ref([])
 const selectedDomain = ref('')
+const emailPrefix = ref('')
 const currentEmail = ref('')
 const latestVerificationCode = ref('')
 const codeTimestamp = ref(null)
@@ -288,16 +294,40 @@ const generateEmail = async () => {
     return
   }
 
+  // 验证自定义前缀
+  if (emailPrefix.value && emailPrefix.value.trim()) {
+    const prefix = emailPrefix.value.trim()
+    // 检查前缀是否符合邮箱用户名规范
+    if (!/^[a-zA-Z0-9._-]+$/.test(prefix)) {
+      ElMessage.warning('前缀只能包含字母、数字、点号、下划线和连字符')
+      return
+    }
+    if (prefix.length < 2) {
+      ElMessage.warning('前缀至少需要2个字符')
+      return
+    }
+  }
+
   try {
     generating.value = true
-    const response = await tempEmailApi.generateEmail({
+    const params = {
       domain: selectedDomain.value
-    })
+    }
+
+    // 如果有自定义前缀，添加到参数中
+    if (emailPrefix.value && emailPrefix.value.trim()) {
+      params.customName = emailPrefix.value.trim()
+    }
+
+    const response = await tempEmailApi.generateEmail(params)
 
     if (response.data.success) {
       currentEmail.value = response.data.data.email
       latestVerificationCode.value = ''
       codeTimestamp.value = null
+
+      // 清空前缀输入框
+      emailPrefix.value = ''
 
       ElMessage.success('邮箱生成成功')
       emit('email-generated', currentEmail.value)
@@ -397,18 +427,20 @@ const formatTime = (timestamp) => {
   return time.toLocaleDateString()
 }
 
-// 智能提示文本
-const getSmartHintText = () => {
-  if (!currentEmail.value) {
-    return '注册Augment账号需要验证邮箱，使用临时邮箱更便捷'
-  } else if (latestVerificationCode.value) {
-    return '验证码已检测到！复制验证码去完成注册吧'
-  } else if (autoRefresh.value) {
-    return '正在监控新邮件，收到验证码会自动提取'
-  } else {
-    return '已暂停监控，点击手动刷新或开始自动监控'
+// 验证前缀输入
+const validatePrefix = (value) => {
+  if (!value || !value.trim()) return
+
+  const prefix = value.trim()
+  // 移除不符合规范的字符
+  const validPrefix = prefix.replace(/[^a-zA-Z0-9._-]/g, '')
+
+  if (validPrefix !== prefix) {
+    emailPrefix.value = validPrefix
   }
 }
+
+
 
 // 验证码提取函数 - 增强版
 const extractVerificationCode = (emailContent) => {
@@ -695,31 +727,97 @@ onUnmounted(() => {
 <style scoped>
 .temp-email-helper {
   position: fixed;
+  z-index: 2000;
+}
+
+/* 展开状态位置 */
+.temp-email-helper:not(.collapsed) {
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2000;
   max-width: 320px;
   min-width: 280px;
 }
 
-.temp-email-helper--right {
+.temp-email-helper--right:not(.collapsed) {
   right: 20px;
 }
 
-.temp-email-helper--left {
+.temp-email-helper--left:not(.collapsed) {
   left: 20px;
 }
 
-.temp-email-helper--center {
+.temp-email-helper--center:not(.collapsed) {
   left: 50%;
   transform: translate(-50%, -50%);
 }
 
+/* 折叠状态位置 - 靠近滚动条 */
+.temp-email-helper.collapsed {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.temp-email-helper--right.collapsed {
+  right: 8px; /* 更靠近滚动条 */
+}
+
+.temp-email-helper--left.collapsed {
+  left: 8px;
+}
+
+.temp-email-helper--center.collapsed {
+  right: 8px; /* center模式下也放在右侧 */
+}
+
+/* 折叠状态样式 */
+.collapsed-helper {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #48bb78, #38a169);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(72, 187, 120, 0.3);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.collapsed-helper:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+}
+
+.collapsed-icon {
+  font-size: 24px;
+  color: white;
+  transition: transform 0.3s ease;
+}
+
+.collapsed-helper:hover .collapsed-icon {
+  transform: scale(1.1);
+}
+
+/* 展开状态样式 */
 .helper-card {
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .helper-header {
@@ -812,12 +910,26 @@ onUnmounted(() => {
 
 .generation-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.prefix-input {
+  flex: 1;
+  min-width: 80px;
+}
+
+.at-symbol {
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 14px;
+  padding: 0 2px;
 }
 
 .domain-select {
   flex: 1;
+  min-width: 100px;
 }
 
 .generate-btn {
@@ -995,7 +1107,8 @@ onUnmounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .temp-email-helper {
+  /* 展开状态 - 移动设备 */
+  .temp-email-helper:not(.collapsed) {
     position: fixed;
     top: auto;
     bottom: 20px;
@@ -1006,12 +1119,26 @@ onUnmounted(() => {
     width: 100%;
   }
 
-  .temp-email-helper--right,
-  .temp-email-helper--left,
-  .temp-email-helper--center {
+  .temp-email-helper--right:not(.collapsed),
+  .temp-email-helper--left:not(.collapsed),
+  .temp-email-helper--center:not(.collapsed) {
     left: 50%;
     right: auto;
     transform: translateX(-50%);
+  }
+
+  /* 折叠状态 - 移动设备 */
+  .temp-email-helper.collapsed {
+    bottom: 80px; /* 避免与底部导航冲突 */
+    top: auto;
+    transform: none;
+  }
+
+  .temp-email-helper--right.collapsed,
+  .temp-email-helper--left.collapsed,
+  .temp-email-helper--center.collapsed {
+    right: 12px;
+    left: auto;
   }
 }
 </style>
