@@ -228,8 +228,8 @@
           <div class="list-header">
             <h3>📬 所有邮件</h3>
             <div class="list-actions">
-              <el-tag v-if="allMessages.length >= 20" type="info" size="small" style="margin-right: 8px;">
-                显示最新20条
+              <el-tag v-if="paginatedTotal >= MAX_EMAIL_DISPLAY" type="info" size="small" style="margin-right: 8px;">
+                显示最新{{ MAX_EMAIL_DISPLAY }}条
               </el-tag>
               <el-button @click="refreshAllMessages" :loading="loading" icon="Refresh" type="primary" size="small">
                 刷新全部
@@ -270,6 +270,17 @@
               </template>
             </el-table-column>
           </el-table>
+          <div class="table-pagination" v-if="paginatedTotal > pageSize">
+            <el-pagination
+              background
+              layout="prev, pager, next"
+              :total="paginatedTotal"
+              :page-size="pageSize"
+              :current-page="currentPage"
+              @current-change="handlePageChange"
+              small
+            />
+          </div>
         </div>
       </el-card>
 
@@ -317,9 +328,9 @@
         <div class="all-emails-content">
           <el-tabs v-model="activeEmailTab" type="card">
             <el-tab-pane v-for="emailBox in allEmailBoxes" :key="emailBox.email"
-              :label="`${emailBox.email} (${emailBox.messages.length})`" :name="emailBox.email">
+              :label="`${emailBox.email} (${emailBox.displayCount})`" :name="emailBox.email">
               <div class="email-box-content">
-                <el-table :data="emailBox.messages" empty-text="暂无邮件" size="small">
+                <el-table :data="getEmailBoxMessages(emailBox.email)" empty-text="暂无邮件" size="small">
                   <el-table-column prop="from" label="发件人" width="200" />
                   <el-table-column prop="subject" label="主题" />
                   <el-table-column prop="date" label="时间" width="180">
@@ -335,6 +346,11 @@
                     </template>
                   </el-table-column>
                 </el-table>
+                <div class="email-box-pagination" v-if="emailBox.displayCount > pageSize">
+                  <el-pagination background layout="prev, pager, next" :total="emailBox.displayCount"
+                    :page-size="pageSize" :current-page="getEmailBoxCurrentPage(emailBox.email)"
+                    @current-change="page => handleEmailBoxPageChange(emailBox.email, page)" small />
+                </div>
               </div>
             </el-tab-pane>
           </el-tabs>
@@ -349,7 +365,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Key, Plus, Message, Refresh } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
@@ -395,6 +411,7 @@ const availableDomains = ref([])
 // 全部邮件
 const allEmailsDialogVisible = ref(false)
 const allEmailBoxes = ref([])
+const emailBoxPagination = reactive({})
 const activeEmailTab = ref('')
 const showCurrentEmailOnly = ref(false) // 已不再使用，仅保留变量避免大范围改动
 const allMessages = ref([])
@@ -402,15 +419,92 @@ const allMessages = ref([])
 // 临时邮箱公告
 const tempEmailNotice = ref(null)
 
-// 计算属性：显示的邮件列表（按时间排序，后端已限制20条）
-const displayMessages = computed(() => {
+const MAX_EMAIL_DISPLAY = 50
+const pageSize = 10
+const currentPage = ref(1)
+
+const latestMessages = computed(() => {
   return allMessages.value
+    .slice()
     .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, MAX_EMAIL_DISPLAY)
 })
 
-// 页面头部统计数据
+const paginatedTotal = computed(() => latestMessages.value.length)
+
+const displayMessages = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  const end = start + pageSize
+  return latestMessages.value.slice(start, end)
+})
+
+watch(latestMessages, () => {
+  currentPage.value = 1
+})
+
+watch(paginatedTotal, (total) => {
+  if (total === 0) {
+    currentPage.value = 1
+    return
+  }
+  const maxPage = Math.max(1, Math.ceil(total / pageSize))
+  if (currentPage.value > maxPage) {
+    currentPage.value = maxPage
+  }
+})
+
+const handlePageChange = (page) => {
+  currentPage.value = page
+}
+
+const getEmailBoxCurrentPage = (email) => emailBoxPagination[email]?.currentPage || 1
+
+const getEmailBoxMessages = (email) => {
+  const box = allEmailBoxes.value.find(item => item.email === email)
+  if (!box) return []
+  const start = (getEmailBoxCurrentPage(email) - 1) * pageSize
+  const end = start + pageSize
+  return box.messages.slice(start, end)
+}
+
+const handleEmailBoxPageChange = (email, page) => {
+  if (!emailBoxPagination[email]) {
+    emailBoxPagination[email] = { currentPage: 1 }
+  }
+  emailBoxPagination[email].currentPage = page
+}
+
+const resetEmailBoxPagination = (boxes) => {
+  Object.keys(emailBoxPagination).forEach(key => {
+    if (!boxes.some(box => box.email === key)) {
+      Reflect.deleteProperty(emailBoxPagination, key)
+    }
+  })
+  boxes.forEach(box => {
+    emailBoxPagination[box.email] = { currentPage: 1 }
+  })
+}
+
+const normalizeMessages = (messages = []) => {
+  return [...messages]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, MAX_EMAIL_DISPLAY)
+}
+
+const normalizeEmailBox = (emailBox) => {
+  const rawMessages = Array.isArray(emailBox.messages) ? emailBox.messages : []
+  const normalizedMessages = normalizeMessages(rawMessages)
+  const totalAvailable = typeof emailBox.messageCount === 'number' ? emailBox.messageCount : rawMessages.length
+  return {
+    ...emailBox,
+    messages: normalizedMessages,
+    messageCount: totalAvailable,
+    displayCount: normalizedMessages.length
+  }
+}
+
 const headerStats = computed(() => [
-  { value: allMessages.value.length, label: '封邮件' },
+  { value: paginatedTotal.value, label: '封邮件' },
   { value: availableDomains.value.length, label: '个域名' },
   { value: currentEmail.value ? 1 : 0, label: '个邮箱' }
 ])
@@ -446,6 +540,8 @@ const checkAccessStatus = async () => {
       const oldHasAccess = accessStatus.value.hasAccess
       accessStatus.value = response.data
 
+      loading.value = false
+
       // 如果权限状态从有变为无，清除相关数据
       if (oldHasAccess && !response.data.hasAccess) {
         // 清除邮件数据
@@ -455,54 +551,22 @@ const checkAccessStatus = async () => {
       }
     }
   } catch (error) {
-    console.error('检查权限状态失败:', error)
+    loading.value = false
+    console.error('获取全部邮件失败:', error)
 
-    // 如果是401错误，可能是登录过期
-    if (error.response?.status === 401) {
-      ElMessage.warning('登录状态已过期，请重新登录')
-      router.push('/auth/login')
+    // 检查是否是权限问题
+    if (error.response?.status === 403 && error.response?.data?.code === 'TEMP_EMAIL_ACCESS_REQUIRED') {
+      ElMessage.warning('需要激活临时邮箱权限')
+      // 重新检查权限状态，可能需要显示激活界面
+      checkAccessStatus()
+    } else if (error.response?.status === 401) {
+      ElMessage.error('登录状态已过期，请重新登录')
     } else {
-      ElMessage.error('检查权限状态失败')
+      ElMessage.error('获取全部邮件失败')
     }
   } finally {
-    loading.value = false
+    functionalLoading.value = false
   }
-}
-
-const goToLogin = () => {
-  router.push('/auth/login')
-}
-
-const handleActivationSuccess = async (data) => {
-  ElMessage.success('权限激活成功！')
-  showActivation.value = false
-
-  // 重新检查权限状态
-  await checkAccessStatus()
-
-  // 如果激活成功，加载相关数据并触发页面重新渲染
-  if (accessStatus.value.hasAccess) {
-    await checkServiceStatus()
-    await loadAvailableDomains()
-
-    // 使用nextTick确保DOM更新后再触发重新布局
-    await nextTick()
-
-    // 强制触发页面重新计算高度
-    window.dispatchEvent(new Event('resize'))
-  }
-}
-
-
-
-// 生成随机前缀
-const generateRandomPrefix = () => {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
-  let result = ''
-  for (let i = 0; i < 10; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  emailPrefix.value = result
 }
 
 // 生成临时邮箱
@@ -549,8 +613,6 @@ const generateEmail = async () => {
   }
 }
 
-
-
 // 刷新邮件列表
 const refreshMessages = async () => {
   if (!currentEmail.value) return
@@ -583,29 +645,31 @@ const refreshAllMessages = async () => {
 
     const response = await tempEmailApi.getAllEmails()
     if (response.data.success) {
-      allMessages.value = []
+      const aggregatedMessages = []
 
-      // 将所有邮箱的邮件合并到一个列表中
+      // 将所有邮箱的邮件聚合成一个列表
       response.data.data.emailBoxes.forEach(emailBox => {
         emailBox.messages.forEach(message => {
-          allMessages.value.push({
+          aggregatedMessages.push({
             ...message,
             email: emailBox.email
           })
         })
       })
 
-      // 按时间排序，最新的在前（后端已限制20条）
-      allMessages.value.sort((a, b) => new Date(b.date) - new Date(a.date))
-      const totalMessages = allMessages.value.length
+      // 按时间排序后仅保留最新 50 条邮件
+      aggregatedMessages.sort((a, b) => new Date(b.date) - new Date(a.date))
+      allMessages.value = aggregatedMessages.slice(0, MAX_EMAIL_DISPLAY)
+      const displayedCount = allMessages.value.length
 
       // 异步补充最近5封的验证码（从正文提取），不阻塞主列表刷新
       await enrichLatestCodes()
 
-      ElMessage.success(`已加载 ${totalMessages} 封邮件`)
+      ElMessage.success(`已加载最新 ${displayedCount} 封邮件`)
     }
   } catch (error) {
     console.error('获取全部邮件失败:', error)
+    loading.value = false
 
     // 检查是否是权限问题
     if (error.response?.status === 403 && error.response?.data?.code === 'TEMP_EMAIL_ACCESS_REQUIRED') {
@@ -652,7 +716,7 @@ const extractCode = (msgOrString) => {
 
 // 批量补充最近5封的验证码（从正文获取，减少API调用）
 const enrichLatestCodes = async () => {
-  const top = displayMessages.value.slice(0, 5);
+  const top = latestMessages.value.slice(0, 5);
   const tasks = top.map(async (row) => {
     try {
       const email = row.email || currentEmail.value;
@@ -720,22 +784,27 @@ const showAllEmails = async () => {
 
     const response = await tempEmailApi.getAllEmails()
     if (response.data.success) {
-      allEmailBoxes.value = response.data.data.emailBoxes
+      let boxes = response.data.data.emailBoxes || []
 
-      // 如果当前有邮箱且不在列表中，也加入列表
       if (currentEmail.value) {
-        const existingIndex = allEmailBoxes.value.findIndex(box => box.email === currentEmail.value)
-        if (existingIndex === -1 && messages.value.length > 0) {
-          allEmailBoxes.value.unshift({
-            email: currentEmail.value,
-            domain: currentEmail.value.split('@')[1],
-            messageCount: messages.value.length,
-            messages: messages.value
-          })
+        const exists = boxes.some(box => box.email === currentEmail.value)
+        if (!exists && messages.value.length > 0) {
+          boxes = [
+            {
+              email: currentEmail.value,
+              domain: currentEmail.value.split('@')[1],
+              messageCount: messages.value.length,
+              messages: messages.value
+            },
+            ...boxes
+          ]
         }
       }
 
-      // 设置默认选中的标签
+      const processedBoxes = boxes.map(normalizeEmailBox)
+      allEmailBoxes.value = processedBoxes
+      resetEmailBoxPagination(processedBoxes)
+
       if (allEmailBoxes.value.length > 0) {
         activeEmailTab.value = allEmailBoxes.value[0].email
       }
@@ -746,7 +815,9 @@ const showAllEmails = async () => {
         ElMessage.info('未找到任何邮件')
       } else {
         const totalMessages = response.data.data.totalMessages
-        ElMessage.success(`找到 ${allEmailBoxes.value.length} 个邮箱，共 ${totalMessages} 封邮件`)
+        const displayedCount = allEmailBoxes.value.reduce((sum, box) => sum + box.displayCount, 0)
+        const shownCount = typeof totalMessages === 'number' ? Math.min(totalMessages, displayedCount) : displayedCount
+        ElMessage.success(`找到 ${allEmailBoxes.value.length} 个邮箱，已展示最新 ${shownCount} 封邮件`)
       }
     }
   } catch (error) {
@@ -773,6 +844,9 @@ const closeAllEmailsDialog = () => {
   allEmailsDialogVisible.value = false
   allEmailBoxes.value = []
   activeEmailTab.value = ''
+  Object.keys(emailBoxPagination).forEach(key => {
+    Reflect.deleteProperty(emailBoxPagination, key)
+  })
 }
 
 // 格式化日期
@@ -1283,6 +1357,13 @@ onUnmounted(() => {
 
 .email-box-content {
   margin-top: 10px;
+}
+
+.table-pagination,
+.email-box-pagination {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .no-emails {

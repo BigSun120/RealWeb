@@ -11,6 +11,7 @@ class ToolsService {
     this.categories = [];
     this.loading = false;
     this.error = null;
+    this.apiLoaded = false;
   }
 
   /**
@@ -26,11 +27,14 @@ class ToolsService {
         params
       });
       if (response.code === 200) {
-        this.tools = response.data.tools;
+        const tools = Array.isArray(response?.data?.tools) ? response.data.tools : [];
+        this.tools = tools;
+        this.apiLoaded = true;
         return this.tools;
       }
       throw new Error(response.message || '获取工具列表失败');
     } catch (error) {
+      this.apiLoaded = false;
       this.error = error.message;
       // eslint-disable-next-line no-console
       console.error('获取工具列表失败:', error);
@@ -39,6 +43,7 @@ class ToolsService {
       this.loading = false;
     }
   }
+
 
   /**
    * 获取所有分类
@@ -196,11 +201,6 @@ class ToolsService {
   async initialize() {
     try {
       await Promise.all([this.getAllTools(), this.getAllCategories()]);
-
-      // 合并静态工具，但要去重
-      const staticTools = this.getStaticTools();
-      this.mergeStaticTools(staticTools);
-
       return true;
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -210,25 +210,17 @@ class ToolsService {
       const staticTools = this.getStaticTools();
       this.tools = staticTools;
 
+      // 确保分类至少有降级数据
+      if (this.categories.length === 0) {
+        try {
+          await this.getAllCategories();
+        } catch (categoryError) {
+          // getAllCategories 内部已记录日志
+        }
+      }
+
       return false;
     }
-  }
-
-  /**
-   * 合并静态工具，避免重复
-   */
-  mergeStaticTools(staticTools) {
-    const existingIds = new Set(this.tools.map(tool => tool.id));
-
-    staticTools.forEach(staticTool => {
-      if (!existingIds.has(staticTool.id)) {
-        // 只添加数据库中不存在的静态工具
-        this.tools.push(staticTool);
-        console.log(`添加静态工具: ${staticTool.name} (ID: ${staticTool.id})`);
-      } else {
-        console.log(`跳过重复工具: ${staticTool.name} (ID: ${staticTool.id}) - 数据库中已存在`);
-      }
-    });
   }
 }
 

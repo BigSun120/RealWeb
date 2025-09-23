@@ -358,28 +358,26 @@ router.get('/my-emails', auth, requireTempEmailAccess, async (req, res) => {
  */
 router.get('/all-emails', auth, requireTempEmailAccess, async (req, res) => {
   try {
+    const { limit = 50 } = req.query;
+    const maxItems = Math.max(1, Math.min(parseInt(limit, 10) || 50, 100));
+
     const allMessages = [];
     const emailBoxStats = [];
 
-    // 从数据库获取用户的邮箱（限制最近使用的50个）
+    // 从数据库获取最近使用的邮箱，最多保留 50 个
     const userEmailBoxes = await TempEmailBox.getUserActiveEmails(req.user._id, 50);
 
-    // 并发检查邮箱邮件，提高性能
     const emailPromises = userEmailBoxes.map(async (emailBox) => {
       try {
-        const response = await axios.get(`${INBUCKET_API}/mailbox/${emailBox.email}`, {
-          timeout: 2000 // 减少超时时间
-        });
+        const response = await axios.get(`${INBUCKET_API}/mailbox/${emailBox.email}`, { timeout: 2000 });
+        const messages = Array.isArray(response.data) ? response.data : [];
 
-        const messages = response.data || [];
-
-        // 异步更新邮箱的邮件数量（不阻塞响应）
+        // 异步更新数据库中的邮件数量（不阻塞响应）
         emailBox.updateMessageCount(messages.length).catch(err =>
           console.warn(`更新邮箱 ${emailBox.email} 邮件数量失败:`, err.message)
         );
 
         if (messages.length > 0) {
-          // 为每封邮件添加邮箱信息
           const messagesWithEmail = messages.map(msg => ({
             id: msg.id,
             from: msg.from,
@@ -408,42 +406,50 @@ router.get('/all-emails', auth, requireTempEmailAccess, async (req, res) => {
       }
     });
 
-    // 等待所有邮箱检查完成
     await Promise.allSettled(emailPromises);
 
-    // 按时间排序所有邮件，并限制最多20条
     allMessages.sort((a, b) => new Date(b.date) - new Date(a.date));
-    const limitedMessages = allMessages.slice(0, 20);
+    const limitedMessages = allMessages.slice(0, maxItems);
 
-    // 构造兼容的响应格式
     const emailBoxes = [];
     const processedEmails = new Set();
 
     limitedMessages.forEach(msg => {
-      if (!processedEmails.has(msg.email)) {
-        const emailStat = emailBoxStats.find(stat => stat.email === msg.email);
-        if (emailStat) {
-          emailBoxes.push({
-            email: msg.email,
-            domain: msg.domain,
-            messageCount: emailStat.messageCount,
-            messages: limitedMessages.filter(m => m.email === msg.email),
-            createdAt: emailStat.createdAt,
-            lastAccessedAt: emailStat.lastAccessedAt
-          });
-          processedEmails.add(msg.email);
-        }
+      if (processedEmails.has(msg.email)) {
+        return;
       }
+
+      const emailStat = emailBoxStats.find(stat => stat.email === msg.email);
+      if (!emailStat) {
+        return;
+      }
+
+      const emailMessages = limitedMessages
+        .filter(m => m.email === msg.email)
+        .slice(0, maxItems);
+
+      emailBoxes.push({
+        email: msg.email,
+        domain: msg.domain,
+        messageCount: emailStat.messageCount,
+        messages: emailMessages,
+        displayCount: emailMessages.length,
+        createdAt: emailStat.createdAt,
+        lastAccessedAt: emailStat.lastAccessedAt
+      });
+
+      processedEmails.add(msg.email);
     });
 
     res.json({
       code: 200,
       success: true,
       data: {
-        emailBoxes: emailBoxes,
+        emailBoxes,
         total: emailBoxes.length,
         totalMessages: allMessages.length,
-        displayedMessages: limitedMessages.length
+        displayedMessages: limitedMessages.length,
+        limit: maxItems
       }
     });
   } catch (error) {
