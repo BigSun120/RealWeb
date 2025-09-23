@@ -15,19 +15,32 @@
                 <el-dropdown-item command="edit" :icon="Edit">编辑</el-dropdown-item>
                 <el-dropdown-item command="copy" :icon="CopyDocument">复制</el-dropdown-item>
                 <el-dropdown-item command="check" :icon="Check">检查状态</el-dropdown-item>
-                <el-dropdown-item command="refresh-usage" :icon="Refresh">刷新使用次数</el-dropdown-item>
-                <el-dropdown-item 
-                  v-if="token.portal_url" 
-                  command="portal" 
-                  :icon="Link"
-                >
+                <el-dropdown-item>
+                  <el-popover placement="right" :width="200" trigger="hover" :show-arrow="false">
+                    <template #reference>
+                      <div class="refresh-menu-item">
+                        <el-icon>
+                          <Refresh />
+                        </el-icon>
+                        <span>刷新</span>
+                      </div>
+                    </template>
+                    <div class="refresh-options">
+                      <el-button type="text" size="small" @click="handleRefreshInfo" :loading="refreshingInfo"
+                        class="refresh-option-btn">
+                        基础信息刷新
+                      </el-button>
+                      <el-button type="text" size="small" @click="handleRefreshStatus" :loading="refreshingStatus"
+                        class="refresh-option-btn">
+                        令牌状态刷新
+                      </el-button>
+                    </div>
+                  </el-popover>
+                </el-dropdown-item>
+                <el-dropdown-item v-if="token.portal_url" command="portal" :icon="Link">
                   打开Portal
                 </el-dropdown-item>
-                <el-dropdown-item 
-                  command="delete" 
-                  :icon="Delete"
-                  class="danger-item"
-                >
+                <el-dropdown-item command="delete" :icon="Delete" class="danger-item">
                   删除
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -43,14 +56,11 @@
       <div class="status-section">
         <div class="status-item">
           <span class="label">状态:</span>
-          <el-tag 
-            :type="statusInfo.type" 
-            size="small"
-          >
+          <el-tag :type="statusInfo.type" size="small">
             {{ statusInfo.text }}
           </el-tag>
         </div>
-        
+
         <div v-if="token.ban_status?.lastChecked" class="status-item">
           <span class="label">检查时间:</span>
           <span class="value">{{ formatDate(token.ban_status.lastChecked) }}</span>
@@ -63,19 +73,14 @@
           <span class="label">令牌:</span>
           <span class="value masked-token">{{ token.masked_token }}</span>
         </div>
-        
+
         <div v-if="token.portal_url" class="detail-item">
           <span class="label">Portal:</span>
-          <el-link 
-            :href="token.portal_url" 
-            target="_blank" 
-            type="primary"
-            class="portal-link"
-          >
+          <el-link :href="token.portal_url" target="_blank" type="primary" class="portal-link">
             {{ formatUrl(token.portal_url) }}
           </el-link>
         </div>
-        
+
         <div v-if="token.email_note" class="detail-item">
           <span class="label">备注:</span>
           <span class="value">{{ token.email_note }}</span>
@@ -101,18 +106,10 @@
           <span class="label">快速切换到编辑器:</span>
         </div>
         <div class="editor-buttons">
-          <el-tooltip
-            v-for="editor in supportedEditors"
-            :key="editor.type"
-            :content="`切换到 ${editor.name}`"
-            placement="top"
-          >
-            <el-button
-              size="small"
-              :loading="switching && switchingEditor === editor.type"
-              @click="handleEditorSwitch(editor.type)"
-              class="editor-btn"
-            >
+          <el-tooltip v-for="editor in supportedEditors" :key="editor.type" :content="`切换到 ${editor.name}`"
+            placement="top">
+            <el-button size="small" :loading="switching && switchingEditor === editor.type"
+              @click="handleEditorSwitch(editor.type)" class="editor-btn">
               <span class="editor-icon">{{ editor.icon }}</span>
               <span class="editor-name">{{ editor.name }}</span>
             </el-button>
@@ -121,12 +118,7 @@
 
         <!-- 降级方案按钮 -->
         <div class="fallback-actions">
-          <el-button
-            size="small"
-            type="text"
-            @click="handleCopyToken"
-            class="copy-btn"
-          >
+          <el-button size="small" type="text" @click="handleCopyToken" class="copy-btn">
             📋 复制令牌信息
           </el-button>
         </div>
@@ -162,6 +154,14 @@ const props = defineProps({
   token: {
     type: Object,
     required: true
+  },
+  refreshingInfo: {
+    type: Boolean,
+    default: false
+  },
+  refreshingStatus: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -170,7 +170,8 @@ const emit = defineEmits([
   'edit',
   'delete',
   'check-status',
-  'refresh-usage',
+  'refresh-info',
+  'refresh-status',
   'copy-token',
   'open-portal'
 ])
@@ -188,8 +189,16 @@ const displayName = computed(() => {
 })
 
 const statusInfo = computed(() => {
+
   return formatTokenStatus(props.token.ban_status)
 })
+
+
+
+
+
+
+
 
 // 计算属性
 const canSwitchToEditor = computed(() => {
@@ -211,13 +220,19 @@ const handleCommand = (command) => {
     case 'check':
       emit('check-status', props.token)
       break
-    case 'refresh-usage':
-      emit('refresh-usage', props.token)
-      break
     case 'portal':
       emit('open-portal', props.token)
       break
   }
+}
+
+// 刷新相关方法
+const handleRefreshInfo = () => {
+  emit('refresh-info', props.token)
+}
+
+const handleRefreshStatus = () => {
+  emit('refresh-status', props.token)
 }
 
 // 编辑器切换方法
@@ -233,11 +248,10 @@ const handleEditorSwitch = async (editorType) => {
     const success = await switchToEditor(props.token, editorType)
 
     if (success) {
-      const editor = supportedEditors.find(e => e.type === editorType)
-      console.log(`[TokenCard] 成功切换到 ${editor?.name || editorType}`)
+      // no-op
     }
   } catch (error) {
-    console.error('[TokenCard] 编辑器切换失败:', error)
+    // 编辑器切换失败已通过UI反馈处理
   } finally {
     switchingEditor.value = null
   }
@@ -248,7 +262,7 @@ const handleCopyToken = async () => {
   try {
     await copyTokenInfo(props.token)
   } catch (error) {
-    console.error('[TokenCard] 复制令牌失败:', error)
+    // 复制令牌失败已通过UI反馈处理
   }
 }
 </script>
@@ -390,6 +404,39 @@ const handleCopyToken = async () => {
   gap: 8px;
 }
 
+/* 刷新菜单样式 */
+.refresh-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 11px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.refresh-menu-item:hover {
+  background-color: var(--el-fill-color-light);
+}
+
+.refresh-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.refresh-option-btn {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.refresh-option-btn:hover {
+  background-color: var(--el-fill-color-light);
+}
+
 .editor-btn {
   display: flex;
   align-items: center;
@@ -433,6 +480,7 @@ const handleCopyToken = async () => {
 
 /* 响应式设计 */
 @media (max-width: 480px) {
+
   .status-item,
   .detail-item,
   .stats-item {
@@ -440,15 +488,15 @@ const handleCopyToken = async () => {
     align-items: flex-start;
     gap: 4px;
   }
-  
+
   .value {
     text-align: left;
   }
-  
+
   .token-title {
     font-size: 14px;
   }
-  
+
   .token-url {
     font-size: 11px;
   }

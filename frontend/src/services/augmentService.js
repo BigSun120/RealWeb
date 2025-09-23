@@ -245,40 +245,95 @@ class AugmentService {
   }
 
   /**
-   * 刷新单个令牌的Portal信息
+   * 刷新令牌基础信息（Portal信息）
    * @param {string} tokenId - 令牌ID
    * @returns {Promise<Object>}
    */
-  async refreshPortalInfo(tokenId) {
+  async refreshTokenInfo(tokenId) {
     const response = await request({
-      url: `/tools/augment/tokens/${tokenId}/refresh-portal-info`,
+      url: `/tools/augment/tokens/${tokenId}/refresh-info`,
       method: 'post'
     })
 
     if (!response.success) {
-      throw new Error(response.message || '刷新Portal信息失败')
+      throw new Error(response.message || '刷新基础信息失败')
     }
 
     return response.data
   }
 
   /**
-   * 批量刷新令牌Portal信息
+   * 刷新令牌状态
+   * @param {string} tokenId - 令牌ID
+   * @returns {Promise<Object>}
+   */
+  async refreshTokenStatus(tokenId) {
+    const response = await request({
+      url: `/tools/augment/tokens/${tokenId}/refresh-status`,
+      method: 'post'
+    })
+
+    if (!response.success) {
+      throw new Error(response.message || '刷新令牌状态失败')
+    }
+
+    return response.data
+  }
+
+  /**
+   * 刷新单个令牌的Portal信息（保持向后兼容）
+   * @param {string} tokenId - 令牌ID
+   * @returns {Promise<Object>}
+   */
+  async refreshPortalInfo(tokenId) {
+    return await this.refreshTokenInfo(tokenId)
+  }
+
+  /**
+   * 批量刷新令牌基础信息
    * @param {Array<string>} tokenIds - 令牌ID数组
    * @returns {Promise<Array>}
    */
-  async batchRefreshPortalInfo(tokenIds) {
+  async batchRefreshTokenInfo(tokenIds) {
     const response = await request({
-      url: '/tools/augment/tokens/batch-refresh-portal-info',
+      url: '/tools/augment/tokens/batch-refresh-info',
       method: 'post',
       data: { tokenIds }
     })
 
     if (!response.success) {
-      throw new Error(response.message || '批量刷新Portal信息失败')
+      throw new Error(response.message || '批量刷新基础信息失败')
     }
 
-    return response.data
+    return response.data.results || response.data
+  }
+
+  /**
+   * 批量刷新令牌状态
+   * @param {Array<string>} tokenIds - 令牌ID数组
+   * @returns {Promise<Array>}
+   */
+  async batchRefreshTokenStatus(tokenIds) {
+    const response = await request({
+      url: '/tools/augment/tokens/batch-refresh-status',
+      method: 'post',
+      data: { tokenIds }
+    })
+
+    if (!response.success) {
+      throw new Error(response.message || '批量刷新令牌状态失败')
+    }
+
+    return response.data.results || response.data
+  }
+
+  /**
+   * 批量刷新令牌Portal信息（保持向后兼容）
+   * @param {Array<string>} tokenIds - 令牌ID数组
+   * @returns {Promise<Array>}
+   */
+  async batchRefreshPortalInfo(tokenIds) {
+    return await this.batchRefreshTokenInfo(tokenIds)
   }
 
   /**
@@ -348,17 +403,30 @@ class AugmentService {
    * @returns {Object}
    */
   formatTokenStatus(banStatus) {
+    // 如果没有状态信息，显示未检查
+    if (!banStatus) {
+      return { text: '未检查', type: 'info' }
+    }
+
+    // 首先检查是否被封禁
+    if (banStatus.isBanned) {
+      const statusMap = {
+        'UNAUTHORIZED': { text: '已封禁', type: 'danger' },
+        'FORBIDDEN': { text: '禁止访问', type: 'danger' },
+        'SUSPENDED': { text: '已暂停', type: 'danger' },
+        'RATE_LIMITED': { text: '限流中', type: 'warning' }
+      }
+      return statusMap[banStatus.status] || { text: '已封禁', type: 'danger' }
+    }
+
+    // 如果没有被封禁，检查具体状态
     const statusMap = {
       'ACTIVE': { text: '正常', type: 'success' },
-      'SUSPENDED': { text: '已暂停', type: 'danger' },
-      'UNAUTHORIZED': { text: '未授权', type: 'danger' },
-      'FORBIDDEN': { text: '禁止访问', type: 'danger' },
-      'RATE_LIMITED': { text: '限流中', type: 'warning' },
       'SERVER_ERROR': { text: '服务器错误', type: 'info' },
       'UNKNOWN_ERROR': { text: '未知错误', type: 'info' }
     }
 
-    return statusMap[banStatus?.status] || { text: '未知', type: 'info' }
+    return statusMap[banStatus.status] || { text: '正常', type: 'success' }
   }
 }
 

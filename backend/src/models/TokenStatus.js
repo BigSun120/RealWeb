@@ -45,7 +45,7 @@ const tokenStatusSchema = new mongoose.Schema({
     },
     source: {
       type: String,
-      enum: ['direct_add', 'pool_claim', 'pool_upload'],
+      enum: ['direct_add', 'pool_claim', 'pool_upload', 'manual_delete', 'ownership_transfer'],
       required: true
     },
     metadata: mongoose.Schema.Types.Mixed
@@ -69,7 +69,7 @@ const tokenStatusSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['available', 'claimed', 'expired', 'invalid'],
+      enum: [null, 'available', 'claimed', 'expired', 'invalid'],
       default: null
     },
     uploadedAt: Date,
@@ -126,7 +126,7 @@ tokenStatusSchema.index({ 'poolStatus.status': 1 });
 tokenStatusSchema.index({ 'tokenInfo.expiryDate': 1 });
 
 // 实例方法：更新当前所有者
-tokenStatusSchema.methods.updateCurrentOwner = function(userId, userInfo, source, metadata = {}) {
+tokenStatusSchema.methods.updateCurrentOwner = function (userId, userInfo, source, metadata = {}) {
   // 记录历史
   if (this.currentOwner.userId) {
     // 计算持有时长
@@ -173,7 +173,7 @@ tokenStatusSchema.methods.updateCurrentOwner = function(userId, userInfo, source
 };
 
 // 实例方法：释放所有者
-tokenStatusSchema.methods.releaseOwner = function(reason = 'deleted') {
+tokenStatusSchema.methods.releaseOwner = function (reason = 'deleted') {
   if (this.currentOwner.userId) {
     // 计算持有时长
     const ownershipDuration = Date.now() - this.stats.currentOwnershipDuration.getTime();
@@ -208,7 +208,7 @@ tokenStatusSchema.methods.releaseOwner = function(reason = 'deleted') {
 };
 
 // 实例方法：更新令牌池状态
-tokenStatusSchema.methods.updatePoolStatus = function(poolData) {
+tokenStatusSchema.methods.updatePoolStatus = function (poolData) {
   this.poolStatus = {
     ...this.poolStatus,
     ...poolData,
@@ -219,7 +219,7 @@ tokenStatusSchema.methods.updatePoolStatus = function(poolData) {
 };
 
 // 实例方法：移除令牌池状态
-tokenStatusSchema.methods.removeFromPool = function() {
+tokenStatusSchema.methods.removeFromPool = function () {
   this.poolStatus = {
     isInPool: false,
     poolId: null,
@@ -233,26 +233,26 @@ tokenStatusSchema.methods.removeFromPool = function() {
 };
 
 // 静态方法：通过访问令牌查找
-tokenStatusSchema.statics.findByAccessToken = function(accessToken) {
+tokenStatusSchema.statics.findByAccessToken = function (accessToken) {
   const crypto = require('crypto');
   const hash = crypto.createHash('sha256').update(accessToken).digest('hex');
   return this.findOne({ accessTokenHash: hash });
 };
 
 // 静态方法：创建或更新令牌状态
-tokenStatusSchema.statics.createOrUpdate = function(accessToken, data) {
+tokenStatusSchema.statics.createOrUpdate = function (accessToken, data) {
   const crypto = require('crypto');
   const hash = crypto.createHash('sha256').update(accessToken).digest('hex');
-  
+
   return this.findOneAndUpdate(
     { accessTokenHash: hash },
-    { 
+    {
       ...data,
       accessTokenHash: hash,
       updatedAt: new Date()
     },
-    { 
-      upsert: true, 
+    {
+      upsert: true,
       new: true,
       setDefaultsOnInsert: true
     }
@@ -260,12 +260,12 @@ tokenStatusSchema.statics.createOrUpdate = function(accessToken, data) {
 };
 
 // 静态方法：获取用户拥有的所有令牌状态
-tokenStatusSchema.statics.getUserTokens = function(userId) {
+tokenStatusSchema.statics.getUserTokens = function (userId) {
   return this.find({ 'currentOwner.userId': userId }).sort({ updatedAt: -1 });
 };
 
 // 静态方法：获取令牌池中的令牌状态
-tokenStatusSchema.statics.getPoolTokens = function(status = null) {
+tokenStatusSchema.statics.getPoolTokens = function (status = null) {
   const query = { 'poolStatus.isInPool': true };
   if (status) {
     query['poolStatus.status'] = status;
@@ -274,7 +274,7 @@ tokenStatusSchema.statics.getPoolTokens = function(status = null) {
 };
 
 // 中间件：更新时间戳
-tokenStatusSchema.pre('save', function(next) {
+tokenStatusSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });

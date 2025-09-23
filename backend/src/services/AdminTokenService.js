@@ -323,6 +323,73 @@ class AdminTokenService {
   }
 
   /**
+   * 批量刷新令牌状态（账号状态/封禁）
+   */
+  async batchRefreshStatus(tokenIds) {
+    const results = [];
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const tokenId of tokenIds) {
+      try {
+        // 查找令牌（可能在个人令牌或令牌池中）
+        let personalToken = await AugmentToken.findById(tokenId);
+        if (personalToken) {
+          // 个人令牌：检查账号状态并更新 banStatus
+          const accessToken = personalToken.accessToken;
+          if (!accessToken) {
+            results.push({ tokenId, success: false, error: '访问令牌为空' });
+            failCount++;
+            continue;
+          }
+
+          const statusResult = await AugmentService.checkAccountStatus(accessToken, personalToken.tenantUrl);
+          await personalToken.updateBanStatus({
+            isBanned: statusResult.is_banned,
+            status: statusResult.status,
+            errorMessage: statusResult.error_message,
+            responseCode: statusResult.response_code
+          });
+
+          results.push({ tokenId, success: true, data: { ban_status: personalToken.banStatus } });
+          successCount++;
+          continue;
+        }
+
+        // 令牌池令牌
+        const poolToken = await TokenPool.findById(tokenId);
+        if (poolToken) {
+          const accessToken = poolToken.accessToken;
+          if (!accessToken) {
+            results.push({ tokenId, success: false, error: '访问令牌为空' });
+            failCount++;
+            continue;
+          }
+
+          const statusResult = await AugmentService.checkAccountStatus(accessToken, poolToken.tenantUrl);
+          // 与令牌池路由保持一致：封禁 -> invalid，否则 available
+          poolToken.status = statusResult.is_banned ? 'invalid' : 'available';
+          poolToken.lastRefreshed = new Date();
+          await poolToken.save();
+
+          results.push({ tokenId, success: true, data: { status: poolToken.status } });
+          successCount++;
+          continue;
+        }
+
+        results.push({ tokenId, success: false, error: '令牌不存在' });
+        failCount++;
+      } catch (error) {
+        logger.error(`刷新令牌状态失败 ${tokenId}:`, error);
+        results.push({ tokenId, success: false, error: error.message });
+        failCount++;
+      }
+    }
+
+    return { results, successCount, failCount };
+  }
+
+  /**
    * 批量转移所有权
    */
   async batchTransferOwnership(data) {
@@ -530,6 +597,32 @@ class AdminTokenService {
       successCount,
       failCount
     };
+  }
+
+  /**
+   * 获取用户的令牌数量
+   * @param {string} userId - 用户ID
+   * @returns {Promise<number>} 令牌数量
+   */
+  async getUserTokenCount(userId) {
+    try {
+      // 统计个人令牌数量
+      const personalTokenCount = await AugmentToken.countDocuments({
+        userId: userId,
+        isActive: true
+      });
+
+      // 统计令牌池中该用户的令牌数量
+      const poolTokenCount = await TokenPool.countDocuments({
+        uploaderId: userId,
+        isActive: true
+      });
+
+      return personalTokenCount + poolTokenCount;
+    } catch (error) {
+      logger.error('获取用户令牌数量失败:', error);
+      throw error;
+    }
   }
 }
 

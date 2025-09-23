@@ -274,6 +274,12 @@ const routes = [
         name: 'BackgroundManager',
         component: () => import('@/views/admin/BackgroundManager.vue'),
         meta: { title: '背景管理', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'tokens',
+        name: 'AdminTokenManagement',
+        component: () => import('@/views/admin/TokenManagement.vue'),
+        meta: { title: '全部令牌管理', requiresAuth: true, requiresAdmin: true }
       }
     ]
   },

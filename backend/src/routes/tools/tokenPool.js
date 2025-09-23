@@ -440,6 +440,9 @@ router.delete('/clear-all', auth, async (req, res) => {
 router.post('/:tokenId/refresh', auth, async (req, res) => {
   try {
     const { tokenId } = req.params
+    if (!mongoose.Types.ObjectId.isValid(tokenId)) {
+      return res.status(400).json({ success: false, message: '无效的令牌ID' })
+    }
 
     const token = await TokenPool.findById(tokenId)
     if (!token) {
@@ -757,6 +760,121 @@ router.delete('/:tokenId/admin', auth, adminAuth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: '删除令牌失败',
+      error: error.message
+    })
+  }
+})
+
+/**
+ * 刷新令牌池令牌基础信息
+ * POST /api/tools/token-pool/:tokenId/refresh-info
+ */
+router.post('/:tokenId/refresh-info', auth, async (req, res) => {
+  try {
+    const { tokenId } = req.params
+    if (!mongoose.Types.ObjectId.isValid(tokenId)) {
+      return res.status(400).json({ success: false, message: '无效的令牌ID' })
+    }
+
+    const token = await TokenPool.findById(tokenId)
+    if (!token) {
+      return res.status(404).json({
+        success: false,
+        message: '令牌不存在'
+      })
+    }
+
+    // 检查权限：只有上传者或管理员可以刷新
+    if (token.uploaderId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: '没有权限刷新此令牌'
+      })
+    }
+
+    // 获取Portal信息（基础信息查询）
+    const portalInfo = await AugmentService.getCustomerInfo(token.accessToken, token.portalUrl)
+
+    // 更新令牌基础信息
+    token.portalInfo = JSON.stringify(portalInfo)
+    token.creditsBalance = portalInfo.credits_balance || 0
+    token.expiryDate = portalInfo.expiry_date ? new Date(portalInfo.expiry_date) : null
+    token.lastRefreshed = new Date()
+
+    await token.save()
+
+    logger.info(`Token pool info refreshed: ${tokenId} by user ${req.user.email}`)
+
+    res.json({
+      success: true,
+      message: '基础信息刷新成功',
+      data: token
+    })
+  } catch (error) {
+    logger.error('Refresh token pool info error:', error)
+    res.status(500).json({
+      success: false,
+      message: '刷新基础信息失败',
+      error: error.message
+    })
+  }
+})
+
+/**
+ * 刷新令牌池令牌状态
+ * POST /api/tools/token-pool/:tokenId/refresh-status
+ */
+router.post('/:tokenId/refresh-status', auth, async (req, res) => {
+  try {
+    const { tokenId } = req.params
+    if (!mongoose.Types.ObjectId.isValid(tokenId)) {
+      return res.status(400).json({ success: false, message: '无效的令牌ID' })
+    }
+
+    const token = await TokenPool.findById(tokenId)
+    if (!token) {
+      return res.status(404).json({
+        success: false,
+        message: '令牌不存在'
+      })
+    }
+
+    // 检查权限：只有上传者或管理员可以刷新
+    if (token.uploaderId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: '没有权限刷新此令牌'
+      })
+    }
+
+    // 检查令牌状态（功能验证）
+    const statusResult = await AugmentService.checkAccountStatus(token.accessToken, token.tenantUrl)
+
+    // 根据状态结果更新令牌状态
+    if (statusResult.is_banned) {
+      token.status = 'invalid'
+    } else {
+      token.status = 'available'
+    }
+
+    token.lastRefreshed = new Date()
+    await token.save()
+
+    logger.info(`Token pool status refreshed: ${tokenId} by user ${req.user.email}, status: ${statusResult.status}`)
+
+    res.json({
+      success: true,
+      message: '令牌状态刷新成功',
+      data: {
+        token: token,
+        status_result: statusResult
+      }
+    })
+  } catch (error) {
+    logger.error('Refresh token pool status error:', error)
+    res.status(500).json({
+      success: false,
+      message: '刷新令牌状态失败',
       error: error.message
     })
   }

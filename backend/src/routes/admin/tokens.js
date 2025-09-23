@@ -84,6 +84,40 @@ router.post('/batch/refresh-portal', adminAuth, async (req, res) => {
 });
 
 /**
+ * 批量刷新令牌状态
+ * POST /api/admin/tokens/batch/refresh-status
+ */
+router.post('/batch/refresh-status', adminAuth, async (req, res) => {
+  try {
+    const { tokenIds } = req.body;
+
+    if (!tokenIds || !Array.isArray(tokenIds) || tokenIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供要刷新的令牌ID列表'
+      });
+    }
+
+    const result = await adminTokenService.batchRefreshStatus(tokenIds);
+
+    res.json({
+      success: true,
+      data: result,
+      message: `批量刷新完成，成功 ${result.successCount} 个，失败 ${result.failCount} 个`
+    });
+
+  } catch (error) {
+    logger.error('批量刷新令牌状态失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '批量刷新令牌状态失败',
+      error: error.message
+    });
+  }
+});
+
+
+/**
  * 批量转移所有权
  * POST /api/admin/tokens/batch/transfer-ownership
  */
@@ -213,7 +247,7 @@ router.get('/users', adminAuth, async (req, res) => {
     }
 
     const users = await User.find(query)
-      .select('_id username email displayName')
+      .select('_id username email displayName isAdmin')
       .limit(50)
       .sort({ username: 1 });
 
@@ -228,6 +262,32 @@ router.get('/users', adminAuth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: '获取用户列表失败',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * 获取用户的令牌数量
+ * GET /api/admin/tokens/users/:userId/count
+ */
+router.get('/users/:userId/count', adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const count = await adminTokenService.getUserTokenCount(userId);
+
+    res.json({
+      success: true,
+      data: { count },
+      message: '获取用户令牌数量成功'
+    });
+
+  } catch (error) {
+    logger.error('获取用户令牌数量失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取用户令牌数量失败',
       error: error.message
     });
   }

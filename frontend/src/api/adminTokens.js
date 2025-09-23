@@ -22,6 +22,16 @@ export const batchRefreshPortalInfo = (tokenIds) => {
   return api.post('/admin/tokens/batch/refresh-portal', { tokenIds });
 };
 
+
+/**
+ * 批量刷新令牌状态
+ * @param {Array} tokenIds - 令牌ID数组
+ * @returns {Promise}
+ */
+export const batchRefreshStatus = (tokenIds) => {
+  return api.post('/admin/tokens/batch/refresh-status', { tokenIds });
+};
+
 /**
  * 批量转移所有权
  * @param {Object} data - 转移数据
@@ -58,4 +68,13 @@ export const batchDeleteTokens = (tokenIds) => {
  */
 export const getUsersForTransfer = (search = '') => {
   return api.get('/admin/tokens/users', { params: { search } });
+};
+
+/**
+ * 获取用户的令牌数量
+ * @param {string} userId - 用户ID
+ * @returns {Promise}
+ */
+export const getUserTokenCount = (userId) => {
+  return api.get(`/admin/tokens/users/${userId}/count`);
 };

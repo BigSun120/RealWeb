@@ -415,7 +415,121 @@ router.post('/tokens/:tokenId/check-status', async (req, res) => {
 });
 
 /**
- * 刷新令牌Portal信息（使用次数等）
+ * 刷新令牌基础信息（Portal信息）
+ * POST /api/tools/augment/tokens/:tokenId/refresh-info
+ */
+router.post('/tokens/:tokenId/refresh-info', async (req, res) => {
+  try {
+    const { tokenId } = req.params;
+
+    const token = await AugmentToken.findByTokenId(tokenId, req.user._id);
+    if (!token) {
+      return res.status(404).json({
+        success: false,
+        message: '令牌不存在'
+      });
+    }
+
+    // 获取访问令牌
+    const accessToken = token.accessToken;
+    if (!accessToken) {
+      return res.status(500).json({
+        success: false,
+        message: '访问令牌为空'
+      });
+    }
+
+    // 获取Portal信息（基础信息查询）
+    const portalInfo = await AugmentService.getCustomerInfo(accessToken, token.portalUrl);
+
+    // 更新令牌的Portal信息
+    await token.updatePortalInfo(portalInfo);
+
+    res.json({
+      success: true,
+      data: {
+        portal_info: portalInfo,
+        usage_stats: {
+          credits_balance: portalInfo.credits_balance,
+          total_usage: portalInfo.total_usage,
+          last_updated: new Date()
+        }
+      },
+      message: '基础信息刷新成功'
+    });
+
+    logger.info(`Token info refreshed for user ${req.user._id}, tokenId: ${tokenId}`);
+  } catch (error) {
+    logger.error('Refresh token info failed:', error);
+    res.status(500).json({
+      success: false,
+      message: '刷新基础信息失败',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * 刷新令牌状态
+ * POST /api/tools/augment/tokens/:tokenId/refresh-status
+ */
+router.post('/tokens/:tokenId/refresh-status', async (req, res) => {
+  try {
+    const { tokenId } = req.params;
+
+    const token = await AugmentToken.findByTokenId(tokenId, req.user._id);
+    if (!token) {
+      return res.status(404).json({
+        success: false,
+        message: '令牌不存在'
+      });
+    }
+
+    // 获取访问令牌
+    const accessToken = token.accessToken;
+    if (!accessToken) {
+      return res.status(500).json({
+        success: false,
+        message: '访问令牌为空'
+      });
+    }
+
+    // 检查令牌状态（功能验证）
+    const statusResult = await AugmentService.checkAccountStatus(accessToken, token.tenantUrl);
+
+    // 更新令牌状态
+    await token.updateBanStatus({
+      isBanned: statusResult.is_banned,
+      status: statusResult.status,
+      errorMessage: statusResult.error_message,
+      responseCode: statusResult.response_code
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ban_status: token.banStatus,
+        is_banned: statusResult.is_banned,
+        status: statusResult.status,
+        error_message: statusResult.error_message,
+        response_code: statusResult.response_code
+      },
+      message: '令牌状态刷新成功'
+    });
+
+    logger.info(`Token status refreshed for user ${req.user._id}, tokenId: ${tokenId}, status: ${statusResult.status}`);
+  } catch (error) {
+    logger.error('Refresh token status failed:', error);
+    res.status(500).json({
+      success: false,
+      message: '刷新令牌状态失败',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * 刷新令牌Portal信息（使用次数等）- 保持向后兼容
  * POST /api/tools/augment/tokens/:tokenId/refresh-portal-info
  */
 router.post('/tokens/:tokenId/refresh-portal-info', async (req, res) => {
@@ -469,7 +583,177 @@ router.post('/tokens/:tokenId/refresh-portal-info', async (req, res) => {
 });
 
 /**
- * 批量刷新令牌Portal信息
+ * 批量刷新令牌基础信息
+ * POST /api/tools/augment/tokens/batch-refresh-info
+ */
+router.post('/tokens/batch-refresh-info', async (req, res) => {
+  try {
+    const { tokenIds } = req.body;
+
+    if (!Array.isArray(tokenIds) || tokenIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供有效的令牌ID数组'
+      });
+    }
+
+    const results = [];
+
+    // 并发刷新，但限制并发数量
+    const concurrency = 3;
+    for (let i = 0; i < tokenIds.length; i += concurrency) {
+      const batch = tokenIds.slice(i, i + concurrency);
+      const batchPromises = batch.map(async (tokenId) => {
+        try {
+          const token = await AugmentToken.findByTokenId(tokenId, req.user._id);
+          if (!token) {
+            return { tokenId, success: false, error: '令牌不存在' };
+          }
+
+          const accessToken = token.accessToken;
+          if (!accessToken) {
+            return { tokenId, success: false, error: '访问令牌为空' };
+          }
+
+          // 获取Portal信息（基础信息查询）
+          const portalInfo = await AugmentService.getCustomerInfo(accessToken, token.portalUrl);
+          await token.updatePortalInfo(portalInfo);
+
+          return {
+            tokenId,
+            success: true,
+            data: {
+              portal_info: portalInfo,
+              usage_stats: {
+                credits_balance: portalInfo.credits_balance,
+                total_usage: portalInfo.total_usage,
+                last_updated: new Date()
+              }
+            }
+          };
+        } catch (error) {
+          return { tokenId, success: false, error: error.message };
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+
+    res.json({
+      success: true,
+      data: {
+        results,
+        successCount,
+        failCount
+      },
+      message: `批量基础信息刷新完成，成功: ${successCount}，失败: ${failCount}`
+    });
+
+    logger.info(`Batch token info refresh completed for user ${req.user._id}, success: ${successCount}, failed: ${failCount}`);
+  } catch (error) {
+    logger.error('Batch refresh token info failed:', error);
+    res.status(500).json({
+      success: false,
+      message: '批量刷新基础信息失败',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * 批量刷新令牌状态
+ * POST /api/tools/augment/tokens/batch-refresh-status
+ */
+router.post('/tokens/batch-refresh-status', async (req, res) => {
+  try {
+    const { tokenIds } = req.body;
+
+    if (!Array.isArray(tokenIds) || tokenIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供有效的令牌ID数组'
+      });
+    }
+
+    const results = [];
+
+    // 并发刷新，但限制并发数量
+    const concurrency = 3;
+    for (let i = 0; i < tokenIds.length; i += concurrency) {
+      const batch = tokenIds.slice(i, i + concurrency);
+      const batchPromises = batch.map(async (tokenId) => {
+        try {
+          const token = await AugmentToken.findByTokenId(tokenId, req.user._id);
+          if (!token) {
+            return { tokenId, success: false, error: '令牌不存在' };
+          }
+
+          const accessToken = token.accessToken;
+          if (!accessToken) {
+            return { tokenId, success: false, error: '访问令牌为空' };
+          }
+
+          // 检查令牌状态（功能验证）
+          const statusResult = await AugmentService.checkAccountStatus(accessToken, token.tenantUrl);
+
+          // 更新令牌状态
+          await token.updateBanStatus({
+            isBanned: statusResult.is_banned,
+            status: statusResult.status,
+            errorMessage: statusResult.error_message,
+            responseCode: statusResult.response_code
+          });
+
+          return {
+            tokenId,
+            success: true,
+            data: {
+              ban_status: token.banStatus,
+              is_banned: statusResult.is_banned,
+              status: statusResult.status,
+              error_message: statusResult.error_message,
+              response_code: statusResult.response_code
+            }
+          };
+        } catch (error) {
+          return { tokenId, success: false, error: error.message };
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+
+    res.json({
+      success: true,
+      data: {
+        results,
+        successCount,
+        failCount
+      },
+      message: `批量令牌状态刷新完成，成功: ${successCount}，失败: ${failCount}`
+    });
+
+    logger.info(`Batch token status refresh completed for user ${req.user._id}, success: ${successCount}, failed: ${failCount}`);
+  } catch (error) {
+    logger.error('Batch refresh token status failed:', error);
+    res.status(500).json({
+      success: false,
+      message: '批量刷新令牌状态失败',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * 批量刷新令牌Portal信息 - 保持向后兼容
  * POST /api/tools/augment/tokens/batch-refresh-portal-info
  */
 router.post('/tokens/batch-refresh-portal-info', async (req, res) => {

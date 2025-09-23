@@ -147,15 +147,25 @@ class AugmentService {
   }
 
   /**
-   * 检查账号状态
+   * 检查账号状态（功能验证）
+   * 使用chat-stream端点进行真实功能验证，参考Git项目的正确实现
    */
   async checkAccountStatus(token, tenantUrl) {
     try {
       // 确保 tenant URL 以斜杠结尾
       const baseUrl = tenantUrl.endsWith('/') ? tenantUrl : `${tenantUrl}/`;
-      const apiUrl = `${baseUrl}find-missing`;
+      const apiUrl = `${baseUrl}chat-stream`;
 
-      const requestBody = {};
+      // 构建真实的聊天请求体（参考Git项目实现）
+      const requestBody = {
+        "chat_history": [{
+          "response_text": "你好 Cube! 我是 Augment，很高兴为你提供帮助。",
+          "request_message": "你好，我是Cube"
+        }],
+        "message": "我叫什么名字",
+        "mode": "CHAT"
+      };
+
       const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
@@ -171,61 +181,63 @@ class AugmentService {
       const statusCode = response.status;
       const responseBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
 
-      // 分析响应确定账号状态
-      if (responseBody.toLowerCase().includes('suspended')) {
-        return {
-          is_banned: true,
-          status: 'SUSPENDED',
-          error_message: 'Account is suspended based on response content',
-          response_code: statusCode
-        };
-      } else if (statusCode >= 200 && statusCode < 300) {
-        return {
-          is_banned: false,
-          status: 'ACTIVE',
-          error_message: null,
-          response_code: statusCode
-        };
-      } else {
-        // 处理不同的错误状态码
-        let status, errorMessage, isBanned;
+      // 精确的状态码判断（参考Git项目实现）
+      // 只依据HTTP状态码判断，不检查响应内容
+      switch (statusCode) {
+        case 200:
+          // 200状态码表示令牌有效，可以正常使用聊天功能
+          return {
+            is_banned: false,
+            status: 'ACTIVE',
+            error_message: null,
+            response_code: statusCode
+          };
 
-        switch (statusCode) {
-          case 401:
-            status = 'UNAUTHORIZED';
-            errorMessage = 'Token is invalid or account is banned';
-            isBanned = true;
-            break;
-          case 403:
-            status = 'FORBIDDEN';
-            errorMessage = 'Access forbidden - account may be banned';
-            isBanned = true;
-            break;
-          case 429:
-            status = 'RATE_LIMITED';
-            errorMessage = 'Rate limited - account is active but throttled';
-            isBanned = false;
-            break;
-          case 500:
-          case 502:
-          case 503:
-          case 504:
+        case 401:
+          // 401状态码表示令牌失效或被封禁（最重要的判断）
+          return {
+            is_banned: true,
+            status: 'UNAUTHORIZED',
+            error_message: 'Token is invalid or banned',
+            response_code: statusCode
+          };
+
+        case 403:
+          return {
+            is_banned: true,
+            status: 'FORBIDDEN',
+            error_message: 'Access forbidden',
+            response_code: statusCode
+          };
+
+        case 429:
+          return {
+            is_banned: true,
+            status: 'RATE_LIMITED',
+            error_message: 'Rate limit exceeded',
+            response_code: statusCode
+          };
+
+        default:
+          // 其他状态码的处理
+          const isBanned = statusCode >= 400 && statusCode < 500;
+          let status = 'UNKNOWN_ERROR';
+          let errorMessage = 'Unknown error';
+
+          if (statusCode >= 500) {
             status = 'SERVER_ERROR';
             errorMessage = 'Server error - cannot determine ban status';
-            isBanned = false;
-            break;
-          default:
-            status = 'UNKNOWN_ERROR';
-            errorMessage = 'Unknown error - possible ban';
-            isBanned = true;
-        }
+          } else if (statusCode >= 400) {
+            status = 'CLIENT_ERROR';
+            errorMessage = 'Client error';
+          }
 
-        return {
-          is_banned: isBanned,
-          status,
-          error_message: `${errorMessage}: ${responseBody}`,
-          response_code: statusCode
-        };
+          return {
+            is_banned: isBanned,
+            status,
+            error_message: `${errorMessage}: ${responseBody}`,
+            response_code: statusCode
+          };
       }
     } catch (error) {
       return {
@@ -238,7 +250,8 @@ class AugmentService {
   }
 
   /**
-   * 获取客户信息和使用统计
+   * 获取客户信息和使用统计（基础信息查询）
+   * 此方法只获取Portal API信息，不维护账号状态
    */
   async getCustomerInfo(token, tenantUrl) {
     try {

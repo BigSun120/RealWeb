@@ -72,6 +72,9 @@
             <el-menu-item index="/admin/tools/settings" class="sub-menu-item">
               <span class="sub-menu-title">工具设置</span>
             </el-menu-item>
+            <el-menu-item index="/admin/tokens" class="sub-menu-item">
+              <span class="sub-menu-title">全部令牌</span>
+            </el-menu-item>
           </el-sub-menu>
 
           <!-- 用户管理区 -->
@@ -285,6 +288,7 @@ export default {
         'email-management': '邮件管理',
         'temp-email-activation-codes': '验证码管理',
         backgrounds: '背景管理',
+        tokens: '全部令牌管理',
         activity: '活动日志',
         settings: '系统设置'
       };

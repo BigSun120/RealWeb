@@ -68,8 +68,24 @@ export const tokenPoolService = {
     })
   },
 
-  // 刷新单个令牌的Portal信息
+  // 刷新令牌基础信息
   async refreshTokenInfo(tokenId) {
+    return await request({
+      url: `/tools/token-pool/${tokenId}/refresh-info`,
+      method: 'post'
+    })
+  },
+
+  // 刷新令牌状态
+  async refreshTokenStatus(tokenId) {
+    return await request({
+      url: `/tools/token-pool/${tokenId}/refresh-status`,
+      method: 'post'
+    })
+  },
+
+  // 刷新单个令牌的Portal信息（保持向后兼容）
+  async refreshTokenInfoLegacy(tokenId) {
     return await request({
       url: `/tools/token-pool/${tokenId}/refresh`,
       method: 'post'

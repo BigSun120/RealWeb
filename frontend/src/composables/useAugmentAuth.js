@@ -106,6 +106,8 @@ export function useAugmentAuth() {
     try {
       const result = await augmentService.getTokens(activeOnly)
       tokens.value = result
+
+
       return result
     } catch (error) {
       ElMessage.error(`加载令牌列表失败: ${error.message}`)
@@ -343,10 +345,10 @@ export function useAugmentAuth() {
       }
 
       if (result.failed > 0) {
-        console.warn('导入失败的令牌:', result.errors)
+        // 导入失败的明细已由后端返回给调用方按需处理
       }
       if (result.duplicated > 0) {
-        console.info('重复的令牌:', result.duplicates)
+        // 重复令牌明细已由后端返回给调用方按需处理
       }
 
       return result
@@ -403,9 +405,9 @@ export function useAugmentAuth() {
   })
 
   /**
-   * 刷新Portal信息
+   * 刷新基础信息（Portal信息）
    */
-  const refreshPortalInfo = async (tokenId) => {
+  const refreshTokenInfo = async (tokenId) => {
     try {
       const result = await augmentService.refreshPortalInfo(tokenId)
 
@@ -414,22 +416,122 @@ export function useAugmentAuth() {
 
       return result
     } catch (error) {
-      ElMessage.error(`刷新Portal信息失败: ${error.message}`)
+      ElMessage.error(`刷新基础信息失败: ${error.message}`)
       throw error
     }
   }
 
   /**
-   * 批量刷新Portal信息
+   * 刷新令牌状态
    */
-  const batchRefreshPortalInfo = async (tokenIds) => {
+  const refreshTokenStatus = async (tokenId) => {
+
+    try {
+      const idxBefore = tokens.value.findIndex(t => t.id === tokenId)
+
+
+      const result = await augmentService.refreshTokenStatus(tokenId)
+
+
+      // 更新本地状态 - 使用后端返回的ban_status对象
+      const index = tokens.value.findIndex(t => t.id === tokenId)
+      if (index !== -1) {
+        const newBanStatus = result.ban_status || {
+          isBanned: result.is_banned,
+          status: result.status,
+          lastChecked: new Date(),
+          errorMessage: result.error_message,
+          responseCode: result.response_code
+        }
+
+
+
+        const prevRef = tokens.value[index]
+        const updatedToken = { ...prevRef, _refreshingStatus: false, ban_status: newBanStatus }
+
+        // 替换整个token对象
+        tokens.value.splice(index, 1, updatedToken)
+
+      }
+
+      return result
+    } catch (error) {
+      ElMessage.error(`刷新令牌状态失败: ${error.message}`)
+      throw error
+    } finally {
+
+    }
+  }
+
+  /**
+   * 刷新Portal信息（保持向后兼容）
+   */
+  const refreshPortalInfo = async (tokenId) => {
+    return await refreshTokenInfo(tokenId)
+  }
+
+  /**
+   * 批量刷新基础信息
+   */
+  const batchRefreshTokenInfo = async (tokenIds) => {
     try {
       const results = await augmentService.batchRefreshPortalInfo(tokenIds)
       return results
     } catch (error) {
-      ElMessage.error(`批量刷新Portal信息失败: ${error.message}`)
+      ElMessage.error(`批量刷新基础信息失败: ${error.message}`)
       throw error
     }
+  }
+
+  /**
+   * 批量刷新令牌状态
+   */
+  const batchRefreshTokenStatus = async (tokenIds) => {
+
+    try {
+      const response = await augmentService.batchRefreshTokenStatus(tokenIds)
+      const result = response.results || response
+
+
+      // 更新本地状态
+      result.forEach(item => {
+        if (item.success) {
+          const index = tokens.value.findIndex(t => t.id === item.tokenId)
+          if (index !== -1) {
+            const newBanStatus = item.data.ban_status || {
+              isBanned: item.data.is_banned,
+              status: item.data.status,
+              lastChecked: new Date(),
+              errorMessage: item.data.error_message,
+              responseCode: item.data.response_code
+            }
+
+
+
+            const prevRef = tokens.value[index]
+            const updatedToken = { ...prevRef, _refreshingStatus: false, ban_status: newBanStatus }
+
+            // 替换整个token对象
+            tokens.value.splice(index, 1, updatedToken)
+
+          }
+        }
+      })
+
+      return result
+    } catch (error) {
+      ElMessage.error(`批量刷新令牌状态失败: ${error.message}`)
+      throw error
+    } finally {
+
+    }
+  }
+
+  /**
+   * 批量刷新Portal信息（保持向后兼容）
+   */
+  const batchRefreshPortalInfo = async (tokenIds) => {
+    return await batchRefreshTokenInfo(tokenIds)
   }
 
   // 重置OAuth状态
@@ -460,8 +562,12 @@ export function useAugmentAuth() {
     loadTokens,
     updateToken,
     deleteToken,
-    refreshPortalInfo,
-    batchRefreshPortalInfo,
+    refreshTokenInfo,
+    refreshTokenStatus,
+    refreshPortalInfo, // 保持向后兼容
+    batchRefreshTokenInfo,
+    batchRefreshTokenStatus,
+    batchRefreshPortalInfo, // 保持向后兼容
     checkTokenStatus,
     batchCheckTokenStatus,
     refreshTokenUsage,

@@ -16,12 +16,36 @@
           <el-button @click="showUploadDialog = true" :icon="Upload" type="primary" round>
             上传令牌
           </el-button>
-          <el-button @click="refreshPool" :icon="Refresh" :loading="isRefreshing" round>
-            刷新
-          </el-button>
+          <el-popover placement="bottom" :width="200" trigger="hover" :show-arrow="false">
+            <template #reference>
+              <el-button :icon="Refresh" :loading="isRefreshing" round>
+                刷新
+              </el-button>
+            </template>
+            <div class="refresh-options">
+              <el-button type="text" size="small" @click="batchRefreshPoolInfo" :loading="isRefreshingPoolInfo"
+                class="refresh-option-btn">
+                批量基础信息刷新
+              </el-button>
+              <el-button type="text" size="small" @click="batchRefreshPoolStatus" :loading="isRefreshingPoolStatus"
+                class="refresh-option-btn">
+                批量令牌状态刷新
+              </el-button>
+            </div>
+          </el-popover>
         </div>
       </div>
     </div>
+    <!-- 批量进度浮层 -->
+    <transition name="el-fade-in-linear">
+      <div v-if="showBatchProgress" class="batch-progress-float">
+        <el-card class="batch-progress-card" shadow="always">
+          <div class="batch-progress-title">{{ batchTitle }} {{ batchDone }} / {{ batchTotal }}</div>
+          <el-progress :percentage="batchPercent" :stroke-width="8" />
+        </el-card>
+      </div>
+    </transition>
+
 
     <!-- 统计信息 -->
     <div class="stats-section">
@@ -135,8 +159,8 @@
               <el-table-column label="账号状态" min-width="110" align="center">
                 <template #default="{ row }">
                   <div class="status-info">
-                    <el-tag :type="getStatusType(row)" size="default" effect="light" round>
-                      {{ getStatusText(row) }}
+                    <el-tag :type="getAccountStatusType(row)" size="default" effect="light" round>
+                      {{ getAccountStatusText(row) }}
                     </el-tag>
                   </div>
                 </template>
@@ -160,11 +184,22 @@
                         :disabled="row.status !== 'available'" :icon="Download" circle>
                       </el-button>
                     </el-tooltip>
-                    <el-tooltip content="刷新Portal信息" placement="top">
-                      <el-button :icon="Refresh" size="small" @click="refreshTokenPortalInfo(row)"
-                        :loading="row._refreshing" circle plain>
-                      </el-button>
-                    </el-tooltip>
+                    <el-popover placement="top" :width="180" trigger="hover" :show-arrow="false">
+                      <template #reference>
+                        <el-button :icon="Refresh" size="small" :loading="row._refreshing" circle plain>
+                        </el-button>
+                      </template>
+                      <div class="refresh-options">
+                        <el-button type="text" size="small" @click="refreshTokenInfo(row)"
+                          :loading="row._refreshingInfo" class="refresh-option-btn">
+                          基础信息刷新
+                        </el-button>
+                        <el-button type="text" size="small" @click="refreshTokenStatus(row)"
+                          :loading="row._refreshingStatus" class="refresh-option-btn">
+                          令牌状态刷新
+                        </el-button>
+                      </div>
+                    </el-popover>
                     <!-- 管理员删除按钮 -->
                     <el-tooltip v-if="isAdmin" content="管理员删除" placement="top">
                       <el-button type="danger" size="small" @click="adminDeleteToken(row)" :loading="row._deleting"
@@ -268,8 +303,8 @@
               <el-table-column label="账号状态" min-width="110" align="center">
                 <template #default="{ row }">
                   <div class="status-info">
-                    <el-tag :type="getStatusType(row)" size="default" effect="light" round>
-                      {{ getStatusText(row) }}
+                    <el-tag :type="getAccountStatusType(row)" size="default" effect="light" round>
+                      {{ getAccountStatusText(row) }}
                     </el-tag>
                   </div>
                 </template>
@@ -295,181 +330,7 @@
         </el-card>
       </el-tab-pane>
 
-      <!-- 全部令牌（管理员专用） -->
-      <el-tab-pane v-if="isAdmin" label="全部令牌" name="all">
-        <el-card class="all-tokens-card" shadow="hover">
-          <template #header>
-            <div class="card-header-with-actions">
-              <div class="card-title">
-                <el-icon class="card-icon">
-                  <Monitor />
-                </el-icon>
-                <h2>全部令牌管理</h2>
-                <span class="card-subtitle">管理员专用 - 查看和管理所有用户的令牌</span>
-              </div>
-              <div class="card-actions">
-                <el-button @click="refreshAllTokens" :icon="Refresh" :loading="isRefreshingAll" size="small">
-                  刷新
-                </el-button>
-              </div>
-            </div>
-          </template>
 
-          <!-- 批量操作工具栏 -->
-          <div v-show="selectedAllTokens.length > 0" class="batch-operations-modern">
-            <div class="selected-info-modern">
-              <el-icon class="selected-icon"><Select /></el-icon>
-              <span>已选择 <strong>{{ selectedAllTokens.length }}</strong> 个令牌</span>
-            </div>
-            <div class="operation-buttons-modern">
-              <el-button @click="batchRefreshPortal" :loading="batchRefreshing" size="small" class="op-btn refresh-btn">
-                <el-icon>
-                  <Refresh />
-                </el-icon>
-                强制刷新
-              </el-button>
-              <el-button @click="showTransferDialog = true" size="small" class="op-btn transfer-btn">
-                <el-icon>
-                  <User />
-                </el-icon>
-                转移所有权
-              </el-button>
-              <el-button @click="batchReclaim" size="small" class="op-btn reclaim-btn">
-                <el-icon>
-                  <Upload />
-                </el-icon>
-                强制回收到池
-              </el-button>
-              <el-button type="danger" @click="batchDelete" size="small" class="op-btn delete-btn">
-                <el-icon>
-                  <Delete />
-                </el-icon>
-                批量删除
-              </el-button>
-            </div>
-          </div>
-
-          <div v-if="allTokens.length === 0" class="empty-state">
-            <el-empty description="暂无令牌数据" />
-          </div>
-
-          <div v-else class="all-tokens-table-container-modern">
-            <el-table ref="allTokensTable" :data="sortedAllTokens" style="width: 100%" :header-cell-style="{
-              background: '#f8fafc',
-              color: '#374151',
-              fontWeight: '600',
-              textAlign: 'center',
-              whiteSpace: 'nowrap',
-              borderBottom: '2px solid #e5e7eb',
-              fontSize: '14px'
-            }" :cell-style="{ textAlign: 'center', padding: '16px 12px', fontSize: '12px' }" stripe border
-              class="modern-table" @selection-change="handleAllTokensSelectionChange">
-              <!-- 选择列 -->
-              <el-table-column type="selection" width="55" align="center" />
-
-              <!-- 序号 -->
-              <el-table-column label="序号" width="60" align="center">
-                <template #default="{ $index }">
-                  {{ $index + 1 }}
-                </template>
-              </el-table-column>
-
-              <!-- 邮箱备注 -->
-              <el-table-column label="邮箱备注" min-width="160" align="center">
-                <template #default="{ row }">
-                  <div class="email-note-modern">
-                    <div class="email-text" :title="row.emailNote || '未设置'">
-                      {{ row.emailNote || '未设置' }}
-                    </div>
-                    <el-button v-if="row.emailNote" @click="copyToClipboard(row.emailNote)" size="small" text
-                      class="copy-btn" title="复制邮箱备注">
-                      复制
-                    </el-button>
-                  </div>
-                </template>
-              </el-table-column>
-
-              <!-- 所属用户 -->
-              <el-table-column label="所属用户" min-width="120" align="center">
-                <template #default="{ row }">
-                  <div class="owner-info">
-                    <el-icon class="user-icon">
-                      <User />
-                    </el-icon>
-                    <div class="user-details">
-                      <div class="username">{{ row.ownerInfo?.username || '未知' }}</div>
-                      <div class="user-email">{{ row.ownerInfo?.email || '未知' }}</div>
-                    </div>
-                  </div>
-                </template>
-              </el-table-column>
-
-              <!-- 过期时间 -->
-              <el-table-column label="过期时间" min-width="140" align="center">
-                <template #header>
-                  <div class="sortable-header" @click="toggleSort('all', 'expiryDate')">
-                    <span>过期时间</span>
-                    <el-icon class="sort-icon" :class="getSortIconClass('all', 'expiryDate')">
-                      <Sort />
-                    </el-icon>
-                  </div>
-                </template>
-                <template #default="{ row }">
-                  <div class="expiry-info">
-                    <el-text :class="getExpiryClass(row)" size="small">
-                      {{ formatDate(row.expiryDate) || '未知' }}
-                    </el-text>
-                  </div>
-                </template>
-              </el-table-column>
-
-              <!-- 剩余次数 -->
-              <el-table-column label="剩余次数" min-width="110" align="center">
-                <template #default="{ row }">
-                  <div class="credits-info">
-                    <el-tag :type="getCreditsTagType(row.creditsBalance)" size="small">
-                      {{ row.creditsBalance || 0 }}
-                    </el-tag>
-                  </div>
-                </template>
-              </el-table-column>
-
-              <!-- 账号状态 -->
-              <el-table-column label="账号状态" min-width="110" align="center">
-                <template #default="{ row }">
-                  <div class="account-status">
-                    <el-tag :type="getAccountStatusTagType(row.accountStatus)" size="small">
-                      {{ getAccountStatusText(row.accountStatus) }}
-                    </el-tag>
-                  </div>
-                </template>
-              </el-table-column>
-
-              <!-- 令牌状态 -->
-              <el-table-column label="令牌状态" min-width="120" align="center">
-                <template #default="{ row }">
-                  <div class="token-status">
-                    <el-tag :type="getTokenStatusTagType(row.tokenStatus)" size="small">
-                      {{ getTokenStatusText(row.tokenStatus) }}
-                    </el-tag>
-                  </div>
-                </template>
-              </el-table-column>
-
-              <!-- 最后活跃 -->
-              <el-table-column label="最后活跃" min-width="140" align="center">
-                <template #default="{ row }">
-                  <div class="last-active">
-                    <el-text size="small" style="color: #666;">
-                      {{ formatDate(row.lastActive) || '未知' }}
-                    </el-text>
-                  </div>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </el-card>
-      </el-tab-pane>
 
       <!-- 已保存的令牌 -->
       <el-tab-pane label="已保存的令牌" name="saved">
@@ -512,10 +373,23 @@
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
-                <el-button type="primary" @click="refreshTokens" :icon="Refresh" :loading="isRefreshing" round
-                  size="small">
-                  刷新令牌
-                </el-button>
+                <el-popover placement="bottom" :width="200" trigger="hover" :show-arrow="false">
+                  <template #reference>
+                    <el-button type="primary" :icon="Refresh" :loading="isRefreshing" round size="small">
+                      刷新令牌
+                    </el-button>
+                  </template>
+                  <div class="refresh-options">
+                    <el-button type="text" size="small" @click="batchRefreshTokensInfo"
+                      :loading="isRefreshingTokensInfo" class="refresh-option-btn">
+                      批量基础信息刷新
+                    </el-button>
+                    <el-button type="text" size="small" @click="batchRefreshTokensStatus"
+                      :loading="isRefreshingTokensStatus" class="refresh-option-btn">
+                      批量令牌状态刷新
+                    </el-button>
+                  </div>
+                </el-popover>
               </div>
             </div>
           </template>
@@ -595,8 +469,8 @@
               <el-table-column label="账号状态" min-width="110" align="center">
                 <template #default="{ row }">
                   <div class="status-info">
-                    <el-tag :type="getPortalStatusType(row)" size="default" effect="light" round>
-                      {{ getPortalStatusText(row) }}
+                    <el-tag :type="getAccountStatusType(row)" size="default" effect="light" round>
+                      {{ getAccountStatusText(row) }}
                     </el-tag>
                   </div>
                 </template>
@@ -643,11 +517,22 @@
               <el-table-column label="操作" min-width="200" fixed="right" align="center">
                 <template #default="{ row }">
                   <div class="action-buttons compact-actions">
-                    <el-tooltip content="刷新Portal信息" placement="top">
-                      <el-button type="primary" size="small" @click="refreshPortalInfo(row)" :loading="row._refreshing"
-                        :icon="Refresh" circle plain>
-                      </el-button>
-                    </el-tooltip>
+                    <el-popover placement="top" :width="180" trigger="hover" :show-arrow="false">
+                      <template #reference>
+                        <el-button type="primary" size="small" :loading="row._refreshing" :icon="Refresh" circle plain>
+                        </el-button>
+                      </template>
+                      <div class="refresh-options">
+                        <el-button type="text" size="small" @click="refreshSavedTokenInfo(row)"
+                          :loading="row._refreshingInfo" class="refresh-option-btn">
+                          基础信息刷新
+                        </el-button>
+                        <el-button type="text" size="small" @click="refreshSavedTokenStatus(row)"
+                          :loading="row._refreshingStatus" class="refresh-option-btn">
+                          令牌状态刷新
+                        </el-button>
+                      </div>
+                    </el-popover>
                     <el-tooltip content="上传到池" placement="top">
                       <el-button type="info" size="small" @click="uploadTokenToPool(row)" :loading="row._uploading"
                         :icon="Upload" circle plain>
@@ -801,48 +686,7 @@
       </el-tab-pane>
     </el-tabs>
 
-    <!-- 批量刷新进度条对话框 -->
-    <el-dialog v-model="refreshProgress.visible" title="批量刷新Portal信息" :closable="false" width="500px">
-      <div class="progress-container">
-        <el-progress :percentage="progressPercentage" :status="refreshProgress.status" :stroke-width="8" text-inside />
-        <div class="progress-info">
-          <p>正在刷新令牌Portal信息...</p>
-          <p>进度: {{ refreshProgress.current }} / {{ refreshProgress.total }}</p>
-          <div v-if="refreshProgress.errors.length > 0" class="error-list">
-            <p>失败的令牌:</p>
-            <ul>
-              <li v-for="error in refreshProgress.errors" :key="error.tokenId">
-                {{ error.emailNote }}: {{ error.error }}
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </el-dialog>
 
-    <!-- 转移所有权对话框 -->
-    <el-dialog v-model="showTransferDialog" title="转移令牌所有权" width="600px">
-      <div class="transfer-dialog">
-        <p>将选中的 {{ selectedAllTokens.length }} 个令牌转移给其他用户</p>
-        <el-form :model="transferForm" label-width="100px">
-          <el-form-item label="目标用户">
-            <el-select v-model="transferForm.targetUserId" placeholder="请选择目标用户" filterable remote
-              :remote-method="searchUsers" :loading="searchingUsers" style="width: 100%">
-              <el-option v-for="user in availableUsers" :key="user._id" :label="`${user.username} (${user.email})`"
-                :value="user._id" />
-            </el-select>
-          </el-form-item>
-        </el-form>
-      </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showTransferDialog = false">取消</el-button>
-          <el-button type="primary" @click="confirmTransfer" :loading="transferring">
-            确认转移
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
 
     <!-- 上传令牌到池子对话框 -->
     <el-dialog v-model="showUploadDialog" title="上传令牌到池子" width="800px" :close-on-click-modal="false">
@@ -965,7 +809,7 @@ import TokenImportDialog from './components/TokenImportDialog.vue'
 import TokenEditDialog from './components/TokenEditDialog.vue'
 import TempEmailHelper from '@/components/TempEmailHelper.vue'
 import { tokenPoolService } from '@/services/tokenPoolService'
-import * as adminTokensApi from '@/api/adminTokens'
+
 
 // 响应式数据
 const authUrl = ref('')
@@ -1025,15 +869,9 @@ const sortedTokens = computed(() => {
   return sortTokens(tokens.value, 'saved')
 })
 
-const sortedAllTokens = computed(() => {
-  return sortTokens(allTokens.value, 'all')
-})
 
-// 进度条百分比计算
-const progressPercentage = computed(() => {
-  if (refreshProgress.value.total === 0) return 0
-  return Math.round((refreshProgress.value.current / refreshProgress.value.total) * 100)
-})
+
+
 
 
 
@@ -1065,43 +903,45 @@ const tokenForm = ref({
 })
 
 // 加载状态
+// 批量进度状态
+const showBatchProgress = ref(false)
+const batchTitle = ref('')
+const batchTotal = ref(0)
+const batchDone = ref(0)
+const batchPercent = computed(() => batchTotal.value ? Math.round((batchDone.value / batchTotal.value) * 100) : 0)
+
+const startBatchProgress = (title, total) => {
+  showBatchProgress.value = true
+  batchTitle.value = title
+  batchTotal.value = total
+  batchDone.value = 0
+}
+const incBatchProgress = () => {
+  batchDone.value = Math.min(batchDone.value + 1, batchTotal.value)
+}
+const finishBatchProgress = () => {
+  showBatchProgress.value = false
+}
+
 const isGenerating = ref(false)
 const isGettingToken = ref(false)
 const isSaving = ref(false)
 const isRefreshing = ref(false)
 
+// 分离的刷新状态
+const isRefreshingPoolInfo = ref(false)
+const isRefreshingPoolStatus = ref(false)
+const isRefreshingTokensInfo = ref(false)
+const isRefreshingTokensStatus = ref(false)
+
 // 排序状态
 const sortConfig = ref({
   pool: { field: null, order: null },
   uploads: { field: null, order: null },
-  saved: { field: null, order: null },
-  all: { field: null, order: null }
+  saved: { field: null, order: null }
 })
 
-// 管理员令牌管理相关数据
-const allTokens = ref([])
-const selectedAllTokens = ref([])
-const allTokensTable = ref(null)
-const isRefreshingAll = ref(false)
-const batchRefreshing = ref(false)
-const showTransferDialog = ref(false)
-const availableUsers = ref([])
 
-// 进度条相关
-const refreshProgress = ref({
-  visible: false,
-  current: 0,
-  total: 0,
-  status: 'active',
-  errors: []
-})
-
-// 转移相关
-const transferForm = ref({
-  targetUserId: null
-})
-const transferring = ref(false)
-const searchingUsers = ref(false)
 
 // 使用组合式函数
 const {
@@ -1111,8 +951,14 @@ const {
   loadTokens,
   updateToken: updateTokenApi,
   deleteToken: deleteTokenApi,
+  refreshTokenInfo: refreshTokenInfoApi,
+  refreshTokenStatus: refreshTokenStatusApi,
   refreshPortalInfo: refreshPortalInfoApi,
-  batchRefreshPortalInfo: batchRefreshPortalInfoApi
+  batchRefreshTokenInfo: batchRefreshTokenInfoApi,
+  batchRefreshTokenStatus: batchRefreshTokenStatusApi,
+  batchRefreshPortalInfo: batchRefreshPortalInfoApi,
+  checkTokenStatus: checkTokenStatusApi,
+  formatTokenStatus
 } = useAugmentAuth()
 
 const { switchToEditor, copyTokenInfo } = useProtocolSwitcher()
@@ -1189,7 +1035,7 @@ const copyToClipboard = async (text) => {
     await navigator.clipboard.writeText(text)
     return true
   } catch (error) {
-    console.error('复制失败:', error)
+    // 复制失败已通过返回值处理
     return false
   }
 }
@@ -1581,8 +1427,7 @@ const refreshPool = async () => {
 
     ElMessage.success('刷新成功')
   } catch (error) {
-    console.error('刷新失败:', error)
-    console.error('错误详情:', error.response?.data || error.message)
+    // 刷新失败详情已通过UI反馈处理
     ElMessage.error(error.message || '刷新失败')
   } finally {
     isRefreshing.value = false
@@ -1639,7 +1484,7 @@ const claimToken = async (token) => {
     }
   } catch (error) {
     if (error.message !== 'cancel') {
-      console.error('领取失败:', error)
+      // 领取失败已通过UI反馈处理
       ElMessage.error(error.message || '领取失败')
     }
   } finally {
@@ -1695,7 +1540,7 @@ const adminDeleteToken = async (token) => {
     }
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('管理员删除失败:', error)
+      // 管理员删除失败已通过UI反馈处理
       ElMessage.error(error.message || '删除失败')
     }
   } finally {
@@ -1722,6 +1567,7 @@ const getStatusText = (token) => {
     case 'expired': return '已过期'
     case 'invalid': return '无效'
     default: return '未知'
+
   }
 }
 
@@ -1735,6 +1581,7 @@ const maskEmailForPool = (email) => {
   let result = ''
 
   // 处理@前的部分
+
   const localPart = email.substring(0, atIndex)
   if (localPart.length <= 2) {
     // 如果@前不足2位，全部替换为*
@@ -1770,305 +1617,29 @@ const getTokenEmailNote = (token, isMyUpload = false) => {
   return token.email_note || token.emailNote || '未设置'
 }
 
+// 基于 ban_status 的账号状态展示
+const getAccountStatusType = (row) => {
+  const info = formatTokenStatus(row.ban_status)
+  return info.type
+}
+
+const getAccountStatusText = (row) => {
+  const info = formatTokenStatus(row.ban_status)
+  return info.text
+}
+
+
 // 这个函数已不再需要，因为我们简化了显示逻辑
 
-// ==================== 管理员令牌管理方法 ====================
-
-// 获取所有令牌
-const refreshAllTokens = async () => {
-  if (!isAdmin.value) return
-
-  isRefreshingAll.value = true
-  try {
-    const response = await adminTokensApi.getAllTokens()
-    allTokens.value = response.data.tokens || []
-
-    if (allTokens.value.length > 0) {
-      ElMessage.success(`刷新成功，加载了 ${allTokens.value.length} 个令牌`)
-    } else {
-      ElMessage.info('当前系统中没有令牌数据')
-    }
-  } catch (error) {
-    console.error('加载全部令牌失败:', error)
-    ElMessage.error(`刷新失败: ${error.message}`)
-  } finally {
-    isRefreshingAll.value = false
-  }
-}
-
-// 处理全部令牌表格选择变化
-const handleAllTokensSelectionChange = (selection) => {
-  selectedAllTokens.value = selection
-}
-
-// 批量刷新Portal信息
-const batchRefreshPortal = async () => {
-  if (selectedAllTokens.value.length === 0) {
-    ElMessage.warning('请选择要刷新的令牌')
-    return
-  }
-
-  batchRefreshing.value = true
-  refreshProgress.value = {
-    visible: true,
-    current: 0,
-    total: selectedAllTokens.value.length,
-    status: 'active',
-    errors: []
-  }
-
-  try {
-    const tokenIds = selectedAllTokens.value.map(token => token.id)
-    const response = await adminTokensApi.batchRefreshPortalInfo(tokenIds)
-
-    // 更新进度
-    refreshProgress.value.current = response.data.successCount
-    refreshProgress.value.status = response.data.failCount > 0 ? 'exception' : 'success'
-
-    // 更新本地数据
-    if (response.data.results) {
-      response.data.results.forEach(result => {
-        if (result.success) {
-          const tokenIndex = allTokens.value.findIndex(t => t.id === result.tokenId)
-          if (tokenIndex !== -1) {
-            // 更新令牌信息
-            allTokens.value[tokenIndex].creditsBalance = result.data.credits_balance || 0
-            allTokens.value[tokenIndex].expiryDate = result.data.expiry_date
-            allTokens.value[tokenIndex].lastActive = new Date().toISOString()
-          }
-        }
-      })
-    }
-
-    ElMessage.success(`批量刷新完成，成功 ${response.data.data.successCount} 个，失败 ${response.data.data.failCount} 个`)
-
-    // 刷新其他表格数据
-    await Promise.all([
-      refreshPool(),
-      refreshTokens()
-    ])
-  } catch (error) {
-    refreshProgress.value.status = 'exception'
-    ElMessage.error(`批量刷新失败: ${error.message}`)
-  } finally {
-    batchRefreshing.value = false
-    // 3秒后隐藏进度条
-    setTimeout(() => {
-      refreshProgress.value.visible = false
-    }, 3000)
-  }
-}
-
-// 批量回收到池
-const batchReclaim = async () => {
-  if (selectedAllTokens.value.length === 0) {
-    ElMessage.warning('请选择要回收的令牌')
-    return
-  }
-
-  const personalTokens = selectedAllTokens.value.filter(token => token.source === 'personal')
-  if (personalTokens.length === 0) {
-    ElMessage.warning('请选择个人令牌进行回收')
-    return
-  }
-
-  try {
-    await ElMessageBox.confirm(
-      `确定要将选中的 ${personalTokens.length} 个个人令牌回收到令牌池吗？`,
-      '确认回收',
-      { type: 'warning' }
-    )
-
-    const tokenIds = personalTokens.map(token => token.id)
-    const response = await adminTokensApi.batchReclaimToPool(tokenIds)
-
-    // 更新本地数据
-    personalTokens.forEach(token => {
-      const tokenIndex = allTokens.value.findIndex(t => t.id === token.id)
-      if (tokenIndex !== -1) {
-        allTokens.value[tokenIndex].source = 'pool'
-        allTokens.value[tokenIndex].tokenStatus = 'pool_available'
-        allTokens.value[tokenIndex].ownerInfo = null
-      }
-    })
-
-    ElMessage.success(`批量回收完成，成功 ${response.data.data.successCount} 个，失败 ${response.data.data.failCount} 个`)
-
-    // 刷新其他表格数据
-    await Promise.all([
-      refreshPool(),
-      refreshTokens()
-    ])
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(`批量回收失败: ${error.message}`)
-    }
-  }
-}
 
 
 
-// 批量删除
-const batchDelete = async () => {
-  if (selectedAllTokens.value.length === 0) {
-    ElMessage.warning('请选择要删除的令牌')
-    return
-  }
 
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${selectedAllTokens.value.length} 个令牌吗？此操作不可恢复！`,
-      '确认删除',
-      {
-        type: 'warning',
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消'
-      }
-    )
 
-    const tokenIds = selectedAllTokens.value.map(token => token.id)
-    const response = await adminTokensApi.batchDeleteTokens(tokenIds)
 
-    // 从本地数据中移除已删除的令牌
-    const deletedIds = new Set(response.data.deletedIds)
-    allTokens.value = allTokens.value.filter(token => !deletedIds.has(token.id))
-    selectedAllTokens.value = []
 
-    ElMessage.success(`批量删除完成，成功 ${response.data.data.successCount} 个，失败 ${response.data.data.failCount} 个`)
 
-    // 刷新其他表格数据
-    await Promise.all([
-      refreshPool(),
-      refreshTokens()
-    ])
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(`批量删除失败: ${error.message}`)
-    }
-  }
-}
 
-// 获取账号状态标签类型
-const getAccountStatusTagType = (status) => {
-  switch (status) {
-    case 'ACTIVE': return 'success'
-    case 'SUSPENDED': return 'danger'
-    case 'BANNED': return 'danger'
-    default: return 'info'
-  }
-}
-
-// 获取账号状态文本
-const getAccountStatusText = (status) => {
-  switch (status) {
-    case 'ACTIVE': return '正常'
-    case 'SUSPENDED': return '暂停'
-    case 'BANNED': return '封禁'
-    default: return '未知'
-  }
-}
-
-// 获取令牌状态标签类型
-const getTokenStatusTagType = (status) => {
-  switch (status) {
-    case 'personal': return 'primary'
-    case 'pool_available': return 'success'
-    case 'pool_claimed': return 'warning'
-    case 'pool_expired': return 'danger'
-    case 'disabled': return 'info'
-    default: return 'info'
-  }
-}
-
-// 获取令牌状态文本
-const getTokenStatusText = (status) => {
-  switch (status) {
-    case 'personal': return '个人令牌'
-    case 'pool_available': return '池中可用'
-    case 'pool_claimed': return '池中已领取'
-    case 'pool_expired': return '池中过期'
-
-    default: return '未知'
-  }
-}
-
-// 获取剩余次数标签类型
-const getCreditsTagType = (credits) => {
-  if (credits > 100) return 'success'
-  if (credits > 50) return 'primary'
-  if (credits > 10) return 'warning'
-  return 'danger'
-}
-
-// 搜索用户
-const searchUsers = async (query) => {
-  if (!query) {
-    availableUsers.value = []
-    return
-  }
-
-  searchingUsers.value = true
-  try {
-    const response = await adminTokensApi.getUsersForTransfer(query)
-    availableUsers.value = response.data || []
-  } catch (error) {
-    ElMessage.error(`搜索用户失败: ${error.message}`)
-  } finally {
-    searchingUsers.value = false
-  }
-}
-
-// 确认转移
-const confirmTransfer = async () => {
-  if (!transferForm.value.targetUserId) {
-    ElMessage.warning('请选择目标用户')
-    return
-  }
-
-  const targetUser = availableUsers.value.find(user => user._id === transferForm.value.targetUserId)
-  if (!targetUser) {
-    ElMessage.warning('目标用户不存在')
-    return
-  }
-
-  transferring.value = true
-  try {
-    const tokenIds = selectedAllTokens.value.map(token => token.id)
-    const response = await adminTokensApi.batchTransferOwnership({
-      tokenIds,
-      targetUserId: transferForm.value.targetUserId,
-      targetUsername: targetUser.username
-    })
-
-    // 更新本地数据
-    selectedAllTokens.value.forEach(token => {
-      const tokenIndex = allTokens.value.findIndex(t => t.id === token.id)
-      if (tokenIndex !== -1) {
-        allTokens.value[tokenIndex].ownerInfo = {
-          userId: transferForm.value.targetUserId,
-          username: targetUser.username,
-          email: targetUser.email
-        }
-        allTokens.value[tokenIndex].tokenStatus = 'personal'
-      }
-    })
-
-    ElMessage.success(`转移完成，成功 ${response.data.data.successCount} 个，失败 ${response.data.data.failCount} 个`)
-    showTransferDialog.value = false
-    transferForm.value.targetUserId = null
-
-    // 刷新其他表格数据
-    await Promise.all([
-      refreshPool(),
-      refreshTokens()
-    ])
-    availableUsers.value = []
-  } catch (error) {
-    ElMessage.error(`转移失败: ${error.message}`)
-  } finally {
-    transferring.value = false
-  }
-}
 
 // ==================== 管理员令牌管理方法结束 ====================
 
@@ -2157,7 +1728,7 @@ const uploadTokensToPool = async () => {
       ElMessage.error(`所有令牌上传失败${errors.length > 0 ? `：${errors[0]}` : ''}`)
     }
   } catch (error) {
-    console.error('批量上传失败:', error)
+    // 批量上传失败细节已通过UI反馈处理
     ElMessage.error(error.response?.data?.message || error.message || '上传失败')
   } finally {
     isUploading.value = false
@@ -2212,7 +1783,7 @@ const uploadTokenToPool = async (token) => {
     }
   } catch (error) {
     if (error.message !== 'cancel') {
-      console.error('转移令牌到池子失败:', error)
+      // 转移令牌到池子失败已通过UI反馈处理
       ElMessage.error(`转移失败: ${error.message}`)
     }
   } finally {
@@ -2226,13 +1797,13 @@ const handleEditorSwitch = async (token, command) => {
     try {
       await copyTokenInfo(token)
     } catch (error) {
-      console.error('复制令牌失败:', error)
+      // 复制令牌失败已通过UI反馈处理
     }
   } else {
     try {
       await switchToEditor(token, command)
     } catch (error) {
-      console.error('编辑器切换失败:', error)
+      // 编辑器切换失败已通过UI反馈处理
     }
   }
 }
@@ -2451,12 +2022,435 @@ const refreshTokenPortalInfo = async (token) => {
 
     ElMessage.success('Portal信息刷新成功')
   } catch (error) {
-    console.error('刷新Portal信息失败:', error)
+    // 刷新Portal信息失败细节已通过UI反馈处理
     ElMessage.error(error.message || '刷新Portal信息失败')
   } finally {
     token._refreshing = false
   }
 }
+
+// ========== 新增的分离式刷新方法 ==========
+
+// 批量刷新令牌池基础信息
+const batchRefreshPoolInfo = async () => {
+  if (poolTokens.value.length === 0) {
+    ElMessage.warning('没有可刷新的令牌池令牌')
+    return
+  }
+
+  isRefreshingPoolInfo.value = true
+  try {
+    const list = [...poolTokens.value]
+    startBatchProgress('批量基础信息刷新', list.length)
+    for (const t of list) {
+      try {
+        const resp = await tokenPoolService.refreshTokenInfo(t._id || t.id)
+        const updated = resp.data || resp
+        if (updated) {
+          const newData = {
+            ...t,
+            portalInfo: updated.portalInfo,
+            creditsBalance: updated.creditsBalance,
+            expiryDate: updated.expiryDate,
+            lastRefreshed: updated.lastRefreshed || new Date(),
+            _refreshingInfo: false
+          }
+          const poolIdx = poolTokens.value.findIndex(x => (x._id || x.id) === (t._id || t.id))
+          if (poolIdx !== -1) poolTokens.value.splice(poolIdx, 1, newData)
+          const upIdx = myUploads.value.findIndex(x => (x._id || x.id) === (t._id || t.id))
+          if (upIdx !== -1) myUploads.value.splice(upIdx, 1, newData)
+        }
+      } catch { }
+      incBatchProgress()
+    }
+    ElMessage.success('令牌池基础信息刷新成功')
+  } catch (error) {
+    ElMessage.error(`刷新失败: ${error.message}`)
+  } finally {
+    isRefreshingPoolInfo.value = false
+    finishBatchProgress()
+  }
+}
+
+// 批量刷新令牌池状态
+const batchRefreshPoolStatus = async () => {
+  if (poolTokens.value.length === 0) {
+    ElMessage.warning('没有可刷新的令牌池令牌')
+    return
+  }
+
+  isRefreshingPoolStatus.value = true
+  try {
+    const list = [...poolTokens.value]
+    startBatchProgress('批量令牌状态刷新', list.length)
+    for (const t of list) {
+      try {
+        const resp = await tokenPoolService.refreshTokenStatus(t._id || t.id)
+        const updatedData = resp.data || resp
+        if (updatedData && updatedData.token) {
+          const newBan = updatedData.ban_status || updatedData.token.ban_status || {
+            isBanned: updatedData.is_banned,
+            status: updatedData.status,
+            errorMessage: updatedData.error_message,
+            responseCode: updatedData.response_code,
+            lastChecked: new Date()
+          }
+          const newData = {
+            ...t,
+            status: updatedData.token.status,
+            ban_status: newBan,
+            lastRefreshed: updatedData.token.lastRefreshed || new Date(),
+            _refreshingStatus: false
+          }
+          const poolIdx = poolTokens.value.findIndex(x => (x._id || x.id) === (t._id || t.id))
+          if (poolIdx !== -1) poolTokens.value.splice(poolIdx, 1, newData)
+          const upIdx = myUploads.value.findIndex(x => (x._id || x.id) === (t._id || t.id))
+          if (upIdx !== -1) myUploads.value.splice(upIdx, 1, newData)
+        }
+      } catch { }
+      incBatchProgress()
+    }
+    ElMessage.success('令牌池状态刷新成功')
+  } catch (error) {
+    ElMessage.error(`刷新失败: ${error.message}`)
+  } finally {
+    isRefreshingPoolStatus.value = false
+    finishBatchProgress()
+  }
+}
+
+// 批量刷新已保存令牌基础信息
+const batchRefreshTokensInfo = async () => {
+  if (tokens.value.length === 0) {
+    ElMessage.warning('没有可刷新的已保存令牌')
+    return
+  }
+
+  isRefreshingTokensInfo.value = true
+  try {
+    const tokenIds = tokens.value.map(token => token.id)
+    const refreshResults = await batchRefreshTokenInfoApi(tokenIds)
+
+    // 更新本地令牌数据
+    refreshResults.forEach(result => {
+      if (result.success) {
+        const index = tokens.value.findIndex(t => t.id === result.tokenId)
+        if (index !== -1) {
+          tokens.value.splice(index, 1, {
+            ...tokens.value[index],
+            portal_info: JSON.stringify(result.data.portal_info),
+            usage_stats: result.data.usage_stats
+          })
+        }
+      }
+    })
+
+    ElMessage.success('已保存令牌基础信息刷新成功')
+  } catch (error) {
+    ElMessage.error(`刷新失败: ${error.message}`)
+  } finally {
+    isRefreshingTokensInfo.value = false
+  }
+}
+
+// 批量刷新已保存令牌状态
+const batchRefreshTokensStatus = async () => {
+  if (tokens.value.length === 0) {
+    ElMessage.warning('没有可刷新的已保存令牌')
+    return
+  }
+
+  isRefreshingTokensStatus.value = true
+  try {
+    const tokenIds = tokens.value.map(token => token.id)
+    const refreshResults = await batchRefreshTokenStatusApi(tokenIds)
+
+    // 更新本地令牌状态
+    refreshResults.forEach(result => {
+      if (result.success) {
+        const index = tokens.value.findIndex(t => t.id === result.tokenId)
+        if (index !== -1) {
+          const newBan = (result.data && result.data.ban_status) || {
+            isBanned: result.data?.is_banned,
+            status: result.data?.status,
+            lastChecked: new Date(),
+            errorMessage: result.data?.error_message,
+            responseCode: result.data?.response_code
+          }
+          tokens.value[index].ban_status = newBan
+        }
+      }
+    })
+
+    ElMessage.success('已保存令牌状态刷新成功')
+  } catch (error) {
+    ElMessage.error(`刷新失败: ${error.message}`)
+  } finally {
+    isRefreshingTokensStatus.value = false
+  }
+}
+
+// 单个令牌池令牌基础信息刷新
+const refreshTokenInfo = async (token) => {
+  token._refreshingInfo = true
+  try {
+    const idx = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+    if (idx !== -1) poolTokens.value[idx]._refreshingInfo = true
+  } catch { }
+
+  try {
+    // 调用令牌池的基础信息刷新API
+    const response = await tokenPoolService.refreshTokenInfo(token._id || token.id)
+
+    // 更新本地数据
+    const updatedToken = response.data || response
+    if (updatedToken) {
+      const newTokenData = {
+        ...token,
+        portalInfo: updatedToken.portalInfo,
+        creditsBalance: updatedToken.creditsBalance,
+        expiryDate: updatedToken.expiryDate,
+        lastRefreshed: updatedToken.lastRefreshed || new Date(),
+        _refreshingInfo: false
+      }
+
+      // 更新池子数据
+      const poolIndex = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+      if (poolIndex !== -1) {
+        poolTokens.value.splice(poolIndex, 1, newTokenData)
+      }
+      // 同步更新“我的上传”表
+      const uploadIndexSync = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+      if (uploadIndexSync !== -1) {
+        myUploads.value.splice(uploadIndexSync, 1, newTokenData)
+      }
+    }
+
+    ElMessage.success('基础信息刷新成功')
+  } catch (error) {
+    ElMessage.error(`刷新失败: ${error.message}`)
+  } finally {
+    token._refreshingInfo = false
+    try {
+      const idx2 = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+      if (idx2 !== -1) poolTokens.value[idx2]._refreshingInfo = false
+    } catch { }
+  }
+}
+
+// 单个令牌池令牌状态刷新
+const refreshTokenStatus = async (token) => {
+  token._refreshingStatus = true
+  try {
+    const idx = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+    if (idx !== -1) poolTokens.value[idx]._refreshingStatus = true
+  } catch { }
+
+  try {
+    // 调用令牌池的状态验证API
+    const response = await tokenPoolService.refreshTokenStatus(token._id || token.id)
+
+    // 更新本地数据
+    const updatedData = response.data || response
+    if (updatedData && updatedData.token) {
+      // 兼容从接口返回的封禁状态
+      const newBan = updatedData.ban_status || updatedData.token.ban_status || {
+        isBanned: updatedData.is_banned,
+        status: updatedData.status,
+        errorMessage: updatedData.error_message,
+        responseCode: updatedData.response_code,
+        lastChecked: new Date()
+      }
+
+      const newTokenData = {
+        ...token,
+        status: updatedData.token.status,
+        lastRefreshed: updatedData.token.lastRefreshed || new Date(),
+        ban_status: newBan,
+        _refreshingStatus: false
+      }
+
+      // 如果令牌状态变为无效，从可用列表中移除
+      if (updatedData.token.status === 'invalid') {
+        const poolIndex = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+        if (poolIndex !== -1) {
+          poolTokens.value.splice(poolIndex, 1)
+        }
+        ElMessage.warning('令牌已失效，已从可用列表中移除')
+      } else {
+        // 更新池子数据
+        const poolIndex = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+        if (poolIndex !== -1) {
+          poolTokens.value.splice(poolIndex, 1, newTokenData)
+        }
+        // 同步更新“我的上传”表
+        const uploadIndexSync = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+        if (uploadIndexSync !== -1) {
+          myUploads.value.splice(uploadIndexSync, 1, newTokenData)
+        }
+        ElMessage.success('令牌状态刷新成功')
+      }
+    }
+  } catch (error) {
+    ElMessage.error(`刷新失败: ${error.message}`)
+  } finally {
+    token._refreshingStatus = false
+    try {
+      const idx2 = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+      if (idx2 !== -1) poolTokens.value[idx2]._refreshingStatus = false
+    } catch { }
+  }
+}
+
+// 单个已保存令牌基础信息刷新
+const refreshSavedTokenInfo = async (token) => {
+  token._refreshingInfo = true
+  try {
+    const idx = tokens.value.findIndex(t => t.id === token.id)
+    if (idx !== -1) tokens.value[idx]._refreshingInfo = true
+  } catch { }
+
+  try {
+    const result = await refreshTokenInfoApi(token.id)
+
+    // 更新本地数据
+    const index = tokens.value.findIndex(t => t.id === token.id)
+    if (index !== -1) {
+      tokens.value.splice(index, 1, {
+        ...tokens.value[index],
+        portal_info: JSON.stringify(result.portal_info),
+        usage_stats: result.usage_stats,
+        _refreshingInfo: false
+      })
+    }
+
+    ElMessage.success('基础信息刷新成功')
+  } catch (error) {
+    ElMessage.error(`刷新失败: ${error.message}`)
+  } finally {
+    token._refreshingInfo = false
+    try {
+      const idx2 = tokens.value.findIndex(t => t.id === token.id)
+      if (idx2 !== -1) tokens.value[idx2]._refreshingInfo = false
+    } catch { }
+  }
+}
+
+// 单个已保存令牌状态刷新
+const refreshSavedTokenStatus = async (token) => {
+  token._refreshingStatus = true
+  try {
+    const idx = tokens.value.findIndex(t => t.id === token.id)
+    if (idx !== -1) tokens.value[idx]._refreshingStatus = true
+  } catch { }
+
+  try {
+    const result = await refreshTokenStatusApi(token.id)
+
+    // 更新本地状态
+    const index = tokens.value.findIndex(t => t.id === token.id)
+    if (index !== -1) {
+      const newBan = result.ban_status || {
+        isBanned: result.is_banned,
+        status: result.status,
+        lastChecked: new Date(),
+        errorMessage: result.error_message,
+        responseCode: result.response_code
+      }
+      tokens.value[index].ban_status = newBan
+    }
+
+    ElMessage.success('令牌状态刷新成功')
+  } catch (error) {
+    ElMessage.error(`刷新失败: ${error.message}`)
+  } finally {
+    token._refreshingStatus = false
+    try {
+      const idx2 = tokens.value.findIndex(t => t.id === token.id)
+      if (idx2 !== -1) tokens.value[idx2]._refreshingStatus = false
+    } catch { }
+  }
+}
+// 我的上传 - 单个令牌基础信息刷新（更新 myUploads 表，必要时同步 pool 表）
+const refreshUploadInfo = async (token) => {
+  token._refreshingInfo = true
+  try {
+    const idx = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+    if (idx !== -1) myUploads.value[idx]._refreshingInfo = true
+  } catch { }
+
+  try {
+    const response = await tokenPoolService.refreshTokenInfo(token._id || token.id)
+    const updated = response.data || response
+    if (updated) {
+      const newData = {
+        ...token,
+        portalInfo: updated.portalInfo,
+        creditsBalance: updated.creditsBalance,
+        expiryDate: updated.expiryDate,
+        lastRefreshed: updated.lastRefreshed || new Date(),
+        _refreshingInfo: false
+      }
+      const upIdx = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+      if (upIdx !== -1) myUploads.value.splice(upIdx, 1, newData)
+      const poolIdx = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+      if (poolIdx !== -1) poolTokens.value.splice(poolIdx, 1, newData)
+    }
+    ElMessage.success('基础信息刷新成功')
+  } catch (error) {
+    ElMessage.error(error.message || '刷新失败')
+  } finally {
+    token._refreshingInfo = false
+    try {
+      const idx2 = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+      if (idx2 !== -1) myUploads.value[idx2]._refreshingInfo = false
+    } catch { }
+  }
+}
+
+// 我的上传 - 单个令牌状态刷新（更新 myUploads 表，必要时同步 pool 表）
+const refreshUploadStatus = async (token) => {
+  token._refreshingStatus = true
+  try {
+    const idx = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+    if (idx !== -1) myUploads.value[idx]._refreshingStatus = true
+  } catch { }
+
+  try {
+    const response = await tokenPoolService.refreshTokenStatus(token._id || token.id)
+    const updatedData = response.data || response
+    if (updatedData && updatedData.token) {
+      const newBan = updatedData.ban_status || updatedData.token.ban_status || {
+        isBanned: updatedData.is_banned,
+        status: updatedData.status,
+        errorMessage: updatedData.error_message,
+        responseCode: updatedData.response_code,
+        lastChecked: new Date()
+      }
+      const newData = {
+        ...token,
+        status: updatedData.token.status,
+        ban_status: newBan,
+        lastRefreshed: updatedData.token.lastRefreshed || new Date(),
+        _refreshingStatus: false
+      }
+      const upIdx = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+      if (upIdx !== -1) myUploads.value.splice(upIdx, 1, newData)
+      const poolIdx = poolTokens.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+      if (poolIdx !== -1) poolTokens.value.splice(poolIdx, 1, newData)
+      ElMessage.success('令牌状态刷新成功')
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '刷新失败')
+  } finally {
+    token._refreshingStatus = false
+    try {
+      const idx2 = myUploads.value.findIndex(t => (t._id || t.id) === (token._id || token.id))
+      if (idx2 !== -1) myUploads.value[idx2]._refreshingStatus = false
+    } catch { }
+  }
+}
+
 
 // 生命周期 - 页面加载时仅获取数据库中的令牌数据，不主动刷新Portal信息
 onMounted(() => {
@@ -2465,11 +2459,6 @@ onMounted(() => {
   loadTokensOnly()
   // 加载令牌池数据
   refreshPool()
-
-  // 如果是管理员，加载所有令牌数据
-  if (isAdmin.value) {
-    refreshAllTokens()
-  }
 })
 </script>
 
@@ -3541,6 +3530,26 @@ body {
   background: rgba(59, 130, 246, 0.2) !important;
 }
 
+/* 刷新选项样式 */
+.refresh-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.refresh-option-btn {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+  font-size: 13px;
+}
+
+.refresh-option-btn:hover {
+  background-color: var(--el-fill-color-light);
+}
+
 .reclaim-btn:hover {
   background: rgba(245, 158, 11, 0.2) !important;
 }
@@ -3642,5 +3651,23 @@ body {
 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
   border-color: #f093fb !important;
+}
+
+/* 批量进度浮层样式 */
+.batch-progress-float {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 3000;
+}
+
+.batch-progress-card {
+  width: 280px;
+}
+
+.batch-progress-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #111827;
 }
 </style>
