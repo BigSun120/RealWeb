@@ -7,6 +7,7 @@ const ToolUsage = require('../../models/ToolUsage');
 const ActivityLogger = require('../../middleware/activityLogger');
 const ToolsPermission = require('../../middleware/toolsPermission');
 const logger = require('../../utils/logger');
+const { getStaticTools } = require('../../utils/staticTools');
 
 const router = express.Router();
 
@@ -516,7 +517,90 @@ router.get('/analytics/behavior', async (req, res) => {
   }
 });
 
-module.exports = router;
+// 同步静态工具定义到数据库
+router.post('/sync-static', async (req, res) => {
+  try {
+    const staticTools = getStaticTools();
+    if (staticTools.length === 0) {
+      return res.json({ code: 200, message: '没有可同步的静态工具', data: { created: 0, updated: 0, skipped: 0 } });
+    }
+
+    const results = { created: 0, updated: 0, skipped: 0, details: [] };
+
+    for (const staticTool of staticTools) {
+      try {
+        const existingTool = await Tool.findOne({ id: staticTool.id });
+
+        if (!existingTool) {
+          const toolData = {
+            ...staticTool,
+            isStatic: true,
+            createdBy: req.user._id,
+            updatedBy: req.user._id
+          };
+          const tool = new Tool(toolData);
+          await tool.save();
+          results.created += 1;
+          results.details.push({ id: staticTool.id, action: 'created' });
+        } else {
+          let changed = false;
+          const updatableFields = ['route', 'component', 'category', 'icon', 'tags', 'difficulty', 'estimatedTime'];
+
+          updatableFields.forEach(field => {
+            if (staticTool[field] !== undefined) {
+              const newValue = Array.isArray(staticTool[field]) ? [...staticTool[field]] : staticTool[field];
+              if (JSON.stringify(existingTool[field]) !== JSON.stringify(newValue)) {
+                existingTool[field] = newValue;
+                changed = true;
+              }
+            }
+          });
+
+          if (!existingTool.requiresAuth && staticTool.requiresAuth) {
+            existingTool.requiresAuth = staticTool.requiresAuth;
+            changed = true;
+          }
+
+          if (!existingTool.icon && staticTool.icon) {
+            existingTool.icon = staticTool.icon;
+            changed = true;
+          }
+
+          if (existingTool.sortOrder === undefined && staticTool.sortOrder !== undefined) {
+            existingTool.sortOrder = staticTool.sortOrder;
+            changed = true;
+          }
+
+          if (!existingTool.status && staticTool.status) {
+            existingTool.status = staticTool.status;
+            changed = true;
+          }
+
+          existingTool.isStatic = true;
+          existingTool.updatedBy = req.user._id;
+
+          if (changed) {
+            await existingTool.save();
+            results.updated += 1;
+            results.details.push({ id: staticTool.id, action: 'updated' });
+          } else {
+            await existingTool.save(); // ensure isStatic flag persists
+            results.skipped += 1;
+            results.details.push({ id: staticTool.id, action: 'skipped' });
+          }
+        }
+      } catch (toolError) {
+        logger.error(`同步静态工具 ${staticTool.id} 失败:`, toolError);
+        results.details.push({ id: staticTool.id, action: 'error', message: toolError.message });
+      }
+    }
+
+    res.json({ code: 200, message: '同步完成', data: results });
+  } catch (error) {
+    logger.error('同步静态工具失败:', error);
+    res.status(500).json({ code: 500, message: '同步静态工具失败' });
+  }
+});
 
 // 全站分析（按时间段）
 router.get('/analytics/overall', async (req, res) => {
@@ -579,3 +663,5 @@ router.get('/analytics/overall', async (req, res) => {
     res.status(500).json({ code: 500, message: '获取全站分析失败' });
   }
 });
+
+module.exports = router;

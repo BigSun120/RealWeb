@@ -89,6 +89,14 @@ export const toolsAPI = {
       method: 'patch',
       data
     });
+  },
+
+  // 同步静态工具
+  syncStaticTools() {
+    return request({
+      url: '/admin/tools/sync-static',
+      method: 'post'
+    });
   }
 };
 

@@ -4,6 +4,12 @@
  */
 
 import request from '@/utils/request';
+import staticToolsConfig from '../../../shared/static-tools.json';
+
+const STATIC_TOOLS = staticToolsConfig.map(tool => ({
+  ...tool,
+  isStatic: true
+}));
 
 class ToolsService {
   constructor() {
@@ -174,25 +180,7 @@ class ToolsService {
    * 获取固定工具列表（写死在代码中的工具）
    */
   getStaticTools() {
-    return [
-      {
-        id: 'augment-token-manager',
-        name: 'Augment 令牌管理器',
-        description: '管理 Augment Code 访问令牌，支持OAuth认证和令牌存储',
-        icon: '🔑',
-        category: 'dev',
-        route: '/tools/dev/augment-token-manager',
-        component: '@/views/tools/dev/AugmentTokenManager.vue',
-        tags: ['Augment', '令牌', 'OAuth', '认证', '开发'],
-        featured: true,
-        status: 'active',
-        difficulty: 'medium',
-        estimatedTime: '2-3分钟',
-        requiresAuth: true,
-        sortOrder: 1,
-        isStatic: true // 标记为静态工具
-      }
-    ];
+    return STATIC_TOOLS.map(tool => ({ ...tool }));
   }
 
   /**

@@ -10,7 +10,11 @@
         <p class="page-description">管理工具的增删改查和配置</p>
       </div>
       <div class="header-actions">
-        <el-button @click="refreshData">
+        <el-button type="primary" @click="syncStaticTools" :loading="syncingStatic">
+          <el-icon><Refresh /></el-icon>
+          同步静态工具
+        </el-button>
+        <el-button @click="refreshData" :loading="loading">
           <el-icon><Refresh /></el-icon>
           刷新
         </el-button>
@@ -314,6 +318,7 @@ export default {
     // 响应式数据
     const loading = ref(false);
     const submitting = ref(false);
+    const syncingStatic = ref(false);
     const dialogVisible = ref(false);
     const isEdit = ref(false);
     const selectedTools = ref([]);
@@ -447,6 +452,36 @@ export default {
           { id: 'utility', name: '实用工具' },
           { id: 'media', name: '媒体工具' }
         ];
+      }
+    };
+
+    const syncStaticTools = async () => {
+      try {
+        await ElMessageBox.confirm(
+          '同步静态工具会自动创建或补充写死的工具，并保留后台状态配置，是否继续？',
+          '同步静态工具',
+          {
+            confirmButtonText: '同步',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        );
+      } catch {
+        return;
+      }
+
+      try {
+        syncingStatic.value = true;
+        const response = await toolsAPI.syncStaticTools();
+        const result = response.data?.data || {};
+        const { created = 0, updated = 0, skipped = 0 } = result;
+        ElMessage.success(`同步完成：新增 ${created} 个，更新 ${updated} 个，跳过 ${skipped} 个`);
+        refreshData();
+      } catch (error) {
+        const message = error.response?.data?.message || error.message || '同步静态工具失败';
+        ElMessage.error(message);
+      } finally {
+        syncingStatic.value = false;
       }
     };
 
