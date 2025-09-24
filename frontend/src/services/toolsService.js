@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 工具服务 - 完全基于API的工具数据管理
  * 替代原有的工具注册系统
  */
@@ -74,6 +74,7 @@ class ToolsService {
         { id: 'text', name: '文本工具', icon: '✏️', description: '文本处理和编辑工具' },
         { id: 'image', name: '图片工具', icon: '🖼️', description: '图片处理和编辑工具' },
         { id: 'dev', name: '开发工具', icon: '⚙️', description: '开发者常用工具' },
+        { id: 'productivity', name: '效率工具', icon: '??', description: '个人效率与备忘工具' },
         { id: 'utility', name: '实用工具', icon: '🔧', description: '日常实用小工具' },
         { id: 'media', name: '媒体工具', icon: '🎬', description: '音视频处理和下载工具' }
       ];
@@ -216,3 +217,4 @@ class ToolsService {
 const toolsService = new ToolsService();
 
 export default toolsService;
+

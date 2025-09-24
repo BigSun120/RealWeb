@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const { auth, optionalAuth } = require('../middleware/auth');
 const ActivityLogger = require('../middleware/activityLogger');
 const ToolsAnalytics = require('../middleware/toolsAnalytics');
@@ -13,6 +13,7 @@ const youtubeRoutes = require('./tools/youtube');
 const iqiyiRoutes = require('./tools/iqiyi');
 const augmentRoutes = require('./tools/augment');
 const tokenPoolRoutes = require('./tools/tokenPool');
+const mailMemoRoutes = require('./tools/mailMemo');
 
 const router = express.Router();
 
@@ -28,7 +29,8 @@ router.use(ToolsAnalytics.createMiddleware()); // 应用分析中间件
 router.use('/video', videoRoutes); // 视频下载工具
 router.use('/youtube', youtubeRoutes); // YouTube下载工具
 router.use('/iqiyi', iqiyiRoutes); // 爱奇艺下载工具
-router.use('/augment', augmentRoutes); // Augment令牌管理工具
+router.use('/augment', augmentRoutes); // Augment 工具
+router.use('/mail-memo', mailMemoRoutes); // 邮箱备忘录
 
 // 公开路由：获取工具列表
 router.get('/', optionalAuth, toolsController.getTools);
@@ -59,3 +61,4 @@ router.post('/:id/favorite', auth, toolsController.toggleFavorite);
 
 
 module.exports = router;
+

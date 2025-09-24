@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 工具箱路由配置
  */
 
@@ -95,6 +95,35 @@ export default {
           meta: {
             title: 'Markdown编辑器',
             description: '在线Markdown编辑和预览'
+          }
+        }
+      ]
+    },
+    {
+      path: 'productivity',
+      name: 'ProductivityTools',
+      meta: {
+        title: '效率工具',
+        category: 'productivity'
+      },
+      children: [
+        {
+          path: '',
+          name: 'ProductivityToolsIndex',
+          component: () => import('@/views/tools/CategoryIndex.vue'),
+          meta: {
+            title: '效率工具',
+            category: 'productivity'
+          }
+        },
+        {
+          path: 'mail-memo',
+          name: 'MailMemo',
+          component: () => import('@/views/tools/productivity/MailMemo.vue'),
+          meta: {
+            title: '邮箱备忘录',
+            description: '集中整理个人邮箱地址与备注，支持标签筛选',
+            requiresAuth: true
           }
         }
       ]
@@ -288,3 +317,4 @@ export default {
     }
   ]
 };
+
