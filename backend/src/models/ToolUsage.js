@@ -39,8 +39,8 @@ const toolUsageSchema = new mongoose.Schema({
   // 使用详情
   action: {
     type: String,
-    enum: ['view', 'use', 'download', 'share', 'favorite'],
     default: 'use',
+    trim: true,
     index: true
   },
   duration: {

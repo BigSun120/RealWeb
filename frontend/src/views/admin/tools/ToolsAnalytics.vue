@@ -1,173 +1,153 @@
-<template>
+﻿<template>
   <div class="tools-analytics">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <h1 class="page-title">
+    <section class="page-header">
+      <div class="header-text">
+        <h1 class="title">
           <el-icon><TrendCharts /></el-icon>
-          使用分析
+          工具使用统计
         </h1>
-        <p class="page-description">工具使用数据分析和用户行为洞察</p>
+        <p class="description">按周期查看工具使用趋势、用户行为及设备分布，洞察产品运营情况。</p>
+        <el-alert
+          v-if="error"
+          type="error"
+          :closable="false"
+          show-icon
+          title="加载数据失败，请稍后再试"
+          class="error-tip"
+        />
       </div>
-      <div class="header-actions">
-        <el-button @click="refreshData">
+      <div class="actions">
+        <el-button :loading="loading" type="primary" @click="handleRefresh">
           <el-icon><Refresh /></el-icon>
           刷新数据
         </el-button>
-        <el-button @click="exportData">
+        <el-button @click="handleExport">
           <el-icon><Download /></el-icon>
-          导出报告
+          导出报表
         </el-button>
       </div>
-    </div>
+    </section>
 
-    <!-- 时间范围选择 -->
-    <el-card class="filter-card">
-      <el-form :model="filterForm" inline>
+    <el-card class="filter-card" shadow="never">
+      <el-form :model="filters" inline label-width="72px">
         <el-form-item label="时间范围">
-          <el-select v-model="filterForm.period" @change="handlePeriodChange">
-            <el-option label="最近7天" value="7d" />
-            <el-option label="最近30天" value="30d" />
-            <el-option label="最近90天" value="90d" />
+          <el-select v-model="filters.period" style="width: 140px" @change="handlePeriodChange">
+            <el-option label="近 7 天" value="7d" />
+            <el-option label="近 30 天" value="30d" />
+            <el-option label="近 90 天" value="90d" />
             <el-option label="自定义" value="custom" />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="filterForm.period === 'custom'" label="自定义时间">
+        <el-form-item v-if="filters.period === 'custom'" label="自定义区间">
           <el-date-picker
-            v-model="filterForm.dateRange"
+            v-model="filters.dateRange"
             type="daterange"
-            range-separator="至"
+            value-format="YYYY-MM-DD"
+            unlink-panels
             start-placeholder="开始日期"
             end-placeholder="结束日期"
-            @change="handleDateRangeChange"
+            :disabled-date="disabledFuture"
+            @change="handleCustomChange"
           />
         </el-form-item>
-        <el-form-item label="工具">
-          <el-select v-model="filterForm.toolId" placeholder="选择工具" clearable>
-            <el-option v-for="tool in tools" :key="tool.id" :label="tool.name" :value="tool.id" />
+        <el-form-item label="目标工具">
+          <el-select
+            v-model="filters.toolId"
+            placeholder="全部工具"
+            clearable
+            filterable
+            style="width: 220px"
+            @change="handleSelectionChange"
+          >
+            <el-option
+              v-for="tool in toolSelectOptions"
+              :key="tool.id"
+              :label="tool.name"
+              :value="tool.id"
+            />
           </el-select>
         </el-form-item>
       </el-form>
     </el-card>
 
-    <!-- 统计概览 -->
-    <div class="stats-overview">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-icon total">
-                <el-icon><DataAnalysis /></el-icon>
+    <el-skeleton :loading="loading" animated :rows="4">
+      <template #default>
+        <section class="metrics">
+          <el-card v-for="card in summaryCards" :key="card.label" class="metric-card" shadow="hover">
+            <div class="metric">
+              <div class="metric-icon" :class="card.type">
+                <el-icon><component :is="card.icon" /></el-icon>
               </div>
-              <div class="stat-info">
-                <div class="stat-number">{{ formatNumber(analytics.totalUsage) }}</div>
-                <div class="stat-label">总使用次数</div>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-icon users">
-                <el-icon><User /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-number">{{ analytics.uniqueUsers }}</div>
-                <div class="stat-label">独立用户</div>
+              <div>
+                <div class="metric-label">{{ card.label }}</div>
+                <div class="metric-value">{{ card.value }}</div>
               </div>
             </div>
           </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-icon time">
-                <el-icon><Timer /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-number">{{ analytics.avgResponseTime }}ms</div>
-                <div class="stat-label">平均响应时间</div>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-icon success">
-                <el-icon><CircleCheck /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-number">{{ analytics.successRate }}%</div>
-                <div class="stat-label">成功率</div>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
-    </div>
+        </section>
 
-    <!-- 图表区域 -->
-    <el-row :gutter="20" class="charts-section">
-      <!-- 使用趋势图 -->
-      <el-col :span="16">
-        <el-card class="chart-card">
-          <template #header>
-            <span>使用趋势</span>
-          </template>
-          <div ref="usageTrendRef" class="chart-container"></div>
-        </el-card>
-      </el-col>
-
-      <!-- 热门工具排行 -->
-      <el-col :span="8">
-        <el-card class="chart-card">
-          <template #header>
-            <span>热门工具排行</span>
-          </template>
-          <div class="ranking-list">
-            <div v-for="(tool, index) in topTools" :key="tool.toolIdentifier" class="ranking-item">
-              <div class="rank-number" :class="`rank-${index + 1}`">
-                {{ index + 1 }}
+        <section class="charts">
+          <el-card class="chart-card" shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <span>使用趋势</span>
+                <small class="sub" v-if="filters.toolId">{{ currentToolName }}</small>
               </div>
-              <div class="tool-info">
-                <div class="tool-name">{{ tool.name || tool.toolIdentifier }}</div>
-                <div class="tool-usage">{{ tool.usageCount }} 次使用</div>
-              </div>
+            </template>
+            <div class="chart-container">
+              <el-empty v-if="!trendPoints.length" description="暂无趋势数据" />
+              <div v-else ref="usageChartRef" class="chart"></div>
             </div>
+          </el-card>
+
+          <div class="side-charts">
+            <el-card class="chart-card" shadow="hover">
+              <template #header>
+                <span>设备分布</span>
+              </template>
+              <div class="chart-container">
+                <el-empty v-if="!deviceStats.length" description="暂无数据" />
+                <div v-else ref="deviceChartRef" class="chart"></div>
+              </div>
+            </el-card>
+
+            <el-card class="chart-card" shadow="hover">
+              <template #header>
+                <span>用户行为</span>
+              </template>
+              <div class="chart-container">
+                <el-empty v-if="!behaviorStats.length" description="暂无数据" />
+                <div v-else ref="behaviorChartRef" class="chart"></div>
+              </div>
+            </el-card>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </section>
 
-    <!-- 详细分析 -->
-    <el-row :gutter="20" class="detail-section">
-      <!-- 设备分析 -->
-      <el-col :span="12">
-        <el-card class="chart-card">
-          <template #header>
-            <span>设备类型分析</span>
-          </template>
-          <div ref="deviceChartRef" class="chart-container"></div>
-        </el-card>
-      </el-col>
-
-      <!-- 用户行为分析 -->
-      <el-col :span="12">
-        <el-card class="chart-card">
-          <template #header>
-            <span>用户行为分析</span>
-          </template>
-          <div ref="behaviorChartRef" class="chart-container"></div>
-        </el-card>
-      </el-col>
-    </el-row>
+        <section class="detail">
+          <el-card class="ranking-card" shadow="hover">
+            <template #header>
+              <span>热门工具</span>
+            </template>
+            <div v-if="topTools.length" class="ranking-list">
+              <div v-for="(item, index) in topTools" :key="item.id" class="ranking-item">
+                <div class="rank-index" :class="`rank-${index + 1}`">{{ index + 1 }}</div>
+                <div class="rank-info">
+                  <div class="rank-name">{{ item.name }}</div>
+                  <div class="rank-usage">{{ formatNumber(item.usageCount) }} 次使用</div>
+                </div>
+              </div>
+            </div>
+            <el-empty v-else description="暂无排行数据" />
+          </el-card>
+        </section>
+      </template>
+    </el-skeleton>
   </div>
 </template>
 
-<script>
-import { ref, reactive, onMounted, nextTick } from 'vue';
+<script setup>
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { ElMessage } from 'element-plus';
 import {
   TrendCharts,
   Refresh,
@@ -177,485 +157,488 @@ import {
   Timer,
   CircleCheck
 } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
-import * as echarts from 'echarts';
-import { analyticsAPI, toolsAPI } from '@/api/admin/tools';
 
-export default {
-  name: 'ToolsAnalytics',
-  components: {
-    TrendCharts,
-    Refresh,
-    Download,
-    DataAnalysis,
-    User,
-    Timer,
-    CircleCheck
+import { analyticsAPI } from '@/api/admin/tools';
+import { useEcharts } from '@/composables/useEcharts';
+import { useToolsUsageAnalytics } from '@/composables/useToolsAnalytics';
+
+const filters = reactive({
+  period: '7d',
+  dateRange: [],
+  toolId: ''
+});
+
+const usageChartRef = ref(null);
+const deviceChartRef = ref(null);
+const behaviorChartRef = ref(null);
+
+const usageChart = useEcharts(usageChartRef);
+const deviceChart = useEcharts(deviceChartRef);
+const behaviorChart = useEcharts(behaviorChartRef);
+
+const {
+  loading,
+  error,
+  summary,
+  toolOptions,
+  topTools,
+  trendPoints,
+  deviceStats,
+  behaviorStats,
+  fetchUsage
+} = useToolsUsageAnalytics();
+
+const summaryCards = computed(() => [
+  {
+    label: '总使用次数',
+    value: formatNumber(summary.totalUsage),
+    icon: DataAnalysis,
+    type: 'primary'
   },
-  setup() {
-    const usageTrendRef = ref(null);
-    const deviceChartRef = ref(null);
-    const behaviorChartRef = ref(null);
+  {
+    label: '独立用户数',
+    value: formatNumber(summary.uniqueUsers),
+    icon: User,
+    type: 'success'
+  },
+  {
+    label: '平均响应 (ms)',
+    value: summary.avgResponseTime,
+    icon: Timer,
+    type: 'warning'
+  },
+  {
+    label: '成功率',
+    value: `${Math.min(Math.max(summary.successRate, 0), 100).toFixed(1)}%`,
+    icon: CircleCheck,
+    type: 'danger'
+  }
+]);
 
-    // 筛选表单
-    const filterForm = reactive({
-      period: '7d',
-      dateRange: null,
-      toolId: ''
+const toolSelectOptions = computed(() => toolOptions.value);
+
+const currentToolName = computed(() => {
+  if (!filters.toolId) return '全部工具';
+  return toolOptions.value.find(item => item.id === filters.toolId)?.name || filters.toolId;
+});
+
+const disabledFuture = date => date.getTime() > Date.now();
+
+const loadAnalytics = async ({ allowAutoSelect = true } = {}) => {
+  try {
+    await fetchUsage({
+      period: filters.period,
+      toolId: filters.toolId,
+      dateRange: filters.period === 'custom' ? filters.dateRange : undefined
     });
 
-    // 分析数据
-    const analytics = reactive({
-      totalUsage: 0,
-      uniqueUsers: 0,
-      avgResponseTime: 0,
-      successRate: 0
-    });
-
-    // 设备与行为真实数据
-    const deviceStats = ref([]);
-    const behaviorStats = ref([]);
-
-    const tools = ref([]);
-    const topTools = ref([]);
-
-    // 格式化数字
-    const formatNumber = num => {
-      if (num >= 10000) {
-        return (num / 10000).toFixed(1) + 'w';
-      } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'k';
+    if (allowAutoSelect && !filters.toolId) {
+      const firstToolId = topTools.value[0]?.id || toolOptions.value[0]?.id;
+      if (firstToolId) {
+        filters.toolId = firstToolId;
+        await loadAnalytics({ allowAutoSelect: false });
+        return;
       }
-      return num.toString();
-    };
+    }
 
-    // 处理时间范围变化
-    const handlePeriodChange = () => {
-      if (filterForm.period !== 'custom') {
-        filterForm.dateRange = null;
-      }
-      loadAnalyticsData();
-    };
-
-    // 处理自定义日期范围变化
-    const handleDateRangeChange = () => {
-      loadAnalyticsData();
-    };
-
-    // 加载分析数据
-    const loadAnalyticsData = async () => {
-      try {
-        if (filterForm.toolId) {
-          const res = await analyticsAPI.getToolUsageStats({
-            period: filterForm.period,
-            toolId: filterForm.toolId
-          });
-          const stats = res.data?.data?.stats || {};
-          analytics.totalUsage = stats.totalUsage || 0;
-          analytics.uniqueUsers = stats.uniqueUsers || 0;
-          analytics.avgResponseTime = stats.avgResponseTime || 0;
-          analytics.successRate = stats.successRate || 0;
-        } else {
-          const res = await analyticsAPI.getOverviewStats();
-          const data = res.data || {};
-          analytics.totalUsage = data.totalUsage || data.weekUsage || data.todayUsage || 0;
-          analytics.uniqueUsers = 0;
-          analytics.avgResponseTime = 0;
-          analytics.successRate = 0;
-        }
-
-        const popularRes = await analyticsAPI.getToolUsageStats({ period: filterForm.period });
-        topTools.value = (popularRes.data?.data?.popularTools || []).map(t => ({
-          toolIdentifier: t.toolIdentifier || t.id || t._id,
-          name: t.name,
-          usageCount: t.usageCount || t.count || 0
-        }));
-
-        const toolsRes = await toolsAPI.getTools({ page: 1, limit: 1000, status: 'active' });
-        const list =
-          toolsRes.data?.tools || toolsRes.data?.data?.tools || toolsRes.data?.data?.items || [];
-        tools.value = list.map(t => ({ id: t.id || t._id || t.identifier, name: t.name }));
-
-        initCharts();
-        ElMessage.success('数据已更新');
-      } catch (error) {
-        ElMessage.error('加载数据失败');
-      }
-    };
-
-    // 刷新数据
-    const refreshData = () => {
-      loadAnalyticsData();
-    };
-
-    // 导出数据
-    const exportData = () => {
-      ElMessage.info('导出功能开发中...');
-    };
-
-    // 初始化图表
-    const initCharts = () => {
-      initUsageTrendChart();
-      initDeviceChart();
-      initBehaviorChart();
-    };
-
-    // 使用趋势图
-    const initUsageTrendChart = async () => {
-      if (!usageTrendRef.value) return;
-
-      const chart = echarts.init(usageTrendRef.value);
-
-      const dates = [];
-      const usageData = [];
-      const userData = [];
-
-      try {
-        if (filterForm.toolId) {
-          const res = await analyticsAPI.getToolUsageStats({
-            period: filterForm.period,
-            toolId: filterForm.toolId
-          });
-          const trend = res.data?.data?.trend || [];
-          trend.forEach(p => {
-            dates.push(p.date);
-            usageData.push(p.count);
-            userData.push(p.uniqueUsers ?? 0);
-          });
-        } else {
-          const popularRes = await analyticsAPI.getToolUsageStats({ period: filterForm.period });
-          const top = (popularRes.data?.data?.popularTools || [])[0];
-          if (top) {
-            const trendRes = await analyticsAPI.getToolUsageStats({
-              period: filterForm.period,
-              toolId: top.toolIdentifier
-            });
-            const trend = trendRes.data?.data?.trend || [];
-            trend.forEach(p => {
-              dates.push(p.date);
-              usageData.push(p.count);
-              userData.push(p.uniqueUsers ?? 0);
-            });
-          }
-        }
-      } catch (e) {}
-
-      if (dates.length === 0) {
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          dates.push(date.toLocaleDateString());
-          usageData.push(0);
-          userData.push(0);
-        }
-      }
-
-      const option = {
-        tooltip: {
-          trigger: 'axis',
-          axisPointer: {
-            type: 'cross'
-          }
-        },
-        legend: {
-          data: ['使用次数', '用户数']
-        },
-        xAxis: {
-          type: 'category',
-          data: dates
-        },
-        yAxis: [
-          {
-            type: 'value',
-            name: '使用次数',
-            position: 'left'
-          },
-          {
-            type: 'value',
-            name: '用户数',
-            position: 'right'
-          }
-        ],
-        series: [
-          {
-            name: '使用次数',
-            type: 'line',
-            data: usageData,
-            smooth: true,
-            itemStyle: { color: '#409EFF' }
-          },
-          {
-            name: '用户数',
-            type: 'line',
-            yAxisIndex: 1,
-            data: userData,
-            smooth: true,
-            itemStyle: { color: '#67C23A' }
-          }
-        ]
-      };
-
-      chart.setOption(option);
-    };
-
-    // 设备类型图
-    const initDeviceChart = async () => {
-      if (!deviceChartRef.value) return;
-
-      const chart = echarts.init(deviceChartRef.value);
-
-      try {
-        const overall = await analyticsAPI.getOverallStats({ period: filterForm.period });
-        const list = overall?.data?.data?.deviceStats || [];
-        const data = list.map(i => ({ value: i.count, name: i.type || '未知' }));
-
-        const option = {
-          tooltip: { trigger: 'item' },
-          series: [
-            {
-              type: 'pie',
-              radius: '70%',
-              data,
-              emphasis: {
-                itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.5)' }
-              }
-            }
-          ]
-        };
-        chart.setOption(option);
-      } catch (e) {
-        chart.setOption({ series: [{ type: 'pie', data: [] }] });
-      }
-    };
-
-    // 用户行为图（真实数据）
-    const initBehaviorChart = async () => {
-      if (!behaviorChartRef.value) return;
-
-      const chart = echarts.init(behaviorChartRef.value);
-
-      try {
-        const overall = await analyticsAPI.getOverallStats({ period: filterForm.period });
-        const list = overall?.data?.data?.behaviorStats || [];
-        const labels = list.map(i => i.action || '未知');
-        const values = list.map(i => i.count || 0);
-
-        const option = {
-          tooltip: { trigger: 'axis' },
-          xAxis: { type: 'category', data: labels },
-          yAxis: { type: 'value' },
-          series: [{ data: values, type: 'bar', itemStyle: { color: '#E6A23C' } }]
-        };
-        chart.setOption(option);
-      } catch (e) {
-        chart.setOption({
-          xAxis: { type: 'category', data: [] },
-          series: [{ type: 'bar', data: [] }]
-        });
-      }
-    };
-
-    onMounted(() => {
-      loadAnalyticsData();
-    });
-
-    return {
-      usageTrendRef,
-      deviceChartRef,
-      behaviorChartRef,
-      filterForm,
-      analytics,
-      tools,
-      topTools,
-      formatNumber,
-      handlePeriodChange,
-      handleDateRangeChange,
-      refreshData,
-      exportData
-    };
+    updateUsageChart();
+    updateDeviceChart();
+    updateBehaviorChart();
+  } catch (err) {
+    console.error('加载分析数据失败:', err);
   }
 };
+
+const handleRefresh = async () => {
+  await loadAnalytics();
+  ElMessage.success('数据已刷新');
+};
+
+const handlePeriodChange = () => {
+  if (filters.period !== 'custom') {
+    filters.dateRange = [];
+    loadAnalytics();
+  }
+};
+
+const handleCustomChange = () => {
+  if (filters.period === 'custom') {
+    loadAnalytics();
+  }
+};
+
+const handleSelectionChange = () => {
+  loadAnalytics();
+};
+
+const handleExport = async () => {
+  try {
+    const params = {
+      period: filters.period,
+      toolId: filters.toolId || undefined
+    };
+    if (filters.period === 'custom' && filters.dateRange.length === 2) {
+      params.startDate = filters.dateRange[0];
+      params.endDate = filters.dateRange[1];
+    }
+    const res = await analyticsAPI.exportReport(params);
+    downloadBlob(res.data, 'tools-analytics-report.xlsx');
+    ElMessage.success('报表已导出');
+  } catch (err) {
+    console.error('导出失败:', err);
+    ElMessage.error('导出失败，请稍后重试');
+  }
+};
+
+const updateUsageChart = () => {
+  if (!trendPoints.value.length) {
+    usageChart.setOption({
+      xAxis: { type: 'category', data: [] },
+      yAxis: { type: 'value' },
+      series: []
+    });
+    return;
+  }
+  usageChart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['使用次数', '独立用户'] },
+    grid: { left: 40, right: 24, top: 32, bottom: 32 },
+    xAxis: {
+      type: 'category',
+      data: trendPoints.value.map(item => item.date)
+    },
+    yAxis: [
+      { type: 'value', name: '使用次数' },
+      { type: 'value', name: '独立用户', position: 'right' }
+    ],
+    series: [
+      {
+        name: '使用次数',
+        type: 'line',
+        smooth: true,
+        data: trendPoints.value.map(item => item.count),
+        itemStyle: { color: '#409EFF' }
+      },
+      {
+        name: '独立用户',
+        type: 'line',
+        smooth: true,
+        yAxisIndex: 1,
+        data: trendPoints.value.map(item => item.uniqueUsers),
+        itemStyle: { color: '#67C23A' }
+      }
+    ]
+  });
+};
+
+const updateDeviceChart = () => {
+  if (!deviceStats.value.length) {
+    deviceChart.setOption({ series: [] });
+    return;
+  }
+  deviceChart.setOption({
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0 },
+    series: [
+      {
+        type: 'pie',
+        radius: '70%',
+        data: deviceStats.value.map(item => ({
+          value: item.value,
+          name: item.name
+        })),
+        emphasis: {
+          itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.3)' }
+        }
+      }
+    ]
+  });
+};
+
+const updateBehaviorChart = () => {
+  if (!behaviorStats.value.length) {
+    behaviorChart.setOption({ series: [] });
+    return;
+  }
+  behaviorChart.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: 40, right: 24, top: 24, bottom: 48 },
+    xAxis: {
+      type: 'category',
+      axisLabel: { rotate: 18 },
+      data: behaviorStats.value.map(item => item.action)
+    },
+    yAxis: { type: 'value' },
+    series: [
+      {
+        type: 'bar',
+        data: behaviorStats.value.map(item => item.value),
+        itemStyle: { color: '#E6A23C' }
+      }
+    ]
+  });
+};
+
+watch(
+  () => trendPoints.value,
+  () => {
+    updateUsageChart();
+  }
+);
+
+watch(
+  () => deviceStats.value,
+  () => {
+    updateDeviceChart();
+  }
+);
+
+watch(
+  () => behaviorStats.value,
+  () => {
+    updateBehaviorChart();
+  }
+);
+
+onMounted(async () => {
+  await loadAnalytics();
+});
+
+function formatNumber(value) {
+  const num = Number(value) || 0;
+  if (num >= 10000) return `${(num / 10000).toFixed(1)}w`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
+  return `${num}`;
+}
+
+function downloadBlob(blob, filename) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
 </script>
 
 <style scoped>
 .tools-analytics {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  background: #f7f9fc;
+  min-height: 100%;
 }
 
-/* 页面头部 */
 .page-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
+  gap: 16px;
 }
 
-.page-title {
+.header-text {
+  max-width: 540px;
+}
+
+.title {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 8px 0;
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  margin: 0 0 8px;
 }
 
-.page-description {
+.description {
   margin: 0;
-  color: #606266;
-  font-size: 14px;
+  color: var(--el-text-color-secondary);
 }
 
-.header-actions {
+.actions {
   display: flex;
+  align-items: center;
   gap: 12px;
 }
 
-/* 筛选卡片 */
+.error-tip {
+  margin-top: 12px;
+}
+
 .filter-card {
-  margin-bottom: 20px;
+  border-radius: 16px;
 }
 
-/* 统计概览 */
-.stats-overview {
-  margin-bottom: 20px;
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
 }
 
-.stat-card {
-  height: 100px;
+.metric-card {
+  border-radius: 16px;
 }
 
-.stat-content {
+.metric {
   display: flex;
   align-items: center;
-  height: 100%;
+  gap: 16px;
 }
 
-.stat-icon {
+.metric-icon {
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 16px;
-  font-size: 24px;
-  color: white;
+  color: #fff;
 }
 
-.stat-icon.total {
-  background: #409eff;
-}
-.stat-icon.users {
-  background: #67c23a;
-}
-.stat-icon.time {
-  background: #e6a23c;
-}
-.stat-icon.success {
-  background: #f56c6c;
+.metric-icon.primary {
+  background: linear-gradient(135deg, #409eff, #66b1ff);
 }
 
-.stat-number {
-  font-size: 28px;
+.metric-icon.success {
+  background: linear-gradient(135deg, #67c23a, #95d475);
+}
+
+.metric-icon.warning {
+  background: linear-gradient(135deg, #e6a23c, #f3d19e);
+}
+
+.metric-icon.danger {
+  background: linear-gradient(135deg, #f56c6c, #f89898);
+}
+
+.metric-label {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+
+.metric-value {
+  font-size: 26px;
   font-weight: 600;
-  color: #303133;
-  line-height: 1;
+  color: var(--el-text-color-primary);
 }
 
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-top: 4px;
+.charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
 }
 
-/* 图表区域 */
-.charts-section,
-.detail-section {
-  margin-bottom: 20px;
+@media (max-width: 1280px) {
+  .charts {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chart-card {
-  height: 400px;
+  border-radius: 18px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header .sub {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 .chart-container {
   height: 320px;
+  position: relative;
 }
 
-/* 排行榜 */
+.chart {
+  width: 100%;
+  height: 100%;
+}
+
+.side-charts {
+  display: grid;
+  gap: 20px;
+}
+
+.detail {
+  display: grid;
+}
+
+.ranking-card {
+  border-radius: 18px;
+}
+
 .ranking-list {
-  max-height: 320px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .ranking-item {
   display: flex;
   align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--el-fill-color-blank);
 }
 
-.ranking-item:last-child {
-  border-bottom: none;
-}
-
-.rank-number {
-  width: 24px;
-  height: 24px;
+.rank-index {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  color: #fff;
   font-weight: 600;
-  color: white;
-  margin-right: 12px;
 }
 
-.rank-number.rank-1 {
-  background: #ffd700;
+.rank-index.rank-1 {
+  background: #ffb300;
 }
-.rank-number.rank-2 {
-  background: #c0c0c0;
-}
-.rank-number.rank-3 {
-  background: #cd7f32;
-}
-.rank-number:not(.rank-1):not(.rank-2):not(.rank-3) {
+
+.rank-index.rank-2 {
   background: #909399;
 }
 
-.tool-name {
-  font-weight: 500;
-  color: #303133;
+.rank-index.rank-3 {
+  background: #c46f2e;
 }
 
-.tool-usage {
+.rank-index:not(.rank-1):not(.rank-2):not(.rank-3) {
+  background: var(--el-color-info);
+}
+
+.rank-info {
+  flex: 1;
+}
+
+.rank-name {
+  font-weight: 600;
+}
+
+.rank-usage {
   font-size: 12px;
-  color: #909399;
-  margin-top: 2px;
+  color: var(--el-text-color-secondary);
 }
 
-/* 响应式设计 */
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    gap: 16px;
+  .tools-analytics {
+    padding: 16px;
   }
 
-  .header-actions {
+  .actions {
     width: 100%;
-    justify-content: flex-end;
-  }
-
-  .stats-overview .el-col {
-    margin-bottom: 16px;
-  }
-
-  .charts-section .el-col,
-  .detail-section .el-col {
-    margin-bottom: 16px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 }
 </style>

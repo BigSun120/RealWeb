@@ -153,13 +153,48 @@ class ToolsController {
       }
 
       // 更新使用统计
+      const now = new Date();
       if (action === 'use') {
         tool.usageCount += 1;
-        tool.lastUsedAt = new Date();
+        tool.lastUsedAt = now;
         await tool.save();
       }
 
-      // TODO: 记录详细的使用日志到专门的统计表
+      try {
+        const ipAddress = req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || '';
+        const userAgent = req.get('User-Agent') || '';
+        const sessionId = req.headers['x-session-id'] || req.session?.id || (metadata && metadata.sessionId) || undefined;
+        const deviceType = (metadata && (metadata.deviceType || metadata.device?.type)) || 'unknown';
+
+        const usageEntry = new ToolUsage({
+          toolId: tool._id,
+          toolIdentifier: tool.id,
+          userId: req.user ? req.user._id : null,
+          sessionId,
+          userAgent,
+          ipAddress,
+          action,
+          duration: Number.isFinite(duration) ? duration : 0,
+          responseTime: Number.isFinite(metadata?.responseTime) ? metadata.responseTime : 0,
+          success: typeof metadata?.success === 'boolean' ? metadata.success : true,
+          device: {
+            type: deviceType,
+            os: metadata?.device?.os || metadata?.os || undefined,
+            browser: metadata?.device?.browser || metadata?.browser || undefined,
+            screen: metadata?.device?.screen || undefined
+          },
+          source: metadata?.source || 'direct',
+          referrer: metadata?.referrer || req.get('Referrer') || undefined,
+          metadata,
+          createdAt: now,
+          date: now.toISOString().slice(0, 10),
+          hour: now.getHours()
+        });
+
+        await usageEntry.save();
+      } catch (logError) {
+        logger.warn('记录工具使用日志失败:', logError);
+      }
 
       res.json({
         code: 200,

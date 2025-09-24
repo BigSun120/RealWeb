@@ -372,6 +372,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { tempEmailApi } from '@/api/tempEmail'
 import { tempEmailAuthApi } from '@/api/tempEmailAuth'
+import { useToolAnalytics } from '@/composables/useToolAnalytics'
 import TempEmailActivation from '@/components/TempEmailActivation.vue'
 import TempEmailStatusBar from '@/components/TempEmailStatusBar.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
@@ -422,6 +423,37 @@ const tempEmailNotice = ref(null)
 const MAX_EMAIL_DISPLAY = 50
 const pageSize = 10
 const currentPage = ref(1)
+
+const { recordUsage, startTracking, stopTracking } = useToolAnalytics('temp-email')
+
+const safeRecordUsage = async (action, metadata = {}) => {
+  if (typeof recordUsage !== 'function') return
+  try {
+    await recordUsage(action, metadata)
+  } catch (error) {
+    console.warn('[temp-email] recordUsage failed:', error)
+  }
+}
+
+const safeStartTracking = (action, metadata = {}) => {
+  if (typeof startTracking === 'function') {
+    try {
+      startTracking(action, metadata)
+    } catch (error) {
+      console.warn('[temp-email] startTracking failed:', error)
+    }
+  }
+}
+
+const safeStopTracking = (metadata = {}) => {
+  if (typeof stopTracking === 'function') {
+    try {
+      stopTracking(metadata)
+    } catch (error) {
+      console.warn('[temp-email] stopTracking failed:', error)
+    }
+  }
+}
 
 const latestMessages = computed(() => {
   return allMessages.value
@@ -571,6 +603,10 @@ const checkAccessStatus = async () => {
 
 // 生成临时邮箱
 const generateEmail = async () => {
+  let trackingMetadata = null
+  let success = false
+  let failureLogged = false
+  let errorMessage = ''
   try {
     generating.value = true
     console.log('🚀 开始生成邮箱...')
@@ -588,27 +624,77 @@ const generateEmail = async () => {
       return
     }
 
+    trackingMetadata = {
+      domain: selectedDomain.value,
+      hasCustomName: Boolean(emailPrefix.value),
+      hadExistingEmail: Boolean(currentEmail.value)
+    }
+    safeStartTracking('generate-email', trackingMetadata)
+
     const params = {
       domain: selectedDomain.value,
       customName: emailPrefix.value || undefined
     }
 
     const response = await tempEmailApi.generateEmail(params)
+    const responseData = response.data || {}
 
-    if (response.data.success) {
-      currentEmail.value = response.data.data.email
+    if (responseData.success) {
+      success = true
+      const result = responseData.data || {}
+      currentEmail.value = result.email
       messages.value = []
       // 清空输入框
       emailPrefix.value = ''
+
+      await safeRecordUsage('generate-email', {
+        ...trackingMetadata,
+        success: true,
+        isExisting: Boolean(result.isExisting),
+        usernameLength: result.username ? String(result.username).length : undefined
+      })
 
       // 自动刷新邮件列表
       setTimeout(() => {
         refreshMessages()
       }, 1000)
+    } else {
+      errorMessage = responseData.message || '生成邮箱失败'
+      if (trackingMetadata) {
+        await safeRecordUsage('generate-email', {
+          ...trackingMetadata,
+          success: false,
+          error: errorMessage,
+          responseSuccess: false
+        })
+        failureLogged = true
+      }
+      ElMessage.error('生成邮箱失败: ' + errorMessage)
     }
   } catch (error) {
-    ElMessage.error('生成邮箱失败: ' + (error.response?.data?.message || error.message))
+    errorMessage = error.response?.data?.message || error.message
+    if (trackingMetadata && !failureLogged) {
+      await safeRecordUsage('generate-email', {
+        ...trackingMetadata,
+        success: false,
+        error: errorMessage
+      })
+    }
+    ElMessage.error('生成邮箱失败: ' + errorMessage)
   } finally {
+    if (trackingMetadata) {
+      const stopMetadata = {
+        action: 'generate-email',
+        success,
+        domain: trackingMetadata.domain,
+        hasCustomName: trackingMetadata.hasCustomName,
+        hadExistingEmail: trackingMetadata.hadExistingEmail
+      }
+      if (!success && errorMessage) {
+        stopMetadata.error = errorMessage
+      }
+      safeStopTracking(stopMetadata)
+    }
     generating.value = false
   }
 }
@@ -617,14 +703,37 @@ const generateEmail = async () => {
 const refreshMessages = async () => {
   if (!currentEmail.value) return
 
+  const email = currentEmail.value
+
   try {
     functionalLoading.value = true
-    const response = await tempEmailApi.getMessages(currentEmail.value)
+    const response = await tempEmailApi.getMessages(email)
 
     if (response.data.success) {
-      messages.value = response.data.data.messages
+      const list = Array.isArray(response.data?.data?.messages) ? response.data.data.messages : []
+      messages.value = list
+      await safeRecordUsage('refresh-mailbox', {
+        email,
+        success: true,
+        fetchedCount: list.length
+      })
+    } else {
+      const message = response.data.message || '获取邮件列表失败'
+      await safeRecordUsage('refresh-mailbox', {
+        email,
+        success: false,
+        error: message,
+        responseSuccess: false
+      })
+      ElMessage.error(message)
     }
   } catch (error) {
+    const message = error.response?.data?.message || error.message
+    await safeRecordUsage('refresh-mailbox', {
+      email,
+      success: false,
+      error: message
+    })
     ElMessage.error('获取邮件列表失败')
   } finally {
     functionalLoading.value = false
@@ -646,13 +755,18 @@ const refreshAllMessages = async () => {
     const response = await tempEmailApi.getAllEmails()
     if (response.data.success) {
       const aggregatedMessages = []
+      const emailBoxes = Array.isArray(response.data?.data?.emailBoxes)
+        ? response.data.data.emailBoxes
+        : []
 
       // 将所有邮箱的邮件聚合成一个列表
-      response.data.data.emailBoxes.forEach(emailBox => {
-        emailBox.messages.forEach(message => {
+      emailBoxes.forEach(emailBox => {
+        const boxEmail = emailBox.email
+        const boxMessages = Array.isArray(emailBox.messages) ? emailBox.messages : []
+        boxMessages.forEach(message => {
           aggregatedMessages.push({
             ...message,
-            email: emailBox.email
+            email: boxEmail
           })
         })
       })
@@ -662,14 +776,35 @@ const refreshAllMessages = async () => {
       allMessages.value = aggregatedMessages.slice(0, MAX_EMAIL_DISPLAY)
       const displayedCount = allMessages.value.length
 
+      await safeRecordUsage('refresh-all-mailboxes', {
+        success: true,
+        totalMailboxes: emailBoxes.length,
+        aggregatedCount: aggregatedMessages.length,
+        displayedCount
+      })
+
       // 异步补充最近5封的验证码（从正文提取），不阻塞主列表刷新
       await enrichLatestCodes()
 
-      ElMessage.success(`已加载最新 ${displayedCount} 封邮件`)
+      ElMessage.success('已加载最新 ' + displayedCount + ' 封邮件')
+    } else {
+      const message = response.data.message || '获取全部邮件失败'
+      await safeRecordUsage('refresh-all-mailboxes', {
+        success: false,
+        error: message,
+        responseSuccess: false
+      })
+      ElMessage.error(message)
     }
   } catch (error) {
     console.error('获取全部邮件失败:', error)
     loading.value = false
+    const message = error.response?.data?.message || error.message
+    await safeRecordUsage('refresh-all-mailboxes', {
+      success: false,
+      error: message,
+      status: error.response?.status
+    })
 
     // 检查是否是权限问题
     if (error.response?.status === 403 && error.response?.data?.code === 'TEMP_EMAIL_ACCESS_REQUIRED') {
@@ -688,33 +823,50 @@ const refreshAllMessages = async () => {
 
 // 查看邮件详情
 const viewMessage = async (message) => {
+  if (!message) return
+
+  const email = message.email || currentEmail.value
+  if (!email) return
+
   try {
-    const email = message.email || currentEmail.value
     const response = await tempEmailApi.getMessage(email, message.id)
 
     if (response.data.success) {
-      currentMessage.value = response.data.data
+      const detail = response.data.data
+      currentMessage.value = detail
       messageDialogVisible.value = true
+
+      await safeRecordUsage('view-message', {
+        email,
+        success: true,
+        messageId: message.id,
+        subject: detail?.subject,
+        hasHtml: Boolean(detail?.bodyHtml),
+        hasAttachments: Array.isArray(detail?.attachments) && detail.attachments.length > 0
+      })
+    } else {
+      const info = response.data.message || '获取邮件详情失败'
+      await safeRecordUsage('view-message', {
+        email,
+        success: false,
+        messageId: message.id,
+        error: info,
+        responseSuccess: false
+      })
+      ElMessage.error(info)
     }
   } catch (error) {
+    const info = error.response?.data?.message || error.message
+    await safeRecordUsage('view-message', {
+      email,
+      success: false,
+      messageId: message.id,
+      error: info
+    })
     ElMessage.error('获取邮件详情失败')
   }
 }
 
-// 从邮件的主题/纯文本/HTML中提取6位验证码
-const extractCode = (msgOrString) => {
-  const pick6 = (s) => (s || '').match(/\b(\d{6})\b/);
-  if (!msgOrString) return '';
-  if (typeof msgOrString === 'string') {
-    const m = pick6(msgOrString); return m ? m[1] : '';
-  }
-  const bySubject = pick6(msgOrString.subject);
-  if (bySubject) return bySubject[1];
-  // 如果列表没有正文，等 getMessage 时再补
-  return '';
-}
-
-// 批量补充最近5封的验证码（从正文获取，减少API调用）
 const enrichLatestCodes = async () => {
   const top = latestMessages.value.slice(0, 5);
   const tasks = top.map(async (row) => {
@@ -736,13 +888,19 @@ const enrichLatestCodes = async () => {
 // 删除邮件
 const deleteMessage = async (message) => {
   try {
-    await ElMessageBox.confirm('确定要删除这封邮件吗？', '确认删除', {
+    await ElMessageBox.confirm('确认要删除这封邮件吗', '确认删除', {
       type: 'warning'
     })
 
     const email = message.email || currentEmail.value
     await tempEmailApi.deleteMessage(email, message.id)
     ElMessage.success('邮件删除成功')
+
+    await safeRecordUsage('delete-message', {
+      email,
+      success: true,
+      messageId: message.id
+    })
 
     // 刷新列表
     if (showCurrentEmailOnly.value) {
@@ -753,22 +911,38 @@ const deleteMessage = async (message) => {
   } catch (error) {
     if (error !== 'cancel') {
       const errorMessage = error.response?.data?.message || error.message || '删除邮件失败'
+      await safeRecordUsage('delete-message', {
+        email: message?.email || currentEmail.value,
+        success: false,
+        messageId: message?.id,
+        error: errorMessage
+      })
       ElMessage.error('删除邮件失败: ' + errorMessage)
     }
   }
 }
 
-// 复制文本通用方法
 const copyText = async (text) => {
   try {
     await navigator.clipboard.writeText(text)
     ElMessage.success('已复制到剪贴板')
+    await safeRecordUsage('copy-to-clipboard', {
+      success: true,
+      length: typeof text === 'string' ? text.length : String(text || '').length
+    })
   } catch (error) {
+    const info = error?.message || '复制失败'
+    await safeRecordUsage('copy-to-clipboard', {
+      success: false,
+      length: typeof text === 'string' ? text.length : undefined,
+      error: info
+    })
     ElMessage.error('复制失败')
   }
 }
 
 // 复制邮箱地址
+
 const copyEmail = () => copyText(currentEmail.value)
 
 // 关闭邮件详情对话框
@@ -784,7 +958,7 @@ const showAllEmails = async () => {
 
     const response = await tempEmailApi.getAllEmails()
     if (response.data.success) {
-      let boxes = response.data.data.emailBoxes || []
+      let boxes = Array.isArray(response.data?.data?.emailBoxes) ? response.data.data.emailBoxes : []
 
       if (currentEmail.value) {
         const exists = boxes.some(box => box.email === currentEmail.value)
@@ -811,35 +985,89 @@ const showAllEmails = async () => {
 
       allEmailsDialogVisible.value = true
 
+      const totalMessages = response.data.data.totalMessages
+      const displayedCount = allEmailBoxes.value.reduce((sum, box) => sum + box.displayCount, 0)
+      const shownCount = typeof totalMessages === 'number' ? Math.min(totalMessages, displayedCount) : displayedCount
+
+      await safeRecordUsage('open-all-mailboxes', {
+        success: true,
+        totalMailboxes: allEmailBoxes.value.length,
+        displayedCount,
+        totalMessages: typeof totalMessages === 'number' ? totalMessages : undefined
+      })
+
       if (allEmailBoxes.value.length === 0) {
         ElMessage.info('未找到任何邮件')
       } else {
-        const totalMessages = response.data.data.totalMessages
-        const displayedCount = allEmailBoxes.value.reduce((sum, box) => sum + box.displayCount, 0)
-        const shownCount = typeof totalMessages === 'number' ? Math.min(totalMessages, displayedCount) : displayedCount
         ElMessage.success(`找到 ${allEmailBoxes.value.length} 个邮箱，已展示最新 ${shownCount} 封邮件`)
       }
+    } else {
+      const message = response.data.message || '获取全部邮件失败'
+      await safeRecordUsage('open-all-mailboxes', {
+        success: false,
+        error: message,
+        responseSuccess: false
+      })
+      ElMessage.error(message)
     }
   } catch (error) {
+    const info = error.response?.data?.message || error.message
+    await safeRecordUsage('open-all-mailboxes', {
+      success: false,
+      error: info
+    })
     ElMessage.error('获取全部邮件失败')
   }
 }
 
-// 从全部邮件中查看邮件详情
 const viewMessageFromAll = async (email, message) => {
+  if (!message) return
+
+  const targetEmail = email || message.email
+  if (!targetEmail) return
+
   try {
-    const response = await tempEmailApi.getMessage(email, message.id)
+    const response = await tempEmailApi.getMessage(targetEmail, message.id)
 
     if (response.data.success) {
-      currentMessage.value = response.data.data
+      const detail = response.data.data
+      currentMessage.value = detail
       messageDialogVisible.value = true
+
+      await safeRecordUsage('view-message', {
+        email: targetEmail,
+        success: true,
+        messageId: message.id,
+        context: 'all-mailboxes',
+        subject: detail?.subject,
+        hasHtml: Boolean(detail?.bodyHtml),
+        hasAttachments: Array.isArray(detail?.attachments) && detail.attachments.length > 0
+      })
+    } else {
+      const info = response.data.message || '获取邮件详情失败'
+      await safeRecordUsage('view-message', {
+        email: targetEmail,
+        success: false,
+        messageId: message.id,
+        context: 'all-mailboxes',
+        error: info,
+        responseSuccess: false
+      })
+      ElMessage.error(info)
     }
   } catch (error) {
+    const info = error.response?.data?.message || error.message
+    await safeRecordUsage('view-message', {
+      email: targetEmail,
+      success: false,
+      messageId: message.id,
+      context: 'all-mailboxes',
+      error: info
+    })
     ElMessage.error('获取邮件详情失败')
   }
 }
 
-// 关闭全部邮件对话框
 const closeAllEmailsDialog = () => {
   allEmailsDialogVisible.value = false
   allEmailBoxes.value = []

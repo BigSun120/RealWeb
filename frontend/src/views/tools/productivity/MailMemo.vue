@@ -282,6 +282,7 @@ import {
   exportMailMemoEntries
 } from '@/api/mailMemo';
 import MailMemoForm from './components/MailMemoForm.vue';
+import { useToolAnalytics } from '@/composables/useToolAnalytics';
 import {
   Plus,
   Upload,
@@ -351,6 +352,37 @@ const fileList = computed(() => {
     uid: 'mail-memo-import'
   }];
 });
+
+const { recordUsage, startTracking, stopTracking } = useToolAnalytics('mail-memo');
+
+const safeRecordUsage = async (action, metadata = {}) => {
+  if (typeof recordUsage !== 'function') return;
+  try {
+    await recordUsage(action, metadata);
+  } catch (error) {
+    console.warn('[mail-memo] recordUsage failed:', error);
+  }
+};
+
+const safeStartTracking = (action, metadata = {}) => {
+  if (typeof startTracking === 'function') {
+    try {
+      startTracking(action, metadata);
+    } catch (error) {
+      console.warn('[mail-memo] startTracking failed:', error);
+    }
+  }
+};
+
+const safeStopTracking = metadata => {
+  if (typeof stopTracking === 'function') {
+    try {
+      stopTracking(metadata);
+    } catch (error) {
+      console.warn('[mail-memo] stopTracking failed:', error);
+    }
+  }
+};
 
 const overviewMetrics = computed(() => {
   const total = stats.total || 0;
@@ -469,18 +501,23 @@ const openEdit = row => {
 };
 
 const handleSubmit = async payload => {
+  formLoading.value = true;
   try {
-    formLoading.value = true;
+    let message = '保存成功';
     if (formMode.value === 'create') {
       await createMailMemoEntry(payload);
-      ElMessage.success('新增成功');
+      await safeRecordUsage('create-entry', { email: payload.email, usage: payload.usage });
+      message = '新增成功';
     } else if (editingEntry.value?._id) {
       await updateMailMemoEntry(editingEntry.value._id, payload);
-      ElMessage.success('更新成功');
+      await safeRecordUsage('update-entry', { entryId: editingEntry.value._id, email: payload.email, usage: payload.usage });
+      message = '更新成功';
     }
     formVisible.value = false;
     await refreshAll();
+    ElMessage.success(message);
   } catch (error) {
+    console.error('保存邮箱失败:', error);
     ElMessage.error(error.response?.data?.message || '保存失败');
   } finally {
     formLoading.value = false;
@@ -490,19 +527,25 @@ const handleSubmit = async payload => {
 const handleDelete = async row => {
   try {
     await deleteMailMemoEntry(row._id);
-    ElMessage.success('删除成功');
+    await safeRecordUsage('delete-entry', { entryId: row._id, email: row.email });
     await refreshAll();
+    ElMessage.success('删除成功');
   } catch (error) {
+    console.error('删除邮箱失败:', error);
     ElMessage.error(error.response?.data?.message || '删除失败');
   }
 };
 
 const handleToggleFavorite = async row => {
+  const nextFavorite = !row.isFavorite;
   try {
     await toggleFavoriteMailMemoEntry(row._id);
+    await safeRecordUsage('toggle-favorite', { entryId: row._id, email: row.email, favorite: nextFavorite });
     await refreshAll();
+    ElMessage.success(nextFavorite ? '已收藏' : '已取消收藏');
   } catch (error) {
-    ElMessage.error('操作失败');
+    console.error('切换收藏失败:', error);
+    ElMessage.error(error.response?.data?.message || '操作失败');
   }
 };
 
@@ -535,6 +578,8 @@ const handleImport = async () => {
     ElMessage.warning('请选择 CSV 文件');
     return;
   }
+  safeStartTracking('import', { strategy: importStrategy.value });
+  let success = false;
   try {
     importLoading.value = true;
     const formData = new FormData();
@@ -542,12 +587,22 @@ const handleImport = async () => {
     formData.append('strategy', importStrategy.value);
     const res = await importMailMemoEntries(formData);
     importResult.value = res.data;
+    const summary = res.data?.summary || {};
+    await safeRecordUsage('import', {
+      strategy: importStrategy.value,
+      created: summary.created ?? 0,
+      updated: summary.updated ?? 0,
+      skipped: summary.skipped ?? 0
+    });
     ElMessage.success(res.message || '导入完成');
     await refreshAll();
+    success = true;
   } catch (error) {
+    console.error('导入邮箱失败:', error);
     ElMessage.error(error.response?.data?.message || '导入失败');
   } finally {
     importLoading.value = false;
+    safeStopTracking({ success, strategy: importStrategy.value });
   }
 };
 
@@ -568,11 +623,12 @@ const downloadTemplate = () => {
 const handleExport = async () => {
   try {
     exporting.value = true;
-    const res = await exportMailMemoEntries({
+    const params = {
       scope:
         filters.keyword || filters.tag || filters.usage || filters.favorite !== 'all' ? 'filtered' : 'all',
       ...buildQuery()
-    });
+    };
+    const res = await exportMailMemoEntries(params);
     const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
     const disposition = res.headers['content-disposition'] || res.headers['Content-Disposition'];
     let filename = 'mail-memo.csv';
@@ -590,6 +646,10 @@ const handleExport = async () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    await safeRecordUsage('export', {
+      scope: params.scope,
+      hasFilters: params.scope === 'filtered'
+    });
   } catch (error) {
     ElMessage.error('导出失败');
   } finally {
@@ -608,7 +668,7 @@ const priorityTagType = priority => {
   if (priority >= 2) return 'warning';
   if (priority === 1) return 'warning';
   if (priority <= -2) return 'info';
-  return priority === 0 ? 'default' : 'info';
+  return priority === 0 ? 'info' : 'info';
 };
 
 const formatPriorityLabel = priority => {
