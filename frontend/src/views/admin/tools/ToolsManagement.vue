@@ -706,9 +706,10 @@ export default {
     });
 
     return {
-      // 响应式数据
+      // 响应式状态
       loading,
       submitting,
+      syncingStatic,
       dialogVisible,
       isEdit,
       selectedTools,
@@ -721,14 +722,15 @@ export default {
       formRules,
       formRef,
 
-      // 计算属性
+      // 便捷函数
       getCategoryName,
       getStatusType,
       getStatusText,
       formatDate,
 
-      // 方法
+      // 操作
       refreshData,
+      syncStaticTools,
       handleSearch,
       handleFilter,
       resetFilter,
