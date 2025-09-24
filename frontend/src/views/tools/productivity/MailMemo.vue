@@ -1,146 +1,202 @@
 ﻿<template>
   <div class="mail-memo">
     <section class="page-header">
-      <div>
+      <div class="header-text">
         <h1 class="title">邮箱备忘录</h1>
-        <p class="description">集中管理常用邮箱，支持备注、标签筛选与批量导入导出。</p>
-        <div class="stats">
-          <span>总计 {{ stats.total }} 个邮箱</span>
+        <p class="description">集中整理个人邮箱地址与备注，快速筛选常用联系人并完成批量导入导出。</p>
+        <div class="stats-line">
+          <span>共 {{ stats.total }} 个邮箱</span>
           <span>收藏 {{ stats.favorites }} 个</span>
         </div>
       </div>
       <div class="actions">
-        <el-button type="primary" :icon="Plus" @click="openCreate">新增邮箱</el-button>
+        <el-button type="primary" plain :icon="Plus" @click="openCreate">新增邮箱</el-button>
         <el-button :icon="Upload" @click="importDialogVisible = true">批量导入</el-button>
-        <el-button :icon="Download" :loading="exporting" @click="handleExport">导出</el-button>
-        <el-button :icon="Refresh" :loading="loading" @click="fetchEntries">刷新</el-button>
+        <el-button :icon="Download" :loading="exporting" @click="handleExport">导出列表</el-button>
+        <el-button :icon="Refresh" :loading="loading" @click="refreshAll">刷新</el-button>
       </div>
     </section>
 
-    <section class="filters">
-      <el-input
-        v-model.trim="filters.keyword"
-        placeholder="搜索邮箱 / 别名 / 备注"
-        clearable
-        @clear="handleSearch"
-        @keyup.enter="handleSearch"
-      >
-        <template #suffix>
-          <el-icon class="clickable" @click="handleSearch">
-            <Search />
-          </el-icon>
-        </template>
-      </el-input>
-
-      <el-select v-model="filters.usage" clearable placeholder="用途" @change="handleSearch">
-        <el-option v-for="item in usageOptions" :key="item" :label="item" :value="item" />
-      </el-select>
-
-      <el-select v-model="filters.tag" clearable placeholder="标签" filterable @change="handleSearch">
-        <el-option v-for="item in tagOptions" :key="item" :label="item" :value="item" />
-      </el-select>
-
-      <el-select v-model="filters.favorite" @change="handleSearch">
-        <el-option label="全部" value="all" />
-        <el-option label="已收藏" value="true" />
-        <el-option label="未收藏" value="false" />
-      </el-select>
-
-      <el-select v-model="filters.sort" @change="handleSearch">
-        <el-option v-for="item in sortOptions" :key="item.value" :label="item.label" :value="item.value" />
-      </el-select>
-
-      <el-select v-model="filters.order" @change="handleSearch">
-        <el-option label="降序" value="desc" />
-        <el-option label="升序" value="asc" />
-      </el-select>
-
-      <el-button text type="info" @click="resetFilters">重置</el-button>
+    <section class="overview">
+      <el-card v-for="metric in overviewMetrics" :key="metric.label" class="overview-card" shadow="hover">
+        <div class="metric">
+          <div class="metric-icon" :class="metric.type">
+            <el-icon><component :is="metric.icon" /></el-icon>
+          </div>
+          <div class="metric-content">
+            <span class="metric-label">{{ metric.label }}</span>
+            <span class="metric-value">{{ metric.value }}</span>
+            <span class="metric-sub">{{ metric.sub }}</span>
+          </div>
+        </div>
+      </el-card>
     </section>
 
-    <el-table
-      v-loading="loading"
-      :data="entries"
-      border
-      stripe
-      class="mail-table"
-      height="calc(100vh - 320px)"
-      @sort-change="handleTableSort"
-    >
-      <el-table-column type="index" width="60" label="#" />
-      <el-table-column prop="email" label="邮箱" min-width="200">
-        <template #default="{ row }">
-          <div class="email-cell">
-            <span class="email-text">{{ row.email }}</span>
-            <el-tag v-if="row.isFavorite" type="warning" effect="plain" size="small">收藏</el-tag>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column prop="alias" label="别名" min-width="140" />
-      <el-table-column prop="usage" label="用途" min-width="120" />
-      <el-table-column label="标签" min-width="200">
-        <template #default="{ row }">
-          <el-tag
-            v-for="tag in row.tags || []"
-            :key="tag"
-            size="small"
-            effect="plain"
-            class="tag-item"
-          >
-            {{ tag }}
-          </el-tag>
-            <span v-if="!row.tags || !row.tags.length" class="empty">—</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="notes" label="备注" min-width="220">
-        <template #default="{ row }">
-          <span class="notes" :title="row.notes">{{ row.notes || '—' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="priority" label="优先级" width="100" sortable="custom" />
-      <el-table-column prop="lastUsedAt" label="最近使用" min-width="160">
-        <template #default="{ row }">
-          {{ formatDate(row.lastUsedAt) }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="updatedAt" label="更新时间" min-width="160">
-        <template #default="{ row }">
-          {{ formatDate(row.updatedAt) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <div class="action-group">
-            <el-tooltip :content="row.isFavorite ? '取消收藏' : '设为收藏'">
-              <el-button
-                link
-                type="warning"
-                :icon="row.isFavorite ? StarFilled : Star"
-                @click="handleToggleFavorite(row)"
-              />
-            </el-tooltip>
-            <el-button link type="primary" :icon="Edit" @click="openEdit(row)" />
-            <el-popconfirm title="确认删除该邮箱？" @confirm="handleDelete(row)">
-              <template #reference>
-                <el-button link type="danger" :icon="Delete" />
-              </template>
-            </el-popconfirm>
-          </div>
-        </template>
-      </el-table-column>
-    </el-table>
+    <el-card class="filter-card" shadow="never">
+      <div class="filter-grid">
+        <el-input
+          v-model.trim="filters.keyword"
+          placeholder="搜索邮箱 / 别名 / 备注"
+          clearable
+          @clear="handleSearch"
+          @keyup.enter="handleSearch"
+        >
+          <template #suffix>
+            <el-icon class="clickable" @click="handleSearch">
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
 
-    <footer class="table-footer">
-      <el-pagination
-        v-model:current-page="pagination.current"
-        v-model:page-size="pagination.pageSize"
-        :total="pagination.total"
-        layout="total, prev, pager, next, jumper, sizes"
-        :page-sizes="[10, 20, 50, 100]"
-        @current-change="handlePageChange"
-        @size-change="handleSizeChange"
-      />
-    </footer>
+        <el-select v-model="filters.usage" clearable placeholder="用途" filterable @change="handleSearch">
+          <el-option v-for="item in usageOptions" :key="item" :label="item" :value="item" />
+        </el-select>
+
+        <el-select v-model="filters.tag" clearable placeholder="标签" filterable @change="handleSearch">
+          <el-option v-for="item in tagOptions" :key="item" :label="item" :value="item" />
+        </el-select>
+
+        <el-select v-model="filters.favorite" @change="handleSearch">
+          <el-option label="全部" value="all" />
+          <el-option label="已收藏" value="true" />
+          <el-option label="未收藏" value="false" />
+        </el-select>
+
+        <el-select v-model="filters.sort" @change="handleSearch">
+          <el-option v-for="item in sortOptions" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
+
+        <el-select v-model="filters.order" @change="handleSearch">
+          <el-option label="降序" value="desc" />
+          <el-option label="升序" value="asc" />
+        </el-select>
+
+        <div class="filter-actions">
+          <el-link type="primary" :underline="false" @click="resetFilters">重置筛选</el-link>
+        </div>
+      </div>
+    </el-card>
+
+    <el-card class="table-card" shadow="hover">
+      <div class="table-toolbar">
+        <div class="toolbar-tip">
+          <el-icon><InfoFilled /></el-icon>
+          <span>收藏项会高亮显示，优先级 ≥ 2 视为高优。</span>
+        </div>
+      </div>
+
+      <el-table
+        v-loading="loading"
+        :data="entries"
+        border
+        stripe
+        class="mail-table"
+        height="calc(100vh - 360px)"
+        @sort-change="handleTableSort"
+        :row-class-name="tableRowClassName"
+      >
+        <el-table-column type="index" width="60" label="#" />
+        <el-table-column prop="email" label="邮箱" min-width="220" sortable="custom">
+          <template #default="{ row }">
+            <div class="email-cell">
+              <span class="email-text">{{ row.email }}</span>
+              <el-tag v-if="row.isFavorite" size="small" type="warning" effect="light">收藏</el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="alias" label="别名" min-width="150">
+          <template #default="{ row }">
+            <span class="alias" :title="row.alias">{{ row.alias || '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="usage" label="用途" min-width="140">
+          <template #default="{ row }">
+            <el-tag v-if="row.usage" size="small" effect="plain">{{ row.usage }}</el-tag>
+            <span v-else class="empty">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="标签" min-width="220">
+          <template #default="{ row }">
+            <template v-if="row.tags && row.tags.length">
+              <el-tag
+                v-for="tag in row.tags"
+                :key="tag"
+                size="small"
+                class="tag-item"
+                effect="plain"
+              >
+                {{ tag }}
+              </el-tag>
+            </template>
+            <span v-else class="empty">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="优先级" width="120" sortable="custom" prop="priority">
+          <template #default="{ row }">
+            <el-tag :type="priorityTagType(row.priority)" effect="dark" size="small">
+              {{ formatPriorityLabel(row.priority) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="notes" label="备注" min-width="240">
+          <template #default="{ row }">
+            <span class="notes" :title="row.notes">{{ row.notes || '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="lastUsedAt" label="最近使用" min-width="180" sortable="custom">
+          <template #default="{ row }">
+            <el-tag v-if="isRecentlyUsed(row.lastUsedAt)" type="success" size="small" effect="plain">近 7 天</el-tag>
+            <span class="timestamp">{{ formatDate(row.lastUsedAt) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="updatedAt" label="更新时间" min-width="180" sortable="custom">
+          <template #default="{ row }">
+            <span class="timestamp">{{ formatDate(row.updatedAt) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <div class="action-group">
+              <el-tooltip :content="row.isFavorite ? '取消收藏' : '设为收藏'">
+                <el-button
+                  circle
+                  :type="row.isFavorite ? 'warning' : 'info'"
+                  plain
+                  :icon="row.isFavorite ? StarFilled : Star"
+                  @click="handleToggleFavorite(row)"
+                />
+              </el-tooltip>
+              <el-tooltip content="编辑">
+                <el-button circle type="primary" plain :icon="Edit" @click="openEdit(row)" />
+              </el-tooltip>
+              <el-popconfirm title="确认删除该邮箱？" width="220" @confirm="handleDelete(row)">
+                <template #reference>
+                  <el-button circle type="danger" plain :icon="Delete" />
+                </template>
+              </el-popconfirm>
+            </div>
+          </template>
+        </el-table-column>
+
+        <template #empty>
+          <el-empty description="暂无匹配的邮箱">
+            <el-button type="primary" @click="openCreate">立即新增</el-button>
+          </el-empty>
+        </template>
+      </el-table>
+
+      <footer class="table-footer">
+        <el-pagination
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          layout="total, prev, pager, next, jumper, sizes"
+          :page-sizes="[10, 20, 50, 100]"
+          @current-change="handlePageChange"
+          @size-change="handleSizeChange"
+        />
+      </footer>
+    </el-card>
 
     <MailMemoForm
       v-model:visible="formVisible"
@@ -206,7 +262,7 @@
 
       <template #footer>
         <el-button @click="closeImportDialog">取消</el-button>
-        <el-button type="primary" :loading="importLoading" @click="handleImport">导入</el-button>
+        <el-button type="primary" :loading="importLoading" @click="handleImport">开始导入</el-button>
       </template>
     </el-dialog>
   </div>
@@ -236,8 +292,14 @@ import {
   Edit,
   Delete,
   UploadFilled,
-  Search
+  Search,
+  Collection,
+  Timer,
+  TrendCharts,
+  InfoFilled
 } from '@element-plus/icons-vue';
+
+const RECENT_DAYS = 7;
 
 const entries = ref([]);
 const loading = ref(false);
@@ -290,17 +352,32 @@ const fileList = computed(() => {
   }];
 });
 
+const overviewMetrics = computed(() => {
+  const total = stats.total || 0;
+  const favorites = stats.favorites || 0;
+  const favoriteRate = total ? Math.round((favorites / total) * 100) : 0;
+  const recentThreshold = Date.now() - RECENT_DAYS * 24 * 60 * 60 * 1000;
+  const recentCount = entries.value.filter(item => item.lastUsedAt && new Date(item.lastUsedAt).getTime() >= recentThreshold).length;
+  const highPriority = entries.value.filter(item => Number.isFinite(item.priority) && item.priority >= 2).length;
+
+  return [
+    { label: '全部邮箱', value: total, sub: `${favorites} 个收藏`, icon: Collection, type: 'primary' },
+    { label: '收藏占比', value: `${favoriteRate}%`, sub: '优先常用一览', icon: StarFilled, type: 'warning' },
+    { label: '最近使用', value: recentCount, sub: `近 ${RECENT_DAYS} 天`, icon: Timer, type: 'success' },
+    { label: '高优条目', value: highPriority, sub: '优先级 ≥ 2', icon: TrendCharts, type: 'accent' }
+  ];
+});
+
 const formatDate = value => {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date
-    .getDate()
-    .toString()
-    .padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date
-    .getMinutes()
-    .toString()
-    .padStart(2, '0')}`;
+  const yyyy = date.getFullYear();
+  const mm = `${date.getMonth() + 1}`.padStart(2, '0');
+  const dd = `${date.getDate()}`.padStart(2, '0');
+  const hh = `${date.getHours()}`.padStart(2, '0');
+  const min = `${date.getMinutes()}`.padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
 };
 
 const buildQuery = () => ({
@@ -476,7 +553,7 @@ const handleImport = async () => {
 
 const downloadTemplate = () => {
   const headers = 'email,alias,usage,tags,notes,priority,isFavorite,lastUsedAt\r\n';
-  const sample = 'personal@example.com,个人邮箱,工作,常用;待办,主要工作邮箱,1,true,2024-09-01T09:00:00.000Z';
+  const sample = 'personal@example.com,个人邮箱,工作,常用;备忘,主要使用邮箱,1,true,2024-09-01T09:00:00.000Z';
   const blob = new Blob([headers + sample], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -520,6 +597,34 @@ const handleExport = async () => {
   }
 };
 
+const tableRowClassName = ({ row }) => {
+  if (row?.isFavorite) return 'row-favorite';
+  if (Number.isFinite(row?.priority) && row.priority >= 2) return 'row-priority';
+  return '';
+};
+
+const priorityTagType = priority => {
+  if (priority >= 3) return 'danger';
+  if (priority >= 2) return 'warning';
+  if (priority === 1) return 'warning';
+  if (priority <= -2) return 'info';
+  return priority === 0 ? 'default' : 'info';
+};
+
+const formatPriorityLabel = priority => {
+  if (!Number.isFinite(priority)) return '0';
+  if (priority > 0) return `+${priority}`;
+  return `${priority}`;
+};
+
+const isRecentlyUsed = value => {
+  if (!value) return false;
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return false;
+  const threshold = Date.now() - RECENT_DAYS * 24 * 60 * 60 * 1000;
+  return time >= threshold;
+};
+
 onMounted(async () => {
   await refreshAll();
 });
@@ -529,9 +634,9 @@ onMounted(async () => {
 .mail-memo {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  background: var(--el-bg-color);
+  gap: 20px;
+  padding: 28px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 40%);
   min-height: 100%;
 }
 
@@ -543,22 +648,31 @@ onMounted(async () => {
   align-items: flex-start;
 }
 
+.header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 520px;
+}
+
 .title {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 600;
   margin: 0;
+  color: var(--el-text-color-primary);
 }
 
 .description {
-  margin: 4px 0 8px;
+  margin: 0;
   color: var(--el-text-color-secondary);
+  line-height: 1.6;
 }
 
-.stats {
+.stats-line {
   display: flex;
   gap: 16px;
-  color: var(--el-text-color-secondary);
   font-size: 13px;
+  color: var(--el-color-info);
 }
 
 .actions {
@@ -567,25 +681,120 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 
-.filters {
+.overview {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.overview-card {
+  border-radius: 14px;
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.metric-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--el-color-white);
+}
+
+.metric-icon.primary {
+  background: var(--el-color-primary);
+}
+
+.metric-icon.warning {
+  background: var(--el-color-warning);
+}
+
+.metric-icon.success {
+  background: var(--el-color-success);
+}
+
+.metric-icon.accent {
+  background: var(--el-color-info);
+}
+
+.metric-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-label {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+
+.metric-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.metric-sub {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.filter-card {
+  border-radius: 16px;
+  padding: 12px 16px 4px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   align-items: center;
 }
 
-.filters .el-input,
-.filters .el-select {
-  width: 100%;
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 4px;
 }
 
-.filters .el-button {
-  justify-self: flex-start;
+.table-card {
+  border-radius: 18px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.toolbar-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
 }
 
 .mail-table {
   border-radius: 12px;
   overflow: hidden;
+}
+
+:deep(.mail-table .el-table__header th) {
+  background: #f2f6ff;
+  color: var(--el-text-color-primary);
+  font-weight: 600;
 }
 
 .email-cell {
@@ -596,6 +805,10 @@ onMounted(async () => {
 
 .email-text {
   font-weight: 500;
+}
+
+.alias {
+  color: var(--el-text-color-secondary);
 }
 
 .tag-item {
@@ -615,15 +828,28 @@ onMounted(async () => {
   text-overflow: ellipsis;
 }
 
+.timestamp {
+  color: var(--el-text-color-secondary);
+  margin-left: 6px;
+}
+
 .action-group {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .table-footer {
   display: flex;
   justify-content: flex-end;
-  padding: 8px 0 24px;
+  padding: 16px 0 4px;
+}
+
+.row-favorite :deep(td) {
+  background: rgba(255, 229, 178, 0.35) !important;
+}
+
+.row-priority :deep(td) {
+  background: rgba(64, 158, 255, 0.15) !important;
 }
 
 .import-options {
@@ -650,5 +876,19 @@ onMounted(async () => {
 
 .clickable {
   cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .mail-memo {
+    padding: 20px;
+  }
+
+  .table-card {
+    padding: 12px;
+  }
+
+  .table-footer {
+    justify-content: center;
+  }
 }
 </style>
