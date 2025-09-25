@@ -9,7 +9,9 @@ const fs = require('fs').promises;
 class EmailService {
   constructor() {
     this.transporter = null;
+    this.tempTransporter = null;
     this.templates = new Map();
+    this.tempDomains = new Set();
     this.init();
   }
 
@@ -18,10 +20,13 @@ class EmailService {
    */
   async init() {
     try {
-      // 创建邮件传输器
+      // 加载临时邮箱域名
+      await this.loadTempDomains();
+
+      // 创建外部邮件传输器（使用25端口，Postfix）
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'localhost',
-        port: parseInt(process.env.SMTP_PORT) || 2500,
+        port: parseInt(process.env.SMTP_PORT) || 25,
         secure: process.env.SMTP_SECURE === 'true',
         ignoreTLS: process.env.SMTP_IGNORE_TLS !== 'false',
         requireTLS: process.env.SMTP_REQUIRE_TLS === 'true',
@@ -37,12 +42,25 @@ class EmailService {
         socketTimeout: 10000
       });
 
+      // 创建临时邮箱传输器（使用2500端口，Inbucket）
+      this.tempTransporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'localhost',
+        port: 2500, // 固定使用2500端口连接Inbucket
+        secure: false,
+        ignoreTLS: true,
+        requireTLS: false,
+        auth: false,
+        connectionTimeout: 10000,
+        greetingTimeout: 5000,
+        socketTimeout: 10000
+      });
+
       // 验证连接
       if (process.env.NODE_ENV !== 'test') {
         await this.verifyConnection();
       }
 
-      console.log('✅ 邮件服务初始化成功');
+      console.log('✅ 邮件服务初始化成功（双传输器模式）');
     } catch (error) {
       console.error('❌ 邮件服务初始化失败:', error);
       throw error;
@@ -53,12 +71,30 @@ class EmailService {
    * 验证邮件服务连接
    */
   async verifyConnection() {
+    let externalSuccess = false;
+    let tempSuccess = false;
+
     try {
       await this.transporter.verify();
-      console.log('✅ 邮件服务器连接验证成功');
-      return true;
+      console.log('✅ 外部邮件服务器连接验证成功 (端口25)');
+      externalSuccess = true;
     } catch (error) {
-      console.error('❌ 邮件服务器连接验证失败:', error);
+      console.error('❌ 外部邮件服务器连接验证失败 (端口25):', error.message);
+    }
+
+    try {
+      await this.tempTransporter.verify();
+      console.log('✅ 临时邮箱服务器连接验证成功 (端口2500)');
+      tempSuccess = true;
+    } catch (error) {
+      console.error('❌ 临时邮箱服务器连接验证失败 (端口2500):', error.message);
+    }
+
+    if (externalSuccess || tempSuccess) {
+      console.log('✅ 至少一个邮件传输器可用');
+      return true;
+    } else {
+      console.error('❌ 所有邮件传输器都不可用');
       return false;
     }
   }
@@ -85,7 +121,8 @@ class EmailService {
         text: this.generateVerificationTextEmail(user, verificationUrl)
       };
 
-      const result = await this.transporter.sendMail(mailOptions);
+      const selectedTransporter = this.selectTransporter(user.email);
+      const result = await selectedTransporter.sendMail(mailOptions);
       console.log('✅ 验证邮件发送成功:', result.messageId);
       return result;
     } catch (error) {
@@ -114,7 +151,8 @@ class EmailService {
         text: this.generateWelcomeTextEmail(user)
       };
 
-      const result = await this.transporter.sendMail(mailOptions);
+      const selectedTransporter = this.selectTransporter(user.email);
+      const result = await selectedTransporter.sendMail(mailOptions);
       console.log('✅ 欢迎邮件发送成功:', result.messageId);
       return result;
     } catch (error) {
@@ -145,7 +183,8 @@ class EmailService {
         text: this.generatePasswordResetTextEmail(user, resetUrl)
       };
 
-      const result = await this.transporter.sendMail(mailOptions);
+      const selectedTransporter = this.selectTransporter(user.email);
+      const result = await selectedTransporter.sendMail(mailOptions);
       console.log('✅ 密码重置邮件发送成功:', result.messageId);
       return result;
     } catch (error) {
@@ -458,6 +497,58 @@ ${resetUrl}
       return new URL(url).hostname;
     } catch {
       return 'godaug.fun';
+    }
+  }
+
+  /**
+   * 加载临时邮箱域名配置
+   */
+  async loadTempDomains() {
+    try {
+      const configPath = path.join(__dirname, '../config/email-domains.json');
+      const configData = await fs.readFile(configPath, 'utf8');
+      const config = JSON.parse(configData);
+
+      // 将域名添加到Set中以便快速查找
+      this.tempDomains.clear();
+      config.domains.forEach(domain => {
+        this.tempDomains.add(domain);
+      });
+
+      console.log('✅ 已加载临时邮箱域名:', Array.from(this.tempDomains));
+    } catch (error) {
+      console.error('❌ 加载临时邮箱域名失败:', error);
+      // 使用默认域名
+      this.tempDomains = new Set(['godaug.fun', 'ohmygod.icu', 'aowu.godaug.fun']);
+    }
+  }
+
+  /**
+   * 检查邮箱是否为临时邮箱
+   * @param {string} email - 邮箱地址
+   * @returns {boolean} 是否为临时邮箱
+   */
+  isTempEmail(email) {
+    if (!email || typeof email !== 'string') return false;
+
+    const domain = email.split('@')[1];
+    if (!domain) return false;
+
+    return this.tempDomains.has(domain);
+  }
+
+  /**
+   * 选择合适的邮件传输器
+   * @param {string} toEmail - 收件人邮箱
+   * @returns {Object} 对应的传输器
+   */
+  selectTransporter(toEmail) {
+    if (this.isTempEmail(toEmail)) {
+      console.log(`📨 使用临时邮箱传输器发送到: ${toEmail}`);
+      return this.tempTransporter;
+    } else {
+      console.log(`📧 使用外部邮箱传输器发送到: ${toEmail}`);
+      return this.transporter;
     }
   }
 }
