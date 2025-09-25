@@ -438,7 +438,7 @@ router.get('/all-emails', auth, requireTempEmailAccess, async (req, res) => {
     const limitedMessages = allMessages.slice(0, maxItems);
 
     const emailBoxes = [];
-    const processedEmails = new Set();
+    // processedEmails 已在上方声明，这里不需要重复声明
 
     limitedMessages.forEach(msg => {
       if (processedEmails.has(msg.email)) {
