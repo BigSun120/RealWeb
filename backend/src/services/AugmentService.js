@@ -13,7 +13,9 @@ class AugmentService {
     this.AUTH_BASE_URL = 'https://auth.augmentcode.com';
 
     // 加密配置
-    this.ENCRYPTION_KEY = process.env.AUGMENT_TOKEN_ENCRYPTION_KEY || 'default-key-change-in-production-32b';
+    this.ENCRYPTION_KEY = process.env.AUGMENT_TOKEN_ENCRYPTION_KEY || (() => {
+      throw new Error('AUGMENT_TOKEN_ENCRYPTION_KEY environment variable is required');
+    })();
     this.ALGORITHM = 'aes-256-gcm';
   }
 
