@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Postfix域名配置同步脚本
- * 将后端域名配置同步到Postfix的virtual_mailbox_domains
+ * Postfix域名配置同步脚本（修复版）
+ * 将后端域名配置同步到Postfix的transport_maps，转发给Inbucket
  */
 
 const fs = require('fs');
@@ -12,6 +12,7 @@ const { execSync } = require('child_process');
 // 配置文件路径
 const EMAIL_DOMAINS_CONFIG = path.join(__dirname, '../config/email-domains.json');
 const POSTFIX_MAIN_CF = '/etc/postfix/main.cf';
+const POSTFIX_TRANSPORT_FILE = '/etc/postfix/transport_temp_domains';
 const BACKUP_DIR = '/etc/postfix/backups';
 
 // 日志函数
@@ -85,59 +86,81 @@ function loadDomainConfig() {
   }
 }
 
-// 读取当前Postfix配置
-function getCurrentPostfixDomains() {
+// 创建transport映射文件
+function createTransportMaps(domains) {
   try {
-    const configContent = fs.readFileSync(POSTFIX_MAIN_CF, 'utf8');
-    const match = configContent.match(/^virtual_mailbox_domains\s*=\s*(.+)$/m);
+    // 为每个域名创建通配符匹配，转发给Inbucket (端口2500)
+    const transportRules = domains.map(domain => {
+      return `${domain} smtp:[127.0.0.1]:2500`;
+    }).join('\n');
 
-    if (match) {
-      const domains = match[1].trim().split(/\s+/).filter(d => d.length > 0);
-      log(`当前Postfix配置的域名: ${domains.join(', ')}`);
-      return domains;
-    }
+    // 写入transport文件
+    fs.writeFileSync(POSTFIX_TRANSPORT_FILE, transportRules + '\n');
+    log(`创建transport映射文件: ${POSTFIX_TRANSPORT_FILE}`);
+    log(`映射规则:\n${transportRules}`);
 
-    log('未找到virtual_mailbox_domains配置', 'WARN');
-    return [];
+    // 生成transport数据库
+    execSync(`postmap ${POSTFIX_TRANSPORT_FILE}`, { stdio: 'pipe' });
+    log('生成transport数据库完成');
+
+    return true;
   } catch (error) {
-    log(`读取Postfix配置失败: ${error.message}`, 'ERROR');
-    return [];
+    log(`创建transport映射失败: ${error.message}`, 'ERROR');
+    return false;
   }
 }
 
-// 更新Postfix配置
-function updatePostfixConfig(domains) {
+// 更新Postfix主配置文件
+function updatePostfixMainConfig(domains) {
   try {
-    // 备份当前配置
-    backupPostfixConfig();
+    // 备份配置文件
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFile = path.join(BACKUP_DIR, `main.cf.backup.${timestamp}`);
+    fs.copyFileSync(POSTFIX_MAIN_CF, backupFile);
+    log(`Postfix配置已备份到: ${backupFile}`);
 
-    // 读取当前配置文件
+    // 读取当前配置
     let configContent = fs.readFileSync(POSTFIX_MAIN_CF, 'utf8');
 
-    // 构建新的域名配置行
-    const newDomainsLine = `virtual_mailbox_domains = ${domains.join(' ')}`;
-
-    // 替换或添加virtual_mailbox_domains配置
+    // 移除virtual_mailbox_domains中的临时邮箱域名
     if (configContent.includes('virtual_mailbox_domains')) {
-      // 替换现有配置
       configContent = configContent.replace(
         /^virtual_mailbox_domains\s*=.*$/m,
-        newDomainsLine
+        '# virtual_mailbox_domains = (已移除，改用transport_maps)'
       );
-      log('更新现有的virtual_mailbox_domains配置');
+      log('移除virtual_mailbox_domains配置');
+    }
+
+    // 确保mydestination只包含真实邮件域名
+    const realMailDomains = 'mail.godaug.fun, localhost.godaug.fun, localhost';
+    if (configContent.includes('mydestination')) {
+      configContent = configContent.replace(
+        /^mydestination\s*=.*$/m,
+        `mydestination = ${realMailDomains}`
+      );
+      log(`更新mydestination: ${realMailDomains}`);
+    }
+
+    // 添加或更新transport_maps配置
+    const transportMapsLine = `transport_maps = hash:${POSTFIX_TRANSPORT_FILE}`;
+    if (configContent.includes('transport_maps')) {
+      configContent = configContent.replace(
+        /^transport_maps\s*=.*$/m,
+        transportMapsLine
+      );
+      log('更新transport_maps配置');
     } else {
-      // 添加新配置
-      configContent += `\n# 临时邮箱虚拟域名配置\n${newDomainsLine}\n`;
-      log('添加新的virtual_mailbox_domains配置');
+      configContent += `\n# 临时邮箱域名传输映射\n${transportMapsLine}\n`;
+      log('添加transport_maps配置');
     }
 
     // 写入配置文件
     fs.writeFileSync(POSTFIX_MAIN_CF, configContent);
-    log(`Postfix配置已更新: ${newDomainsLine}`);
+    log('Postfix主配置文件已更新');
 
     return true;
   } catch (error) {
-    log(`更新Postfix配置失败: ${error.message}`, 'ERROR');
+    log(`更新Postfix主配置失败: ${error.message}`, 'ERROR');
     return false;
   }
 }
@@ -154,18 +177,36 @@ function reloadPostfix() {
   }
 }
 
-// 验证配置是否生效
-function validateConfig(expectedDomains) {
+// 验证配置
+function validateConfig(domains) {
   try {
-    const currentDomains = getCurrentPostfixDomains();
-    const isValid = expectedDomains.every(domain => currentDomains.includes(domain));
+    // 检查transport文件是否存在
+    if (!fs.existsSync(POSTFIX_TRANSPORT_FILE)) {
+      log('Transport文件不存在', 'ERROR');
+      return false;
+    }
 
-    if (isValid) {
+    // 检查transport数据库是否存在
+    if (!fs.existsSync(POSTFIX_TRANSPORT_FILE + '.db')) {
+      log('Transport数据库不存在', 'ERROR');
+      return false;
+    }
+
+    // 验证transport映射内容
+    const transportContent = fs.readFileSync(POSTFIX_TRANSPORT_FILE, 'utf8');
+    const configuredDomains = transportContent.split('\n')
+      .filter(line => line.trim())
+      .map(line => line.split(' ')[0]);
+
+    const allDomainsConfigured = domains.every(domain =>
+      configuredDomains.includes(domain)
+    );
+
+    if (allDomainsConfigured) {
       log('✅ 配置验证成功，所有域名都已正确配置');
       return true;
     } else {
-      const missing = expectedDomains.filter(domain => !currentDomains.includes(domain));
-      log(`❌ 配置验证失败，缺少域名: ${missing.join(', ')}`, 'ERROR');
+      log('❌ 配置验证失败，部分域名未配置', 'ERROR');
       return false;
     }
   } catch (error) {
@@ -182,7 +223,7 @@ function isLinuxEnvironment() {
 // 主函数
 function main() {
   try {
-    log('开始同步Postfix域名配置...');
+    log('开始同步Postfix域名配置（使用transport_maps）...');
 
     // 检查环境
     if (!isLinuxEnvironment()) {
@@ -195,25 +236,18 @@ function main() {
 
     // 读取域名配置
     const domainConfig = loadDomainConfig();
-    const newDomains = domainConfig.domains;
+    const domains = domainConfig.domains;
 
-    // 获取当前Postfix配置
-    const currentDomains = getCurrentPostfixDomains();
+    log('开始更新配置...');
 
-    // 检查是否需要更新
-    const needsUpdate = !newDomains.every(domain => currentDomains.includes(domain)) ||
-      !currentDomains.every(domain => newDomains.includes(domain));
-
-    if (!needsUpdate) {
-      log('域名配置已是最新，无需更新');
-      return true;
+    // 创建transport映射文件
+    if (!createTransportMaps(domains)) {
+      throw new Error('创建transport映射失败');
     }
 
-    log('检测到域名配置变化，开始更新...');
-
-    // 更新Postfix配置
-    if (!updatePostfixConfig(newDomains)) {
-      throw new Error('更新Postfix配置失败');
+    // 更新Postfix主配置
+    if (!updatePostfixMainConfig(domains)) {
+      throw new Error('更新Postfix主配置失败');
     }
 
     // 重新加载Postfix
@@ -222,11 +256,11 @@ function main() {
     }
 
     // 验证配置
-    if (!validateConfig(newDomains)) {
+    if (!validateConfig(domains)) {
       throw new Error('配置验证失败');
     }
 
-    log('✅ Postfix域名配置同步完成');
+    log('✅ Postfix域名配置同步完成（transport_maps模式）');
     return true;
 
   } catch (error) {
@@ -243,7 +277,8 @@ if (require.main === module) {
 module.exports = {
   syncPostfixDomains: main,
   loadDomainConfig,
-  updatePostfixConfig,
+  createTransportMaps,
+  updatePostfixMainConfig,
   reloadPostfix,
   validateConfig
 };
