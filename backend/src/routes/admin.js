@@ -6,7 +6,6 @@ const ActivityLog = require('../models/ActivityLog');
 const Settings = require('../models/Settings');
 const ActivityLogger = require('../middleware/activityLogger');
 // 数据保护措施：已禁用活动数据初始化功能，防止数据丢失
-// const { generateRealtimeActivity, clearTestActivityData } = require('../utils/initActivityData');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -1156,31 +1155,23 @@ router.post('/activity-log/generate', async (req, res, next) => {
   try {
     const { count = 1 } = req.body;
 
-    // 数据保护措施：已禁用活动数据生成功能，防止数据丢失
-    // for (let i = 0; i < count; i++) {
-    //   await generateRealtimeActivity();
-    // }
+    for (let i = 0; i < count; i++) {
+      await generateRealtimeActivity();
+    }
 
-    // 返回保护提示信息
-    return res.json({
-      success: false,
-      message: '活动数据生成功能已禁用，防止数据丢失',
-      data: { generated: 0, requested: count }
+    // 记录管理员操作
+    await ActivityLogger.logAdminAction(
+      req.user._id,
+      'generate_activity_data',
+      `生成了 ${count} 条测试活动数据`,
+      req
+    );
+
+    res.json({
+      code: 200,
+      message: `成功生成 ${count} 条活动数据`,
+      data: { count }
     });
-
-    // 数据保护措施：已禁用相关操作记录
-    // await ActivityLogger.logAdminAction(
-    //   req.user._id,
-    //   'generate_activity_data',
-    //   `生成了 ${count} 条测试活动数据`,
-    //   req
-    // );
-
-    // res.json({
-    //   code: 200,
-    //   message: `成功生成 ${count} 条活动数据`,
-    //   data: { count }
-    // });
   } catch (error) {
     logger.error('生成活动数据失败:', error);
     next(error);
