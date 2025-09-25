@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-// const helmet = require('helmet');
+const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -123,8 +123,28 @@ initializeDatabase();
 // 信任代理设置（用于nginx反向代理）
 app.set('trust proxy', 1);
 
-// 基础中间件 - 最小化安全头
-// app.use(helmet()); // 暂时完全禁用 helmet
+// 基础中间件 - 安全头配置
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // 允许嵌入第三方内容
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
 app.use(
   cors({
     origin: [

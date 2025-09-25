@@ -20,6 +20,7 @@
     "element-plus": "^2.10.6",
     "ffmpeg": "^0.0.4",
     "gsap": "^3.13.0",
+    "helmet": "^8.1.0",
     "highlight.js": "^11.11.1",
     "lodash-es": "^4.17.21",
     "lucide-vue-next": "^0.539.0",

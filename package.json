@@ -82,6 +82,7 @@
   },
   "dependencies": {
     "axios": "^1.11.0",
+    "helmet": "^8.1.0",
     "http-proxy-middleware": "^3.0.5"
   }
 }
