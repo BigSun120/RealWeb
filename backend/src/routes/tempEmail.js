@@ -363,19 +363,44 @@ router.get('/all-emails', auth, requireTempEmailAccess, async (req, res) => {
 
     const allMessages = [];
     const emailBoxStats = [];
+    const processedEmails = new Set();
 
     // 从数据库获取最近使用的邮箱，最多保留 50 个
     const userEmailBoxes = await TempEmailBox.getUserActiveEmails(req.user._id, 50);
 
-    const emailPromises = userEmailBoxes.map(async (emailBox) => {
+    // 为管理员或调试模式，也扫描已知的测试邮箱（临时解决方案）
+    const additionalTestEmails = [];
+    if (req.user.isAdmin) {
+      // 管理员可以看到所有测试邮件
+      const supportedDomains = getSupportedDomains();
+      const commonTestPrefixes = ['test', 'testuser123', 'smtp-test', 'verification-test', 'external-test'];
+
+      for (const domain of supportedDomains) {
+        for (const prefix of commonTestPrefixes) {
+          additionalTestEmails.push({
+            email: `${prefix}@${domain}`,
+            domain: domain,
+            username: prefix,
+            isTestEmail: true
+          });
+        }
+      }
+    }
+
+    // 合并数据库邮箱和测试邮箱
+    const allEmailsToCheck = [...userEmailBoxes, ...additionalTestEmails];
+
+    const emailPromises = allEmailsToCheck.map(async (emailBox) => {
       try {
         const response = await axios.get(`${INBUCKET_API}/mailbox/${emailBox.email}`, { timeout: 2000 });
         const messages = Array.isArray(response.data) ? response.data : [];
 
-        // 异步更新数据库中的邮件数量（不阻塞响应）
-        emailBox.updateMessageCount(messages.length).catch(err =>
-          console.warn(`更新邮箱 ${emailBox.email} 邮件数量失败:`, err.message)
-        );
+        // 异步更新数据库中的邮件数量（不阻塞响应）- 只对数据库记录执行
+        if (!emailBox.isTestEmail && emailBox.updateMessageCount) {
+          emailBox.updateMessageCount(messages.length).catch(err =>
+            console.warn(`更新邮箱 ${emailBox.email} 邮件数量失败:`, err.message)
+          );
+        }
 
         if (messages.length > 0) {
           const messagesWithEmail = messages.map(msg => ({
@@ -394,8 +419,9 @@ router.get('/all-emails', auth, requireTempEmailAccess, async (req, res) => {
             email: emailBox.email,
             domain: emailBox.domain,
             messageCount: messages.length,
-            createdAt: emailBox.createdAt,
-            lastAccessedAt: emailBox.lastAccessedAt
+            createdAt: emailBox.createdAt || new Date(),
+            lastAccessedAt: emailBox.lastAccessedAt || new Date(),
+            isTestEmail: emailBox.isTestEmail || false
           });
         }
 
