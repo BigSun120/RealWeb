@@ -251,7 +251,7 @@
                 {{ formatDate(row.date) }}
               </template>
             </el-table-column>
-            <el-table-column label="验证码" width="200">
+            <el-table-column label="验证码" width="180" fixed="right">
               <template #default="{ row }">
                 <span class="code-text">{{ row.code || extractCode(row) || '—' }}</span>
                 <el-button v-if="row.code || extractCode(row)" size="small" type="text"
@@ -259,7 +259,7 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="操作" width="160">
+            <el-table-column label="操作" width="140" fixed="right">
               <template #default="{ row }">
                 <el-button type="primary" size="small" @click="viewMessage(row)">
                   查看
@@ -271,15 +271,8 @@
             </el-table-column>
           </el-table>
           <div class="table-pagination" v-if="paginatedTotal > pageSize">
-            <el-pagination
-              background
-              layout="prev, pager, next"
-              :total="paginatedTotal"
-              :page-size="pageSize"
-              :current-page="currentPage"
-              @current-change="handlePageChange"
-              small
-            />
+            <el-pagination background layout="prev, pager, next" :total="paginatedTotal" :page-size="pageSize"
+              :current-page="currentPage" @current-change="handlePageChange" small />
           </div>
         </div>
       </el-card>
@@ -865,6 +858,72 @@ const viewMessage = async (message) => {
     })
     ElMessage.error('获取邮件详情失败')
   }
+}
+
+// 验证码提取函数
+const extractCode = (emailContent) => {
+  if (!emailContent) return null
+
+  // 清理HTML标签，保留文本内容
+  let cleanContent = emailContent
+    .replace(/<script[^>]*>.*?<\/script>/gi, '') // 移除脚本
+    .replace(/<style[^>]*>.*?<\/style>/gi, '') // 移除样式
+    .replace(/<[^>]*>/g, ' ') // 移除其他HTML标签
+    .replace(/\s+/g, ' ') // 合并空白字符
+    .trim()
+
+  // 验证码提取规则（按优先级排序）
+  const rules = [
+    // 1. 明确的验证码关键词后的代码
+    {
+      pattern: /(?:verification\s*code|verify\s*code|验证码|激活码|确认码)[：:\s]*([A-Z0-9]{4,8})/gi,
+      priority: 10
+    },
+    // 2. 6位纯数字验证码（最常见）
+    {
+      pattern: /\b\d{6}\b/g,
+      priority: 8
+    },
+    // 3. 4-8位纯数字验证码
+    {
+      pattern: /\b\d{4,8}\b/g,
+      priority: 7
+    },
+    // 4. 字母数字混合验证码（大写）
+    {
+      pattern: /\b[A-Z0-9]{4,8}\b/g,
+      priority: 6
+    }
+  ]
+
+  const candidates = []
+
+  // 按优先级提取所有可能的验证码
+  for (const rule of rules) {
+    const matches = cleanContent.match(rule.pattern)
+    if (matches && matches.length > 0) {
+      for (const match of matches) {
+        // 提取纯字母数字字符
+        let code = match.replace(/[^A-Z0-9]/gi, '')
+        // 验证码长度检查
+        if (code.length >= 4 && code.length <= 8) {
+          candidates.push({
+            code: code.toUpperCase(),
+            priority: rule.priority
+          })
+        }
+      }
+    }
+  }
+
+  // 如果没有找到候选验证码，返回null
+  if (candidates.length === 0) {
+    return null
+  }
+
+  // 按优先级排序，选择最佳候选
+  candidates.sort((a, b) => b.priority - a.priority)
+  return candidates[0].code
 }
 
 const enrichLatestCodes = async () => {
