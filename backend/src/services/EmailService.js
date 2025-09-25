@@ -187,52 +187,178 @@ class EmailService {
   getDefaultTemplate(templateName) {
     const templates = {
       verification: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #409eff;">📧 验证您的邮箱地址</h2>
-          <p>您好 {{username}}，</p>
-          <p>感谢您注册 {{siteName}}！请点击下面的按钮验证您的邮箱地址：</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="{{verificationUrl}}" style="background: #409eff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">验证邮箱</a>
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>邮箱验证 - {{siteName}}</title>
+        </head>
+        <body style="margin: 0; padding: 20px; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #409eff, #5d9cec); padding: 40px 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">📧 邮箱验证</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">{{siteName}}</p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 24px;">您好 {{username}}！</h2>
+              <p style="color: #5a6c7d; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                感谢您注册 {{siteName}}！为了保护您的账户安全，请验证您的邮箱地址。
+              </p>
+
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 35px 0;">
+                <a href="{{verificationUrl}}" style="background: linear-gradient(135deg, #409eff, #5d9cec); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(64, 158, 255, 0.3); transition: all 0.3s ease;">
+                  立即验证邮箱
+                </a>
+              </div>
+
+              <!-- Alternative Link -->
+              <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <p style="color: #6c757d; font-size: 14px; margin: 0 0 10px 0;">如果按钮无法点击，请复制以下链接到浏览器：</p>
+                <p style="word-break: break-all; color: #409eff; font-size: 14px; margin: 0;">{{verificationUrl}}</p>
+              </div>
+
+              <!-- Security Note -->
+              <div style="border-left: 4px solid #ffc107; background: #fff9c4; padding: 15px 20px; margin: 20px 0; border-radius: 4px;">
+                <p style="color: #856404; font-size: 14px; margin: 0;">
+                  <strong>安全提醒：</strong>此验证链接将在24小时后过期，请尽快完成验证。
+                </p>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+              <p style="color: #6c757d; font-size: 14px; margin: 0 0 10px 0;">
+                此邮件由 {{siteName}} 自动发送，请勿回复。
+              </p>
+              <p style="color: #adb5bd; font-size: 12px; margin: 0;">
+                © {{siteName}} · 保护您的隐私和数据安全
+              </p>
+            </div>
           </div>
-          <p>如果按钮无法点击，请复制以下链接到浏览器：</p>
-          <p style="word-break: break-all; color: #666;">{{verificationUrl}}</p>
-          <p style="color: #999; font-size: 12px;">此链接将在24小时后过期。</p>
-          <hr style="margin: 20px 0;">
-          <p style="color: #666; font-size: 12px;">此邮件由 {{siteName}} 自动发送，请勿回复。</p>
-        </div>
+        </body>
+        </html>
       `,
       welcome: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #67c23a;">🎉 欢迎加入:{{siteName}}</h2>
-          <p>您好 {{username}}，</p>
-          <p>欢迎加入 {{siteName}}！您的邮箱已成功验证。</p>
-          <p>现在您可以：</p>
-          <ul>
-            <li>发表评论和互动</li>
-            <li>发布文章和内容</li>
-            <li>使用所有网站功能</li>
-          </ul>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="{{siteUrl}}" style="background: #67c23a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">开始探索</a>
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>欢迎加入 - {{siteName}}</title>
+        </head>
+        <body style="margin: 0; padding: 20px; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #67c23a, #85ce61); padding: 40px 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">🎉 欢迎加入</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">{{siteName}}</p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 24px;">{{username}}，欢迎您！</h2>
+              <p style="color: #5a6c7d; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                恭喜您成功加入 {{siteName}}！您的邮箱已完成验证，现在可以畅享所有功能。
+              </p>
+
+              <!-- Features -->
+              <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
+                <h3 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 18px;">您现在可以：</h3>
+                <ul style="color: #5a6c7d; font-size: 15px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                  <li>💬 发表评论，与其他用户互动</li>
+                  <li>📝 发布精彩的文章和内容</li>
+                  <li>🚀 使用所有网站的高级功能</li>
+                  <li>🔔 接收重要通知和更新</li>
+                </ul>
+              </div>
+
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 35px 0;">
+                <a href="{{siteUrl}}" style="background: linear-gradient(135deg, #67c23a, #85ce61); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(103, 194, 58, 0.3);">
+                  立即开始探索 →
+                </a>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+              <p style="color: #6c757d; font-size: 14px; margin: 0 0 10px 0;">
+                此邮件由 {{siteName}} 自动发送，请勿回复。
+              </p>
+              <p style="color: #adb5bd; font-size: 12px; margin: 0;">
+                © {{siteName}} · 期待与您一起创造精彩内容
+              </p>
+            </div>
           </div>
-          <hr style="margin: 20px 0;">
-          <p style="color: #666; font-size: 12px;">此邮件由 {{siteName}} 自动发送，请勿回复。</p>
-        </div>
+        </body>
+        </html>
       `,
       'password-reset': `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #f56c6c;">🔐 重置您的密码</h2>
-          <p>您好 {{username}}，</p>
-          <p>我们收到了重置您密码的请求。请点击下面的按钮重置密码：</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="{{resetUrl}}" style="background: #f56c6c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">重置密码</a>
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>密码重置 - {{siteName}}</title>
+        </head>
+        <body style="margin: 0; padding: 20px; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #f56c6c, #f78989); padding: 40px 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">🔐 密码重置</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">{{siteName}}</p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 24px;">您好 {{username}}！</h2>
+              <p style="color: #5a6c7d; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                我们收到了重置您密码的请求。如果这是您本人操作，请点击下方按钮重置密码。
+              </p>
+
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 35px 0;">
+                <a href="{{resetUrl}}" style="background: linear-gradient(135deg, #f56c6c, #f78989); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(245, 108, 108, 0.3);">
+                  立即重置密码
+                </a>
+              </div>
+
+              <!-- Alternative Link -->
+              <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <p style="color: #6c757d; font-size: 14px; margin: 0 0 10px 0;">如果按钮无法点击，请复制以下链接到浏览器：</p>
+                <p style="word-break: break-all; color: #f56c6c; font-size: 14px; margin: 0;">{{resetUrl}}</p>
+              </div>
+
+              <!-- Security Notice -->
+              <div style="border-left: 4px solid #dc3545; background: #f8d7da; padding: 15px 20px; margin: 20px 0; border-radius: 4px;">
+                <p style="color: #721c24; font-size: 14px; margin: 0 0 10px 0;">
+                  <strong>安全提醒：</strong>
+                </p>
+                <ul style="color: #721c24; font-size: 14px; margin: 0; padding-left: 20px;">
+                  <li>此重置链接将在1小时后失效</li>
+                  <li>如果您没有请求重置密码，请忽略此邮件</li>
+                  <li>建议使用强密码保护您的账户安全</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+              <p style="color: #6c757d; font-size: 14px; margin: 0 0 10px 0;">
+                此邮件由 {{siteName}} 自动发送，请勿回复。
+              </p>
+              <p style="color: #adb5bd; font-size: 12px; margin: 0;">
+                © {{siteName}} · 保护您的账户安全
+              </p>
+            </div>
           </div>
-          <p>如果按钮无法点击，请复制以下链接到浏览器：</p>
-          <p style="word-break: break-all; color: #666;">{{resetUrl}}</p>
-          <p style="color: #999; font-size: 12px;">此链接将在1小时后过期。如果您没有请求重置密码，请忽略此邮件。</p>
-          <hr style="margin: 20px 0;">
-          <p style="color: #666; font-size: 12px;">此邮件由 {{siteName}} 自动发送，请勿回复。</p>
-        </div>
+        </body>
+        </html>
       `
     };
 
@@ -306,7 +432,7 @@ ${resetUrl}
    * 获取发件人地址
    */
   getFromAddress() {
-    return process.env.EMAIL_FROM || `noreply@${this.getSiteDomain()}`;
+    return process.env.EMAIL_FROM || `aowuwu@${this.getSiteDomain()}`;
   }
 
   /**
