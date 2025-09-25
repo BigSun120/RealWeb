@@ -89,6 +89,12 @@ function loadDomainConfig() {
 // 创建transport映射文件
 function createTransportMaps(domains) {
   try {
+    // 环境检查
+    if (!isLinuxEnvironment()) {
+      log('非Linux环境，跳过transport映射创建', 'WARN');
+      return true;
+    }
+
     // 为每个域名创建通配符匹配，转发给Inbucket (端口2500)
     const transportRules = domains.map(domain => {
       return `${domain} smtp:[127.0.0.1]:2500`;
@@ -113,6 +119,12 @@ function createTransportMaps(domains) {
 // 更新Postfix主配置文件
 function updatePostfixMainConfig(domains) {
   try {
+    // 环境检查
+    if (!isLinuxEnvironment()) {
+      log('非Linux环境，跳过Postfix配置更新', 'WARN');
+      return true;
+    }
+
     // 备份配置文件
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupFile = path.join(BACKUP_DIR, `main.cf.backup.${timestamp}`);
@@ -279,6 +291,7 @@ module.exports = {
   loadDomainConfig,
   createTransportMaps,
   updatePostfixMainConfig,
+  updatePostfixConfig: updatePostfixMainConfig, // 保持向后兼容
   reloadPostfix,
   validateConfig
 };
