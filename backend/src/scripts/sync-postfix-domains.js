@@ -143,14 +143,16 @@ function updatePostfixMainConfig(domains) {
       log('移除virtual_mailbox_domains配置');
     }
 
-    // 确保mydestination只包含真实邮件域名
-    const realMailDomains = 'mail.godaug.fun, localhost.godaug.fun, localhost';
+    // 确保mydestination包含所有需要接收的域名（包括临时邮箱域名）
+    // 临时邮箱域名需要被Postfix接收，然后通过transport_maps转发给Inbucket
+    const allDomains = [...new Set([...domains, 'mail.godaug.fun', 'localhost.godaug.fun', 'localhost'])];
+    const realMailDomains = allDomains.join(', ');
     if (configContent.includes('mydestination')) {
       configContent = configContent.replace(
         /^mydestination\s*=.*$/m,
         `mydestination = ${realMailDomains}`
       );
-      log(`更新mydestination: ${realMailDomains}`);
+      log(`更新mydestination（包含临时邮箱域名）: ${realMailDomains}`);
     }
 
     // 添加或更新transport_maps配置
