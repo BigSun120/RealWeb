@@ -862,7 +862,7 @@ const viewMessage = async (message) => {
 
 // 验证码提取函数
 const extractCode = (emailContent) => {
-  if (!emailContent) return null
+  if (!emailContent || typeof emailContent !== 'string') return null
 
   // 清理HTML标签，保留文本内容
   let cleanContent = emailContent
@@ -903,6 +903,8 @@ const extractCode = (emailContent) => {
     const matches = cleanContent.match(rule.pattern)
     if (matches && matches.length > 0) {
       for (const match of matches) {
+        // 确保match是字符串
+        if (typeof match !== 'string') continue
         // 提取纯字母数字字符
         let code = match.replace(/[^A-Z0-9]/gi, '')
         // 验证码长度检查
