@@ -60,6 +60,18 @@ class ToolsAnalytics {
       // 异步记录，不阻塞请求
       setImmediate(async () => {
         try {
+          // 先查找工具获取ObjectId
+          const Tool = require('../models/Tool');
+          const tool = await Tool.findOne({ id: toolId });
+
+          if (!tool) {
+            logger.warn(`工具不存在，无法记录统计: ${toolId}`);
+            return;
+          }
+
+          // 添加必填的toolId字段
+          usageData.toolId = tool._id;
+
           await ToolUsage.recordUsage(usageData);
         } catch (error) {
           logger.error('记录工具使用统计失败:', error);
@@ -105,9 +117,19 @@ class ToolsAnalytics {
         // 异步更新
         setImmediate(async () => {
           try {
+            // 先查找工具获取ObjectId
+            const Tool = require('../models/Tool');
+            const tool = await Tool.findOne({ id: toolId });
+
+            if (!tool) {
+              logger.warn(`工具不存在，无法更新统计: ${toolId}`);
+              return;
+            }
+
             // 查找最近的使用记录并更新
             await ToolUsage.findOneAndUpdate(
               {
+                toolId: tool._id,
                 toolIdentifier: toolId,
                 userId: req.user ? req.user._id : null,
                 createdAt: { $gte: new Date(startTime - 5000) } // 5秒内的记录

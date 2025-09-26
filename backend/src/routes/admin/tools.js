@@ -361,6 +361,7 @@ router.get('/analytics/overview', async (req, res) => {
 router.get('/analytics/usage', async (req, res) => {
   try {
     const { period = '7d', toolId } = req.query;
+    logger.info(`🔍 [Analytics] 获取使用统计请求 - period: ${period}, toolId: ${toolId}`);
 
     // 计算时间范围
     const endDate = new Date();
@@ -383,11 +384,19 @@ router.get('/analytics/usage', async (req, res) => {
         startDate.setDate(startDate.getDate() - 7);
     }
 
+    logger.info(`📅 [Analytics] 时间范围: ${startDate.toISOString()} - ${endDate.toISOString()}`);
+
     let usageData;
     if (toolId) {
       // 单个工具的使用统计
+      logger.info(`📊 [Analytics] 查询单个工具统计: ${toolId}`);
       usageData = await ToolUsage.getToolStats(toolId, startDate, endDate);
       const trendData = await ToolUsage.getUsageTrend(toolId, parseInt(period));
+
+      logger.info(`📊 [Analytics] 单工具查询结果:`, {
+        usageData: usageData[0] || {},
+        trendData: trendData
+      });
 
       res.json({
         code: 200,
@@ -400,7 +409,16 @@ router.get('/analytics/usage', async (req, res) => {
     } else {
       // 热门工具排行 + 全站趋势
       const days = parseInt(period);
+      logger.info(`📊 [Analytics] 查询全站统计，天数: ${days}`);
+
+      // 检查数据库中是否有数据
+      const totalCount = await ToolUsage.countDocuments({
+        createdAt: { $gte: startDate, $lte: endDate }
+      });
+      logger.info(`📊 [Analytics] 时间范围内总记录数: ${totalCount}`);
+
       const popularTools = await ToolUsage.getPopularTools(10, days);
+      logger.info(`📊 [Analytics] 热门工具查询结果:`, popularTools);
 
       // 全站每日聚合趋势
       const overallTrend = await ToolUsage.aggregate([
@@ -428,13 +446,61 @@ router.get('/analytics/usage', async (req, res) => {
         { $sort: { date: 1 } }
       ]);
 
+      logger.info(`📊 [Analytics] 全站趋势查询结果:`, overallTrend);
+
+      // 获取全站汇总统计数据
+      const overallStats = await ToolUsage.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startDate, $lte: endDate }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalUsage: { $sum: 1 },
+            uniqueUsers: { $addToSet: '$userId' },
+            avgResponseTime: { $avg: '$responseTime' },
+            successCount: { $sum: { $cond: ['$success', 1, 0] } }
+          }
+        },
+        {
+          $project: {
+            totalUsage: 1,
+            uniqueUsers: { $size: { $ifNull: ['$uniqueUsers', []] } },
+            avgResponseTime: { $round: ['$avgResponseTime', 2] },
+            successRate: {
+              $round: [
+                { $multiply: [{ $divide: ['$successCount', '$totalUsage'] }, 100] },
+                2
+              ]
+            },
+            _id: 0
+          }
+        }
+      ]);
+
+      const summaryStats = overallStats[0] || {
+        totalUsage: 0,
+        uniqueUsers: 0,
+        avgResponseTime: 0,
+        successRate: 0
+      };
+
+      logger.info(`📊 [Analytics] 全站汇总统计:`, summaryStats);
+
+      const responseData = {
+        popularTools,
+        overallTrend,
+        stats: summaryStats  // 添加全站汇总统计
+      };
+
+      logger.info(`📊 [Analytics] 返回数据:`, responseData);
+
       res.json({
         code: 200,
         message: 'success',
-        data: {
-          popularTools,
-          overallTrend
-        }
+        data: responseData
       });
     }
   } catch (error) {
@@ -607,9 +673,19 @@ router.get('/analytics/overall', async (req, res) => {
   try {
     const { period = '7d' } = req.query;
     const days = parseInt(period) || 7;
+    logger.info(`📈 [Overall] 获取全站分析请求 - period: ${period}, days: ${days}`);
+
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
+
+    logger.info(`📈 [Overall] 时间范围: ${startDate.toISOString()} - ${endDate.toISOString()}`);
+
+    // 检查总记录数
+    const totalRecords = await ToolUsage.countDocuments({
+      createdAt: { $gte: startDate, $lte: endDate }
+    });
+    logger.info(`📈 [Overall] 时间范围内总记录数: ${totalRecords}`);
 
     const stats = await ToolUsage.aggregate([
       { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
@@ -633,6 +709,8 @@ router.get('/analytics/overall', async (req, res) => {
       }
     ]);
 
+    logger.info(`📈 [Overall] 总体统计结果:`, stats);
+
     // 设备类型分析
     const deviceStats = await ToolUsage.aggregate([
       { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
@@ -640,6 +718,8 @@ router.get('/analytics/overall', async (req, res) => {
       { $project: { type: '$_id', count: 1, _id: 0 } },
       { $sort: { count: -1 } }
     ]);
+
+    logger.info(`📱 [Overall] 设备分布统计结果:`, deviceStats);
 
     // 用户行为项（示例：按 action 统计）
     const behaviorStats = await ToolUsage.aggregate([
@@ -649,18 +729,229 @@ router.get('/analytics/overall', async (req, res) => {
       { $sort: { count: -1 } }
     ]);
 
+    logger.info(`👤 [Overall] 用户行为统计结果:`, behaviorStats);
+
+    const responseData = {
+      stats: stats[0] || { totalUsage: 0, uniqueUsers: 0, avgResponseTime: 0, successRate: 0 },
+      deviceStats,
+      behaviorStats
+    };
+
+    logger.info(`📈 [Overall] 最终返回数据:`, responseData);
+
     res.json({
       code: 200,
       message: 'success',
-      data: {
-        stats: stats[0] || { totalUsage: 0, uniqueUsers: 0, avgResponseTime: 0, successRate: 0 },
-        deviceStats,
-        behaviorStats
-      }
+      data: responseData
     });
   } catch (error) {
     logger.error('获取全站分析失败:', error);
     res.status(500).json({ code: 500, message: '获取全站分析失败' });
+  }
+});
+
+// 导出分析报表
+router.post('/analytics/export', async (req, res) => {
+  try {
+    const { period = '7d', toolId, dateRange, format = 'excel' } = req.body;
+
+    logger.info('📊 [Export] 开始导出分析报表:', { period, toolId, format });
+
+    // 构建查询参数
+    const queryParams = { period };
+    if (toolId) queryParams.toolId = toolId;
+    if (Array.isArray(dateRange) && dateRange.length === 2) {
+      queryParams.startDate = new Date(dateRange[0]);
+      queryParams.endDate = new Date(dateRange[1]);
+    } else {
+      // 根据period计算日期范围
+      const endDate = new Date();
+      const startDate = new Date();
+      switch (period) {
+        case '7d':
+          startDate.setDate(endDate.getDate() - 7);
+          break;
+        case '30d':
+          startDate.setDate(endDate.getDate() - 30);
+          break;
+        case '90d':
+          startDate.setDate(endDate.getDate() - 90);
+          break;
+        default:
+          startDate.setDate(endDate.getDate() - 7);
+      }
+      queryParams.startDate = startDate;
+      queryParams.endDate = endDate;
+    }
+
+    // 构建聚合查询
+    const matchStage = {
+      createdAt: {
+        $gte: queryParams.startDate,
+        $lte: queryParams.endDate
+      }
+    };
+
+    if (toolId) {
+      const tool = await Tool.findOne({ id: toolId });
+      if (tool) {
+        matchStage.toolId = tool._id;
+      }
+    }
+
+    // 获取详细使用数据
+    const usageData = await ToolUsage.aggregate([
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: 'tools',
+          localField: 'toolId',
+          foreignField: '_id',
+          as: 'tool'
+        }
+      },
+      { $unwind: { path: '$tool', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          time: { $dateToString: { format: '%H:%M:%S', date: '$createdAt' } },
+          toolName: { $ifNull: ['$tool.name', '$toolIdentifier'] },
+          toolIdentifier: 1,
+          action: 1,
+          success: 1,
+          responseTime: 1,
+          deviceType: '$device.type',
+          deviceOS: '$device.os',
+          deviceBrowser: '$device.browser',
+          userAgent: 1,
+          ipAddress: 1,
+          source: 1,
+          location: 1
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      { $limit: 10000 } // 限制导出记录数量
+    ]);
+
+    // 获取汇总统计
+    const summaryStats = await ToolUsage.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: null,
+          totalUsage: { $sum: 1 },
+          uniqueUsers: { $addToSet: '$userId' },
+          avgResponseTime: { $avg: '$responseTime' },
+          successCount: { $sum: { $cond: ['$success', 1, 0] } },
+          deviceStats: { $push: '$device.type' },
+          actionStats: { $push: '$action' }
+        }
+      },
+      {
+        $project: {
+          totalUsage: 1,
+          uniqueUsers: { $size: { $ifNull: ['$uniqueUsers', []] } },
+          avgResponseTime: { $round: ['$avgResponseTime', 2] },
+          successRate: {
+            $round: [
+              { $multiply: [{ $divide: ['$successCount', '$totalUsage'] }, 100] },
+              2
+            ]
+          },
+          deviceStats: 1,
+          actionStats: 1
+        }
+      }
+    ]);
+
+    const summary = summaryStats[0] || {
+      totalUsage: 0,
+      uniqueUsers: 0,
+      avgResponseTime: 0,
+      successRate: 0,
+      deviceStats: [],
+      actionStats: []
+    };
+
+    // 根据格式生成报表
+    if (format === 'json') {
+      // JSON 格式导出
+      const reportData = {
+        metadata: {
+          exportTime: new Date().toISOString(),
+          period,
+          toolId: toolId || 'all',
+          dateRange: {
+            start: queryParams.startDate.toISOString(),
+            end: queryParams.endDate.toISOString()
+          },
+          totalRecords: usageData.length
+        },
+        summary,
+        detailData: usageData
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="analytics-report-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(reportData);
+
+    } else {
+      // Excel/CSV 格式导出 (这里简化为 CSV)
+      const csvHeaders = [
+        '日期', '时间', '工具名称', '工具标识', '操作类型', '是否成功',
+        '响应时间(ms)', '设备类型', '操作系统', '浏览器', 'IP地址', '来源'
+      ];
+
+      const csvRows = usageData.map(record => [
+        record.date || '',
+        record.time || '',
+        record.toolName || '',
+        record.toolIdentifier || '',
+        record.action || '',
+        record.success ? '成功' : '失败',
+        record.responseTime || 0,
+        record.deviceType || '',
+        record.deviceOS || '',
+        record.deviceBrowser || '',
+        record.ipAddress || '',
+        record.source || ''
+      ]);
+
+      // 添加汇总信息行
+      const summaryRows = [
+        [''],
+        ['=== 汇总统计 ==='],
+        ['总使用次数', summary.totalUsage],
+        ['独立用户数', summary.uniqueUsers],
+        ['平均响应时间(ms)', summary.avgResponseTime],
+        ['成功率(%)', summary.successRate],
+        ['导出时间', new Date().toLocaleString('zh-CN')]
+      ];
+
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(',')),
+        ...summaryRows.map(row => row.join(','))
+      ].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="analytics-report-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send('\ufeff' + csvContent); // 添加BOM以支持Excel中文显示
+    }
+
+    logger.info('📊 [Export] 报表导出成功:', {
+      recordCount: usageData.length,
+      format,
+      period,
+      toolId: toolId || 'all'
+    });
+
+  } catch (error) {
+    logger.error('📊 [Export] 导出分析报表失败:', error);
+    res.status(500).json({
+      code: 500,
+      message: '导出失败: ' + error.message
+    });
   }
 });
 

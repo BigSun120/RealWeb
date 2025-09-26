@@ -150,9 +150,8 @@ export function useToolsOverviewAnalytics() {
       systemStatus.serverStatus = system.serverStatus || system.status || 'online';
       systemStatus.databaseStatus = system.databaseStatus || 'online';
       systemStatus.memoryUsage = total
-        ? `${(used / 1024 / 1024).toFixed(0)}MB / ${(total / 1024 / 1024).toFixed(0)}MB${
-            percent !== null ? ` (${percent}%)` : ''
-          }`
+        ? `${(used / 1024 / 1024).toFixed(0)}MB / ${(total / 1024 / 1024).toFixed(0)}MB${percent !== null ? ` (${percent}%)` : ''
+        }`
         : '--';
       systemStatus.cpuUsage = toNumber(system.cpuUsage ?? system.cpu ?? 0);
       systemStatus.diskUsage = system.diskUsage ?? system.disk ?? null;
@@ -217,11 +216,13 @@ export function useToolsUsageAnalytics() {
         params.endDate = dateRange[1];
       }
 
+
       const [statsRes, overallRes, toolsRes] = await Promise.all([
         analyticsAPI.getToolUsageStats(params),
         analyticsAPI.getOverallStats(params),
         toolsAPI.getTools({ page: 1, pageSize: 1000, status: 'active' })
       ]);
+
 
       const statsPayload = statsRes?.data?.data || statsRes?.data || {};
       const stats = statsPayload.stats || statsPayload;
@@ -232,12 +233,28 @@ export function useToolsUsageAnalytics() {
       summary.avgResponseTime = toNumber(stats.avgResponseTime ?? stats.averageTime ?? 0);
       summary.successRate = toNumber(stats.successRate ?? stats.success ?? 0);
 
-      const trend = normalizeTrend(statsPayload.trend || []);
-      trendPoints.value = trend.length ? trend : normalizeTrend(statsRes?.data?.trend || []);
+      // 修复趋势数据处理逻辑
+      let trendData = [];
+      if (statsPayload.trend) {
+        // 单工具查询时的trend字段
+        trendData = statsPayload.trend;
+      } else if (statsPayload.overallTrend) {
+        // 全站查询时的overallTrend字段
+        trendData = statsPayload.overallTrend;
+      } else if (statsRes?.data?.overallTrend) {
+        // 备用路径
+        trendData = statsRes.data.overallTrend;
+      }
+
+      const trend = normalizeTrend(trendData);
+      trendPoints.value = trend;
+
 
       const overallPayload = overallRes?.data?.data || overallRes?.data || {};
       const devices = overallPayload.deviceStats || overallPayload.devices || [];
       const behaviors = overallPayload.behaviorStats || overallPayload.behaviors || [];
+
+
       deviceStats.value = devices.map(item => ({
         name: item.type || item.name || '未知',
         value: toNumber(item.count ?? item.value ?? 0)
@@ -246,6 +263,7 @@ export function useToolsUsageAnalytics() {
         action: item.action || item.name || '未知',
         value: toNumber(item.count ?? item.value ?? 0)
       }));
+
 
       const toolsList =
         toolsRes?.data?.tools ||
@@ -261,12 +279,21 @@ export function useToolsUsageAnalytics() {
         .filter(item => item.id)
         .sort((a, b) => a.name.localeCompare(b.name));
 
-      const popularRaw = statsPayload.popularTools || statsPayload.topTools || [];
+      // 修复热门工具数据处理
+      let popularRaw = [];
+      if (statsPayload.popularTools) {
+        popularRaw = statsPayload.popularTools;
+      } else if (statsPayload.topTools) {
+        popularRaw = statsPayload.topTools;
+      }
+
+
       if (popularRaw.length) {
         topTools.value = mapPopularTools(popularRaw, buildNameMap(toolsList));
       } else if (!toolId) {
         topTools.value = [];
       }
+
     } catch (err) {
       error.value = err;
       trendPoints.value = [];
