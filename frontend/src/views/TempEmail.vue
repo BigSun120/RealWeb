@@ -565,7 +565,6 @@ const checkAccessStatus = async () => {
     const statusData = rawPayload?.data ?? rawPayload
 
     if (statusData && typeof statusData.hasAccess !== 'undefined') {
-      console.log('[temp-email] access-status success', statusData)
       const oldHasAccess = accessStatus.value.hasAccess
       accessStatus.value = { ...accessStatus.value, ...statusData }
 
@@ -875,7 +874,6 @@ const extractCode = (emailContent) => {
   if (typeof emailContent === 'string') {
     sourceText = emailContent
   } else if (typeof emailContent === 'object') {
-    console.debug('[temp-email] extractCode source parts', emailContent);
     const parts = [
       emailContent.code,
       emailContent.preview,
@@ -928,7 +926,6 @@ const extractCode = (emailContent) => {
 
   for (const rule of rules) {
     const matches = cleanContent.match(rule.pattern)
-    console.debug('[temp-email] rule matches', rule.priority, matches);
     if (!matches) continue
 
     for (const match of matches) {
@@ -945,13 +942,11 @@ const extractCode = (emailContent) => {
   }
 
   if (candidates.length === 0) {
-    console.debug('[temp-email] no candidates');
     return null
   }
 
   candidates.sort((a, b) => b.priority - a.priority)
   const [best] = candidates
-  console.debug('[temp-email] best code', best)
   return best.code
 }
 
@@ -2802,12 +2797,11 @@ onUnmounted(() => {
 
 
 @keyframes temp-email-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+from {
+transform: rotate(0deg);
 }
 
+to {
+transform: rotate(360deg);
+}
+}
