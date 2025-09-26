@@ -226,6 +226,35 @@ export default {
         requiresAuth: true
       }
     },
+    // 小游戏分类
+    {
+      path: 'games',
+      name: 'GameTools',
+      meta: {
+        title: '小游戏',
+        category: 'games'
+      },
+      children: [
+        {
+          path: '',
+          name: 'GameToolsIndex',
+          component: () => import('@/views/tools/CategoryIndex.vue'),
+          meta: {
+            title: '小游戏',
+            category: 'games'
+          }
+        },
+        {
+          path: 'gomoku',
+          name: 'Gomoku',
+          component: () => import('@/views/tools/games/Gomoku.vue'),
+          meta: {
+            title: '五子棋对战',
+            description: '与 AI 对弈的五子棋小游戏'
+          }
+        }
+      ]
+    },
     // 实用工具分类
     {
       path: 'utility',
@@ -317,4 +346,5 @@ export default {
     }
   ]
 };
+
 

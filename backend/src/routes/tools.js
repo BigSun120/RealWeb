@@ -14,6 +14,7 @@ const iqiyiRoutes = require('./tools/iqiyi');
 const augmentRoutes = require('./tools/augment');
 const tokenPoolRoutes = require('./tools/tokenPool');
 const mailMemoRoutes = require('./tools/mailMemo');
+const gomokuRoutes = require('./tools/gomoku');
 
 const router = express.Router();
 
@@ -23,6 +24,12 @@ router.use('/token-pool', tokenPoolRoutes); // 令牌池管理（直接写死在
 // 应用工具箱基础中间件
 router.use(ToolsPermission.checkToolboxEnabled); // 检查工具箱是否启用
 router.use(ToolsPermission.checkRateLimit); // 检查频率限制
+router.use((req, res, next) => {
+  if (req.path.startsWith('/gomoku')) {
+    req.params.toolId = 'gomoku';
+  }
+  next();
+});
 router.use(ToolsAnalytics.createMiddleware()); // 应用分析中间件
 
 // 工具特定路由
@@ -31,6 +38,7 @@ router.use('/youtube', youtubeRoutes); // YouTube下载工具
 router.use('/iqiyi', iqiyiRoutes); // 爱奇艺下载工具
 router.use('/augment', augmentRoutes); // Augment 工具
 router.use('/mail-memo', mailMemoRoutes); // 邮箱备忘录
+router.use('/gomoku', gomokuRoutes); // 五子棋小游戏
 
 // 公开路由：获取工具列表
 router.get('/', optionalAuth, toolsController.getTools);
@@ -58,7 +66,4 @@ router.get('/favorites/list', auth, toolsController.getFavoriteTools);
 // 认证路由：添加/移除收藏
 router.post('/:id/favorite', auth, toolsController.toggleFavorite);
 
-
-
 module.exports = router;
-

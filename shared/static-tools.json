@@ -27,7 +27,7 @@
         "name": "邮箱备忘录",
         "description": "集中管理个人邮箱地址与备注，支持标签筛选与批量导入导出",
         "icon": "📧",
-        "category": "productivity",
+        "category": "littlelife",
         "route": "/tools/productivity/mail-memo",
         "component": "@/views/tools/productivity/MailMemo.vue",
         "tags": [
@@ -48,7 +48,7 @@
         "name": "临时邮箱",
         "description": "提供快速生成、管理临时邮箱的隐私防护工具，支持域名选择与邮件实时查看",
         "icon": "📬",
-        "category": "productivity",
+        "category": "littlelife",
         "route": "/temp-email",
         "component": "@/views/TempEmail.vue",
         "tags": [
@@ -63,5 +63,27 @@
         "requiresAuth": false,
         "requiresAdmin": false,
         "sortOrder": 45
+    },
+    {
+        "id": "gomoku",
+        "name": "五子棋对战",
+        "description": "与 AI 对战的五子棋小游戏，支持胜负统计与排行榜",
+        "icon": "🎮",
+        "category": "games",
+        "route": "/tools/games/gomoku",
+        "component": "@/views/tools/games/Gomoku.vue",
+        "tags": [
+            "小游戏",
+            "棋类",
+            "AI",
+            "对战"
+        ],
+        "featured": false,
+        "status": "active",
+        "difficulty": "easy",
+        "estimatedTime": "5-10分钟",
+        "requiresAuth": false,
+        "requiresAdmin": false,
+        "sortOrder": 55
     }
 ]

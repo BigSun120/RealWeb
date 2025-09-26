@@ -18,6 +18,8 @@ class ToolsService {
     this.loading = false;
     this.error = null;
     this.apiLoaded = false;
+    this.gomokuStats = new Map();
+    this.gomokuRankings = new Map();
   }
 
   /**
@@ -76,7 +78,8 @@ class ToolsService {
         { id: 'dev', name: '开发工具', icon: '⚙️', description: '开发者常用工具' },
         { id: 'productivity', name: '效率工具', icon: '??', description: '个人效率与备忘工具' },
         { id: 'utility', name: '实用工具', icon: '🔧', description: '日常实用小工具' },
-        { id: 'media', name: '媒体工具', icon: '🎬', description: '音视频处理和下载工具' }
+        { id: 'media', name: '媒体工具', icon: '🎬', description: '音视频处理和下载工具' },
+        { id: 'games', name: '小游戏', icon: '🎮', description: '轻量休闲小游戏' }
       ];
       return this.categories;
     }
@@ -183,6 +186,81 @@ class ToolsService {
   getStaticTools() {
     return STATIC_TOOLS.map(tool => ({ ...tool }));
   }
+  /**
+   * 提交五子棋对局结果（需要登录）
+   */
+  async submitGomokuResult({ difficulty, result }) {
+    const response = await request({
+      url: '/tools/gomoku/result',
+      method: 'post',
+      data: { difficulty, result }
+    });
+
+    if (response.code === 200) {
+      const stats = response.data || {};
+      this.gomokuStats.set(difficulty, stats);
+      this.gomokuRankings.delete(difficulty);
+      return stats;
+    }
+
+    throw new Error(response.message || '提交五子棋结果失败');
+  }
+
+  /**
+   * 获取五子棋排行榜
+   */
+  async getGomokuRankings({ difficulty, limit = 10, forceReload = false } = {}) {
+    if (!difficulty) {
+      throw new Error('排行榜查询需要提供难度');
+    }
+
+    if (!forceReload && this.gomokuRankings.has(difficulty)) {
+      return this.gomokuRankings.get(difficulty);
+    }
+
+    const response = await request({
+      url: '/tools/gomoku/rankings',
+      method: 'get',
+      params: { difficulty, limit }
+    });
+
+    if (response.code === 200) {
+      const rankings = Array.isArray(response.data) ? response.data : [];
+      this.gomokuRankings.set(difficulty, rankings);
+      return rankings;
+    }
+
+    throw new Error(response.message || '获取排行榜失败');
+  }
+
+  /**
+   * 获取当前用户的五子棋统计
+   */
+  async getMyGomokuStats({ forceReload = false } = {}) {
+    if (!forceReload && this.gomokuStats.size > 0) {
+      return Array.from(this.gomokuStats.values());
+    }
+
+    const response = await request({
+      url: '/tools/gomoku/stats',
+      method: 'get'
+    });
+
+    if (response.code === 200) {
+      const records = Array.isArray(response.data) ? response.data : [];
+      this.gomokuStats.clear();
+      records.forEach((item) => {
+        if (item?.difficulty) {
+          this.gomokuStats.set(item.difficulty, item);
+        }
+      });
+      return records;
+    }
+
+    throw new Error(response.message || '获取个人统计失败');
+  }
+
+
 
   /**
    * 初始化数据
