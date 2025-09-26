@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const { auth } = require('../../middleware/auth');
 const ToolCategory = require('../../models/ToolCategory');
 const Tool = require('../../models/Tool');
@@ -8,12 +8,14 @@ const logger = require('../../utils/logger');
 
 const router = express.Router();
 
-// 应用权限验证
+const isTruthy = (value) => value === true || value === 'true';
+
+// 应用权限校验
 router.use(auth);
 router.use(ToolsPermission.requireAdmin);
 router.use(ToolsPermission.checkCategoryManagePermission);
 
-// 获取分类列表
+// 获取分类列表（扁平化）
 router.get('/', async (req, res) => {
   try {
     const {
@@ -25,52 +27,76 @@ router.get('/', async (req, res) => {
       limit = 50
     } = req.query;
 
-    // 构建查询条件
     const query = {};
-    if (status) query.status = status;
-
+    if (status) {
+      query.status = status;
+    }
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { description: { $regex: search, $options: 'i' } },
+        { id: { $regex: search, $options: 'i' } }
       ];
     }
 
-    // 分页
-    const skip = (page - 1) * limit;
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 50;
+    const skip = Math.max(pageNum - 1, 0) * limitNum;
 
     let categories = await ToolCategory.find(query)
-      .populate('parent')
       .populate('createdBy', 'username email')
       .populate('updatedBy', 'username email')
-      .sort({ level: 1, sortOrder: 1 })
+      .sort({ sortOrder: 1, createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(limitNum)
+      .lean();
 
-    if (includeTools === 'true') {
-      categories = await ToolCategory.populate(categories, {
-        path: 'tools',
-        select: 'id name status usageCount'
-      });
+    const categoryIds = categories.map((cat) => cat.id);
+    const sendTools = isTruthy(includeTools) && categoryIds.length > 0;
+    const sendCounts = isTruthy(includeCounts) && categoryIds.length > 0;
+
+    let toolsByCategory = {};
+    if (sendTools) {
+      const tools = await Tool.find({ category: { $in: categoryIds } })
+        .select('id name status usageCount category')
+        .lean();
+
+      toolsByCategory = tools.reduce((acc, tool) => {
+        if (!acc[tool.category]) {
+          acc[tool.category] = [];
+        }
+        acc[tool.category].push(tool);
+        return acc;
+      }, {});
     }
 
-    // 可选：统计每个分类的工具数量并回填（独立于是否返回 tools）
-    if (includeCounts === 'true' || includeCounts === true) {
-      try {
-        const counts = await Tool.aggregate([
-          { $match: {} },
-          { $group: { _id: '$category', count: { $sum: 1 } } }
-        ]);
-        const countMap = new Map(counts.map(c => [c._id, c.count]));
-        categories = categories.map(cat => {
-          const obj = typeof cat.toObject === 'function' ? cat.toObject() : cat;
-          obj.toolCount = countMap.get(obj.id) || 0;
-          return obj;
-        });
-      } catch (e) {
-        // 统计失败不阻塞主流程
+    let countsByCategory = new Map();
+    if (sendCounts) {
+      const counts = await Tool.aggregate([
+        { $match: { category: { $in: categoryIds } } },
+        { $group: { _id: '$category', count: { $sum: 1 } } }
+      ]);
+      counts.forEach(({ _id, count }) => countsByCategory.set(_id, count));
+    }
+
+    categories = categories.map((cat) => {
+      const enriched = { ...cat };
+      enriched.parentId = null;
+      enriched.level = 0;
+      enriched.path = cat.id;
+
+      if (sendTools) {
+        enriched.tools = toolsByCategory[cat.id] || [];
       }
-    }
+
+      if (sendCounts) {
+        enriched.toolCount = countsByCategory.get(cat.id) || 0;
+      } else if (sendTools) {
+        enriched.toolCount = (toolsByCategory[cat.id] || []).length;
+      }
+
+      return enriched;
+    });
 
     const total = await ToolCategory.countDocuments(query);
 
@@ -80,10 +106,10 @@ router.get('/', async (req, res) => {
       data: {
         categories,
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
+          page: pageNum,
+          limit: limitNum,
           total,
-          pages: Math.ceil(total / limit)
+          pages: Math.ceil(total / limitNum)
         }
       }
     });
@@ -96,63 +122,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 获取分类树结构
-router.get('/tree', async (req, res) => {
-  try {
-    const categories = await ToolCategory.find({ status: 'active' }).sort({
-      level: 1,
-      sortOrder: 1
-    });
-
-    // 构建树结构
-    const categoryMap = new Map();
-    const rootCategories = [];
-
-    // 第一遍：创建所有分类的映射
-    categories.forEach(category => {
-      categoryMap.set(category.id, {
-        ...category.toObject(),
-        children: []
-      });
-    });
-
-    // 第二遍：构建父子关系
-    categories.forEach(category => {
-      const categoryData = categoryMap.get(category.id);
-
-      if (category.parentId) {
-        const parent = categoryMap.get(category.parentId);
-        if (parent) {
-          parent.children.push(categoryData);
-        }
-      } else {
-        rootCategories.push(categoryData);
-      }
-    });
-
-    res.json({
-      code: 200,
-      message: 'success',
-      data: rootCategories
-    });
-  } catch (error) {
-    logger.error('获取分类树失败:', error);
-    res.status(500).json({
-      code: 500,
-      message: '获取分类树失败'
-    });
-  }
-});
-
-// 获取分类详情
+// 获取分类详情（扁平化）
 router.get('/:id', async (req, res) => {
   try {
     const category = await ToolCategory.findById(req.params.id)
-      .populate('parent')
-      .populate('children')
-      .populate('tools')
       .populate('createdBy', 'username email')
-      .populate('updatedBy', 'username email');
+      .populate('updatedBy', 'username email')
+      .lean();
 
     if (!category) {
       return res.status(404).json({
@@ -161,10 +137,23 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    const tools = await Tool.find({ category: category.id })
+      .select('id name status usageCount')
+      .lean();
+
+    const data = {
+      ...category,
+      parentId: null,
+      level: 0,
+      path: category.id,
+      tools,
+      toolCount: tools.length
+    };
+
     res.json({
       code: 200,
       message: 'success',
-      data: category
+      data
     });
   } catch (error) {
     logger.error('获取分类详情失败:', error);
@@ -180,35 +169,20 @@ router.post('/', async (req, res) => {
   try {
     const categoryData = {
       ...req.body,
+      parentId: null,
+      level: 0,
+      path: req.body.id,
       createdBy: req.user._id,
       updatedBy: req.user._id
     };
 
-    // 如果有父分类，设置层级和路径
-    if (categoryData.parentId) {
-      const parent = await ToolCategory.findOne({ id: categoryData.parentId });
-      if (!parent) {
-        return res.status(400).json({
-          code: 400,
-          message: '父分类不存在'
-        });
-      }
-
-      categoryData.level = parent.level + 1;
-      categoryData.path = `${parent.path}/${categoryData.id}`;
-    } else {
-      categoryData.level = 0;
-      categoryData.path = categoryData.id;
-    }
-
     const category = new ToolCategory(categoryData);
     await category.save();
 
-    // 记录活动日志
     await ActivityLogger.logAdminAction(
       req.user._id,
       '创建工具分类',
-      `创建了工具分类: ${category.name}`,
+      `创建了工具分类 ${category.name}`,
       req,
       category._id,
       'category'
@@ -247,44 +221,20 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // 检查是否修改了父分类
-    if (req.body.parentId !== undefined && req.body.parentId !== category.parentId) {
-      // 验证新的父分类
-      if (req.body.parentId) {
-        const parent = await ToolCategory.findOne({ id: req.body.parentId });
-        if (!parent) {
-          return res.status(400).json({
-            code: 400,
-            message: '父分类不存在'
-          });
-        }
+    const updates = { ...req.body };
+    delete updates.parentId;
+    updates.level = 0;
+    updates.path = category.id;
 
-        // 防止循环引用
-        if (parent.path.includes(category.id)) {
-          return res.status(400).json({
-            code: 400,
-            message: '不能将分类设置为其子分类的子分类'
-          });
-        }
-
-        req.body.level = parent.level + 1;
-        req.body.path = `${parent.path}/${category.id}`;
-      } else {
-        req.body.level = 0;
-        req.body.path = category.id;
-      }
-    }
-
-    Object.assign(category, req.body);
+    Object.assign(category, updates);
     category.updatedBy = req.user._id;
 
     await category.save();
 
-    // 记录活动日志
     await ActivityLogger.logAdminAction(
       req.user._id,
       '更新工具分类',
-      `更新了工具分类: ${category.name}`,
+      `更新了工具分类 ${category.name}`,
       req,
       category._id,
       'category'
@@ -315,31 +265,29 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    // 检查是否有子分类
-    const childrenCount = await ToolCategory.countDocuments({ parentId: category.id });
-    if (childrenCount > 0) {
-      return res.status(400).json({
-        code: 400,
-        message: '该分类下还有子分类，请先删除子分类'
-      });
-    }
-
-    // 检查是否有工具使用该分类
     const toolsCount = await Tool.countDocuments({ category: category.id });
     if (toolsCount > 0) {
       return res.status(400).json({
         code: 400,
-        message: '该分类下还有工具，请先移动或删除相关工具'
+        message: '该分类下仍有关联工具，请先调整或删除相关工具'
       });
     }
 
     await ToolCategory.findByIdAndDelete(req.params.id);
 
-    // 记录活动日志
+    const orphanChildren = await ToolCategory.find({ parentId: category.id });
+    for (const child of orphanChildren) {
+      child.parentId = null;
+      child.level = 0;
+      child.path = child.id;
+      child.updatedBy = req.user._id;
+      await child.save();
+    }
+
     await ActivityLogger.logAdminAction(
       req.user._id,
       '删除工具分类',
-      `删除了工具分类: ${category.name}`,
+      `删除了工具分类 ${category.name}`,
       req,
       category._id,
       'category'
