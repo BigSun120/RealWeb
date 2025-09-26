@@ -1,12 +1,9 @@
 ﻿<template>
-  <div class="gomoku-page">
-    <PageHeader
-      title="五子棋对战"
-      subtitle="与 AI 对弈，挑战不同难度并冲击排行榜"
-      :show-filters="false"
-    />
+  <div>
+    <PageHeader title="五子棋对战" subtitle="与 AI 对弈，挑战不同难度并冲击排行榜" :show-filters="false" />
 
-    <div class="gomoku-layout">
+    <div class="gomoku-page">
+      <div class="gomoku-layout">
       <section class="gomoku-board-section">
         <header class="board-toolbar">
           <div class="status-text" :class="`status-${statusState}`">
@@ -15,47 +12,24 @@
             </el-tag>
           </div>
           <div class="board-actions">
-            <el-button
-              type="primary"
-              :disabled="aiThinking"
-              @click="handleRestart"
-            >
+            <el-button type="primary" :disabled="aiThinking" @click="handleRestart">
               {{ isGameActive ? '重新开始' : '开始对局' }}
             </el-button>
             <el-tooltip content="每局最多悔棋三次" placement="bottom">
-              <el-button
-                :disabled="!canUndo"
-                @click="handleUndo"
-              >
+              <el-button :disabled="!canUndo" @click="handleUndo">
                 悔棋 ({{ undoCount }}/{{ MAX_UNDO }})
               </el-button>
             </el-tooltip>
           </div>
         </header>
 
-        <div
-          class="board-wrapper"
-          ref="boardWrapper"
-          role="application"
-          aria-label="五子棋棋盘"
-        >
-          <div
-            class="board-grid"
-            role="grid"
-            :aria-disabled="aiThinking"
-          >
-            <button
-              v-for="cell in boardCells"
-              :key="`cell-${cell.row}-${cell.col}`"
-              class="board-cell"
-              :class="cellClass(cell.row, cell.col)"
-              :data-cell="`${cell.row}-${cell.col}`"
-              type="button"
-              :disabled="isCellDisabled(cell.row, cell.col)"
-              :aria-label="getCellAriaLabel(cell.row, cell.col)"
+        <div class="board-wrapper" ref="boardWrapper" role="application" aria-label="五子棋棋盘">
+          <div class="board-grid" role="grid" :aria-disabled="aiThinking">
+            <button v-for="cell in boardCells" :key="`cell-${cell.row}-${cell.col}`" class="board-cell"
+              :class="cellClass(cell.row, cell.col)" :data-cell="`${cell.row}-${cell.col}`" type="button"
+              :disabled="isCellDisabled(cell.row, cell.col)" :aria-label="getCellAriaLabel(cell.row, cell.col)"
               @click="handleCellClick(cell.row, cell.col)"
-              @keydown="handleCellKey(cell.row, cell.col, $event)"
-            ></button>
+              @keydown="handleCellKey(cell.row, cell.col, $event)"></button>
           </div>
         </div>
       </section>
@@ -63,27 +37,13 @@
       <aside class="gomoku-sidebar">
         <div class="panel">
           <h3 class="panel-title">对局设置</h3>
-          <el-radio-group
-            v-model="currentDifficulty"
-            class="difficulty-group"
-            :disabled="isGameActive"
-          >
-            <el-radio-button
-              v-for="item in difficulties"
-              :key="item.value"
-              :label="item.value"
-            >
+          <el-radio-group v-model="currentDifficulty" class="difficulty-group" :disabled="isGameActive">
+            <el-radio-button v-for="item in difficulties" :key="item.value" :label="item.value">
               {{ item.label }}
             </el-radio-button>
           </el-radio-group>
           <p class="hint">选择难度后点击“开始对局”，你将先手落子。</p>
-          <el-alert
-            class="auth-hint"
-            v-if="!isLoggedIn"
-            title="登录即可记录胜负并参与排行榜"
-            type="info"
-            show-icon
-          />
+          <el-alert class="auth-hint" v-if="!isLoggedIn" title="登录即可记录胜负并参与排行榜" type="info" show-icon />
         </div>
 
         <div class="panel">
@@ -95,12 +55,8 @@
             <el-skeleton :rows="3" animated />
           </div>
           <div v-else class="stats-list">
-            <div
-              v-for="item in myStats"
-              :key="item.difficulty"
-              class="stats-item"
-              :class="{ 'is-current': item.difficulty === currentDifficulty }"
-            >
+            <div v-for="item in myStats" :key="item.difficulty" class="stats-item"
+              :class="{ 'is-current': item.difficulty === currentDifficulty }">
               <div class="stats-difficulty">
                 {{ getDifficultyLabel(item.difficulty) }}
               </div>
@@ -116,12 +72,7 @@
         <div class="panel">
           <div class="panel-header">
             <h3 class="panel-title">排行榜（{{ currentDifficultyLabel }}）</h3>
-            <el-button
-              link
-              size="small"
-              :disabled="rankingLoading"
-              @click="loadRankings({ forceReload: true })"
-            >
+            <el-button link size="small" :disabled="rankingLoading" @click="loadRankings({ forceReload: true })">
               刷新
             </el-button>
           </div>
@@ -140,14 +91,10 @@
           </ol>
         </div>
       </aside>
+      </div>
     </div>
 
-    <el-dialog
-      v-model="resultDialog.visible"
-      :title="resultDialog.title"
-      width="360px"
-      destroy-on-close
-    >
+    <el-dialog v-model="resultDialog.visible" :title="resultDialog.title" width="360px" destroy-on-close>
       <p>{{ resultDialog.message }}</p>
       <template #footer>
         <el-button @click="resultDialog.visible = false">稍后再战</el-button>
@@ -162,6 +109,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import PageHeader from '@/components/common/PageHeader.vue';
 import toolsService from '@/services/toolsService';
+import { useToolAnalytics } from '@/composables/useToolAnalytics';
 import { useUserStore } from '@/stores/user';
 
 const BOARD_SIZE = 15;
@@ -180,6 +128,8 @@ const difficulties = [
   { label: '进阶', value: 'medium' },
   { label: '高手', value: 'hard' }
 ];
+
+const { isTracking: analyticsTracking, startTracking, stopTracking, recordUsage } = useToolAnalytics('gomoku');
 
 const userStore = useUserStore();
 const isLoggedIn = computed(() => userStore.isLoggedIn);
@@ -237,7 +187,7 @@ function cellClass(rowIndex, colIndex) {
     'is-ai': value === AI,
     'is-last': lastMove.value?.row === rowIndex && lastMove.value?.col === colIndex,
     'is-winning': winningLine.value.some((pos) => pos.row === rowIndex && pos.col === colIndex)
-}
+  }
 
 }
 
@@ -346,6 +296,23 @@ function evaluateBoardState(row, col, role) {
 async function finishGame({ winner, line = [] }) {
   isGameActive.value = false;
   winningLine.value = line;
+
+  const metadata = {
+    difficulty: currentDifficulty.value,
+    winner,
+    movesPlayed: history.value.length,
+    undoCount: undoCount.value,
+    timestamp: new Date().toISOString()
+  };
+
+  if (analyticsTracking.value) {
+    await stopTracking({
+      reason: winner === 'draw' ? 'game_draw' : 'game_finished',
+      ...metadata
+    });
+  }
+
+  recordUsage('finish_game', metadata);
 
   if (winner === 'player') {
     statusMessage.value = '恭喜，你获胜了！';
@@ -711,11 +678,15 @@ watch(isLoggedIn, (loggedIn) => {
   --board-surface: #f7e4c0;
   --player-piece: radial-gradient(circle at 30% 30%, #f9fafb 0%, #101112 80%);
   --ai-piece: radial-gradient(circle at 35% 35%, #fff8dc 0%, #8b4513 80%);
-  --panel-bg: rgba(255, 255, 255, 0.82);
-  --panel-blur: blur(18px);
+  --panel-bg: rgba(255, 255, 255, 0.25);
+  --panel-blur: blur(20px);
   padding: 28px min(5vw, 48px) 48px;
-  min-height: calc(100vh - 140px);
-  background: radial-gradient(120% 140% at 20% 20%, #f7f5ff 0%, #eef3ff 45%, #e3f4ff 70%, #f4f7ff 100%);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  margin: 20px 20px 48px 20px;
 }
 
 .gomoku-layout {
@@ -753,9 +724,9 @@ watch(isLoggedIn, (loggedIn) => {
   background: var(--panel-bg);
   border-radius: 24px;
   padding: clamp(18px, 3vw, 28px);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   backdrop-filter: var(--panel-blur);
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -815,9 +786,11 @@ watch(isLoggedIn, (loggedIn) => {
   --board-padding: clamp(14px, 2.5vw, 22px);
   position: relative;
   border-radius: 22px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.85), rgba(238, 244, 255, 0.85));
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   padding: var(--board-padding);
-  box-shadow: inset 0 10px 22px rgba(15, 23, 42, 0.08);
+  box-shadow: inset 0 4px 16px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -929,9 +902,9 @@ watch(isLoggedIn, (loggedIn) => {
   background: var(--panel-bg);
   border-radius: 20px;
   padding: clamp(18px, 2.8vw, 26px);
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   backdrop-filter: var(--panel-blur);
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
 .panel-title {
@@ -1118,7 +1091,3 @@ watch(isLoggedIn, (loggedIn) => {
   }
 }
 </style>
-
-
-
-
