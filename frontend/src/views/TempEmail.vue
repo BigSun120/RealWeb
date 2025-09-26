@@ -2,9 +2,10 @@
   <div class="temp-email-container">
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-container">
-      <el-loading :loading="true" :element-loading-text="loadingText">
-        <div style="height: 200px;"></div>
-      </el-loading>
+      <el-icon class="loading-icon">
+        <Loading />
+      </el-icon>
+      <p class="loading-text">{{ loadingText }}</p>
     </div>
 
     <!-- 未登录状态 -->
@@ -360,7 +361,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, Key, Plus, Message, Refresh } from '@element-plus/icons-vue'
+import { User, Key, Plus, Message, Refresh, Loading } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { tempEmailApi } from '@/api/tempEmail'
@@ -560,20 +561,25 @@ const checkAccessStatus = async () => {
     }
 
     const response = await tempEmailAuthApi.checkAccessStatus()
+    const rawPayload = response?.data ?? response
+    const statusData = rawPayload?.data ?? rawPayload
 
-    if (response.success) {
+    if (statusData && typeof statusData.hasAccess !== 'undefined') {
+      console.log('[temp-email] access-status success', statusData)
       const oldHasAccess = accessStatus.value.hasAccess
-      accessStatus.value = response.data
+      accessStatus.value = { ...accessStatus.value, ...statusData }
 
       loading.value = false
 
-      // 如果权限状态从有变为无，清除相关数据
-      if (oldHasAccess && !response.data.hasAccess) {
-        // 清除邮件数据
+      if (oldHasAccess && !statusData.hasAccess) {
         allMessages.value = []
         currentEmail.value = ''
         selectedDomain.value = ''
       }
+    } else {
+      console.warn('[temp-email] access-status unexpected payload', rawPayload)
+      console.debug('[temp-email] access-status raw response', response)
+      loading.value = false
     }
   } catch (error) {
     loading.value = false
@@ -862,34 +868,56 @@ const viewMessage = async (message) => {
 
 // 验证码提取函数
 const extractCode = (emailContent) => {
-  if (!emailContent || typeof emailContent !== 'string') return null
+  if (!emailContent) return null
 
-  // 清理HTML标签，保留文本内容
-  let cleanContent = emailContent
-    .replace(/<script[^>]*>.*?<\/script>/gi, '') // 移除脚本
-    .replace(/<style[^>]*>.*?<\/style>/gi, '') // 移除样式
+  let sourceText = ''
+
+  if (typeof emailContent === 'string') {
+    sourceText = emailContent
+  } else if (typeof emailContent === 'object') {
+    console.debug('[temp-email] extractCode source parts', emailContent);
+    const parts = [
+      emailContent.code,
+      emailContent.preview,
+      emailContent.snippet,
+      emailContent.body?.text,
+      emailContent.body?.html,
+      emailContent.subject,
+      emailContent.text
+    ].filter(part => typeof part === 'string' && part.trim().length > 0)
+
+    if (parts.length === 0) {
+      return null
+    }
+
+    sourceText = parts.join(' ')
+  } else {
+    return null
+  }
+
+  const normalizedContent = String(sourceText).trim()
+  if (!normalizedContent) return null
+
+  const cleanContent = normalizedContent
+    .replace(/<script[^>]*>.*?<\/script>/gi, '') // 清理脚本标签
+    .replace(/<style[^>]*>.*?<\/style>/gi, '') // 清理样式标签
     .replace(/<[^>]*>/g, ' ') // 移除其他HTML标签
-    .replace(/\s+/g, ' ') // 合并空白字符
+    .replace(/\s+/g, ' ') // 合并多余空白
     .trim()
 
-  // 验证码提取规则（按优先级排序）
   const rules = [
-    // 1. 明确的验证码关键词后的代码
     {
       pattern: /(?:verification\s*code|verify\s*code|验证码|激活码|确认码)[：:\s]*([A-Z0-9]{4,8})/gi,
       priority: 10
     },
-    // 2. 6位纯数字验证码（最常见）
     {
       pattern: /\b\d{6}\b/g,
       priority: 8
     },
-    // 3. 4-8位纯数字验证码
     {
       pattern: /\b\d{4,8}\b/g,
       priority: 7
     },
-    // 4. 字母数字混合验证码（大写）
     {
       pattern: /\b[A-Z0-9]{4,8}\b/g,
       priority: 6
@@ -898,35 +926,35 @@ const extractCode = (emailContent) => {
 
   const candidates = []
 
-  // 按优先级提取所有可能的验证码
   for (const rule of rules) {
     const matches = cleanContent.match(rule.pattern)
-    if (matches && matches.length > 0) {
-      for (const match of matches) {
-        // 确保match是字符串
-        if (typeof match !== 'string') continue
-        // 提取纯字母数字字符
-        let code = match.replace(/[^A-Z0-9]/gi, '')
-        // 验证码长度检查
-        if (code.length >= 4 && code.length <= 8) {
-          candidates.push({
-            code: code.toUpperCase(),
-            priority: rule.priority
-          })
-        }
+    console.debug('[temp-email] rule matches', rule.priority, matches);
+    if (!matches) continue
+
+    for (const match of matches) {
+      if (typeof match !== 'string') continue
+
+      const sanitized = match.replace(/[^A-Z0-9]/gi, '')
+      if (sanitized.length >= 4 && sanitized.length <= 8) {
+        candidates.push({
+          code: sanitized.toUpperCase(),
+          priority: rule.priority
+        })
       }
     }
   }
 
-  // 如果没有找到候选验证码，返回null
   if (candidates.length === 0) {
+    console.debug('[temp-email] no candidates');
     return null
   }
 
-  // 按优先级排序，选择最佳候选
   candidates.sort((a, b) => b.priority - a.priority)
-  return candidates[0].code
+  const [best] = candidates
+  console.debug('[temp-email] best code', best)
+  return best.code
 }
+
 
 const enrichLatestCodes = async () => {
   const top = latestMessages.value.slice(0, 5);
@@ -1307,10 +1335,24 @@ onUnmounted(() => {
 /* 权限控制相关样式 */
 .loading-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 12px;
   min-height: 400px;
 }
+
+.loading-icon {
+  font-size: 48px;
+  color: #409eff;
+  animation: temp-email-spin 1s linear infinite;
+}
+
+.loading-text {
+  color: #409eff;
+  font-size: 16px;
+}
+
 
 .login-required {
   display: flex;
@@ -2748,3 +2790,24 @@ onUnmounted(() => {
 
 /* 移除所有强制颜色设置，让组件使用默认颜色 */
 </style>
+
+
+
+
+
+
+
+
+
+
+
+@keyframes temp-email-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+

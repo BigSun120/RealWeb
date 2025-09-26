@@ -217,6 +217,13 @@ userSchema.pre('save', async function (next) {
     next(error);
   }
 });
+// 角色与管理员标记同步（仅在未显式修改 isAdmin 时自动处理）
+userSchema.pre('save', function (next) {
+  if (this.isModified('role') && !this.isModified('isAdmin')) {
+    this.isAdmin = this.role === 'admin';
+  }
+  next();
+});
 
 // 实例方法：验证密码
 userSchema.methods.comparePassword = async function (candidatePassword) {
@@ -783,3 +790,4 @@ userSchema.statics.cleanupExpiredTokens = async function () {
 };
 
 module.exports = mongoose.model('User', userSchema);
+
