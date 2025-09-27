@@ -36,6 +36,10 @@
               <el-icon><Tools /></el-icon>
               工具箱
             </el-menu-item>
+            <el-menu-item @click="openNavigation">
+              <el-icon><Link /></el-icon>
+              网址导航
+            </el-menu-item>
             <el-menu-item index="/temp-email">
               <el-icon><Message /></el-icon>
               临时邮箱
@@ -112,6 +116,7 @@
         <router-link to="/" @click="showMobileMenu = false">首页</router-link>
         <router-link to="/blog" @click="showMobileMenu = false">博客</router-link>
         <router-link to="/tools" @click="showMobileMenu = false">工具箱</router-link>
+        <a href="#" @click="openNavigation(); showMobileMenu = false">网址导航</a>
         <router-link to="/temp-email" @click="showMobileMenu = false">临时邮箱</router-link>
         <router-link to="/about" @click="showMobileMenu = false">关于</router-link>
         <div class="mobile-user-actions">
@@ -137,7 +142,7 @@ import { useUserStore } from '@/stores/user';
 import { useSettingsStore } from '@/stores/settings';
 import { getFullAvatarUrl } from '@/utils/avatar';
 import { ElMessage } from 'element-plus';
-import { EditPen, Tools, Message } from '@element-plus/icons-vue';
+import { EditPen, Tools, Message, Link } from '@element-plus/icons-vue';
 import NotificationDropdown from '@/components/NotificationDropdown.vue';
 
 import PublicNoticeDropdown from '@/components/PublicNoticeDropdown.vue';
@@ -148,6 +153,7 @@ export default {
     EditPen,
     Tools,
     Message,
+    Link,
     NotificationDropdown,
     PublicNoticeDropdown
   },
@@ -284,6 +290,10 @@ export default {
 
     const uiPlacements = window.__PUBLIC_NOTICE_PLACEMENTS__ || ['banner','dropdown'];
 
+    const openNavigation = () => {
+      window.open('https://nav.godaug.fun', '_blank');
+    };
+
     return {
       userStore,
       settingsStore,
@@ -295,7 +305,8 @@ export default {
       handleLogout,
       isAtTop,
       isHomePage,
-      uiPlacements
+      uiPlacements,
+      openNavigation
     };
   }
 };
