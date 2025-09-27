@@ -291,7 +291,7 @@ export default {
     const uiPlacements = window.__PUBLIC_NOTICE_PLACEMENTS__ || ['banner','dropdown'];
 
     const openNavigation = () => {
-      window.open('https://nav.godaug.fun', '_blank');
+      window.open('https://nav.godaug.fun:8443', '_blank');
     };
 
     return {
