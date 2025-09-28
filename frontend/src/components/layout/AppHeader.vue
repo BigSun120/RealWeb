@@ -1,56 +1,46 @@
 <template>
-  <header
-    class="app-header"
-    :class="{ 'header-hidden': isAtTop && isHomePage, 'header-visible': !isAtTop || !isHomePage }"
-    data-aos="fade-down"
-    data-aos-duration="1000"
-  >
+  <header class="app-header"
+    :class="{ 'header-hidden': isAtTop && isHomePage, 'header-visible': !isAtTop || !isHomePage }" data-aos="fade-down"
+    data-aos-duration="1000">
     <div class="container">
       <div class="header-content">
         <!-- Logo -->
         <div class="logo">
           <router-link to="/" class="logo-link">
-            <img
-              v-if="settingsStore.siteLogo"
-              :src="settingsStore.siteLogo"
-              :alt="settingsStore.siteTitle || '网站'"
-              class="logo-image"
-            />
+            <img v-if="settingsStore.siteLogo" :src="settingsStore.siteLogo" :alt="settingsStore.siteTitle || '网站'"
+              class="logo-image" />
             <h1 v-else>{{ settingsStore.siteTitle || '网站' }}</h1>
           </router-link>
         </div>
 
         <!-- 导航菜单 -->
         <nav class="nav-menu">
-          <el-menu
-            :default-active="activeIndex"
-            mode="horizontal"
-            @select="handleSelect"
-            background-color="transparent"
-            text-color="#333"
-            active-text-color="#409eff"
-          >
+          <el-menu :default-active="activeIndex" mode="horizontal" @select="handleSelect" background-color="transparent"
+            text-color="#333" active-text-color="#409eff">
             <el-menu-item index="/">首页</el-menu-item>
             <el-menu-item index="/blog">博客</el-menu-item>
             <el-menu-item index="/tools">
-              <el-icon><Tools /></el-icon>
+              <el-icon>
+                <Tools />
+              </el-icon>
               工具箱
             </el-menu-item>
-            <el-menu-item @click="openNavigation">
+            <!-- <el-menu-item @click="openNavigation">
               <el-icon><Link /></el-icon>
               网址导航
-            </el-menu-item>
+            </el-menu-item> -->
             <el-menu-item index="/temp-email">
-              <el-icon><Message /></el-icon>
+              <el-icon>
+                <Message />
+              </el-icon>
               临时邮箱
             </el-menu-item>
             <el-menu-item index="/about">关于</el-menu-item>
-            <el-menu-item
-              v-if="userStore.isAdmin || (userStore.user && userStore.user.canPublishBlog)"
-              index="/articles/new"
-              class="write-article-menu"
-            >
-              <el-icon><EditPen /></el-icon>
+            <el-menu-item v-if="userStore.isAdmin || (userStore.user && userStore.user.canPublishBlog)"
+              index="/articles/new" class="write-article-menu">
+              <el-icon>
+                <EditPen />
+              </el-icon>
               写文章
             </el-menu-item>
           </el-menu>
@@ -78,20 +68,16 @@
                   (userStore.user && (userStore.user.displayName || userStore.user.username)) ||
                   '用户'
                 }}</span>
-                <el-icon><ArrowDown /></el-icon>
+                <el-icon>
+                  <ArrowDown />
+                </el-icon>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="profile">个人中心</el-dropdown-item>
-                  <el-dropdown-item v-if="userStore.isAdmin" command="admin"
-                    >管理后台</el-dropdown-item
-                  >
-                  <el-dropdown-item v-if="userStore.isAdmin" command="articles"
-                    >我的文章</el-dropdown-item
-                  >
-                  <el-dropdown-item v-if="userStore.isAdmin" command="settings"
-                    >网站设置</el-dropdown-item
-                  >
+                  <el-dropdown-item v-if="userStore.isAdmin" command="admin">管理后台</el-dropdown-item>
+                  <el-dropdown-item v-if="userStore.isAdmin" command="articles">我的文章</el-dropdown-item>
+                  <el-dropdown-item v-if="userStore.isAdmin" command="settings">网站设置</el-dropdown-item>
                   <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -105,7 +91,9 @@
 
         <!-- 移动端菜单按钮 -->
         <div class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
-          <el-icon><Menu /></el-icon>
+          <el-icon>
+            <Menu />
+          </el-icon>
         </div>
       </div>
     </div>
@@ -288,7 +276,7 @@ export default {
       showMobileMenu.value = false;
     };
 
-    const uiPlacements = window.__PUBLIC_NOTICE_PLACEMENTS__ || ['banner','dropdown'];
+    const uiPlacements = window.__PUBLIC_NOTICE_PLACEMENTS__ || ['banner', 'dropdown'];
 
     const openNavigation = () => {
       window.open('https://nav.godaug.fun:8443', '_blank');
@@ -349,12 +337,10 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.1) 0%,
-    rgba(147, 51, 234, 0.1) 50%,
-    rgba(236, 72, 153, 0.1) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(59, 130, 246, 0.1) 0%,
+      rgba(147, 51, 234, 0.1) 50%,
+      rgba(236, 72, 153, 0.1) 100%);
   pointer-events: none;
 }
 
