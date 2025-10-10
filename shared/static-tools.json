@@ -44,6 +44,29 @@
         "sortOrder": 40
     },
     {
+        "id": "prompt-vault",
+        "name": "AI提示词管理",
+        "description": "集中管理你的AI提示词模板库，支持变量替换、分类组织、使用统计和分享功能",
+        "icon": "💡",
+        "category": "productivity",
+        "route": "/tools/productivity/prompt-vault",
+        "component": "@/views/tools/productivity/PromptVault.vue",
+        "tags": [
+            "AI",
+            "提示词",
+            "效率工具",
+            "模板管理",
+            "ChatGPT"
+        ],
+        "featured": true,
+        "status": "active",
+        "difficulty": "easy",
+        "estimatedTime": "2-5分钟",
+        "requiresAuth": true,
+        "requiresAdmin": false,
+        "sortOrder": 35
+    },
+    {
         "id": "temp-email",
         "name": "临时邮箱",
         "description": "提供快速生成、管理临时邮箱的隐私防护工具，支持域名选择与邮件实时查看",

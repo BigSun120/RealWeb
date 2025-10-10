@@ -125,6 +125,16 @@ export default {
             description: '集中整理个人邮箱地址与备注，支持标签筛选',
             requiresAuth: true
           }
+        },
+        {
+          path: 'prompt-vault',
+          name: 'PromptVault',
+          component: () => import('@/views/tools/productivity/PromptVaultWorking.vue'),
+          meta: {
+            title: 'AI提示词管理',
+            description: '管理和组织你的AI提示词模板库',
+            requiresAuth: true
+          }
         }
       ]
     },

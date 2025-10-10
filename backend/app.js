@@ -45,6 +45,7 @@ const adminSessionsRoutes = require('./src/routes/admin/sessions');
 const adminTokensRoutes = require('./src/routes/admin/tokens');
 const bookmarkRoutes = require('./src/routes/bookmarks');
 const backgroundRoutes = require('./src/routes/backgrounds');
+const promptsRoutes = require('./src/routes/prompts');
 
 const app = express();
 const PORT = process.env.PORT || 8001;
@@ -254,6 +255,7 @@ app.use('/api/admin/sessions', adminSessionsRoutes);
 app.use('/api/admin/tokens', adminTokensRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/backgrounds', backgroundRoutes);
+app.use('/api/tools/prompt-vault', promptsRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {
