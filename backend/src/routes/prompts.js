@@ -113,6 +113,29 @@ router.get('/share/:token', PromptController.getPromptByShareToken);
  */
 router.get('/history', auth, PromptController.getUserHistory);
 
+// ==================== 事件埋点 ====================
+
+/**
+ * @route   POST /api/tools/prompt-vault/track
+ * @desc    记录提示词事件埋点（view/search/copy等）
+ * @access  Public (可选登录)
+ */
+router.post('/track', optionalAuth, PromptController.trackEvent);
+
+/**
+ * @route   GET /api/tools/prompt-vault/analytics/search-keywords
+ * @desc    获取热门搜索关键词
+ * @access  Private
+ */
+router.get('/analytics/search-keywords', auth, PromptController.getTopSearchKeywords);
+
+/**
+ * @route   GET /api/tools/prompt-vault/analytics/funnel
+ * @desc    获取转化漏斗数据
+ * @access  Private
+ */
+router.get('/analytics/funnel', auth, PromptController.getConversionFunnel);
+
 // ==================== 文件夹管理 ====================
 
 /**

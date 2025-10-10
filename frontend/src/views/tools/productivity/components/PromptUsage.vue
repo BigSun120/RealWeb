@@ -138,6 +138,7 @@ import { ref, reactive, computed, watch, inject } from 'vue';
 import { ElMessage } from 'element-plus';
 import { CopyDocument } from '@element-plus/icons-vue';
 import { useClipboard } from '@vueuse/core';
+import { trackCopy } from '@/utils/promptTracking';
 
 const promptService = inject('promptService');
 
@@ -213,6 +214,16 @@ function updatePreview() {
 
 async function copyToClipboard() {
   await copy(renderedContent.value);
+  
+  // 埋点: 记录复制事件
+  if (props.prompt) {
+    trackCopy(props.prompt.id, {
+      source: 'usage',
+      variablesFilled: variables.value.length > 0,
+      variableCount: variables.value.length,
+      prompt: props.prompt
+    });
+  }
 }
 
 async function recordAndCopy() {
@@ -237,6 +248,8 @@ async function recordAndCopy() {
 
     // 复制到剪贴板
     await copyToClipboard();
+    
+    // 注意: copyToClipboard 中已经调用了 trackCopy，这里不需要重复调用
 
     ElMessage.success('已记录使用并复制到剪贴板');
     emit('used');

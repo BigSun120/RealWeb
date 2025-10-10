@@ -311,8 +311,22 @@ router.get('/analytics/overview', async (req, res) => {
     const comingSoonTools = await Tool.countDocuments({ status: 'coming-soon' });
     const maintenanceTools = await Tool.countDocuments({ status: 'maintenance' });
 
-    // 累计总使用次数
+    // 累计总使用次数（通用工具 + 提示词）
     const totalUsage = await ToolUsage.countDocuments();
+    
+    // 尝试获取提示词使用数据
+    let promptUsage = 0;
+    let promptAnalytics = 0;
+    try {
+      const UserPromptUsage = require('../../models/UserPromptUsage');
+      promptUsage = await UserPromptUsage.countDocuments();
+      
+      // 新埋点数据
+      const PromptAnalytics = require('../../models/PromptAnalytics');
+      promptAnalytics = await PromptAnalytics.countDocuments({ event: 'copy' }); // copy事件等同于使用
+    } catch (e) {
+      logger.warn('提示词统计数据获取失败，可能模型不存在:', e.message);
+    }
 
     // 获取今日使用统计
     const today = new Date();
@@ -328,11 +342,25 @@ router.get('/analytics/overview', async (req, res) => {
       createdAt: { $gte: weekStart }
     });
 
-    // 获取活跃用户数
-    const activeUsers = await ToolUsage.distinct('userId', {
+    // 获取活跃用户数（通用工具 + 提示词）
+    const toolActiveUsers = await ToolUsage.distinct('userId', {
       createdAt: { $gte: weekStart },
       userId: { $ne: null }
     });
+    
+    let promptActiveUsers = [];
+    try {
+      const PromptAnalytics = require('../../models/PromptAnalytics');
+      promptActiveUsers = await PromptAnalytics.distinct('userId', {
+        createdAt: { $gte: weekStart },
+        userId: { $ne: null }
+      });
+    } catch (e) {
+      // 忽略
+    }
+    
+    // 去重合并用户
+    const allActiveUsers = new Set([...toolActiveUsers.map(id => id.toString()), ...promptActiveUsers.map(id => id.toString())]);
 
     res.json({
       code: 200,
@@ -342,10 +370,16 @@ router.get('/analytics/overview', async (req, res) => {
         activeTools,
         comingSoonTools,
         maintenanceTools,
-        totalUsage,
+        totalUsage: totalUsage + promptUsage + promptAnalytics, // 整合所有使用数据
         todayUsage,
         weekUsage,
-        activeUsers: activeUsers.length
+        activeUsers: allActiveUsers.size,
+        // 额外的提示词统计（可选）
+        promptStats: {
+          totalPromptUsage: promptUsage + promptAnalytics,
+          legacyUsage: promptUsage,
+          analyticsUsage: promptAnalytics
+        }
       }
     });
   } catch (error) {
@@ -390,6 +424,101 @@ router.get('/analytics/usage', async (req, res) => {
     if (toolId) {
       // 单个工具的使用统计
       logger.info(`📊 [Analytics] 查询单个工具统计: ${toolId}`);
+      
+      // 特殊处理：AI提示词管理工具
+      if (toolId === 'prompt-vault') {
+        logger.info(`📊 [Analytics] 检测到提示词工具，使用 PromptAnalytics 查询`);
+        
+        try {
+          const PromptAnalytics = require('../../models/PromptAnalytics');
+          
+          // 统计数据
+          const promptStats = await PromptAnalytics.aggregate([
+            {
+              $match: {
+                event: 'copy',
+                createdAt: { $gte: startDate, $lte: endDate }
+              }
+            },
+            {
+              $group: {
+                _id: null,
+                totalUsage: { $sum: 1 },
+                uniqueUsers: { $addToSet: '$userId' }
+              }
+            },
+            {
+              $project: {
+                _id: 0,
+                totalUsage: 1,
+                uniqueUsers: { $size: '$uniqueUsers' },
+                avgDuration: { $literal: 0 },
+                avgResponseTime: { $literal: 0 },
+                successRate: { $literal: 100 }
+              }
+            }
+          ]);
+          
+          // 趋势数据
+          const promptTrend = await PromptAnalytics.aggregate([
+            {
+              $match: {
+                event: 'copy',
+                createdAt: { $gte: startDate, $lte: endDate }
+              }
+            },
+            {
+              $group: {
+                _id: '$date',
+                count: { $sum: 1 },
+                uniqueUsers: { $addToSet: '$userId' }
+              }
+            },
+            {
+              $project: {
+                date: '$_id',
+                count: 1,
+                uniqueUsers: { $size: '$uniqueUsers' },
+                _id: 0
+              }
+            },
+            { $sort: { date: 1 } }
+          ]);
+          
+          logger.info(`📊 [Analytics] 提示词工具查询结果:`, {
+            stats: promptStats[0] || {},
+            trendCount: promptTrend.length
+          });
+          
+          return res.json({
+            code: 200,
+            message: 'success',
+            data: {
+              stats: promptStats[0] || {
+                totalUsage: 0,
+                uniqueUsers: 0,
+                avgDuration: 0,
+                avgResponseTime: 0,
+                successRate: 100
+              },
+              trend: promptTrend
+            }
+          });
+        } catch (error) {
+          logger.error('查询提示词统计失败:', error);
+          // 降级到空数据
+          return res.json({
+            code: 200,
+            message: 'success',
+            data: {
+              stats: { totalUsage: 0, uniqueUsers: 0, avgDuration: 0, avgResponseTime: 0, successRate: 0 },
+              trend: []
+            }
+          });
+        }
+      }
+      
+      // 普通工具统计
       usageData = await ToolUsage.getToolStats(toolId, startDate, endDate);
       const trendData = await ToolUsage.getUsageTrend(toolId, parseInt(period));
 
@@ -417,8 +546,45 @@ router.get('/analytics/usage', async (req, res) => {
       });
       logger.info(`📊 [Analytics] 时间范围内总记录数: ${totalCount}`);
 
-      const popularTools = await ToolUsage.getPopularTools(10, days);
+      let popularTools = await ToolUsage.getPopularTools(10, days);
       logger.info(`📊 [Analytics] 热门工具查询结果:`, popularTools);
+      
+      // 尝试获取提示词使用数据
+      try {
+        const PromptAnalytics = require('../../models/PromptAnalytics');
+        const promptStats = await PromptAnalytics.aggregate([
+          {
+            $match: {
+              event: 'copy',
+              createdAt: { $gte: startDate, $lte: endDate }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              usageCount: { $sum: 1 }
+            }
+          }
+        ]);
+        
+        if (promptStats.length > 0 && promptStats[0].usageCount > 0) {
+          // 将提示词工具加入排行
+          popularTools.push({
+            toolIdentifier: 'prompt-vault',
+            usageCount: promptStats[0].usageCount,
+            uniqueUsers: 0,
+            avgDuration: 0
+          });
+          
+          // 重新排序
+          popularTools.sort((a, b) => b.usageCount - a.usageCount);
+          popularTools = popularTools.slice(0, 10); // 只保留 Top 10
+          
+          logger.info(`📊 [Analytics] 整合提示词后的热门工具:`, popularTools);
+        }
+      } catch (e) {
+        logger.warn('无法获取提示词统计数据:', e.message);
+      }
 
       // 全站每日聚合趋势
       const overallTrend = await ToolUsage.aggregate([

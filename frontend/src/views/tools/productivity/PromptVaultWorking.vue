@@ -34,26 +34,13 @@
             </div>
           </template>
 
-          <el-tree
-            ref="folderTreeRef"
-            v-if="folderTree.length > 0"
-            :data="folderTree"
-            :props="{ label: 'name', children: 'children' }"
-            node-key="id"
-            :current-node-key="currentFolderId"
-            :highlight-current="true"
-            :expand-on-click-node="false"
-            :default-expand-all="defaultExpandAll"
-            @node-click="handleFolderClick"
-          >
+          <el-tree ref="folderTreeRef" v-if="folderTree.length > 0" :data="folderTree"
+            :props="{ label: 'name', children: 'children' }" node-key="id" :current-node-key="currentFolderId"
+            :highlight-current="true" :expand-on-click-node="false" :default-expand-all="defaultExpandAll"
+            @node-click="handleFolderClick">
             <template #default="{ node, data }">
-              <el-popover
-                placement="right"
-                :width="140"
-                trigger="hover"
-                :show-after="300"
-                popper-class="folder-actions-popover"
-              >
+              <el-popover placement="right" :width="140" trigger="hover" :show-after="300"
+                popper-class="folder-actions-popover">
                 <template #reference>
                   <div class="tree-node">
                     <span class="node-icon">{{ data.icon || '📁' }}</span>
@@ -65,11 +52,15 @@
                 </template>
                 <div class="folder-actions-menu" @click.stop>
                   <div class="action-item" @click="editFolder(data)">
-                    <el-icon><Edit /></el-icon>
+                    <el-icon>
+                      <Edit />
+                    </el-icon>
                     <span>编辑文件夹</span>
                   </div>
                   <div class="action-item danger" @click="deleteFolder(data)">
-                    <el-icon><Delete /></el-icon>
+                    <el-icon>
+                      <Delete />
+                    </el-icon>
                     <span>删除文件夹</span>
                   </div>
                 </div>
@@ -80,7 +71,9 @@
 
           <div class="sidebar-footer">
             <el-button link @click="currentFolderId = null; loadPrompts()">
-              <el-icon><Folder /></el-icon>
+              <el-icon>
+                <Folder />
+              </el-icon>
               全部提示词
             </el-button>
           </div>
@@ -95,73 +88,56 @@
           <div class="filter-row-primary">
             <div class="quick-filters">
               <el-button-group>
-                <el-button 
-                  :type="quickFilter === 'all' ? 'primary' : ''"
-                  @click="setQuickFilter('all')"
-                >
+                <el-button :type="quickFilter === 'all' ? 'primary' : ''" @click="setQuickFilter('all')">
                   全部
                 </el-button>
-                <el-button 
-                  :type="quickFilter === 'favorite' ? 'primary' : ''"
-                  @click="setQuickFilter('favorite')"
-                >
-                  <el-icon><Star /></el-icon>
+                <el-button :type="quickFilter === 'favorite' ? 'primary' : ''" @click="setQuickFilter('favorite')">
+                  <el-icon>
+                    <Star />
+                  </el-icon>
                   <span class="btn-text">收藏</span>
                 </el-button>
-                <el-button 
-                  :type="quickFilter === 'recent' ? 'primary' : ''"
-                  @click="setQuickFilter('recent')"
-                >
-                  <el-icon><Clock /></el-icon>
+                <el-button :type="quickFilter === 'recent' ? 'primary' : ''" @click="setQuickFilter('recent')">
+                  <el-icon>
+                    <Clock />
+                  </el-icon>
                   <span class="btn-text">最近</span>
                 </el-button>
-                <el-button 
-                  :type="quickFilter === 'mine' ? 'primary' : ''"
-                  @click="setQuickFilter('mine')"
-                >
-                  <el-icon><User /></el-icon>
+                <el-button :type="quickFilter === 'mine' ? 'primary' : ''" @click="setQuickFilter('mine')">
+                  <el-icon>
+                    <User />
+                  </el-icon>
                   <span class="btn-text">我的</span>
                 </el-button>
               </el-button-group>
             </div>
-            
+
             <div class="search-wrapper">
-              <el-input
-                v-model="filters.search"
-                placeholder="搜索标题、内容或标签..."
-                clearable
-                @clear="handleSearch"
-                @keyup.enter="handleSearch"
-                class="search-input"
-              >
+              <el-input v-model="filters.search" placeholder="搜索标题、内容或标签..." clearable @clear="handleSearch"
+                @keyup.enter="handleSearch" class="search-input">
                 <template #prefix>
-                  <el-icon><Search /></el-icon>
+                  <el-icon>
+                    <Search />
+                  </el-icon>
                 </template>
                 <template #append>
                   <el-button @click="handleSearch">搜索</el-button>
                 </template>
               </el-input>
             </div>
-            
-            <el-button 
-              v-if="hasActiveFilters"
-              @click="resetFilters"
-              class="reset-btn"
-            >
-              <el-icon><CircleClose /></el-icon>
+
+            <el-button v-if="hasActiveFilters" @click="resetFilters" class="reset-btn">
+              <el-icon>
+                <CircleClose />
+              </el-icon>
               <span class="btn-text">重置</span>
             </el-button>
           </div>
-          
+
           <!-- 第二行：详细筛选 -->
           <div class="filter-row-secondary">
-            <el-select 
-              v-model="filters.category" 
-              clearable 
-              placeholder="分类" 
-              @change="handleSearch"
-              class="filter-select"
-            >
+            <el-select v-model="filters.category" clearable placeholder="分类" @change="handleSearch"
+              class="filter-select">
               <el-option label="全部分类" value="" />
               <el-option-group label="预设分类">
                 <el-option label="写作" value="写作" />
@@ -176,22 +152,12 @@
                 <el-option label="其他" value="其他" />
               </el-option-group>
               <el-option-group label="自定义分类" v-if="customCategories.length > 0">
-                <el-option
-                  v-for="category in customCategories"
-                  :key="category"
-                  :label="category"
-                  :value="category"
-                />
+                <el-option v-for="category in customCategories" :key="category" :label="category" :value="category" />
               </el-option-group>
             </el-select>
 
-            <el-select 
-              v-model="filters.aiModel" 
-              clearable 
-              placeholder="AI模型" 
-              @change="handleSearch"
-              class="filter-select"
-            >
+            <el-select v-model="filters.aiModel" clearable placeholder="AI模型" @change="handleSearch"
+              class="filter-select">
               <el-option label="全部模型" value="" />
               <el-option label="GPT-4" value="gpt-4" />
               <el-option label="GPT-3.5" value="gpt-3.5" />
@@ -199,11 +165,7 @@
               <el-option label="通用" value="general" />
             </el-select>
 
-            <el-select 
-              v-model="filters.sort" 
-              @change="handleSearch"
-              class="filter-select"
-            >
+            <el-select v-model="filters.sort" @change="handleSearch" class="filter-select">
               <el-option label="最新创建" value="createdAt-desc" />
               <el-option label="最早创建" value="createdAt-asc" />
               <el-option label="最近更新" value="updatedAt-desc" />
@@ -211,7 +173,7 @@
               <el-option label="使用最多" value="usageCount-desc" />
               <el-option label="使用最少" value="usageCount-asc" />
             </el-select>
-            
+
             <div class="filter-stats">
               <span class="stats-text">共 {{ pagination.total }} 个结果</span>
             </div>
@@ -222,13 +184,8 @@
         <div v-loading="loading" class="prompt-list">
           <el-empty v-if="!loading && prompts.length === 0" description="暂无提示词" />
 
-          <el-card
-            v-for="prompt in prompts"
-            :key="prompt.id"
-            class="prompt-card"
-            shadow="hover"
-            @click="openPromptDetail(prompt)"
-          >
+          <el-card v-for="prompt in prompts" :key="prompt.id" class="prompt-card" shadow="hover"
+            @click="openPromptDetail(prompt)">
             <div class="prompt-header">
               <div class="prompt-title-row">
                 <h3 class="prompt-title">{{ prompt.title }}</h3>
@@ -237,10 +194,14 @@
               <div class="prompt-meta">
                 <el-tag v-if="prompt.aiModel" size="small" type="info">{{ prompt.aiModel }}</el-tag>
                 <span class="prompt-stats">
-                  <el-icon><View /></el-icon> {{ prompt.viewCount || 0 }}
+                  <el-icon>
+                    <View />
+                  </el-icon> {{ prompt.viewCount || 0 }}
                 </span>
                 <span class="prompt-stats">
-                  <el-icon><ChatDotRound /></el-icon> {{ prompt.usageCount || 0 }}
+                  <el-icon>
+                    <ChatDotRound />
+                  </el-icon> {{ prompt.usageCount || 0 }}
                 </span>
               </div>
             </div>
@@ -259,13 +220,8 @@
 
             <div class="prompt-footer">
               <div class="footer-left">
-                <el-button
-                  link
-                  :icon="prompt.isFavorited ? 'StarFilled' : 'Star'"
-                  :type="prompt.isFavorited ? 'warning' : ''"
-                  @click.stop="toggleFavorite(prompt)"
-                  class="favorite-btn"
-                >
+                <el-button link :icon="prompt.isFavorited ? 'StarFilled' : 'Star'"
+                  :type="prompt.isFavorited ? 'warning' : ''" @click.stop="toggleFavorite(prompt)" class="favorite-btn">
                   {{ prompt.isFavorited ? '已收藏' : '收藏' }}
                 </el-button>
                 <span class="prompt-date">{{ formatDate(prompt.updatedAt) }}</span>
@@ -283,48 +239,25 @@
 
         <!-- 分页 -->
         <div class="pagination" v-if="pagination.total > 0">
-          <el-pagination
-            v-model:current-page="pagination.page"
-            v-model:page-size="pagination.limit"
-            :total="pagination.total"
-            :page-sizes="[12, 24, 48, 96]"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="handleSearch"
-            @current-change="handleSearch"
-          />
+          <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
+            :total="pagination.total" :page-sizes="[12, 24, 48, 96]" layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSearch" @current-change="handleSearch" />
         </div>
       </main>
     </div>
 
     <!-- 对话框组件 - 使用 v-show 保持组件挂载 -->
-    <PromptEditor
-      v-show="editorVisible"
-      v-model:visible="editorVisible"
-      :prompt="currentPrompt"
-      :folders="flatFolders"
-      @saved="handlePromptSaved"
-    />
+    <PromptEditor v-show="editorVisible" v-model:visible="editorVisible" :prompt="currentPrompt" :folders="flatFolders"
+      @saved="handlePromptSaved" />
 
-    <PromptUsage
-      v-show="usageVisible"
-      v-model:visible="usageVisible"
-      :prompt="currentPrompt"
-      @used="handlePromptUsed"
-    />
+    <PromptUsage v-show="usageVisible" v-model:visible="usageVisible" :prompt="currentPrompt"
+      @used="handlePromptUsed" />
 
-    <FolderEditor
-      v-show="folderEditorVisible"
-      v-model:visible="folderEditorVisible"
-      :folder="currentFolder"
-      :parent-folders="flatFolders"
-      @saved="handleFolderSaved"
-    />
+    <FolderEditor v-show="folderEditorVisible" v-model:visible="folderEditorVisible" :folder="currentFolder"
+      :parent-folders="flatFolders" @saved="handleFolderSaved" />
 
-    <CustomOptionsManager
-      v-show="optionsManagerVisible"
-      v-model:visible="optionsManagerVisible"
-      @saved="handleOptionsSaved"
-    />
+    <CustomOptionsManager v-show="optionsManagerVisible" v-model:visible="optionsManagerVisible"
+      @saved="handleOptionsSaved" />
   </div>
 </template>
 
@@ -574,7 +507,6 @@ async function loadCustomCategories() {
 
     if (response.code === 200) {
       customCategories.value = response.data.categories || [];
-      console.log('从服务器加载的自定义分类:', customCategories.value);
     }
   } catch (error) {
     console.error('加载自定义分类失败:', error);
@@ -636,7 +568,7 @@ async function loadPrompts() {
     loading.value = true;
     // 解析排序参数
     const [sortBy, sortOrder] = filters.sort.split('-');
-    
+
     const params = {
       page: pagination.page,
       limit: pagination.limit,
@@ -701,8 +633,8 @@ function resetFilters() {
 
 // 检查是否有激活的筛选条件
 const hasActiveFilters = computed(() => {
-  return filters.search || filters.category || filters.aiModel || 
-         quickFilter.value !== 'all' || currentFolderId.value;
+  return filters.search || filters.category || filters.aiModel ||
+    quickFilter.value !== 'all' || currentFolderId.value;
 });
 
 async function toggleFavorite(prompt) {
@@ -994,7 +926,7 @@ function collapseAllFolders() {
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: 24px;
-  
+
   /* 超宽屏幕优化 */
   @media (min-width: 1920px) {
     grid-template-columns: 320px 1fr;
@@ -1067,7 +999,7 @@ function collapseAllFolders() {
 
 .filter-card {
   margin-bottom: 20px;
-  
+
   :deep(.el-card__body) {
     padding: 20px;
   }
@@ -1077,17 +1009,17 @@ function collapseAllFolders() {
     align-items: center;
     gap: 16px;
     margin-bottom: 16px;
-    
+
     .quick-filters {
       flex-shrink: 0;
-      
+
       .el-button {
         padding: 8px 16px;
-        
+
         .el-icon {
           margin-right: 4px;
         }
-        
+
         .btn-text {
           @media (max-width: 768px) {
             display: none;
@@ -1095,23 +1027,23 @@ function collapseAllFolders() {
         }
       }
     }
-    
+
     .search-wrapper {
       flex: 1;
       min-width: 0; // 防止 flex 子项溢出
-      
+
       .search-input {
         width: 100%;
       }
     }
-    
+
     .reset-btn {
       flex-shrink: 0;
-      
+
       .el-icon {
         margin-right: 4px;
       }
-      
+
       .btn-text {
         @media (max-width: 768px) {
           display: none;
@@ -1119,76 +1051,76 @@ function collapseAllFolders() {
       }
     }
   }
-  
+
   .filter-row-secondary {
     display: flex;
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
-    
+
     .filter-select {
       min-width: 140px;
       flex: 1;
       max-width: 180px;
-      
+
       @media (max-width: 768px) {
         min-width: 120px;
         max-width: 150px;
       }
     }
-    
+
     .filter-stats {
       margin-left: auto;
       flex-shrink: 0;
-      
+
       .stats-text {
         font-size: 14px;
         color: #606266;
         font-weight: 500;
       }
-      
+
       @media (max-width: 768px) {
         display: none;
       }
     }
   }
-  
+
   // 响应式优化
   @media (max-width: 1024px) {
     .filter-row-primary {
       flex-wrap: wrap;
-      
+
       .quick-filters {
         order: 1;
         width: 100%;
         margin-bottom: 12px;
-        
+
         .el-button-group {
           width: 100%;
           display: flex;
-          
+
           .el-button {
             flex: 1;
           }
         }
       }
-      
+
       .search-wrapper {
         order: 2;
         flex: 1;
       }
-      
+
       .reset-btn {
         order: 3;
       }
     }
   }
-  
+
   @media (max-width: 768px) {
     :deep(.el-card__body) {
       padding: 16px;
     }
-    
+
     .filter-row-secondary {
       .filter-select {
         flex: 1 1 calc(50% - 6px);
@@ -1203,19 +1135,19 @@ function collapseAllFolders() {
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 16px;
   margin-bottom: 20px;
-  
+
   /* 响应式卡片布局优化 */
   @media (min-width: 1400px) and (max-width: 1919px) {
     /* 1400-1919px: 3-4列 */
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   }
-  
+
   @media (min-width: 1920px) and (max-width: 2559px) {
     /* 1920-2559px: 4-5列 */
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: 20px;
   }
-  
+
   @media (min-width: 2560px) {
     /* 2560px+: 5-6列 */
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -1331,6 +1263,7 @@ function collapseAllFolders() {
   padding: 24px 0;
 
   :deep(.el-pagination) {
+
     .el-pagination__total,
     .el-pagination__jump {
       color: #2d3748;
@@ -1341,7 +1274,8 @@ function collapseAllFolders() {
       color: #2d3748;
     }
 
-    .btn-prev, .btn-next {
+    .btn-prev,
+    .btn-next {
       background: white;
       border: 1px solid #e2e8f0;
       color: #2d3748;

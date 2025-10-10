@@ -1,6 +1,7 @@
 const PromptTemplate = require('../models/PromptTemplate');
 const UserPromptUsage = require('../models/UserPromptUsage');
 const PromptFolder = require('../models/PromptFolder');
+const PromptAnalytics = require('../models/PromptAnalytics');
 const logger = require('../utils/logger');
 
 /**
@@ -849,6 +850,121 @@ class PromptController {
       res.status(500).json({
         code: 500,
         message: '获取自定义选项失败',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 记录提示词事件埋点
+   */
+  static async trackEvent(req, res) {
+    try {
+      const {
+        event,
+        promptId,
+        metadata = {}
+      } = req.body;
+
+      // 验证事件类型
+      const validEvents = ['view', 'search', 'copy', 'edit', 'share', 'export', 'impression'];
+      if (!event || !validEvents.includes(event)) {
+        return res.status(400).json({
+          code: 400,
+          message: `无效的事件类型，必须是: ${validEvents.join(', ')}`
+        });
+      }
+
+      // 构建埋点数据
+      const trackingData = {
+        event,
+        userId: req.user ? req.user._id : null,
+        sessionId: req.headers['x-session-id'] || req.session?.id || undefined,
+        userAgent: req.get('User-Agent'),
+        ipAddress: req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress,
+        metadata,
+        device: metadata.device || {}
+      };
+
+      // 如果有 promptId，验证并转换
+      if (promptId) {
+        const prompt = await PromptTemplate.findOne({ id: promptId, isDeleted: false });
+        if (prompt) {
+          trackingData.promptId = prompt._id;
+          // 自动填充提示词相关信息
+          if (!metadata.promptCategory) metadata.promptCategory = prompt.category;
+          if (!metadata.promptAiModel) metadata.promptAiModel = prompt.aiModel;
+          if (!metadata.promptTags) metadata.promptTags = prompt.tags;
+        }
+      }
+
+      // 记录事件（异步，不阻塞响应）
+      PromptAnalytics.trackEvent(trackingData)
+        .catch(err => logger.error('记录提示词事件失败:', err));
+
+      res.json({
+        code: 200,
+        message: '记录成功'
+      });
+    } catch (error) {
+      logger.error('记录提示词事件失败:', error);
+      // 埋点失败不影响业务，返回成功
+      res.json({
+        code: 200,
+        message: '记录成功'
+      });
+    }
+  }
+
+  /**
+   * 获取热门搜索关键词
+   */
+  static async getTopSearchKeywords(req, res) {
+    try {
+      const { limit = 10, days = 7 } = req.query;
+
+      const keywords = await PromptAnalytics.getTopSearchKeywords(
+        parseInt(limit),
+        parseInt(days)
+      );
+
+      res.json({
+        code: 200,
+        message: '获取成功',
+        data: keywords
+      });
+    } catch (error) {
+      logger.error('获取热门搜索关键词失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '获取失败',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 获取转化漏斗数据
+   */
+  static async getConversionFunnel(req, res) {
+    try {
+      const { promptId, days = 30 } = req.query;
+
+      const funnelData = await PromptAnalytics.getConversionFunnel(
+        promptId || null,
+        parseInt(days)
+      );
+
+      res.json({
+        code: 200,
+        message: '获取成功',
+        data: funnelData
+      });
+    } catch (error) {
+      logger.error('获取转化漏斗失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '获取失败',
         error: error.message
       });
     }

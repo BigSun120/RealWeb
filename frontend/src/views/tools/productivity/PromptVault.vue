@@ -244,6 +244,7 @@ import PromptUsage from './components/PromptUsage.vue';
 import FolderEditor from './components/FolderEditor.vue';
 import ShareDialog from './components/ShareDialog.vue';
 import dayjs from 'dayjs';
+import { trackView, trackSearch, trackEdit, trackShare } from '@/utils/promptTracking';
 
 // 数据
 const loading = ref(false);
@@ -310,6 +311,7 @@ async function loadData() {
 }
 
 async function loadPrompts() {
+  const searchStartTime = Date.now();
   try {
     loading.value = true;
     const params = {
@@ -328,6 +330,18 @@ async function loadPrompts() {
     pagination.total = response.data.pagination.total;
     stats.total = response.data.pagination.total;
     stats.totalUsage = response.data.prompts.reduce((sum, p) => sum + (p.usageCount || 0), 0);
+    
+    // 埋点: 如果是搜索操作，记录搜索事件
+    if (filters.search) {
+      const searchDuration = Date.now() - searchStartTime;
+      trackSearch({
+        keyword: filters.search,
+        category: filters.category,
+        aiModel: filters.aiModel,
+        resultCount: response.data.pagination.total,
+        duration: searchDuration
+      });
+    }
   } catch (error) {
     ElMessage.error('加载提示词失败: ' + error.message);
   } finally {
@@ -366,6 +380,12 @@ function openCreateFolder() {
 }
 
 function editPrompt(prompt) {
+  // 埋点: 记录编辑事件
+  trackEdit(prompt.id, {
+    isNew: false,
+    prompt: prompt
+  });
+  
   currentPrompt.value = prompt;
   editorVisible.value = true;
 }
@@ -376,16 +396,33 @@ function editFolder(folder) {
 }
 
 function usePrompt(prompt) {
+  // 埋点: 记录查看事件
+  trackView(prompt.id, {
+    source: 'list',
+    prompt: prompt
+  });
+  
   currentPrompt.value = prompt;
   usageVisible.value = true;
 }
 
 function sharePrompt(prompt) {
+  // 埋点: 记录分享事件
+  trackShare(prompt.id, {
+    prompt: prompt
+  });
+  
   currentPrompt.value = prompt;
   shareVisible.value = true;
 }
 
 function openPromptDetail(prompt) {
+  // 埋点: 记录查看详情事件
+  trackView(prompt.id, {
+    source: filters.search ? 'search' : 'list',
+    prompt: prompt
+  });
+  
   currentPrompt.value = prompt;
   usageVisible.value = true;
 }
