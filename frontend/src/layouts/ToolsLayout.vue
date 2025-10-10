@@ -37,7 +37,7 @@
 
     <!-- 工具箱主体内容 -->
     <div class="tools-main">
-      <div class="container">
+      <div :class="['container', { 'full-width': isFullWidth }]">
         <router-view />
       </div>
     </div>
@@ -74,6 +74,11 @@ export default {
   setup() {
     const route = useRoute()
     const router = useRouter()
+
+    // 检测是否需要全宽布局
+    const isFullWidth = computed(() => {
+      return route.meta?.fullWidth === true || route.meta?.noContainer === true
+    })
 
     // 当前分类信息
     const currentCategory = computed(() => {
@@ -115,6 +120,7 @@ export default {
     }
 
     return {
+      isFullWidth,
       currentCategory,
       currentTool,
       goBack,
@@ -137,6 +143,20 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  transition: max-width 0.3s ease, padding 0.3s ease;
+}
+
+/* 全宽模式 */
+.container.full-width {
+  max-width: 100% !important;
+  padding: 0 40px;
+}
+
+/* 超宽屏幕时的优化 */
+@media (min-width: 2560px) {
+  .container.full-width {
+    padding: 0 80px;
+  }
 }
 
 /* 头部样式 */
@@ -234,6 +254,10 @@ export default {
 @media (max-width: 768px) {
   .container {
     padding: 0 15px;
+  }
+  
+  .container.full-width {
+    padding: 0 20px;
   }
 
   .header-content {

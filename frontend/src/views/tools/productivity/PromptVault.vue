@@ -725,4 +725,58 @@ function formatDate(date) {
   justify-content: center;
   padding: 20px 0;
 }
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebar {
+    order: 2; /* 移动端将侧边栏移到下方 */
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px 20px;
+    
+    .actions {
+      width: 100%;
+      flex-direction: column;
+      
+      .el-button {
+        width: 100%;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .prompt-vault {
+    padding: 0;
+  }
+  
+  .page-header {
+    padding: 20px 16px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    
+    .header-text {
+      .title {
+        font-size: 22px;
+      }
+      
+      .stats-line {
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+  }
+  
+  .prompt-list {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
 </style>

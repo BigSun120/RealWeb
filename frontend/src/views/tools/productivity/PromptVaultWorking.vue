@@ -808,8 +808,8 @@ function collapseAllFolders() {
 <style scoped lang="scss">
 .prompt-vault {
   padding: 20px;
-  max-width: 1600px;
-  margin: 0 auto;
+  /* 移除 max-width 限制，完全利用容器宽度 */
+  width: 100%;
   background: #ffffff;
   min-height: 100vh;
 }
@@ -858,8 +858,14 @@ function collapseAllFolders() {
 
 .main-content {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 20px;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+  
+  /* 超宽屏幕优化 */
+  @media (min-width: 1920px) {
+    grid-template-columns: 320px 1fr;
+    gap: 32px;
+  }
 }
 
 .sidebar {
@@ -938,8 +944,26 @@ function collapseAllFolders() {
 .prompt-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 20px;
+  
+  /* 响应式卡片布局优化 */
+  @media (min-width: 1400px) and (max-width: 1919px) {
+    /* 1400-1919px: 3-4列 */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+  
+  @media (min-width: 1920px) and (max-width: 2559px) {
+    /* 1920-2559px: 4-5列 */
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+  }
+  
+  @media (min-width: 2560px) {
+    /* 2560px+: 5-6列 */
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 24px;
+  }
 }
 
 .prompt-card {

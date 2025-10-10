@@ -122,6 +122,19 @@ export default {
   background: transparent !important;
 }
 
+/* 全宽布局页面样式 */
+body.layout-full-width {
+  .main-content {
+    max-width: 100% !important;
+    padding: 0;
+  }
+  
+  .content-wrapper {
+    max-width: 100% !important;
+    padding: 0;
+  }
+}
+
 // Profile页面特殊样式
 body.profile-page {
   background: linear-gradient(135deg, #c8e6c8 0%, #d4e6d4 100%);

@@ -133,7 +133,9 @@ export default {
           meta: {
             title: 'AI提示词管理',
             description: '管理和组织你的AI提示词模板库',
-            requiresAuth: true
+            requiresAuth: true,
+            fullWidth: true,  // 启用全宽布局
+            noContainer: true // 不使用容器宽度限制
           }
         }
       ]
