@@ -102,7 +102,7 @@
           <el-option
             v-for="folder in folders"
             :key="folder.id"
-            :label="folder.name"
+            :label="getFolderDisplayName(folder)"
             :value="folder.id"
           />
         </el-select>
@@ -329,15 +329,39 @@ onMounted(() => {
   loadCustomOptions();
 });
 
+// 计算属性：当前选中的文件夹对象
+const selectedFolder = computed(() => {
+  if (!form.folderId) return null;
+  return props.folders.find(f => f.id === form.folderId) || null;
+});
+
+// 计算属性：当前选中文件夹的显示名称
+const selectedFolderDisplayName = computed(() => {
+  if (!selectedFolder.value) return '未分类';
+  return getFolderDisplayName(selectedFolder.value);
+});
+
 // 监听prompt变化，初始化表单
 watch(() => props.prompt, (newPrompt) => {
   if (newPrompt) {
+    // 处理 folderId：可能是字符串 ID、ObjectId 或文件夹对象
+    let folderId = null;
+    if (newPrompt.folderId) {
+      if (typeof newPrompt.folderId === 'object' && newPrompt.folderId.id) {
+        // 如果是文件夹对象，提取其 id
+        folderId = newPrompt.folderId.id;
+      } else if (typeof newPrompt.folderId === 'string') {
+        // 如果是字符串，直接使用
+        folderId = newPrompt.folderId;
+      }
+    }
+
     Object.assign(form, {
       title: newPrompt.title,
       description: newPrompt.description || '',
       category: newPrompt.category,
       aiModel: newPrompt.aiModel || 'general',
-      folderId: newPrompt.folderId,
+      folderId: folderId,
       content: newPrompt.content,
       tags: newPrompt.tags || [],
       visibility: newPrompt.visibility || 'private',
@@ -391,15 +415,21 @@ async function handleSave() {
       saveRecentTags(form.tags);
     }
 
+    let result;
     if (isEdit.value) {
-      await promptService.updatePrompt(props.prompt.id, data);
+      result = await promptService.updatePrompt(props.prompt.id, data);
       ElMessage.success('更新成功');
     } else {
-      await promptService.createPrompt(data);
+      result = await promptService.createPrompt(data);
       ElMessage.success('创建成功');
     }
 
-    emit('saved');
+    // 发出 saved 事件，带上更新后的数据（包含 folderId）
+    emit('saved', {
+      ...data,
+      ...(result?.data || {}),
+      id: props.prompt?.id || result?.data?.id
+    });
     handleClose();
   } catch (error) {
     ElMessage.error(isEdit.value ? '更新失败: ' + error.message : '创建失败: ' + error.message);
@@ -433,6 +463,38 @@ function saveRecentTags(tags) {
 function handleClose() {
   dialogVisible.value = false;
   resetForm();
+}
+
+// 获取文件夹显示名称（包含层级路径）
+function getFolderDisplayName(folder) {
+  if (!folder) return '未分类';
+  
+  // 如果传入的是ID而不是对象，尝试查找对应的文件夹对象
+  if (typeof folder === 'string' || typeof folder === 'number') {
+    const foundFolder = props.folders.find(f => f.id === folder || f._id === folder);
+    if (foundFolder) {
+      folder = foundFolder;
+    } else {
+      return '未知文件夹';
+    }
+  }
+  
+  // 如果有 pathName 属性（后端提供的完整路径名），直接使用
+  if (folder.pathName) {
+    return folder.pathName;
+  }
+  
+  // 递归构建层级路径（使用名称而不是ID）
+  if (folder.parentId) {
+    const parent = props.folders.find(f => f.id === folder.parentId || f._id === folder.parentId);
+    if (parent) {
+      const parentPath = getFolderDisplayName(parent);
+      return `${parentPath} / ${folder.name}`;
+    }
+  }
+  
+  // 否则直接返回名称
+  return folder.name || '未命名文件夹';
 }
 
 function resetForm() {

@@ -1,33 +1,35 @@
 <template>
-  <div v-if="visibleNotices.length && placements.includes('banner')" class="public-notice-banner" :class="[`level-${visibleNotices[0].level}`, { 'is-unread': userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead) }]">
-    <div class="container">
-      <div class="banner-content">
-        <div class="banner-text">
-          <div class="title-wrapper">
-            <div v-if="userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead)" class="unread-indicator">
-              <div class="unread-dot"></div>
+  <div v-show="placements.includes('banner')" class="public-notice-banner-wrapper">
+    <div v-if="visibleNotices.length > 0" class="public-notice-banner" :class="[`level-${visibleNotices[0].level}`, { 'is-unread': userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead) }]">
+      <div class="container">
+        <div class="banner-content">
+          <div class="banner-text">
+            <div class="title-wrapper">
+              <div v-if="userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead)" class="unread-indicator">
+                <div class="unread-dot"></div>
+              </div>
+              <strong class="title">{{ visibleNotices[0].title }}</strong>
             </div>
-            <strong class="title">{{ visibleNotices[0].title }}</strong>
+            <span class="body" v-html="renderBody(visibleNotices[0])"></span>
           </div>
-          <span class="body" v-html="renderBody(visibleNotices[0])"></span>
-        </div>
-        <div class="banner-actions">
-          <el-button size="small" type="primary" @click="openNoticeDetail(visibleNotices[0])">
-            {{ visibleNotices[0].ctaText || '查看详情' }}
-          </el-button>
-          <el-button v-if="visibleNotices[0].link" size="small" type="text" @click="openLink(visibleNotices[0].link)">
-            外部链接
-          </el-button>
-          <el-button
-            v-if="userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead)"
-            size="small"
-            type="text"
-            @click="markAsRead(visibleNotices[0]._id)"
-            :loading="markingRead"
-          >
-            标记已读
-          </el-button>
-          <el-button size="small" type="text" @click="dismiss(visibleNotices[0]._id)">不再显示</el-button>
+          <div class="banner-actions">
+            <el-button size="small" type="primary" @click="openNoticeDetail(visibleNotices[0])">
+              {{ visibleNotices[0].ctaText || '查看详情' }}
+            </el-button>
+            <el-button v-if="visibleNotices[0].link" size="small" type="text" @click="openLink(visibleNotices[0].link)">
+              外部链接
+            </el-button>
+            <el-button
+              v-if="userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead)"
+              size="small"
+              type="text"
+              @click="markAsRead(visibleNotices[0]._id)"
+              :loading="markingRead"
+            >
+              标记已读
+            </el-button>
+            <el-button size="small" type="text" @click="dismiss(visibleNotices[0]._id)">不再显示</el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -191,6 +193,11 @@ export default {
 </script>
 
 <style scoped>
+/* 包裹器不占用空间 */
+.public-notice-banner-wrapper {
+  display: contents;
+}
+
 .public-notice-banner {
   background: #eef5ff;
   border-bottom: 1px solid #dbeafe;

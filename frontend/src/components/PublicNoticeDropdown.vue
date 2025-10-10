@@ -1,5 +1,5 @@
 <template>
-  <el-dropdown v-if="placements.includes('dropdown')" trigger="click" placement="bottom-end">
+  <el-dropdown v-show="placements.includes('dropdown')" trigger="click" placement="bottom-end">
     <el-button type="text" class="notification-trigger">
       <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99">
         <el-icon :size="20"><Bell /></el-icon>

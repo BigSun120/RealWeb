@@ -81,13 +81,20 @@ class PromptController {
             .skip(skip)
             .limit(parseInt(limit))
             .populate('userId', 'username avatar')
-            .populate('folderId', 'name icon color')
+            .populate('folderId', 'id name icon color pathName')
             .lean();
 
           total = await PromptTemplate.countDocuments(query);
 
-          // 标记为已收藏
-          prompts.forEach(p => p.isFavorited = true);
+          // 标记为已收藏，并转换 folderId
+          prompts.forEach(p => {
+            p.isFavorited = true;
+            if (p.folderId && typeof p.folderId === 'object') {
+              const folderInfo = p.folderId;
+              p.folderInfo = folderInfo;
+              p.folderId = folderInfo.id;
+            }
+          });
         }
       } else {
         // 其他模式
@@ -122,12 +129,12 @@ class PromptController {
           .skip(skip)
           .limit(parseInt(limit))
           .populate('userId', 'username avatar')
-          .populate('folderId', 'name icon color')
+          .populate('folderId', 'id name icon color pathName')
           .lean();
 
         total = await PromptTemplate.countDocuments(query);
 
-        // 检查收藏状态
+        // 检查收藏状态并转换 folderId
         if (userId && prompts.length > 0) {
           const Bookmark = require('../models/Bookmark');
           const promptIds = prompts.map(p => p._id);
@@ -140,6 +147,21 @@ class PromptController {
           const favoritedSet = new Set(bookmarks.map(b => b.targetId.toString()));
           prompts.forEach(p => {
             p.isFavorited = favoritedSet.has(p._id.toString());
+            // 转换 folderId
+            if (p.folderId && typeof p.folderId === 'object') {
+              const folderInfo = p.folderId;
+              p.folderInfo = folderInfo;
+              p.folderId = folderInfo.id;
+            }
+          });
+        } else {
+          // 如果没有用户或没有提示词，也要转换 folderId
+          prompts.forEach(p => {
+            if (p.folderId && typeof p.folderId === 'object') {
+              const folderInfo = p.folderId;
+              p.folderInfo = folderInfo;
+              p.folderId = folderInfo.id;
+            }
           });
         }
       }
@@ -177,7 +199,7 @@ class PromptController {
 
       const prompt = await PromptTemplate.findOne({ id, isDeleted: false })
         .populate('userId', 'username avatar bio')
-        .populate('folderId', 'name icon color path')
+        .populate('folderId', 'id name icon color path pathName')
         .lean();
 
       if (!prompt) {
@@ -194,6 +216,13 @@ class PromptController {
           code: 403,
           message: '没有访问权限'
         });
+      }
+
+      // 将 folderId 从对象转换为字符串 ID，方便前端使用
+      if (prompt.folderId && typeof prompt.folderId === 'object') {
+        const folderInfo = prompt.folderId;
+        prompt.folderInfo = folderInfo; // 保存完整的文件夹信息
+        prompt.folderId = folderInfo.id; // 只保留 ID 字符串
       }
 
       // 增加浏览量
@@ -229,15 +258,15 @@ class PromptController {
         });
       }
 
-      const promptData = {
+      const createData = {
         ...req.body,
         userId: req.user._id
       };
 
       // 如果指定了folderId，转换为ObjectId
-      if (promptData.folderId) {
+      if (createData.folderId) {
         const folder = await PromptFolder.findOne({
-          id: promptData.folderId,
+          id: createData.folderId,
           userId: req.user._id
         });
         if (!folder) {
@@ -246,10 +275,10 @@ class PromptController {
             message: '文件夹不存在'
           });
         }
-        promptData.folderId = folder._id;
+        createData.folderId = folder._id;
       }
 
-      const prompt = await PromptTemplate.create(promptData);
+      const prompt = await PromptTemplate.create(createData);
 
       // 更新文件夹中的提示词数量
       if (prompt.folderId) {
@@ -259,10 +288,25 @@ class PromptController {
         }
       }
 
+      // 转换 folderId 为字符串 ID
+      const promptData = prompt.toObject();
+      if (promptData.folderId) {
+        const folder = await PromptFolder.findById(promptData.folderId);
+        if (folder) {
+          promptData.folderInfo = {
+            id: folder.id,
+            name: folder.name,
+            icon: folder.icon,
+            color: folder.color
+          };
+          promptData.folderId = folder.id;
+        }
+      }
+
       res.status(201).json({
         code: 201,
         message: '创建成功',
-        data: prompt
+        data: promptData
       });
     } catch (error) {
       logger.error('创建提示词失败:', error);
@@ -338,10 +382,25 @@ class PromptController {
 
       await prompt.save();
 
+      // 转换 folderId 为字符串 ID
+      const updatedData = prompt.toObject();
+      if (updatedData.folderId) {
+        const folder = await PromptFolder.findById(updatedData.folderId);
+        if (folder) {
+          updatedData.folderInfo = {
+            id: folder.id,
+            name: folder.name,
+            icon: folder.icon,
+            color: folder.color
+          };
+          updatedData.folderId = folder.id;
+        }
+      }
+
       res.json({
         code: 200,
         message: '更新成功',
-        data: prompt
+        data: updatedData
       });
     } catch (error) {
       logger.error('更新提示词失败:', error);
@@ -793,19 +852,25 @@ class PromptController {
         'chatglm', 'xinghuo', 'claude', 'gemini', 'chatgpt'
       ];
 
-      // 获取用户所有提示词中使用的分类（包括预设和自定义）
-      const categories = await PromptTemplate.distinct('category', {
+      // 获取用户所有提示词中使用的分类
+      const allCategories = await PromptTemplate.distinct('category', {
         userId,
         isDeleted: false,
         category: { $ne: null, $ne: '' }
       });
 
-      // 获取用户所有提示词中使用的AI模型（包括预设和自定义）
-      const models = await PromptTemplate.distinct('aiModel', {
+      // 过滤掉预设的分类，只返回自定义的
+      const categories = allCategories.filter(cat => !predefinedCategories.includes(cat));
+
+      // 获取用户所有提示词中使用的AI模型
+      const allModels = await PromptTemplate.distinct('aiModel', {
         userId,
         isDeleted: false,
         aiModel: { $ne: null, $ne: '' }
       });
+
+      // 过滤掉预设的模型，只返回自定义的
+      const models = allModels.filter(model => !predefinedModels.includes(model));
 
       // 获取用户所有提示词中使用的标签（展开数组）
       const allTags = await PromptTemplate.aggregate([

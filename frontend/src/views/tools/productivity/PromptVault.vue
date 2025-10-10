@@ -379,15 +379,35 @@ function openCreateFolder() {
   folderEditorVisible.value = true;
 }
 
-function editPrompt(prompt) {
-  // 埋点: 记录编辑事件
-  trackEdit(prompt.id, {
-    isNew: false,
-    prompt: prompt
-  });
-  
-  currentPrompt.value = prompt;
-  editorVisible.value = true;
+async function editPrompt(prompt) {
+  try {
+    // 埋点: 记录编辑事件
+    trackEdit(prompt.id, {
+      isNew: false,
+      prompt: prompt
+    });
+    
+    // 从服务器获取最新的提示词数据，确保文件夹信息是最新的
+    loading.value = true;
+    const response = await promptService.getPromptById(prompt.id);
+    
+    if (response && response.data) {
+      currentPrompt.value = response.data;
+      editorVisible.value = true;
+    } else {
+      // 降级方案：如果获取失败，使用列表中的数据
+      currentPrompt.value = prompt;
+      editorVisible.value = true;
+    }
+  } catch (error) {
+    console.error('获取提示词详情失败:', error);
+    // 降级方案：使用列表中的数据
+    currentPrompt.value = prompt;
+    editorVisible.value = true;
+    ElMessage.warning('获取最新数据失败，显示的可能不是最新信息');
+  } finally {
+    loading.value = false;
+  }
 }
 
 function editFolder(folder) {
@@ -508,9 +528,24 @@ async function deletePrompt(prompt) {
   }
 }
 
-function handlePromptSaved() {
+async function handlePromptSaved(updatedPrompt) {
   editorVisible.value = false;
-  loadData();
+  // 重新加载数据以确保文件夹计数和提示词列表同步
+  await loadData();
+  
+  // 如果提示词的文件夹发生了变化，需要特殊处理
+  if (updatedPrompt && currentPrompt.value) {
+    const oldFolderId = currentPrompt.value.folderId;
+    const newFolderId = updatedPrompt.folderId;
+    
+    // 如果文件夹发生变化且当前正在查看某个文件夹
+    if (oldFolderId !== newFolderId && currentFolderId.value) {
+      // 如果当前查看的是旧文件夹或新文件夹，刷新列表
+      if (currentFolderId.value === oldFolderId || currentFolderId.value === newFolderId) {
+        await loadPrompts();
+      }
+    }
+  }
 }
 
 function handlePromptUsed() {

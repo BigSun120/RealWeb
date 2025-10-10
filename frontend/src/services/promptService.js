@@ -13,6 +13,17 @@ class PromptService {
     throw new Error(response.message || '获取提示词列表失败');
   }
 
+  async getPromptById(id) {
+    const response = await request({
+      url: `/tools/prompt-vault/prompts/${id}`,
+      method: 'get'
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '获取提示词详情失败');
+  }
+
   async createPrompt(data) {
     const response = await request({
       url: '/tools/prompt-vault/prompts',

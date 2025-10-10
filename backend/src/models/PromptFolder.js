@@ -162,8 +162,22 @@ promptFolderSchema.statics.getFolderTree = async function(userId) {
     folderMap[folder.id] = folder;
   });
 
-  // 第二遍：构建树
+  // 第二遍：构建树并生成 pathName
   folders.forEach(folder => {
+    // 递归生成层级路径名称
+    const buildPathName = (f) => {
+      if (!f.parentId || !folderMap[f.parentId]) {
+        return f.name;
+      }
+      const parent = folderMap[f.parentId];
+      if (!parent.pathName) {
+        parent.pathName = buildPathName(parent);
+      }
+      return `${parent.pathName} / ${f.name}`;
+    };
+
+    folder.pathName = buildPathName(folder);
+
     if (!folder.parentId) {
       tree.push(folder);
     } else if (folderMap[folder.parentId]) {

@@ -21,8 +21,8 @@
         此提示词当前为私有状态，生成分享链接后将自动变为"不公开"状态（仅知道链接的人可访问）
       </el-alert>
 
-      <div class="share-options" v-loading="generating">
-        <div v-if="shareUrl" class="share-result">
+      <div class="share-options">
+        <div v-if="shareUrl" v-loading="generating" class="share-result">
           <div class="result-header">
             <h4>分享链接</h4>
             <el-button type="primary" size="small" :icon="CopyDocument" @click="copyShareUrl">
