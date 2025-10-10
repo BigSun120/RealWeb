@@ -26,6 +26,13 @@ router.get('/prompts', optionalAuth, PromptController.getPrompts);
 router.get('/prompts/trending', PromptController.getTrendingPrompts);
 
 /**
+ * @route   GET /api/tools/prompt-vault/options
+ * @desc    获取自定义选项（分类、模型、标签）
+ * @access  Private
+ */
+router.get('/options', auth, PromptController.getCustomOptions);
+
+/**
  * @route   GET /api/tools/prompt-vault/prompts/:id
  * @desc    获取提示词详情
  * @access  Public (公开) / Private (需权限)

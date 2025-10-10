@@ -70,6 +70,7 @@ request.interceptors.request.use(
       config.headers.Authorization = `Bearer ${userStore.token}`;
     }
 
+
     return config;
   },
   error => {
@@ -82,6 +83,7 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   response => {
     const { data, status } = response;
+
 
     // 如果是文件下载等特殊响应，直接返回
     if (response.config.responseType === 'blob') {

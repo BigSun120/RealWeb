@@ -30,14 +30,37 @@
       </el-form-item>
 
       <el-form-item label="分类" prop="category">
-        <el-select v-model="form.category" placeholder="选择分类" style="width: 100%">
-          <el-option label="写作" value="writing" />
-          <el-option label="编程" value="coding" />
-          <el-option label="翻译" value="translation" />
-          <el-option label="分析" value="analysis" />
-          <el-option label="创意" value="creative" />
-          <el-option label="其他" value="other" />
+        <el-select 
+          v-model="form.category" 
+          filterable
+          allow-create
+          placeholder="选择或创建分类" 
+          style="width: 100%"
+        >
+          <el-option-group label="预设分类">
+            <el-option label="写作" value="写作" />
+            <el-option label="编程" value="编程" />
+            <el-option label="翻译" value="翻译" />
+            <el-option label="分析" value="分析" />
+            <el-option label="创意" value="创意" />
+            <el-option label="客户服务" value="客户服务" />
+            <el-option label="产品文档" value="产品文档" />
+            <el-option label="市场营销" value="市场营销" />
+            <el-option label="教育培训" value="教育培训" />
+            <el-option label="其他" value="其他" />
+          </el-option-group>
+          <el-option-group label="我的自定义分类" v-if="customCategories.length > 0">
+            <el-option
+              v-for="category in customCategories"
+              :key="category"
+              :label="category"
+              :value="category"
+            />
+          </el-option-group>
         </el-select>
+        <div class="form-tip">
+          可以直接输入新的分类名称，按回车键创建
+        </div>
       </el-form-item>
 
       <el-form-item label="AI模型" prop="aiModel">
@@ -47,7 +70,6 @@
           allow-create
           placeholder="选择或输入AI模型"
           style="width: 100%"
-          @change="handleModelChange"
         >
           <el-option-group label="常用模型">
             <el-option label="通用" value="general" />
@@ -124,15 +146,28 @@
           multiple
           filterable
           allow-create
+          default-first-option
+          collapse-tags
+          collapse-tags-tooltip
           placeholder="添加标签（回车创建新标签）"
           style="width: 100%"
         >
-          <el-option
-            v-for="tag in commonTags"
-            :key="tag"
-            :label="tag"
-            :value="tag"
-          />
+          <el-option-group label="常用标签" v-if="commonTags.length > 0">
+            <el-option
+              v-for="tag in commonTags"
+              :key="`common-${tag}`"
+              :label="tag"
+              :value="tag"
+            />
+          </el-option-group>
+          <el-option-group label="最近使用" v-if="recentTags.length > 0">
+            <el-option
+              v-for="tag in recentTags"
+              :key="`recent-${tag}`"
+              :label="tag"
+              :value="tag"
+            />
+          </el-option-group>
         </el-select>
       </el-form-item>
 
@@ -194,8 +229,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, inject } from 'vue';
+import { ref, reactive, computed, watch, inject, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
+import request from '@/utils/request';
 
 const promptService = inject('promptService');
 
@@ -256,49 +292,42 @@ const commonTags = ref([
   '学习', '研究', '商业', '娱乐'
 ]);
 
-// 自定义AI模型列表（从 localStorage 读取）
+// 自定义AI模型列表（从服务器获取）
 const customModels = ref([]);
+// 自定义分类列表（从服务器获取）
+const customCategories = ref([]);
+// 最近使用的标签（从服务器获取）
+const recentTags = ref([]);
 
-// 加载自定义模型
-function loadCustomModels() {
+// 从服务器加载自定义选项
+async function loadCustomOptions() {
   try {
-    const stored = localStorage.getItem('prompt_custom_ai_models');
-    if (stored) {
-      customModels.value = JSON.parse(stored);
+    const response = await request({
+      url: '/tools/prompt-vault/options',
+      method: 'get'
+    });
+
+    if (response.code === 200) {
+      customCategories.value = response.data.categories || [];
+      customModels.value = response.data.models || [];
+      recentTags.value = response.data.tags || [];
     }
   } catch (error) {
-    console.error('加载自定义模型失败:', error);
+    console.error('PromptEditor: 加载自定义选项失败:', error);
   }
 }
 
-// 保存自定义模型
-function saveCustomModels() {
-  try {
-    localStorage.setItem('prompt_custom_ai_models', JSON.stringify(customModels.value));
-  } catch (error) {
-    console.error('保存自定义模型失败:', error);
+// 在对话框打开时加载自定义选项
+watch(() => props.visible, (newVal) => {
+  if (newVal) {
+    loadCustomOptions();
   }
-}
+});
 
-// 处理模型变化（当用户输入新模型时）
-function handleModelChange(value) {
-  const predefinedModels = [
-    'general', 'gpt-4', 'gpt-4-turbo', 'gpt-3.5',
-    'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku',
-    'gemini-pro', 'gemini-ultra', 'wenxin', 'tongyi',
-    'chatglm', 'xinghuo', 'claude', 'gemini', 'chatgpt'
-  ];
-
-  // 如果是新输入的模型且不在预定义列表中
-  if (value && !predefinedModels.includes(value) && !customModels.value.includes(value)) {
-    customModels.value.push(value);
-    saveCustomModels();
-    ElMessage.success(`已添加自定义模型: ${value}`);
-  }
-}
-
-// 初始化时加载自定义模型
-loadCustomModels();
+// 组件挂载时预加载自定义选项
+onMounted(() => {
+  loadCustomOptions();
+});
 
 // 监听prompt变化，初始化表单
 watch(() => props.prompt, (newPrompt) => {
@@ -357,6 +386,11 @@ async function handleSave() {
       variables: detectedVariables.value
     };
 
+    // 保存标签到最近使用列表
+    if (form.tags && form.tags.length > 0) {
+      saveRecentTags(form.tags);
+    }
+
     if (isEdit.value) {
       await promptService.updatePrompt(props.prompt.id, data);
       ElMessage.success('更新成功');
@@ -371,6 +405,28 @@ async function handleSave() {
     ElMessage.error(isEdit.value ? '更新失败: ' + error.message : '创建失败: ' + error.message);
   } finally {
     saving.value = false;
+  }
+}
+
+// 保存最近使用的标签
+function saveRecentTags(tags) {
+  try {
+    const stored = localStorage.getItem('prompt_recent_tags');
+    let recentTags = stored ? JSON.parse(stored) : [];
+    
+    // 添加新标签，去重
+    tags.forEach(tag => {
+      if (!recentTags.includes(tag)) {
+        recentTags.unshift(tag); // 添加到最前面
+      }
+    });
+    
+    // 只保留最近50个
+    recentTags = recentTags.slice(0, 50);
+    
+    localStorage.setItem('prompt_recent_tags', JSON.stringify(recentTags));
+  } catch (error) {
+    console.error('保存最近标签失败:', error);
   }
 }
 

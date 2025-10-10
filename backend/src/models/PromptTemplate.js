@@ -44,7 +44,9 @@ const promptTemplateSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, '分类不能为空'],
-    enum: ['writing', 'coding', 'translation', 'analysis', 'creative', 'other', 'code', 'content', 'learning', 'roleplay', 'productivity'],
+    trim: true,
+    minlength: [2, '分类名称至少2个字符'],
+    maxlength: [50, '分类名称不超过50个字符'],
     index: true
   },
   subcategories: [{

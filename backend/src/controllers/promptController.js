@@ -759,6 +759,100 @@ class PromptController {
       });
     }
   }
+
+  /**
+   * 获取自定义选项（从用户的提示词中提取）
+   * 包括：自定义分类、AI模型、常用标签
+   */
+  static async getCustomOptions(req, res) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          code: 401,
+          message: '需要登录'
+        });
+      }
+
+      const userId = req.user._id;
+
+      // 预定义的分类和模型（同时支持中英文，以兼容老数据）
+      const predefinedCategories = [
+        // 中文分类
+        '写作', '编程', '翻译', '分析', '创意',
+        '客户服务', '产品文档', '市场营销', '教育培训', '其他',
+        // 英文分类（兼容老数据）
+        'writing', 'coding', 'translation', 'analysis', 'creative',
+        'customer-service', 'documentation', 'marketing', 'education', 'other'
+      ];
+
+      const predefinedModels = [
+        'general', 'gpt-4', 'gpt-4-turbo', 'gpt-3.5',
+        'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku',
+        'gemini-pro', 'gemini-ultra', 'wenxin', 'tongyi',
+        'chatglm', 'xinghuo', 'claude', 'gemini', 'chatgpt'
+      ];
+
+      // 获取用户所有提示词中使用的分类（包括预设和自定义）
+      const categories = await PromptTemplate.distinct('category', {
+        userId,
+        isDeleted: false,
+        category: { $ne: null, $ne: '' }
+      });
+
+      // 获取用户所有提示词中使用的AI模型（包括预设和自定义）
+      const models = await PromptTemplate.distinct('aiModel', {
+        userId,
+        isDeleted: false,
+        aiModel: { $ne: null, $ne: '' }
+      });
+
+      // 获取用户所有提示词中使用的标签（展开数组）
+      const allTags = await PromptTemplate.aggregate([
+        {
+          $match: {
+            userId,
+            isDeleted: false,
+            tags: { $exists: true, $ne: [] }
+          }
+        },
+        { $unwind: '$tags' },
+        {
+          $group: {
+            _id: '$tags',
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { count: -1 } },
+        { $limit: 50 },
+        {
+          $project: {
+            _id: 0,
+            tag: '$_id',
+            count: 1
+          }
+        }
+      ]);
+
+      const tags = allTags.map(t => t.tag);
+
+      res.json({
+        code: 200,
+        message: '获取成功',
+        data: {
+          categories,
+          models,
+          tags
+        }
+      });
+    } catch (error) {
+      logger.error('获取自定义选项失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '获取自定义选项失败',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = PromptController;

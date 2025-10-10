@@ -11,19 +11,9 @@
         </div>
       </div>
       <div class="actions">
-        <el-button-group class="filter-group">
-          <el-button :type="viewMode === 'all' ? 'primary' : ''" @click="setViewMode('all')">
-            全部
-          </el-button>
-          <el-button :type="viewMode === 'mine' ? 'primary' : ''" @click="setViewMode('mine')">
-            我创建的
-          </el-button>
-          <el-button :type="viewMode === 'favorite' ? 'primary' : ''" @click="setViewMode('favorite')">
-            收藏
-          </el-button>
-        </el-button-group>
         <el-button type="primary" :icon="Plus" @click="openCreatePrompt">新建提示词</el-button>
         <el-button :icon="FolderAdd" @click="openCreateFolder">新建文件夹</el-button>
+        <el-button :icon="Setting" @click="openOptionsManager">管理选项</el-button>
         <el-button :icon="Refresh" :loading="loading" @click="loadData">刷新</el-button>
       </div>
     </section>
@@ -101,48 +91,130 @@
       <main class="content">
         <!-- 筛选栏 -->
         <el-card class="filter-card" shadow="never">
-          <div class="filter-grid">
-            <el-input
-              v-model="filters.search"
-              placeholder="搜索标题、内容或标签"
-              clearable
-              @clear="handleSearch"
-              @keyup.enter="handleSearch"
+          <!-- 第一行：快捷筛选 + 搜索 -->
+          <div class="filter-row-primary">
+            <div class="quick-filters">
+              <el-button-group>
+                <el-button 
+                  :type="quickFilter === 'all' ? 'primary' : ''"
+                  @click="setQuickFilter('all')"
+                >
+                  全部
+                </el-button>
+                <el-button 
+                  :type="quickFilter === 'favorite' ? 'primary' : ''"
+                  @click="setQuickFilter('favorite')"
+                >
+                  <el-icon><Star /></el-icon>
+                  <span class="btn-text">收藏</span>
+                </el-button>
+                <el-button 
+                  :type="quickFilter === 'recent' ? 'primary' : ''"
+                  @click="setQuickFilter('recent')"
+                >
+                  <el-icon><Clock /></el-icon>
+                  <span class="btn-text">最近</span>
+                </el-button>
+                <el-button 
+                  :type="quickFilter === 'mine' ? 'primary' : ''"
+                  @click="setQuickFilter('mine')"
+                >
+                  <el-icon><User /></el-icon>
+                  <span class="btn-text">我的</span>
+                </el-button>
+              </el-button-group>
+            </div>
+            
+            <div class="search-wrapper">
+              <el-input
+                v-model="filters.search"
+                placeholder="搜索标题、内容或标签..."
+                clearable
+                @clear="handleSearch"
+                @keyup.enter="handleSearch"
+                class="search-input"
+              >
+                <template #prefix>
+                  <el-icon><Search /></el-icon>
+                </template>
+                <template #append>
+                  <el-button @click="handleSearch">搜索</el-button>
+                </template>
+              </el-input>
+            </div>
+            
+            <el-button 
+              v-if="hasActiveFilters"
+              @click="resetFilters"
+              class="reset-btn"
             >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
-
-            <el-select v-model="filters.category" clearable placeholder="分类" @change="handleSearch">
-              <el-option label="全部" value="" />
-              <el-option label="写作" value="writing" />
-              <el-option label="编程" value="coding" />
-              <el-option label="翻译" value="translation" />
-              <el-option label="分析" value="analysis" />
-              <el-option label="创意" value="creative" />
-              <el-option label="其他" value="other" />
+              <el-icon><CircleClose /></el-icon>
+              <span class="btn-text">重置</span>
+            </el-button>
+          </div>
+          
+          <!-- 第二行：详细筛选 -->
+          <div class="filter-row-secondary">
+            <el-select 
+              v-model="filters.category" 
+              clearable 
+              placeholder="分类" 
+              @change="handleSearch"
+              class="filter-select"
+            >
+              <el-option label="全部分类" value="" />
+              <el-option-group label="预设分类">
+                <el-option label="写作" value="写作" />
+                <el-option label="编程" value="编程" />
+                <el-option label="翻译" value="翻译" />
+                <el-option label="分析" value="分析" />
+                <el-option label="创意" value="创意" />
+                <el-option label="客户服务" value="客户服务" />
+                <el-option label="产品文档" value="产品文档" />
+                <el-option label="市场营销" value="市场营销" />
+                <el-option label="教育培训" value="教育培训" />
+                <el-option label="其他" value="其他" />
+              </el-option-group>
+              <el-option-group label="自定义分类" v-if="customCategories.length > 0">
+                <el-option
+                  v-for="category in customCategories"
+                  :key="category"
+                  :label="category"
+                  :value="category"
+                />
+              </el-option-group>
             </el-select>
 
-            <el-select v-model="filters.aiModel" clearable placeholder="AI模型" @change="handleSearch">
-              <el-option label="全部" value="" />
+            <el-select 
+              v-model="filters.aiModel" 
+              clearable 
+              placeholder="AI模型" 
+              @change="handleSearch"
+              class="filter-select"
+            >
+              <el-option label="全部模型" value="" />
               <el-option label="GPT-4" value="gpt-4" />
               <el-option label="GPT-3.5" value="gpt-3.5" />
               <el-option label="Claude" value="claude" />
               <el-option label="通用" value="general" />
             </el-select>
 
-            <el-select v-model="filters.sortBy" @change="handleSearch">
-              <el-option label="创建时间" value="createdAt" />
-              <el-option label="更新时间" value="updatedAt" />
-              <el-option label="使用次数" value="usageCount" />
-              <el-option label="评分" value="rating" />
+            <el-select 
+              v-model="filters.sort" 
+              @change="handleSearch"
+              class="filter-select"
+            >
+              <el-option label="最新创建" value="createdAt-desc" />
+              <el-option label="最早创建" value="createdAt-asc" />
+              <el-option label="最近更新" value="updatedAt-desc" />
+              <el-option label="最早更新" value="updatedAt-asc" />
+              <el-option label="使用最多" value="usageCount-desc" />
+              <el-option label="使用最少" value="usageCount-asc" />
             </el-select>
-
-            <el-select v-model="filters.sortOrder" @change="handleSearch">
-              <el-option label="降序" value="desc" />
-              <el-option label="升序" value="asc" />
-            </el-select>
+            
+            <div class="filter-stats">
+              <span class="stats-text">共 {{ pagination.total }} 个结果</span>
+            </div>
           </div>
         </el-card>
 
@@ -160,7 +232,7 @@
             <div class="prompt-header">
               <div class="prompt-title-row">
                 <h3 class="prompt-title">{{ prompt.title }}</h3>
-                <el-tag v-if="prompt.category" size="small">{{ getCategoryLabel(prompt.category) }}</el-tag>
+                <el-tag v-if="prompt.category" size="small">{{ prompt.category }}</el-tag>
               </div>
               <div class="prompt-meta">
                 <el-tag v-if="prompt.aiModel" size="small" type="info">{{ prompt.aiModel }}</el-tag>
@@ -224,9 +296,9 @@
       </main>
     </div>
 
-    <!-- 对话框组件 - 使用同步导入 -->
+    <!-- 对话框组件 - 使用 v-show 保持组件挂载 -->
     <PromptEditor
-      v-if="editorVisible"
+      v-show="editorVisible"
       v-model:visible="editorVisible"
       :prompt="currentPrompt"
       :folders="flatFolders"
@@ -234,18 +306,24 @@
     />
 
     <PromptUsage
-      v-if="usageVisible"
+      v-show="usageVisible"
       v-model:visible="usageVisible"
       :prompt="currentPrompt"
       @used="handlePromptUsed"
     />
 
     <FolderEditor
-      v-if="folderEditorVisible"
+      v-show="folderEditorVisible"
       v-model:visible="folderEditorVisible"
       :folder="currentFolder"
       :parent-folders="flatFolders"
       @saved="handleFolderSaved"
+    />
+
+    <CustomOptionsManager
+      v-show="optionsManagerVisible"
+      v-model:visible="optionsManagerVisible"
+      @saved="handleOptionsSaved"
     />
   </div>
 </template>
@@ -255,12 +333,14 @@ import { ref, reactive, computed, onMounted, provide, h } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   Plus, FolderAdd, Refresh, Search, Edit, Delete,
-  CopyDocument, Folder, View, ChatDotRound, Star, StarFilled
+  CopyDocument, Folder, View, ChatDotRound, Star, StarFilled,
+  Clock, User, CircleClose, Setting
 } from '@element-plus/icons-vue';
 import request from '@/utils/request';
 import PromptEditor from './components/PromptEditor.vue';
 import PromptUsage from './components/PromptUsage.vue';
 import FolderEditor from './components/FolderEditor.vue';
+import CustomOptionsManager from './components/CustomOptionsManager.vue';
 
 // 直接在这里定义 promptService，避免导入问题
 const promptService = {
@@ -471,20 +551,42 @@ const defaultExpandAll = ref(true);
 const currentFolderId = ref(null);
 const currentPrompt = ref(null);
 const currentFolder = ref(null);
-const viewMode = ref('all'); // 视图模式：all-全部, mine-我创建的, favorite-收藏
 
 // 对话框状态
 const editorVisible = ref(false);
 const usageVisible = ref(false);
 const folderEditorVisible = ref(false);
+const optionsManagerVisible = ref(false);
+
+// 快捷筛选
+const quickFilter = ref('all');
+
+// 自定义分类列表（从服务器读取）
+const customCategories = ref([]);
+
+// 从服务器加载自定义分类
+async function loadCustomCategories() {
+  try {
+    const response = await request({
+      url: '/tools/prompt-vault/options',
+      method: 'get'
+    });
+
+    if (response.code === 200) {
+      customCategories.value = response.data.categories || [];
+      console.log('从服务器加载的自定义分类:', customCategories.value);
+    }
+  } catch (error) {
+    console.error('加载自定义分类失败:', error);
+  }
+}
 
 // 筛选条件
 const filters = reactive({
   search: '',
   category: '',
   aiModel: '',
-  sortBy: 'updatedAt',
-  sortOrder: 'desc'
+  sort: 'updatedAt-desc' // 合并排序方式和顺序
 });
 
 // 分页
@@ -517,6 +619,7 @@ const flatFolders = computed(() => {
 
 // 生命周期
 onMounted(() => {
+  loadCustomCategories();
   loadData();
 });
 
@@ -531,6 +634,9 @@ async function loadData() {
 async function loadPrompts() {
   try {
     loading.value = true;
+    // 解析排序参数
+    const [sortBy, sortOrder] = filters.sort.split('-');
+    
     const params = {
       page: pagination.page,
       limit: pagination.limit,
@@ -538,9 +644,9 @@ async function loadPrompts() {
       search: filters.search,
       category: filters.category,
       aiModel: filters.aiModel,
-      sortBy: filters.sortBy,
-      sortOrder: filters.sortOrder,
-      viewMode: viewMode.value // 添加视图模式参数
+      sortBy: sortBy,
+      sortOrder: sortOrder,
+      viewMode: quickFilter.value // 使用快捷筛选代替 viewMode
     };
 
     const response = await promptService.getPrompts(params);
@@ -576,11 +682,28 @@ function handleFolderClick(folder) {
   loadPrompts();
 }
 
-function setViewMode(mode) {
-  viewMode.value = mode;
+function setQuickFilter(filter) {
+  quickFilter.value = filter;
   pagination.page = 1;
   loadPrompts();
 }
+
+function resetFilters() {
+  filters.search = '';
+  filters.category = '';
+  filters.aiModel = '';
+  filters.sort = 'updatedAt-desc';
+  quickFilter.value = 'all';
+  currentFolderId.value = null;
+  pagination.page = 1;
+  loadPrompts();
+}
+
+// 检查是否有激活的筛选条件
+const hasActiveFilters = computed(() => {
+  return filters.search || filters.category || filters.aiModel || 
+         quickFilter.value !== 'all' || currentFolderId.value;
+});
 
 async function toggleFavorite(prompt) {
   try {
@@ -591,8 +714,8 @@ async function toggleFavorite(prompt) {
 
     ElMessage.success(prompt.isFavorited ? '已添加到收藏' : '已取消收藏');
 
-    // 如果当前是收藏视图，需要刷新列表
-    if (viewMode.value === 'favorite') {
+    // 如果当前是收藏筛选，需要刷新列表
+    if (quickFilter.value === 'favorite') {
       loadPrompts();
     }
   } catch (error) {
@@ -661,6 +784,8 @@ async function deletePrompt(prompt) {
 
 function handlePromptSaved() {
   editorVisible.value = false;
+  // 重新加载自定义分类和模型，确保新添加的选项在筛选器中可用
+  loadCustomCategories();
   loadData();
 }
 
@@ -670,6 +795,18 @@ function handlePromptUsed() {
 
 function handleFolderSaved() {
   folderEditorVisible.value = false;
+  loadData();
+}
+
+function openOptionsManager() {
+  // 打开管理器前，先重新加载自定义分类，确保显示最新数据
+  loadCustomCategories();
+  optionsManagerVisible.value = true;
+}
+
+function handleOptionsSaved() {
+  // 重新加载自定义分类，更新筛选器
+  loadCustomCategories();
   loadData();
 }
 
@@ -736,17 +873,18 @@ async function deleteFolder(folder) {
   }
 }
 
-function getCategoryLabel(category) {
-  const labels = {
-    writing: '写作',
-    coding: '编程',
-    translation: '翻译',
-    analysis: '分析',
-    creative: '创意',
-    other: '其他'
-  };
-  return labels[category] || category;
-}
+// 不再需要这个函数，因为现在直接使用中文分类
+// function getCategoryLabel(category) {
+//   const labels = {
+//     writing: '写作',
+//     coding: '编程',
+//     translation: '翻译',
+//     analysis: '分析',
+//     creative: '创意',
+//     other: '其他'
+//   };
+//   return labels[category] || category;
+// }
 
 function formatDate(date) {
   if (!date) return '';
@@ -849,10 +987,6 @@ function collapseAllFolders() {
     display: flex;
     gap: 12px;
     align-items: center;
-
-    .filter-group {
-      margin-right: 8px;
-    }
   }
 }
 
@@ -933,11 +1067,134 @@ function collapseAllFolders() {
 
 .filter-card {
   margin-bottom: 20px;
+  
+  :deep(.el-card__body) {
+    padding: 20px;
+  }
 
-  .filter-grid {
-    display: grid;
-    grid-template-columns: 2fr repeat(4, 1fr);
+  .filter-row-primary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    
+    .quick-filters {
+      flex-shrink: 0;
+      
+      .el-button {
+        padding: 8px 16px;
+        
+        .el-icon {
+          margin-right: 4px;
+        }
+        
+        .btn-text {
+          @media (max-width: 768px) {
+            display: none;
+          }
+        }
+      }
+    }
+    
+    .search-wrapper {
+      flex: 1;
+      min-width: 0; // 防止 flex 子项溢出
+      
+      .search-input {
+        width: 100%;
+      }
+    }
+    
+    .reset-btn {
+      flex-shrink: 0;
+      
+      .el-icon {
+        margin-right: 4px;
+      }
+      
+      .btn-text {
+        @media (max-width: 768px) {
+          display: none;
+        }
+      }
+    }
+  }
+  
+  .filter-row-secondary {
+    display: flex;
+    align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
+    
+    .filter-select {
+      min-width: 140px;
+      flex: 1;
+      max-width: 180px;
+      
+      @media (max-width: 768px) {
+        min-width: 120px;
+        max-width: 150px;
+      }
+    }
+    
+    .filter-stats {
+      margin-left: auto;
+      flex-shrink: 0;
+      
+      .stats-text {
+        font-size: 14px;
+        color: #606266;
+        font-weight: 500;
+      }
+      
+      @media (max-width: 768px) {
+        display: none;
+      }
+    }
+  }
+  
+  // 响应式优化
+  @media (max-width: 1024px) {
+    .filter-row-primary {
+      flex-wrap: wrap;
+      
+      .quick-filters {
+        order: 1;
+        width: 100%;
+        margin-bottom: 12px;
+        
+        .el-button-group {
+          width: 100%;
+          display: flex;
+          
+          .el-button {
+            flex: 1;
+          }
+        }
+      }
+      
+      .search-wrapper {
+        order: 2;
+        flex: 1;
+      }
+      
+      .reset-btn {
+        order: 3;
+      }
+    }
+  }
+  
+  @media (max-width: 768px) {
+    :deep(.el-card__body) {
+      padding: 16px;
+    }
+    
+    .filter-row-secondary {
+      .filter-select {
+        flex: 1 1 calc(50% - 6px);
+        max-width: none;
+      }
+    }
   }
 }
 
