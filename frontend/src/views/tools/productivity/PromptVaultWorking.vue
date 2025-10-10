@@ -4,7 +4,6 @@
     <section class="page-header">
       <div class="header-text">
         <h1 class="title">AI 提示词管理</h1>
-        <p class="description">集中管理你的 AI 提示词模板，支持变量替换、分类组织和使用统计</p>
         <div class="stats-line">
           <span>共 {{ stats.total }} 个提示词</span>
           <span>{{ stats.folders }} 个文件夹</span>
@@ -12,6 +11,17 @@
         </div>
       </div>
       <div class="actions">
+        <el-button-group class="filter-group">
+          <el-button :type="viewMode === 'all' ? 'primary' : ''" @click="setViewMode('all')">
+            全部
+          </el-button>
+          <el-button :type="viewMode === 'mine' ? 'primary' : ''" @click="setViewMode('mine')">
+            我创建的
+          </el-button>
+          <el-button :type="viewMode === 'favorite' ? 'primary' : ''" @click="setViewMode('favorite')">
+            收藏
+          </el-button>
+        </el-button-group>
         <el-button type="primary" :icon="Plus" @click="openCreatePrompt">新建提示词</el-button>
         <el-button :icon="FolderAdd" @click="openCreateFolder">新建文件夹</el-button>
         <el-button :icon="Refresh" :loading="loading" @click="loadData">刷新</el-button>
@@ -176,7 +186,18 @@
             </div>
 
             <div class="prompt-footer">
-              <span class="prompt-date">{{ formatDate(prompt.updatedAt) }}</span>
+              <div class="footer-left">
+                <el-button
+                  link
+                  :icon="prompt.isFavorited ? 'StarFilled' : 'Star'"
+                  :type="prompt.isFavorited ? 'warning' : ''"
+                  @click.stop="toggleFavorite(prompt)"
+                  class="favorite-btn"
+                >
+                  {{ prompt.isFavorited ? '已收藏' : '收藏' }}
+                </el-button>
+                <span class="prompt-date">{{ formatDate(prompt.updatedAt) }}</span>
+              </div>
               <div class="prompt-actions" @click.stop>
                 <el-button link type="primary" :icon="CopyDocument" @click="usePrompt(prompt)">
                   使用
@@ -234,7 +255,7 @@ import { ref, reactive, computed, onMounted, provide, h } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   Plus, FolderAdd, Refresh, Search, Edit, Delete,
-  CopyDocument, Folder, View, ChatDotRound
+  CopyDocument, Folder, View, ChatDotRound, Star, StarFilled
 } from '@element-plus/icons-vue';
 import request from '@/utils/request';
 import PromptEditor from './components/PromptEditor.vue';
@@ -423,6 +444,18 @@ const promptService = {
       return response;
     }
     throw new Error(response.message || '生成分享链接失败');
+  },
+
+  async toggleFavorite(id, isFavorited) {
+    const response = await request({
+      url: `/tools/prompt-vault/prompts/${id}/favorite`,
+      method: 'post',
+      data: { isFavorited: !isFavorited }
+    });
+    if (response.code === 200) {
+      return response.data;
+    }
+    throw new Error(response.message || '操作失败');
   }
 };
 
@@ -438,6 +471,7 @@ const defaultExpandAll = ref(true);
 const currentFolderId = ref(null);
 const currentPrompt = ref(null);
 const currentFolder = ref(null);
+const viewMode = ref('all'); // 视图模式：all-全部, mine-我创建的, favorite-收藏
 
 // 对话框状态
 const editorVisible = ref(false);
@@ -505,7 +539,8 @@ async function loadPrompts() {
       category: filters.category,
       aiModel: filters.aiModel,
       sortBy: filters.sortBy,
-      sortOrder: filters.sortOrder
+      sortOrder: filters.sortOrder,
+      viewMode: viewMode.value // 添加视图模式参数
     };
 
     const response = await promptService.getPrompts(params);
@@ -539,6 +574,30 @@ function handleSearch() {
 function handleFolderClick(folder) {
   currentFolderId.value = folder.id;
   loadPrompts();
+}
+
+function setViewMode(mode) {
+  viewMode.value = mode;
+  pagination.page = 1;
+  loadPrompts();
+}
+
+async function toggleFavorite(prompt) {
+  try {
+    const result = await promptService.toggleFavorite(prompt.id, prompt.isFavorited);
+
+    // 更新本地状态
+    prompt.isFavorited = !prompt.isFavorited;
+
+    ElMessage.success(prompt.isFavorited ? '已添加到收藏' : '已取消收藏');
+
+    // 如果当前是收藏视图，需要刷新列表
+    if (viewMode.value === 'favorite') {
+      loadPrompts();
+    }
+  } catch (error) {
+    ElMessage.error('操作失败: ' + error.message);
+  }
 }
 
 function openCreatePrompt() {
@@ -751,14 +810,16 @@ function collapseAllFolders() {
   padding: 20px;
   max-width: 1600px;
   margin: 0 auto;
+  background: #ffffff;
+  min-height: 100vh;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 24px;
-  padding: 32px;
+  padding: 20px 32px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -770,15 +831,10 @@ function collapseAllFolders() {
     flex: 1;
 
     .title {
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 600;
       margin: 0 0 8px;
       color: #1a202c;
-    }
-
-    .description {
-      margin: 0 0 12px;
-      color: #2d3748;
     }
 
     .stats-line {
@@ -792,6 +848,11 @@ function collapseAllFolders() {
   .actions {
     display: flex;
     gap: 12px;
+    align-items: center;
+
+    .filter-group {
+      margin-right: 8px;
+    }
   }
 }
 
@@ -960,6 +1021,16 @@ function collapseAllFolders() {
     align-items: center;
     padding-top: 10px;
     border-top: 1px solid #e2e8f0;
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .favorite-btn {
+        font-size: 12px;
+      }
+    }
 
     .prompt-date {
       font-size: 11px;

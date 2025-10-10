@@ -22,7 +22,8 @@ class PromptController {
         search,
         sortBy = 'createdAt',
         sortOrder = 'desc',
-        visibility
+        visibility,
+        viewMode = 'all'
       } = req.query;
 
       const userId = req.user ? req.user._id : null;
@@ -40,36 +41,107 @@ class PromptController {
         query.tags = { $in: tagArray };
       }
 
-      // 权限过滤：只显示公开的或自己的提示词
-      if (userId) {
-        query.$or = [
-          { visibility: 'public' },
-          { userId, visibility: { $in: ['private', 'public', 'unlisted'] } }
-        ];
+      // 视图模式筛选
+      let prompts, total;
+
+      if (viewMode === 'favorite' && userId) {
+        // 收藏模式：通过 Bookmark 表查询
+        const Bookmark = require('../models/Bookmark');
+
+        // 先获取用户收藏的所有 prompt ID
+        const bookmarks = await Bookmark.find({
+          userId,
+          targetType: 'prompt'
+        }).lean();
+
+        const favoritedIds = bookmarks.map(b => b.targetId);
+
+        if (favoritedIds.length === 0) {
+          // 没有收藏任何提示词
+          prompts = [];
+          total = 0;
+        } else {
+          // 查询收藏的提示词
+          query._id = { $in: favoritedIds };
+
+          // 搜索
+          if (search) {
+            query.$text = { $search: search };
+          }
+
+          // 排序
+          const sort = {};
+          sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+          // 分页
+          const skip = (page - 1) * limit;
+          prompts = await PromptTemplate.find(query)
+            .sort(sort)
+            .skip(skip)
+            .limit(parseInt(limit))
+            .populate('userId', 'username avatar')
+            .populate('folderId', 'name icon color')
+            .lean();
+
+          total = await PromptTemplate.countDocuments(query);
+
+          // 标记为已收藏
+          prompts.forEach(p => p.isFavorited = true);
+        }
       } else {
-        query.visibility = 'public';
+        // 其他模式
+        if (viewMode === 'mine' && userId) {
+          // 只显示我创建的
+          query.userId = userId;
+        } else {
+          // 权限过滤：只显示公开的或自己的提示词
+          if (userId) {
+            query.$or = [
+              { visibility: 'public' },
+              { userId, visibility: { $in: ['private', 'public', 'unlisted'] } }
+            ];
+          } else {
+            query.visibility = 'public';
+          }
+        }
+
+        // 搜索
+        if (search) {
+          query.$text = { $search: search };
+        }
+
+        // 排序
+        const sort = {};
+        sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+        // 分页
+        const skip = (page - 1) * limit;
+        prompts = await PromptTemplate.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(parseInt(limit))
+          .populate('userId', 'username avatar')
+          .populate('folderId', 'name icon color')
+          .lean();
+
+        total = await PromptTemplate.countDocuments(query);
+
+        // 检查收藏状态
+        if (userId && prompts.length > 0) {
+          const Bookmark = require('../models/Bookmark');
+          const promptIds = prompts.map(p => p._id);
+          const bookmarks = await Bookmark.find({
+            userId,
+            targetType: 'prompt',
+            targetId: { $in: promptIds }
+          }).lean();
+
+          const favoritedSet = new Set(bookmarks.map(b => b.targetId.toString()));
+          prompts.forEach(p => {
+            p.isFavorited = favoritedSet.has(p._id.toString());
+          });
+        }
       }
-
-      // 搜索
-      if (search) {
-        query.$text = { $search: search };
-      }
-
-      // 排序
-      const sort = {};
-      sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
-
-      // 分页
-      const skip = (page - 1) * limit;
-      const prompts = await PromptTemplate.find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .populate('userId', 'username avatar')
-        .populate('folderId', 'name icon color')
-        .lean();
-
-      const total = await PromptTemplate.countDocuments(query);
 
       res.json({
         code: 200,
@@ -446,6 +518,50 @@ class PromptController {
       res.status(500).json({
         code: 500,
         message: '记录使用失败',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 切换收藏状态
+   */
+  static async toggleFavorite(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user?._id;
+
+      if (!userId) {
+        return res.status(401).json({
+          code: 401,
+          message: '需要登录'
+        });
+      }
+
+      const prompt = await PromptTemplate.findOne({ id, isDeleted: false });
+      if (!prompt) {
+        return res.status(404).json({
+          code: 404,
+          message: '提示词不存在'
+        });
+      }
+
+      // 使用 Bookmark 模型切换收藏状态
+      const Bookmark = require('../models/Bookmark');
+      const result = await Bookmark.toggleBookmark(userId, 'prompt', prompt._id);
+
+      res.json({
+        code: 200,
+        message: result.bookmarked ? '已添加到收藏' : '已取消收藏',
+        data: {
+          isFavorited: result.bookmarked
+        }
+      });
+    } catch (error) {
+      logger.error('切换收藏状态失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '操作失败',
         error: error.message
       });
     }

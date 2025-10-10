@@ -70,6 +70,13 @@ router.post('/prompts/:id/fork', auth, PromptController.forkPrompt);
 router.post('/prompts/:id/usage', optionalAuth, PromptController.recordUsage);
 
 /**
+ * @route   POST /api/tools/prompt-vault/prompts/:id/favorite
+ * @desc    切换收藏状态
+ * @access  Private
+ */
+router.post('/prompts/:id/favorite', auth, PromptController.toggleFavorite);
+
+/**
  * @route   GET /api/tools/prompt-vault/prompts/:id/stats
  * @desc    获取提示词统计数据
  * @access  Private (仅作者)

@@ -14,7 +14,7 @@ const bookmarkSchema = new mongoose.Schema(
     targetType: {
       type: String,
       required: [true, '收藏目标类型不能为空'],
-      enum: ['article', 'comment'],
+      enum: ['article', 'comment', 'prompt'],
       index: true
     },
 
@@ -70,7 +70,7 @@ bookmarkSchema.statics.toggleBookmark = async function (userId, targetType, targ
       throw new Error('用户ID、目标类型和目标ID不能为空');
     }
 
-    if (!['article', 'comment'].includes(targetType)) {
+    if (!['article', 'comment', 'prompt'].includes(targetType)) {
       throw new Error('不支持的收藏目标类型');
     }
 
@@ -191,6 +191,7 @@ bookmarkSchema.statics.getUserBookmarks = async function (userId, options = {}) 
   // 手动填充关联数据
   const Article = require('./Article');
   const Comment = require('./Comment');
+  const PromptTemplate = require('./PromptTemplate');
 
   for (const bookmark of bookmarks) {
     try {
@@ -201,6 +202,10 @@ bookmarkSchema.statics.getUserBookmarks = async function (userId, options = {}) 
       } else if (bookmark.targetType === 'comment') {
         bookmark.target = await Comment.findById(bookmark.targetId)
           .populate('author', 'displayName username avatar')
+          .lean();
+      } else if (bookmark.targetType === 'prompt') {
+        bookmark.target = await PromptTemplate.findById(bookmark.targetId)
+          .populate('userId', 'displayName username avatar')
           .lean();
       }
     } catch (error) {
