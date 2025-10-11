@@ -18,19 +18,25 @@
         <div class="access-details" v-if="accessStatus.hasAccess">
           <el-descriptions :column="1" border>
             <el-descriptions-item label="激活时间">
-              <el-icon><Calendar /></el-icon>
+              <el-icon>
+                <Calendar />
+              </el-icon>
               {{ formatDate(accessStatus.tempEmailAccess.activatedAt) }}
             </el-descriptions-item>
-            
+
             <el-descriptions-item label="激活码" v-if="accessStatus.tempEmailAccess.activatedBy">
-              <el-icon><Key /></el-icon>
+              <el-icon>
+                <Key />
+              </el-icon>
               <el-tag type="info" size="small">
                 {{ accessStatus.tempEmailAccess.activatedBy }}
               </el-tag>
             </el-descriptions-item>
 
             <el-descriptions-item label="有效期" v-if="accessStatus.tempEmailAccess.expiresAt">
-              <el-icon><Clock /></el-icon>
+              <el-icon>
+                <Clock />
+              </el-icon>
               <span :class="expirationClass">
                 {{ formatDate(accessStatus.tempEmailAccess.expiresAt) }}
                 <span v-if="accessStatus.remainingTime !== null" class="remaining-time">
@@ -40,12 +46,16 @@
             </el-descriptions-item>
 
             <el-descriptions-item label="有效期" v-else>
-              <el-icon><Unlock /></el-icon>
+              <el-icon>
+                <Unlock />
+              </el-icon>
               <el-tag type="success" size="small">永久有效</el-tag>
             </el-descriptions-item>
 
             <el-descriptions-item label="最后使用" v-if="accessStatus.tempEmailAccess.lastUsedAt">
-              <el-icon><Clock /></el-icon>
+              <el-icon>
+                <Clock />
+              </el-icon>
               {{ formatDate(accessStatus.tempEmailAccess.lastUsedAt) }}
             </el-descriptions-item>
           </el-descriptions>
@@ -53,12 +63,7 @@
 
         <!-- 管理员提示 -->
         <div class="admin-notice" v-if="accessStatus.isAdmin">
-          <el-alert
-            title="管理员权限"
-            type="success"
-            :closable="false"
-            show-icon
-          >
+          <el-alert title="管理员权限" type="success" :closable="false" show-icon>
             <template #default>
               您拥有管理员权限，可以无限制使用临时邮箱功能。
             </template>
@@ -67,18 +72,11 @@
 
         <!-- 操作按钮 -->
         <div class="action-buttons" v-if="accessStatus.hasAccess">
-          <el-button
-            type="primary"
-            @click="$emit('start-using')"
-            :icon="Message"
-          >
+          <el-button type="primary" @click="$emit('start-using')" :icon="Message">
             开始使用临时邮箱
           </el-button>
-          
-          <el-button
-            @click="showUsageStats = true"
-            :icon="DataAnalysis"
-          >
+
+          <el-button @click="showUsageStats = true" :icon="DataAnalysis">
             查看使用统计
           </el-button>
         </div>
@@ -88,12 +86,7 @@
           <p class="prompt-text">
             您还没有临时邮箱使用权限，需要激活后才能使用。
           </p>
-          <el-button
-            type="primary"
-            size="large"
-            @click="$emit('show-activation')"
-            :icon="Key"
-          >
+          <el-button type="primary" size="large" @click="$emit('show-activation')" :icon="Key">
             激活临时邮箱权限
           </el-button>
         </div>
@@ -101,12 +94,7 @@
     </el-card>
 
     <!-- 使用统计对话框 -->
-    <el-dialog
-      v-model="showUsageStats"
-      title="使用统计"
-      width="600px"
-      :before-close="closeUsageStats"
-    >
+    <el-dialog v-model="showUsageStats" title="使用统计" width="600px" :before-close="closeUsageStats">
       <div class="usage-stats-content">
         <el-loading :loading="loadingStats" element-loading-text="加载统计数据...">
           <div v-if="usageStats">
@@ -128,12 +116,8 @@
             <div class="last-actions" v-if="hasRecentActions">
               <h4>最近操作时间</h4>
               <el-timeline>
-                <el-timeline-item
-                  v-for="(action, key) in recentActions"
-                  :key="key"
-                  :timestamp="formatDate(action.lastAction)"
-                  placement="top"
-                >
+                <el-timeline-item v-for="(action, key) in recentActions" :key="key"
+                  :timestamp="formatDate(action.lastAction)" placement="top">
                   {{ getActionName(key) }}：{{ action.count }} 次
                 </el-timeline-item>
               </el-timeline>
@@ -148,12 +132,12 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { 
-  Calendar, 
-  Key, 
-  Clock, 
-  Unlock, 
-  Message, 
+import {
+  Calendar,
+  Key,
+  Clock,
+  Unlock,
+  Message,
   DataAnalysis,
   CircleCheck,
   CircleClose,
@@ -221,35 +205,35 @@ const hasRecentActions = computed(() => {
 
 const recentActions = computed(() => {
   if (!usageStats.value) return {}
-  
+
   const actions = {}
   Object.entries(usageStats.value).forEach(([key, value]) => {
     if (value.lastAction) {
       actions[key] = value
     }
   })
-  
+
   return actions
 })
 
 // 方法
 const formatDate = (dateString) => {
   if (!dateString) return '未知'
-  
+
   const date = new Date(dateString)
   const now = new Date()
   const diffTime = now - date
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays === 0) {
-    return '今天 ' + date.toLocaleTimeString('zh-CN', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return '今天 ' + date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit'
     })
   } else if (diffDays === 1) {
-    return '昨天 ' + date.toLocaleTimeString('zh-CN', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return '昨天 ' + date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit'
     })
   } else if (diffDays < 7) {
     return `${diffDays}天前`
@@ -273,7 +257,7 @@ const loadUsageStats = async () => {
   try {
     loadingStats.value = true
     const response = await tempEmailAuthApi.getUsageStats(30)
-    
+
     if (response.data.success) {
       usageStats.value = response.data.data.stats
     } else {

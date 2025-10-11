@@ -24,6 +24,32 @@ class PromptService {
     throw new Error(response.message || '获取提示词详情失败');
   }
 
+  // 获取版本历史（仅作者可访问）
+  async getVersionHistory(id) {
+    const response = await request({
+      url: `/tools/prompt-vault/prompts/${id}/versions`,
+      method: 'get'
+    });
+    if (response.code === 200) {
+      // 返回完整响应以便调用方读取 code 和 data
+      return response;
+    }
+    throw new Error(response.message || '获取版本历史失败');
+  }
+
+  // 恢复到指定版本（仅作者）
+  async restoreVersion(id, versionId) {
+    const response = await request({
+      url: `/tools/prompt-vault/prompts/${id}/versions/${versionId}/restore`,
+      method: 'post'
+    });
+    if (response.code === 200) {
+      // 返回完整响应以便调用方读取 code 和 data
+      return response;
+    }
+    throw new Error(response.message || '恢复版本失败');
+  }
+
   async createPrompt(data) {
     const response = await request({
       url: '/tools/prompt-vault/prompts',

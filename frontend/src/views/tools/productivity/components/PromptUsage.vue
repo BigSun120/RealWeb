@@ -1,15 +1,6 @@
 <template>
-  <el-dialog
-    v-model="dialogVisible"
-    :title="prompt?.title || '使用提示词'"
-    width="900px"
-    :close-on-click-modal="false"
-    :lock-scroll="true"
-    :modal-append-to-body="true"
-    :append-to-body="true"
-    @open="handleOpen"
-    @close="handleClose"
-  >
+  <el-dialog v-model="dialogVisible" :title="prompt?.title || '使用提示词'" width="1000px" :close-on-click-modal="false"
+    :lock-scroll="true" :modal-append-to-body="true" :append-to-body="true" @open="handleOpen" @close="handleClose">
     <div class="prompt-usage" v-if="prompt">
       <!-- 提示词信息 -->
       <div class="prompt-info">
@@ -28,66 +19,28 @@
       <div class="variables-section" v-if="variables.length > 0">
         <h4>填写变量</h4>
         <el-form ref="formRef" :model="variableValues" :rules="variableRules" label-position="top">
-          <el-form-item
-            v-for="variable in variables"
-            :key="variable.name"
-            :label="variable.name"
-            :prop="variable.name"
-          >
+          <el-form-item v-for="variable in variables" :key="variable.name" :label="variable.name" :prop="variable.name">
             <!-- 文本输入 -->
-            <el-input
-              v-if="variable.type === 'text'"
-              v-model="variableValues[variable.name]"
-              :placeholder="variable.default || `输入${variable.name}`"
-              clearable
-              @input="updatePreview"
-            />
+            <el-input v-if="variable.type === 'text'" v-model="variableValues[variable.name]"
+              :placeholder="variable.default || `输入${variable.name}`" clearable @input="updatePreview" />
 
             <!-- 多行文本 -->
-            <el-input
-              v-else-if="variable.type === 'textarea'"
-              v-model="variableValues[variable.name]"
-              type="textarea"
-              :rows="4"
-              :placeholder="variable.default || `输入${variable.name}`"
-              @input="updatePreview"
-            />
+            <el-input v-else-if="variable.type === 'textarea'" v-model="variableValues[variable.name]" type="textarea"
+              :rows="4" :placeholder="variable.default || `输入${variable.name}`" @input="updatePreview" />
 
             <!-- 数字输入 -->
-            <el-input-number
-              v-else-if="variable.type === 'number'"
-              v-model="variableValues[variable.name]"
-              :min="variable.validation?.min"
-              :max="variable.validation?.max"
-              :placeholder="variable.default"
-              style="width: 100%"
-              @change="updatePreview"
-            />
+            <el-input-number v-else-if="variable.type === 'number'" v-model="variableValues[variable.name]"
+              :min="variable.validation?.min" :max="variable.validation?.max" :placeholder="variable.default"
+              style="width: 100%" @change="updatePreview" />
 
             <!-- 日期选择 -->
-            <el-date-picker
-              v-else-if="variable.type === 'date'"
-              v-model="variableValues[variable.name]"
-              type="date"
-              placeholder="选择日期"
-              style="width: 100%"
-              @change="updatePreview"
-            />
+            <el-date-picker v-else-if="variable.type === 'date'" v-model="variableValues[variable.name]" type="date"
+              placeholder="选择日期" style="width: 100%" @change="updatePreview" />
 
             <!-- 下拉选择 -->
-            <el-select
-              v-else-if="variable.type === 'select'"
-              v-model="variableValues[variable.name]"
-              :placeholder="`选择${variable.name}`"
-              style="width: 100%"
-              @change="updatePreview"
-            >
-              <el-option
-                v-for="option in variable.options"
-                :key="option"
-                :label="option"
-                :value="option"
-              />
+            <el-select v-else-if="variable.type === 'select'" v-model="variableValues[variable.name]"
+              :placeholder="`选择${variable.name}`" style="width: 100%" @change="updatePreview">
+              <el-option v-for="option in variable.options" :key="option" :label="option" :value="option" />
             </el-select>
 
             <template #extra v-if="variable.default">
@@ -100,18 +53,31 @@
       <!-- 预览区 -->
       <div class="preview-section">
         <div class="section-header">
-          <h4>预览</h4>
-          <el-button
-            type="primary"
-            :icon="CopyDocument"
-            @click="copyToClipboard"
-            size="small"
-          >
-            复制到剪贴板
-          </el-button>
+          <div class="header-left">
+            <h4>预览</h4>
+            <div class="preview-stats">
+              <span class="stat-item">{{ previewStats.chars }} 字符</span>
+              <span class="stat-item">{{ previewStats.lines }} 行</span>
+              <span class="stat-item" v-if="previewStats.words > 0">{{ previewStats.words }} 词</span>
+            </div>
+          </div>
+          <div class="header-actions">
+            <el-button @click="copyToClipboard" size="small">
+              复制
+            </el-button>
+            <el-button @click="togglePreviewExpand" size="small">
+              {{ isPreviewExpanded ? '收起' : '展开' }}
+            </el-button>
+            <el-button @click="openFullScreen" size="small" title="全屏预览">
+              全屏
+            </el-button>
+          </div>
         </div>
-        <div class="preview-content">
+        <div class="preview-content" :class="{ 'expanded': isPreviewExpanded }">
           <pre>{{ renderedContent }}</pre>
+          <div class="preview-overlay" v-if="!renderedContent">
+            <el-empty description="请填写变量以生成预览" :image-size="80" />
+          </div>
         </div>
       </div>
 
@@ -120,7 +86,9 @@
         <div class="feedback-header">
           <h4>使用反馈（可选）</h4>
           <el-tooltip content="你的反馈能帮助改进这个提示词" placement="top">
-            <el-icon><InfoFilled /></el-icon>
+            <el-icon>
+              <InfoFilled />
+            </el-icon>
           </el-tooltip>
         </div>
         <el-form label-width="80px">
@@ -135,14 +103,8 @@
             </el-radio-group>
           </el-form-item>
           <el-form-item label="评论">
-            <el-input
-              v-model="feedback.comment"
-              type="textarea"
-              :rows="3"
-              placeholder="分享你的使用体验，帮助改进这个提示词..."
-              maxlength="500"
-              show-word-limit
-            />
+            <el-input v-model="feedback.comment" type="textarea" :rows="3" placeholder="分享你的使用体验，帮助改进这个提示词..."
+              maxlength="500" show-word-limit />
           </el-form-item>
         </el-form>
       </div>
@@ -158,11 +120,8 @@
                 <span>查看评论</span>
               </div>
             </template>
-            <PromptComments 
-              v-if="prompt._id && activeCollapse.includes('comments')" 
-              :key="prompt._id"
-              :prompt-id="String(prompt._id)" 
-            />
+            <PromptComments v-if="prompt._id && activeCollapse.includes('comments')" :key="prompt._id"
+              :prompt-id="String(prompt._id)" />
           </el-collapse-item>
         </el-collapse>
       </div>
@@ -176,12 +135,39 @@
       </el-button>
     </template>
   </el-dialog>
+
+  <!-- 全屏预览 -->
+  <el-dialog v-model="isFullScreen" title="预览" fullscreen :show-close="false" class="fullscreen-preview-dialog"
+    :append-to-body="true">
+    <template #header>
+      <div class="fullscreen-header">
+        <div class="header-left">
+          <h3> 预览</h3>
+          <div class="preview-stats">
+            <span class="stat-item">{{ previewStats.chars }} 字符</span>
+            <span class="stat-item">{{ previewStats.lines }} 行</span>
+            <span class="stat-item" v-if="previewStats.words > 0">{{ previewStats.words }} 词</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <el-button @click="copyToClipboard" type="primary">
+            复制
+          </el-button>
+          <el-button @click="closeFullScreen">
+            关闭
+          </el-button>
+        </div>
+      </div>
+    </template>
+    <div class="fullscreen-content">
+      <pre>{{ renderedContent }}</pre>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch, inject, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { CopyDocument, InfoFilled } from '@element-plus/icons-vue';
 import { useClipboard } from '@vueuse/core';
 import { trackCopy } from '@/utils/promptTracking';
 import PromptComments from './PromptComments.vue';
@@ -210,6 +196,8 @@ const renderedContent = ref('');
 const currentLogId = ref(null);
 const activeCollapse = ref([]);
 const hasAdvancedSyntax = ref(false);
+const isPreviewExpanded = ref(false);
+const isFullScreen = ref(false);
 
 const feedback = reactive({
   rating: 0,
@@ -218,6 +206,15 @@ const feedback = reactive({
 });
 
 const { copy, copied } = useClipboard();
+
+// 预览统计信息
+const previewStats = computed(() => {
+  const content = renderedContent.value || '';
+  const lines = content.split('\n').length;
+  const chars = content.length;
+  const words = content.match(/[\w\u4e00-\u9fa5]+/g)?.length || 0;
+  return { lines, chars, words };
+});
 
 // 监听提示词变化
 watch(() => props.prompt, (newPrompt) => {
@@ -283,7 +280,7 @@ async function initializeVariables() {
 
 async function updatePreview() {
   if (!props.prompt) return;
-  
+
   try {
     if (hasAdvancedSyntax.value) {
       // 使用高级模板引擎
@@ -304,7 +301,7 @@ async function updatePreview() {
 
 async function copyToClipboard() {
   await copy(renderedContent.value);
-  
+
   // 埋点: 记录复制事件
   if (props.prompt) {
     trackCopy(props.prompt.id, {
@@ -345,7 +342,7 @@ async function recordAndCopy() {
 
     // 复制到剪贴板
     await copyToClipboard();
-    
+
     ElMessage.success('已记录使用并复制到剪贴板');
     emit('used');
 
@@ -384,7 +381,7 @@ async function handleOpen() {
   // 当对话框打开时，使用更强大的滚动锁定
   document.documentElement.classList.add('dialog-open');
   document.body.classList.add('dialog-open');
-  
+
   // 清空折叠状态,确保评论区默认折叠
   activeCollapse.value = [];
 }
@@ -403,6 +400,22 @@ function resetFeedback() {
   feedback.comment = '';
   feedback.isEffective = null;
   currentLogId.value = null;
+}
+
+function togglePreviewExpand() {
+  isPreviewExpanded.value = !isPreviewExpanded.value;
+}
+
+function openFullScreen() {
+  // 进入全屏时关闭基础弹窗，避免层级覆盖
+  isFullScreen.value = true;
+  dialogVisible.value = false;
+}
+
+function closeFullScreen() {
+  // 退出全屏时恢复基础弹窗
+  isFullScreen.value = false;
+  dialogVisible.value = true;
 }
 
 function getCategoryLabel(category) {
@@ -462,6 +475,26 @@ function getCategoryLabel(category) {
 
   .preview-section {
     margin-bottom: 24px;
+    background: #fafafa;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    position: relative;
+
+    // 微微发橙光的边框效果
+    &::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #ff9a56 0%, #ffb366 50%, #ffc477 100%);
+      z-index: -1;
+      opacity: 0.6;
+    }
 
     .section-header {
       display: flex;
@@ -469,30 +502,109 @@ function getCategoryLabel(category) {
       align-items: center;
       margin-bottom: 12px;
 
-      h4 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: #303133;
+      .header-left {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        h4 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 600;
+          color: #303133;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          &::before {
+            content: '';
+            font-size: 20px;
+          }
+        }
+
+        .preview-stats {
+          display: flex;
+          gap: 16px;
+          font-size: 13px;
+          color: rgba(255, 255, 255, 0.9);
+
+          .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+
+            .el-icon {
+              font-size: 14px;
+            }
+          }
+        }
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 8px;
       }
     }
 
     .preview-content {
-      padding: 16px;
-      background: #f5f7fa;
-      border: 1px solid #ebeef5;
+      position: relative;
+      padding: 20px;
+      background: white;
       border-radius: 8px;
-      max-height: 400px;
+      max-height: 600px;
       overflow-y: auto;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+      &.expanded {
+        max-height: 800px;
+      }
+
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #ff9a56 0%, #ffb366 100%);
+        border-radius: 4px;
+
+        &:hover {
+          background: linear-gradient(135deg, #ff8844 0%, #ffa055 100%);
+        }
+      }
 
       pre {
         margin: 0;
-        font-family: 'Courier New', monospace;
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Courier New', monospace;
         font-size: 14px;
-        line-height: 1.6;
-        color: #303133;
+        line-height: 1.8;
+        color: #2c3e50;
         white-space: pre-wrap;
         word-wrap: break-word;
+        letter-spacing: 0.3px;
+      }
+
+      .preview-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+        border-radius: 8px;
       }
     }
   }
@@ -537,6 +649,99 @@ function getCategoryLabel(category) {
       i {
         font-size: 18px;
         color: #409EFF;
+      }
+    }
+  }
+
+  // 全屏预览样式
+  :deep(.fullscreen-preview-dialog) {
+    .el-dialog__header {
+      padding: 20px 30px;
+      background: #f5f5f5;
+      border-bottom: 1px solid #e4e7ed;
+    }
+
+    .el-dialog__body {
+      padding: 30px;
+      background: #fafafa;
+      height: calc(100vh - 80px);
+      overflow: auto;
+    }
+
+    .fullscreen-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+
+        h3 {
+          margin: 0;
+          font-size: 20px;
+          font-weight: 600;
+          color: #303133;
+        }
+
+        .preview-stats {
+          display: flex;
+          gap: 16px;
+          font-size: 14px;
+
+          .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            padding: 6px 14px;
+            border-radius: 16px;
+            border: 1px solid #e4e7ed;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+            color: #606266;
+          }
+        }
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 12px;
+      }
+    }
+
+    .fullscreen-content {
+      background: white;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      padding: 30px;
+      min-height: 100%;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      position: relative;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #ff9a56 0%, #ffb366 50%, #ffc477 100%);
+        z-index: -1;
+        opacity: 0.4;
+      }
+
+      pre {
+        margin: 0;
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Courier New', monospace;
+        font-size: 16px;
+        line-height: 1.8;
+        color: #2c3e50;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        letter-spacing: 0.3px;
       }
     }
   }

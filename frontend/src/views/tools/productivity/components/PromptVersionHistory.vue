@@ -8,10 +8,18 @@
             <i class="el-icon-time"></i>
             <span>版本历史</span>
           </div>
-          <div class="current-version">
-            <el-tag type="success" size="small">
+          <div class="header-actions">
+            <el-tag type="success" size="small" class="mr-8">
               当前版本：{{ currentVersion }}
             </el-tag>
+            <el-button
+              type="primary"
+              size="small"
+              :disabled="selectedForCompare.length !== 2"
+              @click="showPairDiff()"
+            >
+              对比选中版本
+            </el-button>
           </div>
         </div>
       </template>
@@ -28,7 +36,14 @@
           <el-card class="version-card" shadow="hover">
             <!-- 版本头部 -->
             <div class="version-card-header">
-              <div class="version-info">
+<div class="version-info">
+                <el-checkbox
+                  v-if="!isCurrentVersion(version.version)"
+                  :model-value="isSelected(version._id)"
+                  @change="(val)=>toggleSelect(version._id,val)"
+                  size="small"
+                  class="select-checkbox"
+                />
                 <el-tag
                   :type="isCurrentVersion(version.version) ? 'success' : 'info'"
                   size="small"
@@ -97,7 +112,7 @@
                   <el-button
                     v-if="!isCurrentVersion(version.version)"
                     type="text"
-                    size="mini"
+                    size="small"
                     @click="showDiff(version)"
                   >
                     <i class="el-icon-view"></i>
@@ -142,10 +157,10 @@
       <div class="diff-container">
         <div class="diff-header">
           <div class="diff-version-label">
-            <el-tag type="success" size="small">当前版本 v{{ currentVersion }}</el-tag>
+            <el-tag type="success" size="small">v{{ leftVersionLabel }}</el-tag>
           </div>
           <div class="diff-version-label">
-            <el-tag type="info" size="small">v{{ selectedVersion?.version }}</el-tag>
+            <el-tag type="info" size="small">v{{ rightVersionLabel }}</el-tag>
           </div>
         </div>
         
@@ -155,10 +170,10 @@
             <div class="diff-label">标题变化：</div>
             <div class="diff-comparison">
               <div class="diff-left">
-                <div class="diff-text">{{ diffData.title.current }}</div>
+                <div class="diff-text" v-html="diffData.title.currentHtml"></div>
               </div>
               <div class="diff-right">
-                <div class="diff-text deleted">{{ diffData.title.old }}</div>
+                <div class="diff-text deleted" v-html="diffData.title.oldHtml"></div>
               </div>
             </div>
           </div>
@@ -169,12 +184,12 @@
             <div class="diff-comparison">
               <div class="diff-left">
                 <div class="diff-text-area">
-                  <pre>{{ diffData.content.current }}</pre>
+                  <div class="diff-html" v-html="diffData.content.currentHtml"></div>
                 </div>
               </div>
               <div class="diff-right">
                 <div class="diff-text-area deleted">
-                  <pre>{{ diffData.content.old }}</pre>
+                  <div class="diff-html" v-html="diffData.content.oldHtml"></div>
                 </div>
               </div>
             </div>
@@ -237,11 +252,28 @@ export default {
     const selectedVersion = ref(null);
     const currentPrompt = ref(null);
 
+    // 比较模式与选择
+    const selectedForCompare = ref([]); // 最多两个versionId
+
     const diffData = reactive({
       title: null,
-      content: { current: '', old: '' },
+      content: { currentHtml: '', oldHtml: '' },
       variables: null
     });
+
+    const ensureCurrentPromptLoaded = async () => {
+      if (currentPrompt.value) return;
+      try {
+        const promptResponse = await promptService.getPromptById(props.promptId);
+        if (promptResponse && promptResponse.code === 200) {
+          currentPrompt.value = promptResponse.data;
+        } else {
+          currentPrompt.value = promptResponse; // 直接是数据对象
+        }
+      } catch (e) {
+        console.error('获取当前提示词失败:', e);
+      }
+    };
 
     // 加载版本历史
     const loadVersionHistory = async () => {
@@ -251,12 +283,7 @@ export default {
         if (response.code === 200) {
           versions.value = response.data.versions;
           currentVersion.value = response.data.currentVersion;
-          
-          // 同时获取当前提示词的完整信息（用于对比）
-          const promptResponse = await promptService.getPromptById(props.promptId);
-          if (promptResponse.code === 200) {
-            currentPrompt.value = promptResponse.data;
-          }
+          await ensureCurrentPromptLoaded();
         }
       } catch (error) {
         console.error('加载版本历史失败:', error);
@@ -315,39 +342,170 @@ export default {
       });
     };
 
-    // 显示差异对比
-    const showDiff = (version) => {
+    // 辅助：获取版本详情（若服务支持），否则从列表中取
+    const getVersionDetail = async (versionId) => {
+      if (typeof promptService.getVersionDetail === 'function') {
+        try {
+          const resp = await promptService.getVersionDetail(props.promptId, versionId);
+          if (resp && resp.code === 200) return resp.data;
+        } catch (e) { /* 忽略 */ }
+      }
+      return versions.value.find(v => v._id === versionId) || null;
+    };
+
+    // 简易LCS实现（用于行级和词级）
+    const lcsMatrix = (a, b) => {
+      const m = a.length, n = b.length;
+      const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+      return dp;
+    };
+    const backtrackDiff = (dp, a, b) => {
+      let i = a.length, j = b.length;
+      const ops = [];
+      while (i > 0 || j > 0) {
+        if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
+          ops.push({ type: 'equal', value: a[i - 1] });
+          i--; j--;
+        } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+          ops.push({ type: 'insert', value: b[j - 1] });
+          j--;
+        } else if (i > 0 && (j === 0 || dp[i][j - 1] < dp[i - 1][j])) {
+          ops.push({ type: 'delete', value: a[i - 1] });
+          i--;
+        }
+      }
+      return ops.reverse();
+    };
+    const escapeHtml = (s) => (s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // 词级对比（用于单行）
+    const diffWordsHtml = (leftLine, rightLine) => {
+      const a = (leftLine || '').split(/(\s+)/);
+      const b = (rightLine || '').split(/(\s+)/);
+      const dp = lcsMatrix(a, b);
+      const ops = backtrackDiff(dp, a, b);
+      let leftHtml = '', rightHtml = '';
+      for (const op of ops) {
+        if (op.type === 'equal') {
+          const token = escapeHtml(op.value);
+          leftHtml += token; rightHtml += token;
+        } else if (op.type === 'insert') {
+          rightHtml += `<ins class="diff-ins">${escapeHtml(op.value)}</ins>`;
+        } else if (op.type === 'delete') {
+          leftHtml += `<del class="diff-del">${escapeHtml(op.value)}</del>`;
+        }
+      }
+      return { leftHtml, rightHtml };
+    };
+
+    // 行级+词级
+    const diffTextToHtml = (left, right) => {
+      const leftLines = (left || '').split(/\r?\n/);
+      const rightLines = (right || '').split(/\r?\n/);
+      const dp = lcsMatrix(leftLines, rightLines);
+      const ops = backtrackDiff(dp, leftLines, rightLines);
+      let leftHtml = '', rightHtml = '';
+      const showLine = (s) => (s === '' ? '&nbsp;' : s);
+      for (const op of ops) {
+        if (op.type === 'equal') {
+          const esc = escapeHtml(op.value);
+          leftHtml += `${esc}<br/>`; rightHtml += `${esc}<br/>`;
+        } else if (op.type === 'insert') {
+          const { rightHtml: rh } = diffWordsHtml('', op.value);
+          leftHtml += `${showLine('')}<br/>`;
+          rightHtml += `<span class="line-ins">${showLine(rh)}</span><br/>`;
+        } else if (op.type === 'delete') {
+          const { leftHtml: lh } = diffWordsHtml(op.value, '');
+          leftHtml += `<span class="line-del">${showLine(lh)}</span><br/>`;
+          rightHtml += `${showLine('')}<br/>`;
+        }
+      }
+      return { leftHtml, rightHtml };
+    };
+
+    const buildDiff = (leftObj, rightObj) => {
+      // 标题
+      if ((leftObj.title || '') !== (rightObj.title || '')) {
+        const { leftHtml, rightHtml } = diffWordsHtml(leftObj.title || '', rightObj.title || '');
+        diffData.title = { currentHtml: leftHtml, oldHtml: rightHtml };
+      } else {
+        const esc = escapeHtml(leftObj.title || '');
+        diffData.title = { currentHtml: esc, oldHtml: esc };
+      }
+      // 内容
+      const { leftHtml, rightHtml } = diffTextToHtml(leftObj.content || '', rightObj.content || '');
+      diffData.content.currentHtml = leftHtml;
+      diffData.content.oldHtml = rightHtml;
+      // 变量
+      const leftVars = leftObj.variables || [];
+      const rightVars = rightObj.variables || [];
+      if (JSON.stringify(leftVars) !== JSON.stringify(rightVars)) {
+        diffData.variables = { current: leftVars, old: rightVars };
+      } else {
+        diffData.variables = null;
+      }
+    };
+
+    // 单版本与当前版本对比
+    const showDiff = async (version) => {
+      await ensureCurrentPromptLoaded();
       if (!currentPrompt.value) {
         ElMessage.warning('无法获取当前版本信息');
         return;
       }
-
       selectedVersion.value = version;
-      
-      // 构建差异数据
-      diffData.title = currentPrompt.value.title !== version.title ? {
-        current: currentPrompt.value.title,
-        old: version.title
-      } : null;
-
-      diffData.content = {
-        current: currentPrompt.value.content,
-        old: version.content
-      };
-
-      const currentVars = currentPrompt.value.variables || [];
-      const oldVars = version.variables || [];
-      if (JSON.stringify(currentVars) !== JSON.stringify(oldVars)) {
-        diffData.variables = {
-          current: currentVars,
-          old: oldVars
-        };
-      } else {
-        diffData.variables = null;
-      }
-
+      buildDiff(currentPrompt.value, version);
       diffDialogVisible.value = true;
     };
+
+    // 勾选对比
+    const isSelected = (id) => selectedForCompare.value.includes(id);
+    const toggleSelect = (id, val) => {
+      const set = new Set(selectedForCompare.value);
+      if (val) set.add(id); else set.delete(id);
+      const arr = Array.from(set);
+      if (arr.length > 2) arr.shift();
+      selectedForCompare.value = arr;
+    };
+
+    // 对比选中的两个版本
+    const showPairDiff = async () => {
+      if (selectedForCompare.value.length !== 2) return;
+      const [leftId, rightId] = selectedForCompare.value;
+      const left = await getVersionDetail(leftId);
+      const right = await getVersionDetail(rightId);
+      if (!left || !right) {
+        ElMessage.error('无法获取选中版本详情');
+        return;
+      }
+      selectedVersion.value = left;
+      buildDiff(left, right);
+      diffDialogVisible.value = true;
+    };
+
+    const leftVersionLabel = computed(() => {
+      if (selectedForCompare.value.length === 2) {
+        const left = versions.value.find(v => v._id === selectedForCompare.value[0]);
+        return left?.version || '';
+      }
+      return currentVersion.value || '';
+    });
+
+    const rightVersionLabel = computed(() => {
+      if (selectedForCompare.value.length === 2) {
+        const right = versions.value.find(v => v._id === selectedForCompare.value[1]);
+        return right?.version || '';
+      }
+      return selectedVersion.value?.version || '';
+    });
 
     // 恢复版本
     const handleRestore = async (version) => {
@@ -391,11 +549,18 @@ export default {
       expandedVersions,
       diffDialogVisible,
       selectedVersion,
+      currentPrompt,
       diffData,
+      selectedForCompare,
       isCurrentVersion,
+      isSelected,
+      toggleSelect,
       toggleVersionDetail,
       formatTime,
       showDiff,
+      showPairDiff,
+      leftVersionLabel,
+      rightVersionLabel,
       handleRestore
     };
   }
@@ -421,6 +586,14 @@ export default {
         color: #409EFF;
       }
     }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .mr-8 { margin-right: 8px; }
+    }
   }
 
   .version-card {
@@ -436,6 +609,10 @@ export default {
         display: flex;
         align-items: center;
         gap: 12px;
+
+        .select-checkbox {
+          margin-right: 6px;
+        }
 
         .version-title {
           font-size: 15px;
@@ -537,12 +714,18 @@ export default {
       .diff-section {
         margin-bottom: 24px;
 
-        .diff-label {
+.diff-label {
           font-weight: 600;
           color: #606266;
           margin-bottom: 12px;
           font-size: 14px;
         }
+
+        /* 行/词级高亮样式 */
+        .diff-ins { background: #e6ffed; color: #22863a; text-decoration: none; }
+        .diff-del { background: #ffeef0; color: #b31d28; text-decoration: line-through; }
+        .line-ins { background: #f0fff4; display: inline; }
+        .line-del { background: #fff5f5; display: inline; }
 
         .diff-comparison {
           display: grid;
@@ -573,18 +756,17 @@ export default {
             word-break: break-all;
           }
 
-          .diff-text-area {
+.diff-text-area {
             max-height: 400px;
             overflow-y: auto;
+          }
 
-            pre {
-              margin: 0;
-              white-space: pre-wrap;
-              word-wrap: break-word;
-              font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-              font-size: 13px;
-              line-height: 1.5;
-            }
+          .diff-html {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
           }
 
           .variable-tag {

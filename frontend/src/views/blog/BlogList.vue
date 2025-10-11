@@ -3,7 +3,7 @@
     <!-- 完全铺满页面的背景 -->
     <div class="page-background"></div>
     <PageHeader title="博客文章" :show-stats="false" :show-filters="true" :search-value="searchQuery"
-      search-placeholder="🔍 搜索文章..." :view-mode="viewMode" :view-modes="[
+      search-placeholder=" 搜索文章..." :view-mode="viewMode" :view-modes="[
         { value: 'list', label: '📊' },
         { value: 'grid', label: '⊞' }
       ]" @search="handleSearch" @clear-search="clearSearch" @view-mode-change="switchViewMode">

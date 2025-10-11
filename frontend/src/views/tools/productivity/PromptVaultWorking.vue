@@ -137,16 +137,16 @@
                 </template>
                 <template #append>
                   <el-button-group>
-                    <el-tooltip 
-                      :content="searchMode === 'fuzzy' ? '当前：模糊搜索，点击切换为精确搜索' : '当前：精确搜索，点击切换为模糊搜索'" 
-                      placement="top"
-                    >
+                    <el-tooltip :content="searchMode === 'fuzzy' ? '当前：模糊搜索，点击切换为精确搜索' : '当前：精确搜索，点击切换为模糊搜索'"
+                      placement="top">
                       <el-button @click="toggleSearchMode" :type="searchMode === 'exact' ? 'primary' : 'default'">
                         {{ searchMode === 'fuzzy' ? '模糊' : '精确' }}
                       </el-button>
                     </el-tooltip>
                     <el-button @click="handleSearch" type="primary">
-                      <el-icon><Search /></el-icon>
+                      <el-icon>
+                        <Search />
+                      </el-icon>
                       搜索
                     </el-button>
                   </el-button-group>
@@ -187,7 +187,7 @@
             <el-select v-model="filters.aiModel" clearable placeholder="AI模型" @change="handleSearch"
               class="filter-select">
               <el-option label="全部模型" value="" />
-              
+
               <!-- 预设模型 -->
               <el-option-group label="预设模型">
                 <el-option label="通用" value="general" />
@@ -204,27 +204,16 @@
                 <el-option label="ChatGLM" value="chatglm" />
                 <el-option label="讯飞星火" value="xinghuo" />
               </el-option-group>
-              
+
               <!-- 自定义模型 -->
               <el-option-group label="自定义模型" v-if="customAIModels.length > 0">
-                <el-option 
-                  v-for="model in customAIModels" 
-                  :key="model" 
-                  :label="model" 
-                  :value="model" 
-                />
+                <el-option v-for="model in customAIModels" :key="model" :label="model" :value="model" />
               </el-option-group>
             </el-select>
 
-            <el-select v-model="filters.tags" clearable placeholder="标签" @change="handleSearch"
-              class="filter-select">
+            <el-select v-model="filters.tags" clearable placeholder="标签" @change="handleSearch" class="filter-select">
               <el-option label="全部标签" value="" />
-              <el-option
-                v-for="tag in allTags"
-                :key="tag"
-                :label="tag"
-                :value="tag"
-              />
+              <el-option v-for="tag in allTags" :key="tag" :label="tag" :value="tag" />
             </el-select>
 
             <el-select v-model="filters.sort" @change="handleSearch" class="filter-select">
@@ -246,7 +235,9 @@
         <el-card v-if="selectedPrompts.length > 0" class="bulk-actions-card" shadow="never">
           <div class="bulk-actions">
             <div class="bulk-info">
-              <el-icon><Check /></el-icon>
+              <el-icon>
+                <Check />
+              </el-icon>
               <span>已选中 {{ selectedPrompts.length }} 个提示词</span>
             </div>
             <div class="bulk-buttons">
@@ -349,18 +340,16 @@
     </div>
 
     <div v-show="usageVisible">
-      <PromptUsage v-model:visible="usageVisible" :prompt="currentPrompt"
-        @used="handlePromptUsed" />
+      <PromptUsage v-model:visible="usageVisible" :prompt="currentPrompt" @used="handlePromptUsed" />
     </div>
 
     <div v-show="folderEditorVisible">
-      <FolderEditor v-model:visible="folderEditorVisible" :folder="currentFolder"
-        :parent-folders="flatFolders" @saved="handleFolderSaved" />
+      <FolderEditor v-model:visible="folderEditorVisible" :folder="currentFolder" :parent-folders="flatFolders"
+        @saved="handleFolderSaved" />
     </div>
 
     <div v-show="optionsManagerVisible">
-      <CustomOptionsManager v-model:visible="optionsManagerVisible"
-        @saved="handleOptionsSaved" />
+      <CustomOptionsManager v-model:visible="optionsManagerVisible" @saved="handleOptionsSaved" />
     </div>
 
     <!-- 使用统计对话框 -->

@@ -313,14 +313,14 @@ router.get('/analytics/overview', async (req, res) => {
 
     // 累计总使用次数（通用工具 + 提示词）
     const totalUsage = await ToolUsage.countDocuments();
-    
+
     // 尝试获取提示词使用数据
     let promptUsage = 0;
     let promptAnalytics = 0;
     try {
       const UserPromptUsage = require('../../models/UserPromptUsage');
       promptUsage = await UserPromptUsage.countDocuments();
-      
+
       // 新埋点数据
       const PromptAnalytics = require('../../models/PromptAnalytics');
       promptAnalytics = await PromptAnalytics.countDocuments({ event: 'copy' }); // copy事件等同于使用
@@ -347,7 +347,7 @@ router.get('/analytics/overview', async (req, res) => {
       createdAt: { $gte: weekStart },
       userId: { $ne: null }
     });
-    
+
     let promptActiveUsers = [];
     try {
       const PromptAnalytics = require('../../models/PromptAnalytics');
@@ -358,7 +358,7 @@ router.get('/analytics/overview', async (req, res) => {
     } catch (e) {
       // 忽略
     }
-    
+
     // 去重合并用户
     const allActiveUsers = new Set([...toolActiveUsers.map(id => id.toString()), ...promptActiveUsers.map(id => id.toString())]);
 
@@ -395,7 +395,7 @@ router.get('/analytics/overview', async (req, res) => {
 router.get('/analytics/usage', async (req, res) => {
   try {
     const { period = '7d', toolId } = req.query;
-    logger.info(`🔍 [Analytics] 获取使用统计请求 - period: ${period}, toolId: ${toolId}`);
+    logger.info(` [Analytics] 获取使用统计请求 - period: ${period}, toolId: ${toolId}`);
 
     // 计算时间范围
     const endDate = new Date();
@@ -424,14 +424,14 @@ router.get('/analytics/usage', async (req, res) => {
     if (toolId) {
       // 单个工具的使用统计
       logger.info(`📊 [Analytics] 查询单个工具统计: ${toolId}`);
-      
+
       // 特殊处理：AI提示词管理工具
       if (toolId === 'prompt-vault') {
         logger.info(`📊 [Analytics] 检测到提示词工具，使用 PromptAnalytics 查询`);
-        
+
         try {
           const PromptAnalytics = require('../../models/PromptAnalytics');
-          
+
           // 统计数据
           const promptStats = await PromptAnalytics.aggregate([
             {
@@ -458,7 +458,7 @@ router.get('/analytics/usage', async (req, res) => {
               }
             }
           ]);
-          
+
           // 趋势数据
           const promptTrend = await PromptAnalytics.aggregate([
             {
@@ -484,12 +484,12 @@ router.get('/analytics/usage', async (req, res) => {
             },
             { $sort: { date: 1 } }
           ]);
-          
+
           logger.info(`📊 [Analytics] 提示词工具查询结果:`, {
             stats: promptStats[0] || {},
             trendCount: promptTrend.length
           });
-          
+
           return res.json({
             code: 200,
             message: 'success',
@@ -517,7 +517,7 @@ router.get('/analytics/usage', async (req, res) => {
           });
         }
       }
-      
+
       // 普通工具统计
       usageData = await ToolUsage.getToolStats(toolId, startDate, endDate);
       const trendData = await ToolUsage.getUsageTrend(toolId, parseInt(period));
@@ -548,7 +548,7 @@ router.get('/analytics/usage', async (req, res) => {
 
       let popularTools = await ToolUsage.getPopularTools(10, days);
       logger.info(`📊 [Analytics] 热门工具查询结果:`, popularTools);
-      
+
       // 尝试获取提示词使用数据
       try {
         const PromptAnalytics = require('../../models/PromptAnalytics');
@@ -566,7 +566,7 @@ router.get('/analytics/usage', async (req, res) => {
             }
           }
         ]);
-        
+
         if (promptStats.length > 0 && promptStats[0].usageCount > 0) {
           // 将提示词工具加入排行
           popularTools.push({
@@ -575,11 +575,11 @@ router.get('/analytics/usage', async (req, res) => {
             uniqueUsers: 0,
             avgDuration: 0
           });
-          
+
           // 重新排序
           popularTools.sort((a, b) => b.usageCount - a.usageCount);
           popularTools = popularTools.slice(0, 10); // 只保留 Top 10
-          
+
           logger.info(`📊 [Analytics] 整合提示词后的热门工具:`, popularTools);
         }
       } catch (e) {
