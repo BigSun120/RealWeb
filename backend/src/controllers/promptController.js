@@ -67,7 +67,21 @@ class PromptController {
 
           // 搜索
           if (search) {
-            query.$text = { $search: search };
+            const trimmedSearch = search.trim();
+            
+            // 检查是否是精确搜索（双引号包裹）
+            if (trimmedSearch.startsWith('"') && trimmedSearch.endsWith('"')) {
+              // 精确搜索：完全匹配
+              const exactTerm = trimmedSearch.slice(1, -1);
+              query.$or = [
+                { title: { $regex: exactTerm, $options: 'i' } },
+                { description: { $regex: exactTerm, $options: 'i' } },
+                { content: { $regex: exactTerm, $options: 'i' } }
+              ];
+            } else {
+              // 默认：模糊搜索（全文搜索）
+              query.$text = { $search: trimmedSearch };
+            }
           }
 
           // 排序
@@ -115,7 +129,21 @@ class PromptController {
 
         // 搜索
         if (search) {
-          query.$text = { $search: search };
+          const trimmedSearch = search.trim();
+          
+          // 检查是否是精确搜索（双引号包裹）
+          if (trimmedSearch.startsWith('"') && trimmedSearch.endsWith('"')) {
+            // 精确搜索：完全匹配
+            const exactTerm = trimmedSearch.slice(1, -1);
+            query.$or = [
+              { title: { $regex: exactTerm, $options: 'i' } },
+              { description: { $regex: exactTerm, $options: 'i' } },
+              { content: { $regex: exactTerm, $options: 'i' } }
+            ];
+          } else {
+            // 默认：模糊搜索（全文搜索）
+            query.$text = { $search: trimmedSearch };
+          }
         }
 
         // 排序
@@ -310,6 +338,22 @@ class PromptController {
       });
     } catch (error) {
       logger.error('创建提示词失败:', error);
+      
+      // 处理 Mongoose 验证错误
+      if (error.name === 'ValidationError') {
+        const errors = {};
+        Object.keys(error.errors).forEach(key => {
+          errors[key] = error.errors[key].message;
+        });
+        
+        return res.status(400).json({
+          code: 400,
+          message: '数据验证失败',
+          errors,
+          details: Object.values(errors).join('; ')
+        });
+      }
+      
       res.status(500).json({
         code: 500,
         message: '创建提示词失败',
@@ -342,10 +386,16 @@ class PromptController {
         });
       }
 
-      // 保存版本历史
-      const shouldSaveVersion = req.body.content && req.body.content !== prompt.content;
+      // 检查是否需要保存版本（内容、标题或变量发生变化）
+      const hasContentChange = req.body.content && req.body.content !== prompt.content;
+      const hasTitleChange = req.body.title && req.body.title !== prompt.title;
+      const hasVariablesChange = req.body.variables && JSON.stringify(req.body.variables) !== JSON.stringify(prompt.variables);
+      const shouldSaveVersion = hasContentChange || hasTitleChange || hasVariablesChange;
+      
+      // 如果需要保存版本，先保存当前状态
       if (shouldSaveVersion) {
-        await prompt.saveVersion(userId);
+        const changeLog = req.body.changeLog || '更新提示词';
+        await prompt.saveVersion(changeLog, userId);
       }
 
       // 更新字段
@@ -404,6 +454,22 @@ class PromptController {
       });
     } catch (error) {
       logger.error('更新提示词失败:', error);
+      
+      // 处理 Mongoose 验证错误
+      if (error.name === 'ValidationError') {
+        const errors = {};
+        Object.keys(error.errors).forEach(key => {
+          errors[key] = error.errors[key].message;
+        });
+        
+        return res.status(400).json({
+          code: 400,
+          message: '数据验证失败',
+          errors,
+          details: Object.values(errors).join('; ')
+        });
+      }
+      
       res.status(500).json({
         code: 500,
         message: '更新提示词失败',
@@ -1027,6 +1093,589 @@ class PromptController {
       });
     } catch (error) {
       logger.error('获取转化漏斗失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '获取失败',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 获取提示词版本历史
+   */
+  static async getVersionHistory(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user ? req.user._id : null;
+
+      const prompt = await PromptTemplate.findOne({ id, isDeleted: false })
+        .populate('versionHistory.createdBy', 'username avatar')
+        .lean();
+
+      if (!prompt) {
+        return res.status(404).json({
+          code: 404,
+          message: '提示词不存在'
+        });
+      }
+
+      // 权限检查：只有作者可以查看版本历史
+      if (!userId || prompt.userId.toString() !== userId.toString()) {
+        return res.status(403).json({
+          code: 403,
+          message: '没有访问权限'
+        });
+      }
+
+      // 返回版本历史（从新到旧）
+      const versions = prompt.versionHistory || [];
+      const sortedVersions = versions.sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+
+      res.json({
+        code: 200,
+        message: '获取成功',
+        data: {
+          promptId: prompt.id,
+          currentVersion: prompt.version,
+          versions: sortedVersions
+        }
+      });
+    } catch (error) {
+      logger.error('获取版本历史失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '获取版本历史失败',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 获取指定版本详情
+   */
+  static async getVersionDetail(req, res) {
+    try {
+      const { id, versionId } = req.params;
+      const userId = req.user ? req.user._id : null;
+
+      const prompt = await PromptTemplate.findOne({ id, isDeleted: false })
+        .populate('versionHistory.createdBy', 'username avatar')
+        .lean();
+
+      if (!prompt) {
+        return res.status(404).json({
+          code: 404,
+          message: '提示词不存在'
+        });
+      }
+
+      // 权限检查
+      if (!userId || prompt.userId.toString() !== userId.toString()) {
+        return res.status(403).json({
+          code: 403,
+          message: '没有访问权限'
+        });
+      }
+
+      // 查找指定版本
+      const version = prompt.versionHistory.find(
+        v => v._id.toString() === versionId
+      );
+
+      if (!version) {
+        return res.status(404).json({
+          code: 404,
+          message: '版本不存在'
+        });
+      }
+
+      res.json({
+        code: 200,
+        message: '获取成功',
+        data: version
+      });
+    } catch (error) {
+      logger.error('获取版本详情失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '获取版本详情失败',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 恢复到指定版本
+   */
+  static async restoreVersion(req, res) {
+    try {
+      const { id, versionId } = req.params;
+      const userId = req.user._id;
+
+      const prompt = await PromptTemplate.findOne({ id, isDeleted: false });
+
+      if (!prompt) {
+        return res.status(404).json({
+          code: 404,
+          message: '提示词不存在'
+        });
+      }
+
+      // 权限检查
+      if (prompt.userId.toString() !== userId.toString()) {
+        return res.status(403).json({
+          code: 403,
+          message: '没有操作权限'
+        });
+      }
+
+      // 查找要恢复的版本
+      const versionToRestore = prompt.versionHistory.find(
+        v => v._id.toString() === versionId
+      );
+
+      if (!versionToRestore) {
+        return res.status(404).json({
+          code: 404,
+          message: '版本不存在'
+        });
+      }
+
+      // 保存当前版本到历史（如果内容不同）
+      const hasChanges = prompt.content !== versionToRestore.content ||
+                        prompt.title !== versionToRestore.title ||
+                        JSON.stringify(prompt.variables) !== JSON.stringify(versionToRestore.variables);
+      
+      if (hasChanges) {
+        await prompt.saveVersion(`恢复到版本 ${versionToRestore.version}`, userId);
+      }
+
+      // 恢复数据
+      prompt.title = versionToRestore.title;
+      prompt.description = versionToRestore.description;
+      prompt.content = versionToRestore.content;
+      prompt.variables = versionToRestore.variables;
+      prompt.updatedBy = userId;
+
+      await prompt.save();
+
+      // 转换 folderId 为字符串 ID
+      const updatedData = prompt.toObject();
+      if (updatedData.folderId) {
+        const folder = await PromptFolder.findById(updatedData.folderId);
+        if (folder) {
+          updatedData.folderInfo = {
+            id: folder.id,
+            name: folder.name,
+            icon: folder.icon,
+            color: folder.color
+          };
+          updatedData.folderId = folder.id;
+        }
+      }
+
+      res.json({
+        code: 200,
+        message: '恢复成功',
+        data: updatedData
+      });
+    } catch (error) {
+      logger.error('恢复版本失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '恢复版本失败',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 导出提示词
+   */
+  static async exportPrompts(req, res) {
+    try {
+      const userId = req.user._id;
+      const { promptIds, folderId, exportAll } = req.query;
+
+      let prompts = [];
+      let folders = [];
+
+      if (exportAll === 'true') {
+        // 导出全部
+        prompts = await PromptTemplate.find({
+          userId,
+          isDeleted: false
+        }).populate('folderId', 'name icon color path pathName').lean();
+
+        folders = await PromptFolder.find({
+          userId
+        }).lean();
+      } else if (folderId) {
+        // 导出文件夹
+        const folder = await PromptFolder.findOne({ id: folderId, userId });
+        if (!folder) {
+          return res.status(404).json({
+            code: 404,
+            message: '文件夹不存在'
+          });
+        }
+
+        // 获取文件夹及其子文件夹
+        const collectFolderIds = async (folderId) => {
+          const ids = [folderId];
+          const children = await PromptFolder.find({ parentId: folderId, userId });
+          for (const child of children) {
+            ids.push(...await collectFolderIds(child._id));
+          }
+          return ids;
+        };
+
+        const folderIds = await collectFolderIds(folder._id);
+        prompts = await PromptTemplate.find({
+          userId,
+          folderId: { $in: folderIds },
+          isDeleted: false
+        }).populate('folderId', 'name icon color path pathName').lean();
+
+        folders = await PromptFolder.find({
+          _id: { $in: folderIds }
+        }).lean();
+      } else if (promptIds) {
+        // 导出指定提示词
+        const ids = Array.isArray(promptIds) ? promptIds : promptIds.split(',');
+        prompts = await PromptTemplate.find({
+          id: { $in: ids },
+          userId,
+          isDeleted: false
+        }).populate('folderId', 'name icon color path pathName').lean();
+
+        // 收集相关文件夹
+        const folderIds = [...new Set(prompts.map(p => p.folderId?._id).filter(Boolean))];
+        if (folderIds.length > 0) {
+          folders = await PromptFolder.find({
+            _id: { $in: folderIds }
+          }).lean();
+        }
+      }
+
+      // 构建导出数据
+      const exportData = {
+        version: '1.0.0',
+        exportDate: new Date().toISOString(),
+        exportedBy: userId.toString(),
+        metadata: {
+          totalPrompts: prompts.length,
+          totalFolders: folders.length,
+          source: 'AI Prompt Vault'
+        },
+        folders: folders.map(folder => ({
+          id: folder.id || folder._id.toString(),
+          name: folder.name,
+          icon: folder.icon,
+          color: folder.color,
+          parentId: folder.parentId ? folder.parentId.toString() : null,
+          path: folder.pathName || [folder.name],
+          description: folder.description
+        })),
+        prompts: prompts.map(prompt => {
+          const folderPath = prompt.folderId?.pathName || [];
+          return {
+            title: prompt.title,
+            description: prompt.description,
+            content: prompt.content,
+            category: prompt.category,
+            aiModel: prompt.aiModel,
+            tags: prompt.tags || [],
+            variables: prompt.variables || [],
+            folderPath,
+            visibility: prompt.visibility || 'private',
+            version: prompt.version,
+            examples: prompt.examples || [],
+            tips: prompt.tips,
+            warnings: prompt.warnings
+          };
+        })
+      };
+
+      res.json({
+        code: 200,
+        message: '导出成功',
+        data: exportData
+      });
+    } catch (error) {
+      logger.error('导出失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '导出失败',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 导入提示词
+   */
+  static async importPrompts(req, res) {
+    try {
+      const userId = req.user._id;
+      const { data: importData, options = {} } = req.body;
+
+      if (!importData || !importData.prompts) {
+        return res.status(400).json({
+          code: 400,
+          message: '导入数据格式错误'
+        });
+      }
+
+      const {
+        onDuplicate = 'skip', // skip, overwrite, createCopy
+        createFolders = true
+      } = options;
+
+      const report = {
+        total: importData.prompts.length,
+        success: 0,
+        skipped: 0,
+        errors: [],
+        createdFolders: 0
+      };
+
+      // 映射文件夹
+      const folderPathMap = new Map();
+
+      if (createFolders && importData.folders && importData.folders.length > 0) {
+        // 按层级创建文件夹
+        const sortedFolders = importData.folders.sort((a, b) => 
+          (a.path?.length || 0) - (b.path?.length || 0)
+        );
+
+        for (const folderData of sortedFolders) {
+          const pathKey = folderData.path.join('/');
+          
+          // 检查是否已存在
+          let folder = await PromptFolder.findOne({
+            userId,
+            pathName: folderData.path
+          });
+
+          if (!folder) {
+            // 创建新文件夹
+            const parentPath = folderData.path.slice(0, -1);
+            let parentId = null;
+            if (parentPath.length > 0) {
+              const parentPathKey = parentPath.join('/');
+              parentId = folderPathMap.get(parentPathKey);
+            }
+
+            folder = await PromptFolder.create({
+              name: folderData.name,
+              icon: folderData.icon || '📁',
+              color: folderData.color,
+              description: folderData.description,
+              userId,
+              parentId
+            });
+
+            report.createdFolders++;
+          }
+
+          folderPathMap.set(pathKey, folder._id);
+        }
+      }
+
+      // 导入提示词
+      for (const promptData of importData.prompts) {
+        try {
+          // 检查重复
+          const existing = await PromptTemplate.findOne({
+            userId,
+            title: promptData.title,
+            content: promptData.content,
+            isDeleted: false
+          });
+
+          if (existing) {
+            if (onDuplicate === 'skip') {
+              report.skipped++;
+              continue;
+            } else if (onDuplicate === 'overwrite') {
+              // 更新现有提示词
+              Object.assign(existing, {
+                description: promptData.description,
+                category: promptData.category,
+                aiModel: promptData.aiModel,
+                tags: promptData.tags,
+                variables: promptData.variables,
+                examples: promptData.examples,
+                tips: promptData.tips,
+                warnings: promptData.warnings
+              });
+              await existing.save();
+              report.success++;
+              continue;
+            }
+            // createCopy - 继续创建
+          }
+
+          // 映射文件夹
+          let folderId = null;
+          if (promptData.folderPath && promptData.folderPath.length > 0) {
+            const pathKey = promptData.folderPath.join('/');
+            folderId = folderPathMap.get(pathKey);
+          }
+
+          // 创建提示词
+          const title = existing && onDuplicate === 'createCopy' 
+            ? `${promptData.title} (导入)` 
+            : promptData.title;
+
+          await PromptTemplate.create({
+            title,
+            description: promptData.description,
+            content: promptData.content,
+            category: promptData.category || '其他',
+            aiModel: promptData.aiModel,
+            tags: promptData.tags || [],
+            variables: promptData.variables || [],
+            visibility: promptData.visibility || 'private',
+            examples: promptData.examples || [],
+            tips: promptData.tips,
+            warnings: promptData.warnings,
+            userId,
+            folderId
+          });
+
+          report.success++;
+        } catch (error) {
+          report.errors.push({
+            title: promptData.title,
+            error: error.message
+          });
+        }
+      }
+
+      res.json({
+        code: 200,
+        message: `导入完成：成功 ${report.success} 个，跳过 ${report.skipped} 个`,
+        data: report
+      });
+    } catch (error) {
+      logger.error('导入失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '导入失败',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 获取系统中所有使用过的标签
+   */
+  static async getAllTags(req, res) {
+    try {
+      const userId = req.user ? req.user._id : null;
+      const mongoose = require('mongoose');
+      
+      // 构建查询条件：公开的或自己的
+      const matchStage = {
+        isDeleted: false
+      };
+      
+      if (userId) {
+        matchStage.$or = [
+          { visibility: 'public' },
+          { userId: new mongoose.Types.ObjectId(userId) }
+        ];
+      } else {
+        matchStage.visibility = 'public';
+      }
+      
+      // 使用 aggregate 展开 tags 数组并统计
+      const tagsData = await PromptTemplate.aggregate([
+        { $match: matchStage },
+        { $match: { tags: { $exists: true, $ne: [] } } },
+        { $unwind: '$tags' },
+        {
+          $group: {
+            _id: '$tags',
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { count: -1 } },
+        {
+          $project: {
+            _id: 0,
+            tag: '$_id',
+            count: 1
+          }
+        }
+      ]);
+      
+      const tags = tagsData.map(t => t.tag);
+      
+      res.json({
+        code: 200,
+        data: {
+          tags
+        }
+      });
+    } catch (error) {
+      logger.error('获取标签列表失败:', error);
+      res.status(500).json({
+        code: 500,
+        message: '获取失败',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 获取系统中使用过的所有自定义AI模型
+   */
+  static async getCustomAIModels(req, res) {
+    try {
+      const userId = req.user ? req.user._id : null;
+      
+      // 构建查询条件：公开的或自己的
+      const query = {
+        isDeleted: false
+      };
+      
+      if (userId) {
+        query.$or = [
+          { visibility: 'public' },
+          { userId }
+        ];
+      } else {
+        query.visibility = 'public';
+      }
+      
+      // 获取所有不同的 aiModel 值
+      const models = await PromptTemplate.distinct('aiModel', query);
+      
+      // 过滤掉预设的模型，只返回自定义模型
+      const presetModels = [
+        'general', 'gpt-4', 'gpt-4-turbo', 'gpt-3.5', 
+        'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku',
+        'gemini-pro', 'gemini-ultra',
+        'wenxin', 'tongyi', 'chatglm', 'xinghuo'
+      ];
+      const customModels = models
+        .filter(m => m && !presetModels.includes(m))
+        .sort();
+      
+      res.json({
+        code: 200,
+        data: {
+          models: customModels
+        }
+      });
+    } catch (error) {
+      logger.error('获取自定义AI模型失败:', error);
       res.status(500).json({
         code: 500,
         message: '获取失败',

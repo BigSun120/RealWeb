@@ -171,9 +171,11 @@ const promptTemplateSchema = new mongoose.Schema({
   },
   versionHistory: [{
     version: String,
+    title: String,
+    description: String,
     content: String,
     variables: Array,
-    changes: String,
+    changeLog: String,
     createdAt: {
       type: Date,
       default: Date.now
@@ -343,9 +345,11 @@ promptTemplateSchema.pre('save', function(next) {
   if (this.isNew && this.content) {
     this.versionHistory = [{
       version: this.version,
+      title: this.title,
+      description: this.description,
       content: this.content,
       variables: this.variables,
-      changes: '创建提示词',
+      changeLog: '创建提示词',
       createdAt: new Date(),
       createdBy: this.userId
     }];
@@ -445,14 +449,16 @@ promptTemplateSchema.methods.generateShareToken = function() {
 };
 
 // 实例方法：保存新版本
-promptTemplateSchema.methods.saveVersion = function(changes, userId) {
+promptTemplateSchema.methods.saveVersion = function(changeLog, userId) {
   const newVersion = this.incrementVersion(this.version);
 
   this.versionHistory.push({
     version: newVersion,
+    title: this.title,
+    description: this.description,
     content: this.content,
     variables: this.variables,
-    changes: changes || '更新提示词',
+    changeLog: changeLog || '更新提示词',
     createdAt: new Date(),
     createdBy: userId
   });

@@ -17,6 +17,7 @@
     "aos": "^2.3.4",
     "axios": "^1.4.0",
     "canvas-confetti": "^1.9.3",
+    "chart.js": "^4.5.0",
     "dayjs": "^1.11.18",
     "echarts": "^5.4.3",
     "element-plus": "^2.10.6",

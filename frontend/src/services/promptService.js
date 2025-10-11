@@ -61,14 +61,50 @@ class PromptService {
 
   async recordUsage(id, data) {
     const response = await request({
-      url: `/tools/prompt-vault/prompts/${id}/usage`,
+      url: `/prompts/${id}/usage`,
       method: 'post',
       data
+    });
+    if (response.code === 201 || response.code === 200) {
+      return response.data;
+    }
+    throw new Error(response.message || '记录使用失败');
+  }
+
+  async getUsageLogs(id, params = {}) {
+    const response = await request({
+      url: `/prompts/${id}/usage`,
+      method: 'get',
+      params
     });
     if (response.code === 200) {
       return response.data;
     }
-    throw new Error(response.message || '记录使用失败');
+    throw new Error(response.message || '获取使用记录失败');
+  }
+
+  async updateFeedback(logId, feedback) {
+    const response = await request({
+      url: `/prompts/usage/${logId}/feedback`,
+      method: 'patch',
+      data: feedback
+    });
+    if (response.code === 200) {
+      return response.data;
+    }
+    throw new Error(response.message || '更新反馈失败');
+  }
+
+  async getStatistics(id, params = {}) {
+    const response = await request({
+      url: `/prompts/${id}/usage/statistics`,
+      method: 'get',
+      params
+    });
+    if (response.code === 200) {
+      return response.data;
+    }
+    throw new Error(response.message || '获取统计数据失败');
   }
 
   async getFolderTree() {
@@ -158,6 +194,42 @@ class PromptService {
       rendered = rendered.replace(regex, value || '');
     });
     return rendered;
+  }
+
+  // 高级模板引擎 API
+  async renderTemplate(template, variables) {
+    const response = await request({
+      url: '/api/template/render',
+      method: 'post',
+      data: { template, variables }
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '渲染模板失败');
+  }
+
+  async extractVariables(template) {
+    const response = await request({
+      url: '/api/template/extract-variables',
+      method: 'post',
+      data: { template }
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '提取变量失败');
+  }
+
+  async getHelpers() {
+    const response = await request({
+      url: '/api/template/helpers',
+      method: 'get'
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '获取辅助函数列表失败');
   }
 }
 

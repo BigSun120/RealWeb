@@ -437,7 +437,56 @@ async function handleSave() {
     });
     handleClose();
   } catch (error) {
-    ElMessage.error(isEdit.value ? '更新失败: ' + error.message : '创建失败: ' + error.message);
+    console.error('保存失败:', error);
+    
+    // 处理验证错误 (400)
+    if (error.response?.status === 400 || error.code === 400) {
+      const errorData = error.response?.data || error;
+      
+      // 如果有 errors 字段，显示详细错误
+      if (errorData.errors) {
+        const errorMessages = Object.entries(errorData.errors)
+          .map(([field, message]) => {
+            // 字段名翻译
+            const fieldNames = {
+              title: '标题',
+              content: '内容',
+              description: '描述',
+              category: '分类',
+              aiModel: 'AI模型'
+            };
+            const fieldName = fieldNames[field] || field;
+            return `• ${fieldName}: ${message}`;
+          })
+          .join('\n');
+        
+        ElMessage({
+          type: 'error',
+          dangerouslyUseHTMLString: false,
+          message: `数据验证失败：\n${errorMessages}`,
+          duration: 6000,
+          showClose: true,
+          customClass: 'multiline-message'
+        });
+      }
+      // 如果有 details 字段
+      else if (errorData.details) {
+        ElMessage.error({
+          message: errorData.details,
+          duration: 5000,
+          showClose: true
+        });
+      }
+      // 否则显示通用错误消息
+      else {
+        ElMessage.error(errorData.message || '数据验证失败，请检查输入');
+      }
+    }
+    // 其他错误
+    else {
+      const action = isEdit.value ? '更新' : '创建';
+      ElMessage.error(`${action}失败: ${error.message || '请稍后重试'}`);
+    }
   } finally {
     saving.value = false;
   }
@@ -559,6 +608,14 @@ function resetForm() {
   margin-left: 12px;
   font-size: 12px;
   color: #909399;
+}
+
+:deep(.multiline-message) {
+  .el-message__content {
+    white-space: pre-line;
+    line-height: 1.6;
+    text-align: left;
+  }
 }
 
 .help-content {

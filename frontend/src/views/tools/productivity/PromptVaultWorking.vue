@@ -13,6 +13,21 @@
       <div class="actions">
         <el-button type="primary" :icon="Plus" @click="openCreatePrompt">新建提示词</el-button>
         <el-button :icon="FolderAdd" @click="openCreateFolder">新建文件夹</el-button>
+        <el-dropdown @command="handleImportExport" trigger="click">
+          <el-button :icon="DocumentCopy">
+            导入/导出<el-icon class="el-icon--right"><arrow-down /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="export" :icon="Download">
+                导出提示词
+              </el-dropdown-item>
+              <el-dropdown-item command="import" :icon="Upload">
+                导入提示词
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <el-button :icon="Setting" @click="openOptionsManager">管理选项</el-button>
         <el-button :icon="Refresh" :loading="loading" @click="loadData">刷新</el-button>
       </div>
@@ -113,15 +128,28 @@
             </div>
 
             <div class="search-wrapper">
-              <el-input v-model="filters.search" placeholder="搜索标题、内容或标签..." clearable @clear="handleSearch"
-                @keyup.enter="handleSearch" class="search-input">
+              <el-input v-model="filters.search" placeholder="搜索提示词..." clearable class="search-input"
+                @keyup.enter="handleSearch">
                 <template #prefix>
                   <el-icon>
                     <Search />
                   </el-icon>
                 </template>
                 <template #append>
-                  <el-button @click="handleSearch">搜索</el-button>
+                  <el-button-group>
+                    <el-tooltip 
+                      :content="searchMode === 'fuzzy' ? '当前：模糊搜索，点击切换为精确搜索' : '当前：精确搜索，点击切换为模糊搜索'" 
+                      placement="top"
+                    >
+                      <el-button @click="toggleSearchMode" :type="searchMode === 'exact' ? 'primary' : 'default'">
+                        {{ searchMode === 'fuzzy' ? '模糊' : '精确' }}
+                      </el-button>
+                    </el-tooltip>
+                    <el-button @click="handleSearch" type="primary">
+                      <el-icon><Search /></el-icon>
+                      搜索
+                    </el-button>
+                  </el-button-group>
                 </template>
               </el-input>
             </div>
@@ -159,10 +187,44 @@
             <el-select v-model="filters.aiModel" clearable placeholder="AI模型" @change="handleSearch"
               class="filter-select">
               <el-option label="全部模型" value="" />
-              <el-option label="GPT-4" value="gpt-4" />
-              <el-option label="GPT-3.5" value="gpt-3.5" />
-              <el-option label="Claude" value="claude" />
-              <el-option label="通用" value="general" />
+              
+              <!-- 预设模型 -->
+              <el-option-group label="预设模型">
+                <el-option label="通用" value="general" />
+                <el-option label="GPT-4" value="gpt-4" />
+                <el-option label="GPT-4 Turbo" value="gpt-4-turbo" />
+                <el-option label="GPT-3.5" value="gpt-3.5" />
+                <el-option label="Claude 3 Opus" value="claude-3-opus" />
+                <el-option label="Claude 3 Sonnet" value="claude-3-sonnet" />
+                <el-option label="Claude 3 Haiku" value="claude-3-haiku" />
+                <el-option label="Gemini Pro" value="gemini-pro" />
+                <el-option label="Gemini Ultra" value="gemini-ultra" />
+                <el-option label="文心一言" value="wenxin" />
+                <el-option label="通义千问" value="tongyi" />
+                <el-option label="ChatGLM" value="chatglm" />
+                <el-option label="讯飞星火" value="xinghuo" />
+              </el-option-group>
+              
+              <!-- 自定义模型 -->
+              <el-option-group label="自定义模型" v-if="customAIModels.length > 0">
+                <el-option 
+                  v-for="model in customAIModels" 
+                  :key="model" 
+                  :label="model" 
+                  :value="model" 
+                />
+              </el-option-group>
+            </el-select>
+
+            <el-select v-model="filters.tags" clearable placeholder="标签" @change="handleSearch"
+              class="filter-select">
+              <el-option label="全部标签" value="" />
+              <el-option
+                v-for="tag in allTags"
+                :key="tag"
+                :label="tag"
+                :value="tag"
+              />
             </el-select>
 
             <el-select v-model="filters.sort" @change="handleSearch" class="filter-select">
@@ -180,13 +242,32 @@
           </div>
         </el-card>
 
+        <!-- 批量操作工具栏 -->
+        <el-card v-if="selectedPrompts.length > 0" class="bulk-actions-card" shadow="never">
+          <div class="bulk-actions">
+            <div class="bulk-info">
+              <el-icon><el-icon-check /></el-icon>
+              <span>已选中 {{ selectedPrompts.length }} 个提示词</span>
+            </div>
+            <div class="bulk-buttons">
+              <el-button size="small" @click="selectAll">全选</el-button>
+              <el-button size="small" @click="clearSelection">取消选中</el-button>
+              <el-button size="small" type="primary" :icon="Download" @click="handleImportExport('export')">
+                导出选中
+              </el-button>
+            </div>
+          </div>
+        </el-card>
+
         <!-- 提示词卡片列表 -->
         <div v-loading="loading" class="prompt-list">
           <el-empty v-if="!loading && prompts.length === 0" description="暂无提示词" />
 
           <el-card v-for="prompt in prompts" :key="prompt.id" class="prompt-card" shadow="hover"
-            @click="openPromptDetail(prompt)">
+            :class="{ 'is-selected': isPromptSelected(prompt) }" @click="openPromptDetail(prompt)">
             <div class="prompt-header">
+              <el-checkbox :model-value="isPromptSelected(prompt)" @change="togglePromptSelection(prompt, $event)"
+                @click.stop class="prompt-checkbox" />
               <div class="prompt-title-row">
                 <h3 class="prompt-title">{{ prompt.title }}</h3>
                 <el-tag v-if="prompt.category" size="small">{{ prompt.category }}</el-tag>
@@ -231,7 +312,22 @@
                   使用
                 </el-button>
                 <el-button link :icon="Edit" @click="editPrompt(prompt)">编辑</el-button>
-                <el-button link :icon="Delete" @click="deletePrompt(prompt)">删除</el-button>
+                <el-dropdown @command="(cmd) => handlePromptAction(cmd, prompt)" trigger="click">
+                  <el-button link :icon="More">更多</el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="stats" :icon="DataAnalysis">
+                        使用统计
+                      </el-dropdown-item>
+                      <el-dropdown-item command="versions" icon="el-icon-time">
+                        版本历史
+                      </el-dropdown-item>
+                      <el-dropdown-item command="delete" :icon="Delete" divided>
+                        删除
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
               </div>
             </div>
           </el-card>
@@ -258,22 +354,43 @@
 
     <CustomOptionsManager v-show="optionsManagerVisible" v-model:visible="optionsManagerVisible"
       @saved="handleOptionsSaved" />
+
+    <!-- 使用统计对话框 -->
+    <el-dialog v-model="statsVisible" title="使用统计" width="900px" destroy-on-close>
+      <PromptStatistics v-if="currentPrompt && statsVisible" :prompt-id="currentPrompt.id" />
+    </el-dialog>
+
+    <!-- 版本历史对话框 -->
+    <el-dialog v-model="versionsVisible" title="版本历史" width="900px" destroy-on-close>
+      <PromptVersionHistory v-if="currentPrompt && versionsVisible" :prompt-id="currentPrompt.id"
+        @version-restored="handleVersionRestored" />
+    </el-dialog>
+
+    <!-- 导入导出对话框 -->
+    <ImportExportDialog v-model:visible="importExportVisible" :mode="importExportMode"
+      :current-folder-id="currentFolderId" :selected-prompts="selectedPrompts" @import-success="handleImportSuccess"
+      @export-success="handleExportSuccess" />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, provide, h } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { useUserStore } from '@/stores/user';
 import {
   Plus, FolderAdd, Refresh, Search, Edit, Delete,
   CopyDocument, Folder, View, ChatDotRound, Star, StarFilled,
-  Clock, User, CircleClose, Setting
+  Clock, User, CircleClose, Setting, More, DataAnalysis,
+  DocumentCopy, Download, Upload, ArrowDown, Aim
 } from '@element-plus/icons-vue';
 import request from '@/utils/request';
 import PromptEditor from './components/PromptEditor.vue';
 import PromptUsage from './components/PromptUsage.vue';
 import FolderEditor from './components/FolderEditor.vue';
 import CustomOptionsManager from './components/CustomOptionsManager.vue';
+import PromptStatistics from './components/PromptStatistics.vue';
+import PromptVersionHistory from './components/PromptVersionHistory.vue';
+import ImportExportDialog from './components/ImportExportDialog.vue';
 
 // 直接在这里定义 promptService，避免导入问题
 const promptService = {
@@ -348,14 +465,26 @@ const promptService = {
 
   async recordUsage(id, data) {
     const response = await request({
-      url: `/tools/prompt-vault/prompts/${id}/usage`,
+      url: `/prompts/${id}/usage`,
       method: 'post',
       data
+    });
+    if (response.code === 201 || response.code === 200) {
+      return response.data;
+    }
+    throw new Error(response.message || '记录使用失败');
+  },
+
+  async updateFeedback(logId, feedback) {
+    const response = await request({
+      url: `/prompts/usage/${logId}/feedback`,
+      method: 'patch',
+      data: feedback
     });
     if (response.code === 200) {
       return response.data;
     }
-    throw new Error(response.message || '记录使用失败');
+    throw new Error(response.message || '更新反馈失败');
   },
 
   async createFolder(data) {
@@ -469,11 +598,189 @@ const promptService = {
       return response.data;
     }
     throw new Error(response.message || '操作失败');
+  },
+
+  async getStatistics(id, params = {}) {
+    const response = await request({
+      url: `/prompts/${id}/usage/statistics`,
+      method: 'get',
+      params
+    });
+    if (response.code === 200) {
+      return response.data;
+    }
+    throw new Error(response.message || '获取统计数据失败');
+  },
+
+  async getVersionHistory(id) {
+    const response = await request({
+      url: `/tools/prompt-vault/prompts/${id}/versions`,
+      method: 'get'
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '获取版本历史失败');
+  },
+
+  async getVersionDetail(id, versionId) {
+    const response = await request({
+      url: `/tools/prompt-vault/prompts/${id}/versions/${versionId}`,
+      method: 'get'
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '获取版本详情失败');
+  },
+
+  async restoreVersion(id, versionId) {
+    const response = await request({
+      url: `/tools/prompt-vault/prompts/${id}/versions/${versionId}/restore`,
+      method: 'post'
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '恢复版本失败');
+  },
+
+  // ====================  评论相关 ====================
+  async getComments(promptId, params = {}) {
+    const response = await request({
+      url: `/tools/prompt-vault/prompts/${promptId}/comments`,
+      method: 'get',
+      params
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '获取评论失败');
+  },
+
+  async getCommentStats(promptId) {
+    const response = await request({
+      url: `/tools/prompt-vault/prompts/${promptId}/comments/stats`,
+      method: 'get'
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '获取评论统计失败');
+  },
+
+  async createComment(promptId, data) {
+    const response = await request({
+      url: `/tools/prompt-vault/prompts/${promptId}/comments`,
+      method: 'post',
+      data
+    });
+    if (response.code === 201) {
+      return response;
+    }
+    throw new Error(response.message || '创建评论失败');
+  },
+
+  async updateComment(commentId, data) {
+    const response = await request({
+      url: `/tools/prompt-vault/comments/${commentId}`,
+      method: 'put',
+      data
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '更新评论失败');
+  },
+
+  async deleteComment(commentId) {
+    const response = await request({
+      url: `/tools/prompt-vault/comments/${commentId}`,
+      method: 'delete'
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '删除评论失败');
+  },
+
+  async toggleCommentLike(commentId) {
+    const response = await request({
+      url: `/tools/prompt-vault/comments/${commentId}/like`,
+      method: 'post'
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '点赞操作失败');
+  },
+
+  // ====================  导入导出 ====================
+  async exportPrompts(params = {}) {
+    const response = await request({
+      url: '/tools/prompt-vault/export',
+      method: 'get',
+      params
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '导出失败');
+  },
+
+  async importPrompts(data) {
+    const response = await request({
+      url: '/tools/prompt-vault/import',
+      method: 'post',
+      data
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '导入失败');
+  },
+
+  // ====================  模板引擎 ====================
+  async renderTemplate(content, variables) {
+    const response = await request({
+      url: '/tools/prompt-vault/template/render',
+      method: 'post',
+      data: { content, variables }
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '模板渲染失败');
+  },
+
+  async extractTemplateVariables(content) {
+    const response = await request({
+      url: '/tools/prompt-vault/template/extract-variables',
+      method: 'post',
+      data: { content }
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '变量提取失败');
+  },
+
+  async getTemplateHelpers() {
+    const response = await request({
+      url: '/tools/prompt-vault/template/helpers',
+      method: 'get'
+    });
+    if (response.code === 200) {
+      return response;
+    }
+    throw new Error(response.message || '获取辅助函数失败');
   }
 };
 
-// 提供 promptService 给子组件
+// 提供 promptService 和 userStore 给子组件
+const userStore = useUserStore();
 provide('promptService', promptService);
+provide('userStore', userStore);
 
 // 数据
 const loading = ref(false);
@@ -484,18 +791,32 @@ const defaultExpandAll = ref(true);
 const currentFolderId = ref(null);
 const currentPrompt = ref(null);
 const currentFolder = ref(null);
+const selectedPrompts = ref([]); // 已选中的提示词
 
 // 对话框状态
 const editorVisible = ref(false);
 const usageVisible = ref(false);
 const folderEditorVisible = ref(false);
 const optionsManagerVisible = ref(false);
+const statsVisible = ref(false);
+const versionsVisible = ref(false);
+const importExportVisible = ref(false);
+const importExportMode = ref('export');
 
 // 快捷筛选
 const quickFilter = ref('all');
 
 // 自定义分类列表（从服务器读取）
 const customCategories = ref([]);
+
+// 自定义AI模型列表（从服务器读取）
+const customAIModels = ref([]);
+
+// 所有标签列表（从服务器读取）
+const allTags = ref([]);
+
+// 搜索模式：fuzzy(模糊) 或 exact(精确)
+const searchMode = ref('fuzzy');
 
 // 从服务器加载自定义分类
 async function loadCustomCategories() {
@@ -513,11 +834,53 @@ async function loadCustomCategories() {
   }
 }
 
+// 从服务器加载自定义AI模型
+async function loadCustomAIModels() {
+  try {
+    const response = await request({
+      url: '/tools/prompt-vault/custom-models',
+      method: 'get'
+    });
+
+    if (response.code === 200) {
+      customAIModels.value = response.data.models || [];
+    }
+  } catch (error) {
+    console.error('加载自定义AI模型失败:', error);
+  }
+}
+
+// 从服务器加载所有标签
+async function loadAllTags() {
+  try {
+    const response = await request({
+      url: '/tools/prompt-vault/all-tags',
+      method: 'get'
+    });
+
+    if (response.code === 200) {
+      allTags.value = response.data.tags || [];
+    }
+  } catch (error) {
+    console.error('加载标签列表失败:', error);
+  }
+}
+
+// 切换搜索模式
+function toggleSearchMode() {
+  searchMode.value = searchMode.value === 'fuzzy' ? 'exact' : 'fuzzy';
+  // 如果有搜索内容，重新搜索
+  if (filters.search) {
+    handleSearch();
+  }
+}
+
 // 筛选条件
 const filters = reactive({
   search: '',
   category: '',
   aiModel: '',
+  tags: '', // 标签筛选
   sort: 'updatedAt-desc' // 合并排序方式和顺序
 });
 
@@ -552,6 +915,8 @@ const flatFolders = computed(() => {
 // 生命周期
 onMounted(() => {
   loadCustomCategories();
+  loadCustomAIModels();
+  loadAllTags();
   loadData();
 });
 
@@ -569,13 +934,21 @@ async function loadPrompts() {
     // 解析排序参数
     const [sortBy, sortOrder] = filters.sort.split('-');
 
+    // 处理搜索模式
+    let searchParam = filters.search;
+    if (searchParam && searchMode.value === 'exact') {
+      // 精确搜索：用双引号包裹
+      searchParam = `"${searchParam}"`;
+    }
+
     const params = {
       page: pagination.page,
       limit: pagination.limit,
       folderId: currentFolderId.value,
-      search: filters.search,
+      search: searchParam,
       category: filters.category,
       aiModel: filters.aiModel,
+      tags: filters.tags, // 添加标签筛选
       sortBy: sortBy,
       sortOrder: sortOrder,
       viewMode: quickFilter.value // 使用快捷筛选代替 viewMode
@@ -624,6 +997,7 @@ function resetFilters() {
   filters.search = '';
   filters.category = '';
   filters.aiModel = '';
+  filters.tags = '';
   filters.sort = 'updatedAt-desc';
   quickFilter.value = 'all';
   currentFolderId.value = null;
@@ -633,7 +1007,7 @@ function resetFilters() {
 
 // 检查是否有激活的筛选条件
 const hasActiveFilters = computed(() => {
-  return filters.search || filters.category || filters.aiModel ||
+  return filters.search || filters.category || filters.aiModel || filters.tags ||
     quickFilter.value !== 'all' || currentFolderId.value;
 });
 
@@ -745,6 +1119,80 @@ function handleOptionsSaved() {
 function editFolder(folder) {
   currentFolder.value = folder;
   folderEditorVisible.value = true;
+}
+
+// 处理提示词下拉菜单操作
+function handlePromptAction(command, prompt) {
+  switch (command) {
+    case 'stats':
+      showStats(prompt);
+      break;
+    case 'versions':
+      showVersions(prompt);
+      break;
+    case 'delete':
+      deletePrompt(prompt);
+      break;
+  }
+}
+
+// 显示统计
+function showStats(prompt) {
+  currentPrompt.value = prompt;
+  statsVisible.value = true;
+}
+
+// 显示版本历史
+function showVersions(prompt) {
+  currentPrompt.value = prompt;
+  versionsVisible.value = true;
+}
+
+// 处理版本恢复
+function handleVersionRestored(restoredPrompt) {
+  versionsVisible.value = false;
+  ElMessage.success('版本恢复成功，已刷新列表');
+  loadData();
+}
+
+// 处理导入导出
+function handleImportExport(command) {
+  importExportMode.value = command;
+  importExportVisible.value = true;
+}
+
+// 处理导入成功
+function handleImportSuccess(result) {
+  loadData();
+}
+
+// 处理导出成功
+function handleExportSuccess() {
+  // 导出成功后清空选中
+  selectedPrompts.value = [];
+}
+
+// 提示词多选功能
+function isPromptSelected(prompt) {
+  return selectedPrompts.value.some(p => p.id === prompt.id);
+}
+
+function togglePromptSelection(prompt, selected) {
+  if (selected) {
+    if (!isPromptSelected(prompt)) {
+      selectedPrompts.value.push(prompt);
+    }
+  } else {
+    selectedPrompts.value = selectedPrompts.value.filter(p => p.id !== prompt.id);
+  }
+}
+
+function clearSelection() {
+  selectedPrompts.value = [];
+}
+
+function selectAll() {
+  selectedPrompts.value = [...prompts.value];
 }
 
 async function deleteFolder(folder) {
@@ -1155,26 +1603,79 @@ function collapseAllFolders() {
   }
 }
 
+.bulk-actions-card {
+  margin-bottom: 16px;
+  border: 2px solid #409eff;
+  background: #ecf5ff;
+
+  :deep(.el-card__body) {
+    padding: 12px 16px;
+  }
+
+  .bulk-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .bulk-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #409eff;
+
+      .el-icon {
+        font-size: 18px;
+      }
+    }
+
+    .bulk-buttons {
+      display: flex;
+      gap: 8px;
+    }
+  }
+}
+
 .prompt-card {
   cursor: pointer;
   transition: all 0.3s;
+  position: relative;
+  height: 100%;
 
   :deep(.el-card__body) {
     padding: 16px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   &:hover {
     transform: translateY(-4px);
   }
 
+  &.is-selected {
+    border: 2px solid #409eff;
+    background: #ecf5ff;
+  }
+
   .prompt-header {
     margin-bottom: 10px;
+    position: relative;
+
+    .prompt-checkbox {
+      position: absolute;
+      top: -5px; // 与标题垂直对齐
+      left: 0;
+      z-index: 1;
+    }
 
     .prompt-title-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 6px;
+      padding-left: 32px; // 为复选框预留空间
 
       .prompt-title {
         flex: 1;
@@ -1205,6 +1706,11 @@ function collapseAllFolders() {
     color: #2d3748;
     font-size: 13px;
     line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
   .prompt-content-preview {
@@ -1213,6 +1719,10 @@ function collapseAllFolders() {
     border-radius: 4px;
     margin-bottom: 10px;
     border: 1px solid #e2e8f0;
+    flex: 1;
+    min-height: 60px;
+    max-height: 100px;
+    overflow: hidden;
 
     .content-text {
       font-size: 12px;
@@ -1226,14 +1736,19 @@ function collapseAllFolders() {
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 10px;
+    min-height: 28px;
+    max-height: 28px;
+    overflow: hidden;
   }
 
   .prompt-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 10px;
+    padding-top: 12px;
+    margin-top: 10px;
     border-top: 1px solid #e2e8f0;
+    flex-shrink: 0; // 防止压缩
 
     .footer-left {
       display: flex;
