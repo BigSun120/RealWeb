@@ -246,7 +246,7 @@
         <el-card v-if="selectedPrompts.length > 0" class="bulk-actions-card" shadow="never">
           <div class="bulk-actions">
             <div class="bulk-info">
-              <el-icon><el-icon-check /></el-icon>
+              <el-icon><Check /></el-icon>
               <span>已选中 {{ selectedPrompts.length }} 个提示词</span>
             </div>
             <div class="bulk-buttons">
@@ -319,7 +319,7 @@
                       <el-dropdown-item command="stats" :icon="DataAnalysis">
                         使用统计
                       </el-dropdown-item>
-                      <el-dropdown-item command="versions" icon="el-icon-time">
+                      <el-dropdown-item command="versions" :icon="Clock">
                         版本历史
                       </el-dropdown-item>
                       <el-dropdown-item command="delete" :icon="Delete" divided>
@@ -342,18 +342,26 @@
       </main>
     </div>
 
-    <!-- 对话框组件 - 使用 v-show 保持组件挂载 -->
-    <PromptEditor v-show="editorVisible" v-model:visible="editorVisible" :prompt="currentPrompt" :folders="flatFolders"
-      @saved="handlePromptSaved" />
+    <!-- 对话框组件 -->
+    <div v-show="editorVisible">
+      <PromptEditor v-model:visible="editorVisible" :prompt="currentPrompt" :folders="flatFolders"
+        @saved="handlePromptSaved" />
+    </div>
 
-    <PromptUsage v-show="usageVisible" v-model:visible="usageVisible" :prompt="currentPrompt"
-      @used="handlePromptUsed" />
+    <div v-show="usageVisible">
+      <PromptUsage v-model:visible="usageVisible" :prompt="currentPrompt"
+        @used="handlePromptUsed" />
+    </div>
 
-    <FolderEditor v-show="folderEditorVisible" v-model:visible="folderEditorVisible" :folder="currentFolder"
-      :parent-folders="flatFolders" @saved="handleFolderSaved" />
+    <div v-show="folderEditorVisible">
+      <FolderEditor v-model:visible="folderEditorVisible" :folder="currentFolder"
+        :parent-folders="flatFolders" @saved="handleFolderSaved" />
+    </div>
 
-    <CustomOptionsManager v-show="optionsManagerVisible" v-model:visible="optionsManagerVisible"
-      @saved="handleOptionsSaved" />
+    <div v-show="optionsManagerVisible">
+      <CustomOptionsManager v-model:visible="optionsManagerVisible"
+        @saved="handleOptionsSaved" />
+    </div>
 
     <!-- 使用统计对话框 -->
     <el-dialog v-model="statsVisible" title="使用统计" width="900px" destroy-on-close>
@@ -381,7 +389,7 @@ import {
   Plus, FolderAdd, Refresh, Search, Edit, Delete,
   CopyDocument, Folder, View, ChatDotRound, Star, StarFilled,
   Clock, User, CircleClose, Setting, More, DataAnalysis,
-  DocumentCopy, Download, Upload, ArrowDown, Aim
+  DocumentCopy, Download, Upload, ArrowDown, Aim, Check
 } from '@element-plus/icons-vue';
 import request from '@/utils/request';
 import PromptEditor from './components/PromptEditor.vue';
