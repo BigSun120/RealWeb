@@ -112,6 +112,21 @@ export default {
   width: 100%;
 }
 
+/* 全局弹窗滚动锁定 - 更强大的解决方案 */
+body.el-popup-parent--hidden {
+  overflow: hidden !important;
+  padding-right: 0px !important;
+}
+
+/* 确保当弹窗打开时，html和body都不可滚动 */
+html.dialog-open,
+body.dialog-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* 工具页面特殊样式 - 确保背景透明以显示毛玻璃效果 */
 .main-content.tools-page {
   background: transparent !important;

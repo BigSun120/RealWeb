@@ -5,6 +5,9 @@
     width="800px"
     :close-on-click-modal="false"
     :lock-scroll="true"
+    :modal-append-to-body="true"
+    :append-to-body="true"
+    @open="handleOpen"
     @close="handleClose"
   >
     <el-form
@@ -197,7 +200,9 @@
       v-model="helpVisible"
       title="变量语法帮助"
       width="600px"
-      append-to-body
+      :append-to-body="true"
+      :lock-scroll="false"
+      :close-on-click-modal="false"
     >
       <div class="help-content" v-pre>
         <h4>基本语法</h4>
@@ -460,7 +465,17 @@ function saveRecentTags(tags) {
   }
 }
 
+function handleOpen() {
+  // 当对话框打开时，使用更强大的滚动锁定
+  document.documentElement.classList.add('dialog-open');
+  document.body.classList.add('dialog-open');
+}
+
 function handleClose() {
+  // 当对话框关闭时，恢复滚动
+  document.documentElement.classList.remove('dialog-open');
+  document.body.classList.remove('dialog-open');
+
   dialogVisible.value = false;
   resetForm();
 }

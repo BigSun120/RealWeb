@@ -4,6 +4,11 @@
     title="查看自定义选项"
     width="600px"
     :close-on-click-modal="false"
+    :lock-scroll="true"
+    :modal-append-to-body="true"
+    :append-to-body="true"
+    @open="handleOpen"
+    @close="handleClose"
   >
     <el-tabs v-model="activeTab" type="border-card">
       <!-- 分类管理 -->
@@ -139,7 +144,10 @@ async function removeCategory(index) {
       {
         type: 'info',
         confirmButtonText: '移除',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
+        lockScroll: false,  // 因为已经在父对话框中锁定了，这里设置为false避免冲突
+        modalAppendToBody: true,
+        appendToBody: true
       }
     );
 
@@ -159,7 +167,10 @@ async function removeModel(index) {
       {
         type: 'info',
         confirmButtonText: '移除',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
+        lockScroll: false,  // 因为已经在父对话框中锁定了，这里设置为false避免冲突
+        modalAppendToBody: true,
+        appendToBody: true
       }
     );
 
@@ -176,8 +187,19 @@ function removeTag(index) {
   ElMessage.success('已移除');
 }
 
+// 打开对话框
+function handleOpen() {
+  // 当对话框打开时，使用更强大的滚动锁定
+  document.documentElement.classList.add('dialog-open');
+  document.body.classList.add('dialog-open');
+}
+
 // 关闭对话框
 function handleClose() {
+  // 当对话框关闭时，恢复滚动
+  document.documentElement.classList.remove('dialog-open');
+  document.body.classList.remove('dialog-open');
+
   dialogVisible.value = false;
 }
 </script>

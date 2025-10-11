@@ -449,13 +449,20 @@ function openPromptDetail(prompt) {
 
 async function deleteFolder(folder) {
   try {
+    // 在打开确认框前锁定滚动
+    document.body.style.overflow = 'hidden';
+    document.body.style.paddingRight = '0px';
+
     await ElMessageBox.confirm(
       `确定要删除文件夹"${folder.name}"吗？`,
       '删除确认',
       {
         type: 'warning',
         confirmButtonText: '删除',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
+        lockScroll: true,
+        modalAppendToBody: true,
+        appendToBody: true
       }
     );
 
@@ -466,6 +473,10 @@ async function deleteFolder(folder) {
     if (error !== 'cancel') {
       ElMessage.error('删除失败: ' + error.message);
     }
+  } finally {
+    // 恢复滚动（无论成功还是取消）
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
   }
 }
 
@@ -508,13 +519,20 @@ async function showStats(prompt) {
 
 async function deletePrompt(prompt) {
   try {
+    // 在打开确认框前锁定滚动
+    document.body.style.overflow = 'hidden';
+    document.body.style.paddingRight = '0px';
+
     await ElMessageBox.confirm(
       `确定要删除提示词"${prompt.title}"吗？`,
       '删除确认',
       {
         type: 'warning',
         confirmButtonText: '删除',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
+        lockScroll: true,
+        modalAppendToBody: true,
+        appendToBody: true
       }
     );
 
@@ -525,6 +543,10 @@ async function deletePrompt(prompt) {
     if (error !== 'cancel') {
       ElMessage.error('删除失败: ' + error.message);
     }
+  } finally {
+    // 恢复滚动（无论成功还是取消）
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
   }
 }
 

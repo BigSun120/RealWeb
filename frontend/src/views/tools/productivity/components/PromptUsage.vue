@@ -5,6 +5,9 @@
     width="900px"
     :close-on-click-modal="false"
     :lock-scroll="true"
+    :modal-append-to-body="true"
+    :append-to-body="true"
+    @open="handleOpen"
     @close="handleClose"
   >
     <div class="prompt-usage" v-if="prompt">
@@ -265,7 +268,17 @@ async function recordAndCopy() {
   }
 }
 
+function handleOpen() {
+  // 当对话框打开时，使用更强大的滚动锁定
+  document.documentElement.classList.add('dialog-open');
+  document.body.classList.add('dialog-open');
+}
+
 function handleClose() {
+  // 当对话框关闭时，恢复滚动
+  document.documentElement.classList.remove('dialog-open');
+  document.body.classList.remove('dialog-open');
+
   dialogVisible.value = false;
   resetFeedback();
 }

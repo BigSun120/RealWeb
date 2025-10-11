@@ -3,6 +3,11 @@
     v-model="dialogVisible"
     title="分享提示词"
     width="600px"
+    :close-on-click-modal="false"
+    :lock-scroll="true"
+    :modal-append-to-body="true"
+    :append-to-body="true"
+    @open="handleOpen"
     @close="handleClose"
   >
     <div class="share-dialog" v-if="prompt">
@@ -247,7 +252,17 @@ function getVisibilityType(visibility) {
   return types[visibility] || 'info';
 }
 
+function handleOpen() {
+  // 当对话框打开时，使用更强大的滚动锁定
+  document.documentElement.classList.add('dialog-open');
+  document.body.classList.add('dialog-open');
+}
+
 function handleClose() {
+  // 当对话框关闭时，恢复滚动
+  document.documentElement.classList.remove('dialog-open');
+  document.body.classList.remove('dialog-open');
+
   dialogVisible.value = false;
 }
 </script>
