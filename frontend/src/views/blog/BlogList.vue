@@ -191,6 +191,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSettingsStore } from '@/stores/settings';
+import { getImageUrl, getAvatarStyle } from '@/utils/imageUrl';
 import PageHeader from '@/components/common/PageHeader.vue';
 import { useArticlesApi } from '@/composables/useArticlesApi';
 import { useArticlesQuery } from '@/composables/useArticlesQuery';
@@ -519,13 +520,11 @@ export default {
 
     // 使用统一的图片URL处理函数
     const getFullImageUrl = (imageUrl) => {
-      const { getImageUrl } = require('@/utils/imageUrl');
       return getImageUrl(imageUrl);
     };
 
     // 获取作者头像样式 - 使用统一的头像处理函数
     const getAuthorAvatarStyle = avatarUrl => {
-      const { getAvatarStyle } = require('@/utils/imageUrl');
       return getAvatarStyle(avatarUrl);
     };
 

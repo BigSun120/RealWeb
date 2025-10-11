@@ -34,11 +34,11 @@ class ToolsController {
         ];
       }
 
-      // 权限过滤
-      if (!req.user) {
-        query.requiresAuth = false;
-      } else if (!req.user.isAdmin) {
-        query.$or = [{ requiresAuth: false }, { requiresAuth: true, requiresAdmin: false }];
+      // 权限过滤：移除工具列表的权限过滤，让所有用户都能看到全部工具
+      // 但保留 requiresAuth 和 requiresAdmin 字段信息，由前端决定如何展示
+      // 只过滤需要管理员权限的工具（管理员工具不对非管理员显示）
+      if (!req.user || !req.user.isAdmin) {
+        query.requiresAdmin = { $ne: true }; // 只排除管理员专用工具
       }
 
       // 分页

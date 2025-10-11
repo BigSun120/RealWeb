@@ -1237,6 +1237,11 @@ const performFullAccessCheck = async () => {
   }
 }
 
+// 跳转到登录页
+const goToLogin = () => {
+  router.push({ name: 'Login', query: { redirect: '/temp-email' } })
+}
+
 // 组件挂载时初始化
 onMounted(async () => {
   // 加载临时邮箱公告（不依赖权限状态）

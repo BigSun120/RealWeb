@@ -4,7 +4,8 @@
     :class="{ 
       'is-featured': tool.featured,
       'is-disabled': tool.status !== 'active',
-      'is-coming-soon': tool.status === 'coming-soon'
+      'is-coming-soon': tool.status === 'coming-soon',
+      'requires-auth': tool.requiresAuth && !isLoggedIn
     }"
     @click="handleClick"
   >
@@ -18,6 +19,16 @@
       <div class="tool-header">
         <h3 class="tool-name">{{ tool.name }}</h3>
         <div class="tool-badges">
+          <el-tag 
+            v-if="tool.requiresAuth && !isLoggedIn" 
+            type="warning" 
+            size="small"
+            effect="dark"
+            class="auth-badge"
+          >
+            <el-icon style="margin-right: 2px;"><Lock /></el-icon>
+            需要登录
+          </el-tag>
           <el-tag 
             v-if="tool.featured" 
             type="warning" 
@@ -116,20 +127,27 @@
     <div v-if="tool.featured" class="featured-badge">
       <el-icon><Star /></el-icon>
     </div>
+    
+    <!-- 需要登录标识 -->
+    <div v-if="tool.requiresAuth && !isLoggedIn" class="lock-badge">
+      <el-icon><Lock /></el-icon>
+    </div>
   </div>
 </template>
 
 <script>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Timer, Star } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { Timer, Star, Lock } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 
 export default {
   name: 'ToolCard',
   components: {
     Timer,
-    Star
+    Star,
+    Lock
   },
   props: {
     tool: {
@@ -140,7 +158,11 @@ export default {
   emits: ['favorite-change'],
   setup(props, { emit }) {
     const router = useRouter()
+    const userStore = useUserStore()
     const isFavorited = ref(false) // TODO: 从本地存储或用户数据获取
+    
+    // 检查用户是否登录
+    const isLoggedIn = computed(() => userStore.isLoggedIn)
 
     // 难度等级文本
     const getDifficultyText = (difficulty) => {
@@ -165,6 +187,30 @@ export default {
     const goToTool = () => {
       if (props.tool.status !== 'active') {
         ElMessage.info('该工具即将上线，敬请期待！')
+        return
+      }
+      
+      // 检查是否需要登录
+      if (props.tool.requiresAuth && !isLoggedIn.value) {
+        ElMessageBox.confirm(
+          '此工具需要登录后使用，是否立即前往登录页面？',
+          '需要登录',
+          {
+            confirmButtonText: '去登录',
+            cancelButtonText: '取消',
+            type: 'warning',
+            center: true
+          }
+        ).then(() => {
+          // 带上 redirect 参数，登录后返回当前工具
+          const redirectPath = props.tool.route || '/tools'
+          router.push({ 
+            name: 'Login', 
+            query: { redirect: redirectPath } 
+          })
+        }).catch(() => {
+          // 用户取消
+        })
         return
       }
 
@@ -221,6 +267,7 @@ export default {
 
     return {
       isFavorited,
+      isLoggedIn,
       getDifficultyText,
       handleClick,
       goToTool,
@@ -266,6 +313,36 @@ export default {
 
 .tool-card.is-coming-soon {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* 需要登录的工具视觉效果 */
+.tool-card.requires-auth {
+  position: relative;
+  background: linear-gradient(135deg, #fff9e6 0%, #fff 100%);
+  border-color: #f5c276;
+}
+
+.tool-card.requires-auth:hover {
+  border-color: #e6a23c;
+  box-shadow: 0 4px 12px rgba(230, 162, 60, 0.2);
+}
+
+.tool-card.requires-auth::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(230, 162, 60, 0.03) 10px,
+    rgba(230, 162, 60, 0.03) 20px
+  );
+  pointer-events: none;
+  border-radius: 8px;
 }
 
 /* 工具图标 */
@@ -366,6 +443,30 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 12px;
+}
+
+/* 需要登录标识 */
+.lock-badge {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  background: #e6a23c;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px 0 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(230, 162, 60, 0.3);
+}
+
+/* 需要登录标签特殊样式 */
+.auth-badge {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
 }
 
 /* 响应式设计 */

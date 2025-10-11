@@ -35,8 +35,30 @@ class ToolsService {
         params
       });
       if (response.code === 200) {
-        const tools = Array.isArray(response?.data?.tools) ? response.data.tools : [];
-        this.tools = tools;
+        const apiTools = Array.isArray(response?.data?.tools) ? response.data.tools : [];
+        
+        // 如果 API 没有返回任何工具，直接使用静态工具
+        if (apiTools.length === 0) {
+          this.tools = STATIC_TOOLS.map(tool => ({ ...tool }));
+          this.apiLoaded = false;
+          return this.tools;
+        }
+        
+        // 合并 API 工具数据和静态工具配置
+        // 使用静态工具的 requiresAuth 字段补充到 API 数据
+        this.tools = apiTools.map(apiTool => {
+          const staticTool = STATIC_TOOLS.find(st => st.id === apiTool.id);
+          if (staticTool) {
+            // 如果 API 数据中没有 requiresAuth 字段，使用静态配置
+            return {
+              ...apiTool,
+              requiresAuth: apiTool.requiresAuth !== undefined ? apiTool.requiresAuth : staticTool.requiresAuth,
+              requiresAdmin: apiTool.requiresAdmin !== undefined ? apiTool.requiresAdmin : staticTool.requiresAdmin
+            };
+          }
+          return apiTool;
+        });
+        
         this.apiLoaded = true;
         return this.tools;
       }

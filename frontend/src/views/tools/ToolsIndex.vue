@@ -198,12 +198,25 @@
                 class="list-item"
                 v-for="tool in filteredTools"
                 :key="tool.id"
-                @click="goToTool(tool)"
+                :class="{ 'requires-auth': tool.requiresAuth && !isLoggedIn }"
+                @click="handleListItemClick(tool)"
               >
                 <div class="list-content">
                   <div class="tool-icon-small">{{ tool.icon }}</div>
                   <div class="tool-info-list">
-                    <h3 class="list-title">{{ tool.name }}</h3>
+                    <h3 class="list-title">
+                      {{ tool.name }}
+                      <el-tag 
+                        v-if="tool.requiresAuth && !isLoggedIn" 
+                        type="warning" 
+                        size="small"
+                        effect="dark"
+                        style="margin-left: 8px;"
+                      >
+                        <el-icon style="margin-right: 2px;"><Lock /></el-icon>
+                        需要登录
+                      </el-tag>
+                    </h3>
                     <p class="list-description">{{ tool.description }}</p>
                     <div class="list-meta">
                       <span class="category">{{ getCategoryName(tool.category) }}</span>
@@ -219,7 +232,7 @@
                     <button
                       v-if="tool.status === 'active'"
                       class="btn btn-primary btn-sm"
-                      @click.stop="goToTool(tool)"
+                      @click.stop="handleListItemClick(tool)"
                     >
                       使用
                     </button>
@@ -351,7 +364,9 @@
 <script>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { Search, Star } from '@element-plus/icons-vue';
+import { Search, Star, Lock } from '@element-plus/icons-vue';
+import { ElMessageBox } from 'element-plus';
+import { useUserStore } from '@/stores/user';
 import ToolCard from '@/components/tools/ToolCard.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import toolsService from '@/services/toolsService';
@@ -361,15 +376,20 @@ export default {
   components: {
     Search,
     Star,
+    Lock,
     ToolCard,
     PageHeader
   },
   setup() {
     const router = useRouter();
+    const userStore = useUserStore();
     const searchKeyword = ref('');
     const selectedCategory = ref('all');
     const selectedStatus = ref('all');
     const loading = ref(true);
+    
+    // 检查用户是否登录
+    const isLoggedIn = computed(() => userStore.isLoggedIn);
 
     // 从本地存储加载布局偏好
     const viewMode = ref(localStorage.getItem('tools-view-mode') || 'list');
@@ -547,7 +567,27 @@ export default {
     // 跳转到工具页面
     const goToTool = tool => {
       if (tool.status !== 'active') {
-        console.info('工具状态不可用:', tool.status);
+        return;
+      }
+      
+      // 检查是否需要登录
+      if (tool.requiresAuth && !isLoggedIn.value) {
+        ElMessageBox.confirm(
+          '此工具需要登录后使用，是否立即前往登录页面？',
+          '需要登录',
+          {
+            confirmButtonText: '去登录',
+            cancelButtonText: '取消',
+            type: 'warning',
+            center: true
+          }
+        ).then(() => {
+          const redirectPath = tool.route || '/tools';
+          router.push({ 
+            name: 'Login', 
+            query: { redirect: redirectPath } 
+          });
+        }).catch(() => {});
         return;
       }
 
@@ -566,25 +606,23 @@ export default {
 
         // 优先级3: 兜底方案 - 使用route字段
         if (tool.route) {
-          // 判断是内部路由还是外部链接
           if (tool.route.startsWith('/')) {
-            // 内部路由，使用Vue Router跳转
             router.push(tool.route);
           } else if (tool.route.startsWith('http://') || tool.route.startsWith('https://')) {
-            // 外部链接，在新窗口打开
             window.open(tool.route, '_blank');
           } else {
-            // 相对路径，当作内部路由处理
             router.push(tool.route);
           }
           return;
         }
-
-        // 如果都没有，显示警告
-        console.warn('工具缺少有效的跳转配置:', tool);
       } catch (error) {
-        console.error('跳转工具页面失败:', error, tool);
+        console.error('跳转工具页面失败:', error);
       }
+    };
+    
+    // 列表模式点击处理
+    const handleListItemClick = (tool) => {
+      goToTool(tool);
     };
 
     // 获取结果标题
@@ -742,7 +780,7 @@ export default {
       initializeData();
     });
 
-    return {
+  return {
       searchKeyword,
       selectedCategory,
       selectedStatus,
@@ -772,6 +810,8 @@ export default {
       getDifficultyText,
       getStatusText,
       goToTool,
+      handleListItemClick,
+      isLoggedIn,
       getResultTitle,
       getPaginationInfo,
       getVisiblePages,
@@ -991,6 +1031,18 @@ export default {
 .list-item:hover {
   border-color: #3b82f6;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* 列表模式 - 需要登录的工具视觉效果 */
+.list-item.requires-auth {
+  background: linear-gradient(135deg, rgba(255, 249, 230, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-color: rgba(245, 194, 118, 0.4);
+}
+
+.list-item.requires-auth:hover {
+  border-color: #e6a23c;
+  box-shadow: 0 4px 12px rgba(230, 162, 60, 0.2);
+  background: linear-gradient(135deg, rgba(255, 249, 230, 0.4) 0%, rgba(255, 255, 255, 0.15) 100%);
 }
 
 .list-content {

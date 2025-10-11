@@ -38,6 +38,7 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { getLatestPublicNotices, markPublicNoticeAsDismissed, markPublicNoticeAsRead } from '@/api/publicNotices';
 import { marked } from 'marked';
 import { useUserStore } from '@/stores/user';
@@ -48,6 +49,7 @@ export default {
     placements: { type: Array, default: () => ['banner','dropdown'] }
   },
   setup() {
+    const router = useRouter();
     const notices = ref([]);
     const markingRead = ref(false);
     let timer = null;
@@ -62,8 +64,6 @@ export default {
       } else if (url.startsWith('/')) {
         // 站内路由
         try {
-          const { useRouter } = require('vue-router');
-          const router = useRouter();
           router.push(url);
         } catch {
           window.location.href = url;

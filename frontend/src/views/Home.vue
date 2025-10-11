@@ -171,6 +171,7 @@ import { useSettingsStore } from '@/stores/settings';
 import { MagicStick, Picture } from '@element-plus/icons-vue';
 import api from '@/api';
 import { getAvatarStyle } from '@/utils/avatar';
+import { getImageUrl } from '@/utils/imageUrl';
 import MillipedeBackground from '@/components/MillipedeBackground.vue';
 import BackgroundManager from '@/components/BackgroundManager.vue';
 import { useHomeBackgroundManager } from '@/composables/useBackgroundManager';
@@ -327,7 +328,6 @@ export default {
 
     // 使用统一的图片URL处理函数
     const getFullImageUrl = (imageUrl) => {
-      const { getImageUrl } = require('@/utils/imageUrl');
       return getImageUrl(imageUrl);
     };
 

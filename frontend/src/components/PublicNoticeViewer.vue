@@ -48,6 +48,7 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { marked } from 'marked';
 import { markPublicNoticeAsRead, markPublicNoticeAsDismissed } from '@/api/publicNotices';
 import { useUserStore } from '@/stores/user';
@@ -55,6 +56,7 @@ import { useUserStore } from '@/stores/user';
 export default {
   name: 'PublicNoticeViewer',
   setup() {
+    const router = useRouter();
     const visible = ref(false);
     const notice = ref(null);
     const markingRead = ref(false);
@@ -74,8 +76,7 @@ export default {
         window.open(url, '_blank', 'noopener');
       } else if (url.startsWith('/')) {
         try {
-          const { useRouter } = require('vue-router');
-          useRouter().push(url);
+          router.push(url);
         } catch {
           window.location.href = url;
         }
