@@ -128,7 +128,6 @@
       </div>
 
 
-
       <!-- 激活界面弹窗（已激活用户也可以使用） -->
       <el-dialog v-model="showActivation" title="激活临时邮箱权限" width="680px" :close-on-click-modal="false"
         :close-on-press-escape="false" :lock-scroll="true" :modal="true" :append-to-body="true"
@@ -152,7 +151,7 @@
         </div>
       </el-dialog>
 
-      <el-card class="main-card glass-card">
+      <el-card class="main-card glass-card2">
 
         <!-- 邮箱生成配置 -->
         <div class="email-config no-glass">
@@ -1967,11 +1966,19 @@ onUnmounted(() => {
 
 /* 毛玻璃主卡片样式 */
 .glass-card {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
   backdrop-filter: blur(20px) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 24px !important;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15) !important;
+}
+
+.glass-card2 {
+  background: rgba(255, 255, 255);
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.1) !important;
 }
 
 .glass-card .el-card__body {
@@ -2639,11 +2646,7 @@ onUnmounted(() => {
 
 /* 全局深度覆盖Element Plus默认背景 */
 /* 卡片组件 */
-.temp-email-container .el-card,
-.temp-email-container .el-card__body,
-.temp-email-container .el-card__header {
-  background: transparent !important;
-}
+
 
 /* 警告框组件 */
 .temp-email-container .el-alert,

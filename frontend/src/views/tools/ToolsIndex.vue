@@ -5,19 +5,9 @@
     </div>
 
     <!-- 页面头部 -->
-    <PageHeader
-      v-if="!loading"
-      title="实用工具箱"
-      subtitle="精选实用的在线工具，提升您的工作效率"
-      :stats="headerStats"
-      :show-filters="true"
-      :search-value="searchKeyword"
-      search-placeholder="搜索工具名称、描述或标签..."
-      :view-mode="viewMode"
-      @search="handleSearch"
-      @clear-search="clearSearch"
-      @view-mode-change="switchViewMode"
-    />
+    <PageHeader v-if="!loading" title="实用工具箱" subtitle="精选实用的在线工具，提升您的工作效率" :stats="headerStats" :show-filters="true"
+      :search-value="searchKeyword" search-placeholder="搜索工具名称、描述或标签..." :view-mode="viewMode" @search="handleSearch"
+      @clear-search="clearSearch" @view-mode-change="switchViewMode" />
 
     <!-- 主内容区域 -->
     <div v-if="!loading" class="main-content" :class="{ 'with-sidebar': viewMode === 'list' }">
@@ -26,20 +16,13 @@
         <div class="filter-group">
           <label class="filter-label">分类</label>
           <div class="filter-options vertical">
-            <button
-              class="btn btn-sm"
-              :class="selectedCategory === 'all' ? 'btn-primary' : 'btn-ghost'"
-              @click="selectCategory('all')"
-            >
+            <button class="btn btn-sm" :class="selectedCategory === 'all' ? 'btn-primary' : 'btn-ghost'"
+              @click="selectCategory('all')">
               全部
             </button>
-            <button
-              v-for="category in allCategories"
-              :key="category.id"
-              class="btn btn-sm"
+            <button v-for="category in allCategories" :key="category.id" class="btn btn-sm"
               :class="selectedCategory === category.id ? 'btn-primary' : 'btn-ghost'"
-              @click="selectCategory(category.id)"
-            >
+              @click="selectCategory(category.id)">
               <span class="category-icon">{{ category.icon }}</span>
               {{ category.name }}
             </button>
@@ -49,25 +32,16 @@
         <div class="filter-group">
           <label class="filter-label">状态</label>
           <div class="filter-options vertical">
-            <button
-              class="btn btn-sm"
-              :class="selectedStatus === 'all' ? 'btn-primary' : 'btn-ghost'"
-              @click="selectStatus('all')"
-            >
+            <button class="btn btn-sm" :class="selectedStatus === 'all' ? 'btn-primary' : 'btn-ghost'"
+              @click="selectStatus('all')">
               全部
             </button>
-            <button
-              class="btn btn-sm"
-              :class="selectedStatus === 'active' ? 'btn-primary' : 'btn-ghost'"
-              @click="selectStatus('active')"
-            >
+            <button class="btn btn-sm" :class="selectedStatus === 'active' ? 'btn-primary' : 'btn-ghost'"
+              @click="selectStatus('active')">
               可用
             </button>
-            <button
-              class="btn btn-sm"
-              :class="selectedStatus === 'coming-soon' ? 'btn-primary' : 'btn-ghost'"
-              @click="selectStatus('coming-soon')"
-            >
+            <button class="btn btn-sm" :class="selectedStatus === 'coming-soon' ? 'btn-primary' : 'btn-ghost'"
+              @click="selectStatus('coming-soon')">
               即将上线
             </button>
           </div>
@@ -77,57 +51,39 @@
       <!-- 右侧内容区域 -->
       <div class="content-area">
         <!-- 推荐工具（仅网格模式且无搜索时显示） -->
-        <div
-          v-if="viewMode === 'grid' && !searchKeyword && selectedCategory === 'all'"
-          class="tools-section"
-        >
+        <div v-if="viewMode === 'grid' && !searchKeyword && selectedCategory === 'all'" class="tools-section">
           <div class="section-header">
             <h2 class="section-title">
-              <el-icon><Star /></el-icon>
+              <el-icon>
+                <Star />
+              </el-icon>
               推荐工具
             </h2>
             <p class="section-description">精选的热门实用工具</p>
           </div>
           <div v-if="featuredTools.length > 0" class="tools-grid grid">
-            <ToolCard
-              v-for="tool in featuredTools"
-              :key="tool.id"
-              :tool="tool"
-              @favorite-change="handleFavoriteChange"
-            />
+            <ToolCard v-for="tool in featuredTools" :key="tool.id" :tool="tool"
+              @favorite-change="handleFavoriteChange" />
           </div>
 
           <!-- 推荐工具分页器 -->
-          <div
-            v-if="featuredTools.length > 0 && featuredTotalPages > 1"
-            class="pagination-container"
-          >
+          <div v-if="featuredTools.length > 0 && featuredTotalPages > 1" class="pagination-container">
             <div class="pagination-wrapper">
-              <button
-                class="btn btn-ghost btn-sm"
-                :disabled="featuredCurrentPage === 1"
-                @click="handleFeaturedPageChange(featuredCurrentPage - 1)"
-              >
+              <button class="btn btn-ghost btn-sm" :disabled="featuredCurrentPage === 1"
+                @click="handleFeaturedPageChange(featuredCurrentPage - 1)">
                 上一页
               </button>
 
               <div class="page-numbers">
-                <button
-                  v-for="page in getFeaturedVisiblePages()"
-                  :key="page"
-                  class="btn btn-sm"
+                <button v-for="page in getFeaturedVisiblePages()" :key="page" class="btn btn-sm"
                   :class="page === featuredCurrentPage ? 'btn-primary' : 'btn-ghost'"
-                  @click="handleFeaturedPageChange(page)"
-                >
+                  @click="handleFeaturedPageChange(page)">
                   {{ page }}
                 </button>
               </div>
 
-              <button
-                class="btn btn-ghost btn-sm"
-                :disabled="featuredCurrentPage === featuredTotalPages"
-                @click="handleFeaturedPageChange(featuredCurrentPage + 1)"
-              >
+              <button class="btn btn-ghost btn-sm" :disabled="featuredCurrentPage === featuredTotalPages"
+                @click="handleFeaturedPageChange(featuredCurrentPage + 1)">
                 下一页
               </button>
             </div>
@@ -139,10 +95,7 @@
         </div>
 
         <!-- 工具分类展示（仅网格模式且无搜索时显示） -->
-        <div
-          v-if="viewMode === 'grid' && !searchKeyword && selectedCategory === 'all'"
-          class="categories-section"
-        >
+        <div v-if="viewMode === 'grid' && !searchKeyword && selectedCategory === 'all'" class="categories-section">
           <div v-for="category in categoriesWithTools" :key="category.id" class="category-section">
             <div class="section-header">
               <h2 class="section-title">
@@ -155,65 +108,45 @@
               </router-link>
             </div>
             <div class="tools-grid grid">
-              <ToolCard
-                v-for="tool in getCategoryTools(category.id).slice(0, 4)"
-                :key="tool.id"
-                :tool="tool"
-                @favorite-change="handleFavoriteChange"
-              />
+              <ToolCard v-for="tool in getCategoryTools(category.id).slice(0, 4)" :key="tool.id" :tool="tool"
+                @favorite-change="handleFavoriteChange" />
             </div>
           </div>
         </div>
 
         <!-- 工具网格/列表 -->
-        <div
-          v-if="searchKeyword || selectedCategory !== 'all' || viewMode === 'list'"
-          class="tools-container"
-        >
+        <div v-if="searchKeyword || selectedCategory !== 'all' || viewMode === 'list'" class="tools-container">
           <div class="section-header">
             <h2 class="section-title">
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search />
+              </el-icon>
               {{ getResultTitle() }}
             </h2>
             <p class="section-description">{{ getPaginationInfo() }}</p>
           </div>
 
-          <div
-            v-if="filteredTools.length > 0"
-            :class="['tools-grid', viewMode === 'grid' ? 'grid' : 'list']"
-          >
+          <div v-if="filteredTools.length > 0" :class="['tools-grid', viewMode === 'grid' ? 'grid' : 'list']">
             <!-- 网格模式 -->
             <template v-if="viewMode === 'grid'">
-              <ToolCard
-                v-for="tool in filteredTools"
-                :key="tool.id"
-                :tool="tool"
-                @favorite-change="handleFavoriteChange"
-              />
+              <ToolCard v-for="tool in filteredTools" :key="tool.id" :tool="tool"
+                @favorite-change="handleFavoriteChange" />
             </template>
 
             <!-- 列表模式 -->
             <template v-else>
-              <div
-                class="list-item"
-                v-for="tool in filteredTools"
-                :key="tool.id"
-                :class="{ 'requires-auth': tool.requiresAuth && !isLoggedIn }"
-                @click="handleListItemClick(tool)"
-              >
+              <div class="list-item" v-for="tool in filteredTools" :key="tool.id"
+                :class="{ 'requires-auth': tool.requiresAuth && !isLoggedIn }" @click="handleListItemClick(tool)">
                 <div class="list-content">
                   <div class="tool-icon-small">{{ tool.icon }}</div>
                   <div class="tool-info-list">
                     <h3 class="list-title">
                       {{ tool.name }}
-                      <el-tag 
-                        v-if="tool.requiresAuth && !isLoggedIn" 
-                        type="warning" 
-                        size="small"
-                        effect="dark"
-                        style="margin-left: 8px;"
-                      >
-                        <el-icon style="margin-right: 2px;"><Lock /></el-icon>
+                      <el-tag v-if="tool.requiresAuth && !isLoggedIn" type="warning" size="small" effect="dark"
+                        style="margin-left: 8px;">
+                        <el-icon style="margin-right: 2px;">
+                          <Lock />
+                        </el-icon>
                         需要登录
                       </el-tag>
                     </h3>
@@ -229,11 +162,8 @@
                     </div>
                   </div>
                   <div class="tool-actions-list">
-                    <button
-                      v-if="tool.status === 'active'"
-                      class="btn btn-primary btn-sm"
-                      @click.stop="handleListItemClick(tool)"
-                    >
+                    <button v-if="tool.status === 'active'" class="btn btn-primary btn-sm"
+                      @click.stop="handleListItemClick(tool)">
                       使用
                     </button>
                     <button v-else class="btn btn-ghost btn-sm" disabled>
@@ -256,19 +186,13 @@
             <div class="pagination-info">
               <span class="total-info">
                 共 <strong>{{ allFilteredTools.length }}</strong> 个工具
-                <span v-if="totalPages > 1"
-                  >，第 <strong>{{ currentPage }}</strong> /
-                  <strong>{{ totalPages }}</strong> 页</span
-                >
+                <span v-if="totalPages > 1">，第 <strong>{{ currentPage }}</strong> /
+                  <strong>{{ totalPages }}</strong> 页</span>
               </span>
               <div class="page-size-control">
                 <label for="page-size-select">每页显示</label>
-                <select
-                  id="page-size-select"
-                  class="page-size-select"
-                  v-model.number="pageSize"
-                  @change="handlePageSizeChange"
-                >
+                <select id="page-size-select" class="page-size-select" v-model.number="pageSize"
+                  @change="handlePageSizeChange">
                   <option :value="6">6 个</option>
                   <option :value="12">12 个</option>
                   <option :value="24">24 个</option>
@@ -280,74 +204,45 @@
             <!-- 完整分页器 -->
             <div class="pagination-controls">
               <!-- 首页 -->
-              <button
-                class="pagination-btn pagination-btn-nav"
-                :disabled="currentPage === 1"
-                @click="handlePageChange(1)"
-                title="首页"
-              >
+              <button class="pagination-btn pagination-btn-nav" :disabled="currentPage === 1"
+                @click="handlePageChange(1)" title="首页">
                 <span class="pagination-icon">⟪</span>
               </button>
 
               <!-- 上一页 -->
-              <button
-                class="pagination-btn pagination-btn-nav"
-                :disabled="currentPage === 1"
-                @click="handlePageChange(currentPage - 1)"
-                title="上一页"
-              >
+              <button class="pagination-btn pagination-btn-nav" :disabled="currentPage === 1"
+                @click="handlePageChange(currentPage - 1)" title="上一页">
                 <span class="pagination-icon">‹</span>
               </button>
 
               <!-- 页码 -->
               <div class="page-numbers">
                 <template v-for="page in getVisiblePages()">
-                  <span v-if="page === '...'" :key="`ellipsis-${page}`" class="pagination-ellipsis"
-                    >...</span
-                  >
-                  <button
-                    v-else
-                    :key="page"
-                    class="pagination-btn pagination-btn-page"
-                    :class="{ active: page === currentPage }"
-                    @click="handlePageChange(page)"
-                  >
+                  <span v-if="page === '...'" :key="`ellipsis-${page}`" class="pagination-ellipsis">...</span>
+                  <button v-else :key="page" class="pagination-btn pagination-btn-page"
+                    :class="{ active: page === currentPage }" @click="handlePageChange(page)">
                     {{ page }}
                   </button>
                 </template>
               </div>
 
               <!-- 下一页 -->
-              <button
-                class="pagination-btn pagination-btn-nav"
-                :disabled="currentPage === totalPages"
-                @click="handlePageChange(currentPage + 1)"
-                title="下一页"
-              >
+              <button class="pagination-btn pagination-btn-nav" :disabled="currentPage === totalPages"
+                @click="handlePageChange(currentPage + 1)" title="下一页">
                 <span class="pagination-icon">›</span>
               </button>
 
               <!-- 末页 -->
-              <button
-                class="pagination-btn pagination-btn-nav"
-                :disabled="currentPage === totalPages"
-                @click="handlePageChange(totalPages)"
-                title="末页"
-              >
+              <button class="pagination-btn pagination-btn-nav" :disabled="currentPage === totalPages"
+                @click="handlePageChange(totalPages)" title="末页">
                 <span class="pagination-icon">⟫</span>
               </button>
 
               <!-- 跳转输入 -->
               <div class="page-jump">
                 <span>跳至</span>
-                <input
-                  type="number"
-                  class="page-jump-input"
-                  :min="1"
-                  :max="totalPages"
-                  v-model.number="jumpPage"
-                  @keyup.enter="handlePageJump"
-                />
+                <input type="number" class="page-jump-input" :min="1" :max="totalPages" v-model.number="jumpPage"
+                  @keyup.enter="handlePageJump" />
                 <span>页</span>
                 <button class="pagination-btn pagination-btn-jump" @click="handlePageJump">
                   跳转
@@ -387,7 +282,7 @@ export default {
     const selectedCategory = ref('all');
     const selectedStatus = ref('all');
     const loading = ref(true);
-    
+
     // 检查用户是否登录
     const isLoggedIn = computed(() => userStore.isLoggedIn);
 
@@ -569,7 +464,7 @@ export default {
       if (tool.status !== 'active') {
         return;
       }
-      
+
       // 检查是否需要登录
       if (tool.requiresAuth && !isLoggedIn.value) {
         ElMessageBox.confirm(
@@ -583,11 +478,11 @@ export default {
           }
         ).then(() => {
           const redirectPath = tool.route || '/tools';
-          router.push({ 
-            name: 'Login', 
-            query: { redirect: redirectPath } 
+          router.push({
+            name: 'Login',
+            query: { redirect: redirectPath }
           });
-        }).catch(() => {});
+        }).catch(() => { });
         return;
       }
 
@@ -619,7 +514,7 @@ export default {
         console.error('跳转工具页面失败:', error);
       }
     };
-    
+
     // 列表模式点击处理
     const handleListItemClick = (tool) => {
       goToTool(tool);
@@ -780,7 +675,7 @@ export default {
       initializeData();
     });
 
-  return {
+    return {
       searchKeyword,
       selectedCategory,
       selectedStatus,
@@ -849,11 +744,11 @@ export default {
   right: 0;
   bottom: 0;
   background: linear-gradient(135deg,
-    rgba(99, 102, 241, 0.1) 0%,
-    rgba(168, 85, 247, 0.1) 25%,
-    rgba(236, 72, 153, 0.1) 50%,
-    rgba(251, 146, 60, 0.1) 75%,
-    rgba(34, 197, 94, 0.1) 100%);
+      rgba(99, 102, 241, 0.1) 0%,
+      rgba(168, 85, 247, 0.1) 25%,
+      rgba(236, 72, 153, 0.1) 50%,
+      rgba(251, 146, 60, 0.1) 75%,
+      rgba(34, 197, 94, 0.1) 100%);
   z-index: -2;
   pointer-events: none;
 }
@@ -1017,7 +912,7 @@ export default {
 
 /* 列表项样式 */
 .list-item {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
@@ -1030,7 +925,7 @@ export default {
 
 .list-item:hover {
   border-color: #3b82f6;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.8);
 }
 
 /* 列表模式 - 需要登录的工具视觉效果 */
@@ -1121,18 +1016,18 @@ export default {
 .tools-container {
   margin-bottom: 3rem;
   padding: 2rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
 }
 
 .list-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .tools-section:hover,

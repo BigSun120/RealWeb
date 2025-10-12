@@ -30,7 +30,7 @@
         <!-- 公告预览大弹窗（全局） -->
         <PublicNoticeViewer />
 
-        <AppFooter />
+        <!-- <AppFooter /> -->
       </GlobalBackgroundManager>
     </template>
   </div>
@@ -143,7 +143,7 @@ body.layout-full-width {
     max-width: 100% !important;
     padding: 0;
   }
-  
+
   .content-wrapper {
     max-width: 100% !important;
     padding: 0;
