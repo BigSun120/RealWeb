@@ -137,6 +137,31 @@ export default {
             fullWidth: true,  // 启用全宽布局
             noContainer: true // 不使用容器宽度限制
           }
+        },
+        {
+          path: 'drama-script-generator',
+          name: 'DramaScriptGenerator',
+          component: () => import('@/views/tools/productivity/drama/index.vue'),
+          meta: {
+            title: 'AI短剧剧本生成器',
+            description: '智能辅助创作短剧剧本',
+            requiresAuth: true,
+            fullWidth: true,
+            noContainer: true
+          }
+        },
+        // 短剧工作台
+        {
+          path: 'drama/:id',
+          name: 'DramaWorkbench',
+          component: () => import('@/views/tools/productivity/drama/workbench.vue'),
+          meta: {
+            title: '短剧创作工作台',
+            description: '短剧剧本创作工作台',
+            requiresAuth: true,
+            fullWidth: true,
+            noContainer: true
+          }
         }
       ]
     },

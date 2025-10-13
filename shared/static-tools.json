@@ -88,6 +88,30 @@
         "sortOrder": 45
     },
     {
+        "id": "ai-drama-script-generator",
+        "name": "AI短剧剧本生成器",
+        "description": "智能辅助创作短剧剧本，支持世界观设定、角色管理、大纲创作、分集剧本、版本控制、多格式导出",
+        "icon": "🎬",
+        "category": "productivity",
+        "route": "/tools/productivity/drama-script-generator",
+        "component": "@/views/tools/productivity/drama/index.vue",
+        "tags": [
+            "AI",
+            "剧本",
+            "创作",
+            "短剧",
+            "提示词",
+            "效率工具"
+        ],
+        "featured": true,
+        "status": "active",
+        "difficulty": "medium",
+        "estimatedTime": "30分钟+",
+        "requiresAuth": true,
+        "requiresAdmin": false,
+        "sortOrder": 30
+    },
+    {
         "id": "gomoku",
         "name": "五子棋对战",
         "description": "与 AI 对战的五子棋小游戏，支持胜负统计与排行榜",
