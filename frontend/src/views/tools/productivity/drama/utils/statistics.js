@@ -419,15 +419,21 @@ export function generateEpisodeStatusChartOption(episodeStats) {
       formatter: '{b}: {c} 集 ({d}%)'
     },
     legend: {
-      bottom: '5%',
-      left: 'center'
+      orient: 'vertical',
+      right: '10%',
+      top: 'center',
+      itemGap: 12,
+      textStyle: {
+        fontSize: 13
+      }
     },
     series: [
       {
         name: '分集状态',
         type: 'pie',
-        radius: ['40%', '70%'],
-        avoidLabelOverlap: false,
+        radius: ['40%', '65%'],
+        center: ['35%', '50%'],
+        avoidLabelOverlap: true,
         itemStyle: {
           borderRadius: 10,
           borderColor: '#fff',
@@ -435,13 +441,22 @@ export function generateEpisodeStatusChartOption(episodeStats) {
         },
         label: {
           show: true,
-          formatter: '{b}\n{c}集'
+          position: 'inner',
+          formatter: '{d}%',
+          fontSize: 12,
+          color: '#fff',
+          fontWeight: 'bold'
         },
         emphasis: {
           label: {
             show: true,
             fontSize: 14,
             fontWeight: 'bold'
+          },
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
           }
         },
         data

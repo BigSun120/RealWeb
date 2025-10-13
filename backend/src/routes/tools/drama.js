@@ -157,4 +157,14 @@ router.patch(
   dramaController.updatePromptTemplate
 );
 
+/**
+ * @route   GET /api/tools/drama/projects/:id/export
+ * @desc    导出项目剧本
+ * @access  Private
+ * @query   format: txt|markdown|md
+ * @query   includeIncomplete: true|false
+ * @query   upToEpisode: number
+ */
+router.get('/projects/:id/export', dramaController.exportProject);
+
 module.exports = router;

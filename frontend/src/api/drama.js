@@ -116,6 +116,64 @@ export const patchDramaPromptTemplate = (id, promptTemplate) => {
   });
 };
 
+/**
+ * 导出项目剧本
+ * @param {String} id 项目ID
+ * @param {Object} options 导出选项
+ * @param {String} options.format 格式: txt|markdown|md
+ * @param {Boolean} options.includeIncomplete 是否包含未完成的剧集
+ * @param {Number} options.upToEpisode 截止到哪一集
+ * @param {Boolean} options.includeMetadata 是否包含创作辅助信息（关键对白、结尾悬念、备注）
+ * @returns {Promise}
+ */
+export const exportDramaProject = async (id, options = {}) => {
+  const { format = 'txt', includeIncomplete = false, upToEpisode = null, includeMetadata = true } = options;
+  
+  const params = { format };
+  if (includeIncomplete) params.includeIncomplete = 'true';
+  if (upToEpisode) params.upToEpisode = upToEpisode;
+  if (includeMetadata !== undefined) params.includeMetadata = includeMetadata ? 'true' : 'false';
+  
+  try {
+    const response = await request({
+      url: `/tools/drama/projects/${id}/export`,
+      method: 'get',
+      params,
+      responseType: 'blob'
+    });
+    
+    // 当 responseType 为 blob 时，拦截器返回整个 response 对象
+    // 我们需要提取 response.data
+    const blob = response.data;
+    
+    // 检查是否为错误响应（后端可能返回JSON错误）
+    if (blob.type && blob.type.includes('application/json')) {
+      // 尝试解析错误消息
+      const text = await blob.text();
+      const errorData = JSON.parse(text);
+      throw new Error(errorData.message || '导出失败');
+    }
+    
+    return blob;
+  } catch (error) {
+    // 如果是网络错误或其他错误，直接抛出
+    if (error.response) {
+      // 尝试从 Blob 响应中提取错误消息
+      const blob = error.response.data;
+      if (blob && blob.type && blob.type.includes('application/json')) {
+        try {
+          const text = await blob.text();
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.message || '导出失败');
+        } catch (parseError) {
+          // 如果解析失败，使用默认错误消息
+        }
+      }
+    }
+    throw error;
+  }
+};
+
 export default {
   getDramaProjects,
   getDramaProject,
@@ -127,5 +185,6 @@ export default {
   patchDramaCharacters,
   patchDramaOutline,
   patchDramaEpisodes,
-  patchDramaPromptTemplate
+  patchDramaPromptTemplate,
+  exportDramaProject
 };

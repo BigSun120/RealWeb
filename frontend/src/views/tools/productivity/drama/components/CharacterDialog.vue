@@ -91,6 +91,9 @@
               maxlength="100"
               show-word-limit
             />
+            <div class="field-tip">
+              💡 建议：用一句话概括角色的核心特征，例如：“高冷禁欲的集团总裁，外表冰冷内心热烈”
+            </div>
           </el-form-item>
         </el-col>
 
@@ -104,6 +107,9 @@
               maxlength="300"
               show-word-limit
             />
+            <div class="field-tip">
+              💡 建议：列举3-5个核心性格特征，包括正面和负面，让角色更立体。例如：“表面高冷禁欲、实际内心细腻、对亲近人非常护短、偷偷关注女主的一举一动”
+            </div>
           </el-form-item>
         </el-col>
 
@@ -117,6 +123,9 @@
               maxlength="500"
               show-word-limit
             />
+            <div class="field-tip">
+              💡 建议：包括家庭出身、成长环境、关键经历、形成性格的原因。例如：“盛家二少爷，从小被家族安排各种学习，被训练成完美继承人，但内心渴望自由和真爱”
+            </div>
           </el-form-item>
         </el-col>
 
@@ -130,6 +139,9 @@
               maxlength="300"
               show-word-limit
             />
+            <div class="field-tip">
+              💡 建议：明确角色的行为动机和目标，这是推动剧情的关键。例如：“表面上想完成家族交付的契约婚姻，内心渴望找到真正的灵魂伴侣”
+            </div>
           </el-form-item>
         </el-col>
 
@@ -143,6 +155,9 @@
               maxlength="300"
               show-word-limit
             />
+            <div class="field-tip">
+              💡 建议：描述与主要角色的关系及关系变化。例如：“女主的契约丈夫，初期冷淡相处，后期逐渐被她吸引，从契约变为真爱”
+            </div>
           </el-form-item>
         </el-col>
 

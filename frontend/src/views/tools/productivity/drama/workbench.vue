@@ -22,12 +22,45 @@
       </div>
 
       <div class="header-right">
+        <!-- 自动保存状态指示器 -->
+        <div class="auto-save-indicator" v-if="lastSaveTime">
+          <el-tooltip :content="`最后保存: ${formatSaveTime(lastSaveTime)}`" placement="bottom">
+            <div class="save-status">
+              <el-icon :class="{ 'saving': isSaving }"><CircleCheck /></el-icon>
+              <span class="save-text">{{ isSaving ? '保存中...' : '已保存' }}</span>
+            </div>
+          </el-tooltip>
+        </div>
+        
         <el-progress
           :percentage="project.progress"
           :stroke-width="8"
           style="width: 150px"
         />
-        <el-button :icon="Download" @click="handleExport">导出</el-button>
+        <el-dropdown @command="handleExportCommand" split-button @click="handleQuickExport">
+          <el-icon><Download /></el-icon>
+          导出
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="txt">
+                <el-icon><Document /></el-icon>
+                导出TXT
+              </el-dropdown-item>
+              <el-dropdown-item command="markdown">
+                <el-icon><Tickets /></el-icon>
+                导出Markdown
+              </el-dropdown-item>
+              <el-dropdown-item command="with-incomplete" divided>
+                <el-icon><FolderOpened /></el-icon>
+                包含未完成剧集
+              </el-dropdown-item>
+              <el-dropdown-item command="custom">
+                <el-icon><Setting /></el-icon>
+                自定义导出...
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <el-button type="primary" :icon="Setting" @click="showSettings = true">
           项目设置
         </el-button>
@@ -61,13 +94,17 @@
             <span>分集剧本</span>
             <el-badge v-if="episodes.length" :value="episodes.length" class="item-badge" />
           </el-menu-item>
-          <el-menu-item index="prompt-template">
-            <el-icon><Edit /></el-icon>
-            <span>提示词模板</span>
+          <el-menu-item index="analysis">
+            <el-icon><Monitor /></el-icon>
+            <span>剧本医生</span>
           </el-menu-item>
           <el-menu-item index="statistics">
             <el-icon><DataAnalysis /></el-icon>
             <span>数据统计</span>
+          </el-menu-item>
+          <el-menu-item index="prompt-template">
+            <el-icon><Edit /></el-icon>
+            <span>提示词模板</span>
           </el-menu-item>
           <el-menu-item index="versions">
             <el-icon><Clock /></el-icon>
@@ -133,6 +170,14 @@
           />
         </div>
 
+        <!-- 剧本医生 -->
+        <div v-else-if="activeTab === 'analysis'" class="content-panel">
+          <ScriptAnalysis
+            :project="fullProjectData"
+            @goto-module="handleTabChange"
+          />
+        </div>
+
         <!-- 数据统计 -->
         <div v-else-if="activeTab === 'statistics'" class="content-panel">
           <StatisticsPanel
@@ -145,13 +190,22 @@
         <!-- 版本历史 -->
         <div v-else-if="activeTab === 'versions'" class="content-panel">
           <VersionHistory
-            :versions="versions"
+            :project="project"
             @restore="handleRestoreVersion"
-            @compare="handleCompareVersions"
           />
         </div>
       </div>
     </div>
+
+    <!-- 导出对话框 -->
+    <ExportDialog
+      ref="exportDialogRef"
+      v-model="exportDialogVisible"
+      :project-id="project._id || project.id"
+      :project-name="project.name"
+      :project-data="exportProjectData"
+      @confirm="handleConfirmExport"
+    />
 
     <!-- 项目设置对话框 -->
     <el-dialog
@@ -189,10 +243,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { ElMessage } from 'element-plus';
-import { getDramaProject, updateDramaProject, patchDramaWorldview, patchDramaCharacters, patchDramaOutline, patchDramaEpisodes, patchDramaPromptTemplate } from '@/api/drama';
+import { ElMessage, ElNotification } from 'element-plus';
+import { getDramaProject, updateDramaProject, patchDramaWorldview, patchDramaCharacters, patchDramaOutline, patchDramaEpisodes, patchDramaPromptTemplate, exportDramaProject } from '@/api/drama';
+import { downloadBlob, generateFilename } from '@/utils/download';
+import { createVersion } from './utils/versionManager';
 import {
   ArrowLeft,
   Download,
@@ -203,7 +259,10 @@ import {
   Tickets,
   Clock,
   DataAnalysis,
-  Edit
+  Edit,
+  FolderOpened,
+  CircleCheck,
+  Monitor
 } from '@element-plus/icons-vue';
 
 // 导入组件
@@ -213,9 +272,9 @@ import OutlineEditor from './components/OutlineEditor.vue';
 import EpisodeManager from './components/EpisodeManager.vue';
 import StatisticsPanel from './components/StatisticsPanel.vue';
 import PromptTemplateEditor from './components/PromptTemplateEditor.vue';
-
-// 占位组件
-const VersionHistory = { template: '<div class="placeholder">版本历史 - 开发中</div>' };
+import ExportDialog from './components/ExportDialog.vue';
+import VersionHistory from './components/VersionHistory.vue';
+import ScriptAnalysis from './components/ScriptAnalysis.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -225,6 +284,30 @@ const activeTab = ref('worldview');
 
 // 显示设置对话框
 const showSettings = ref(false);
+
+// 自动保存相关状态
+const autoSaveEnabled = ref(true); // 自动保存开关
+const lastSaveTime = ref(null); // 最后保存时间
+const lastAutoSaveTime = ref(null); // 上次自动保存时间
+const isSaving = ref(false); // 是否正在保存
+const isInitialized = ref(false); // 是否已完成初始化
+const autoSaveInterval = 3600000; // 自动保存间隔：1小时（毫秒）
+const maxAutoSaveVersions = 10; // 最多保留10个自动保存版本
+
+// 数据变化标记（用于跟踪哪些模块被修改）
+const dataChangeFlags = ref({
+  worldview: false,
+  characters: false,
+  outline: false,
+  episodes: false
+});
+
+// 自动保存定时器
+let autoSaveTimer = null;
+
+// 导出对话框状态
+const exportDialogVisible = ref(false);
+const exportDialogRef = ref(null);
 
 // 项目数据
 const project = reactive({
@@ -290,8 +373,25 @@ const promptTemplate = ref({
   lastModified: null
 });
 
-// 版本历史
-const versions = ref([]);
+
+// 导出对话框数据
+const exportProjectData = computed(() => ({
+  ...project,
+  worldview: worldview.value,
+  characters: characters.value,
+  outline: outline.value,
+  episodes: episodes.value,
+  promptTemplate: promptTemplate.value
+}));
+
+// 完整项目数据（用于剧本医生分析）
+const fullProjectData = computed(() => ({
+  ...project,
+  worldview: worldview.value,
+  characters: characters.value,
+  outline: outline.value,
+  episodes: episodes.value
+}));
 
 // 获取状态类型
 const getStatusType = (status) => {
@@ -314,9 +414,66 @@ const handleTabChange = (index) => {
   activeTab.value = index;
 };
 
-// 导出
-const handleExport = () => {
-  ElMessage.info('导出功能开发中...');
+// 快速导出（默认TXT格式，仅已完成）
+const handleQuickExport = async () => {
+  await performExport({ format: 'txt', includeIncomplete: false });
+};
+
+// 导出命令处理
+const handleExportCommand = async (command) => {
+  switch (command) {
+    case 'txt':
+      await performExport({ format: 'txt', includeIncomplete: false });
+      break;
+    case 'markdown':
+      await performExport({ format: 'markdown', includeIncomplete: false });
+      break;
+    case 'with-incomplete':
+      await performExport({ format: 'txt', includeIncomplete: true });
+      break;
+    case 'custom':
+      // 打开自定义导出对话框
+      exportDialogVisible.value = true;
+      break;
+  }
+};
+
+// 执行导出
+const performExport = async (options) => {
+  try {
+    const projectId = project._id || project.id;
+    const blob = await exportDramaProject(projectId, options);
+    
+    // 生成文件名
+    const ext = options.format === 'markdown' ? 'md' : 'txt';
+    const filename = generateFilename(project.name, ext);
+    
+    // 下载文件
+    downloadBlob(blob, filename);
+    
+    ElMessage.success('导出成功');
+  } catch (error) {
+    console.error('导出失败:', error);
+    ElMessage.error(error.message || '导出失败，请稍后再试');
+  }
+};
+
+// 确认导出（来自对话框）
+const handleConfirmExport = async (options) => {
+  // 设置导出中状态
+  if (exportDialogRef.value) {
+    exportDialogRef.value.setExporting(true);
+  }
+
+  try {
+    await performExport(options);
+    exportDialogVisible.value = false;
+  } finally {
+    // 恢复状态
+    if (exportDialogRef.value) {
+      exportDialogRef.value.setExporting(false);
+    }
+  }
 };
 
 // 保存设置
@@ -367,41 +524,255 @@ const updateProjectProgress = async () => {
   }
 };
 
-// 世界观相关
-const handleSaveWorldview = async (worldviewData) => {
+// 自动判断和更新项目状态
+const updateProjectStatus = async () => {
+  const newStatus = calculateProjectStatus();
+  if (newStatus !== project.status) {
+    const oldStatus = project.status;
+    project.status = newStatus;
+    
+    // 更新到服务器
+    try {
+      await updateDramaProject(project._id || project.id, {
+        status: newStatus
+      });
+      console.log(`项目状态更新: ${oldStatus} -> ${newStatus}`);
+    } catch (error) {
+      console.error('更新状态失败:', error);
+    }
+  }
+};
+
+// 计算项目当前状态
+const calculateProjectStatus = () => {
+  // 1. 检查是否已完成：所有分集都完成且达到目标集数
+  const targetEpisodes = project.episodeCount || 60;
+  const currentEpisodes = episodes.value.length;
+  const completedEpisodes = episodes.value.filter(
+    ep => ep.status === 'completed' || ep.status === 'reviewed'
+  ).length;
+  
+  if (currentEpisodes >= targetEpisodes && completedEpisodes >= targetEpisodes) {
+    return '已完成';
+  }
+  
+  // 2. 检查是否在剧本中：有分集且有已完成的分集
+  if (currentEpisodes > 0 && completedEpisodes > 0) {
+    return '剧本中';
+  }
+  
+  // 3. 检查是否在大纲中：有大纲节点且有分集（但没有完成的）
+  const hasOutlinePoints = outline.value?.acts?.some(
+    act => act.plotPoints && act.plotPoints.length > 0
+  ) || false;
+  
+  if (hasOutlinePoints && currentEpisodes > 0) {
+    return '大纲中';
+  }
+  
+  // 4. 检查是否在大纲中：只有大纲节点，没有分集
+  if (hasOutlinePoints) {
+    return '大纲中';
+  }
+  
+  // 5. 默认：还在设定中（有世界观或角色，但没有大纲）
+  return '设定中';
+};
+
+// 标记数据已修改
+const markDataChanged = (module) => {
+  if (dataChangeFlags.value.hasOwnProperty(module)) {
+    dataChangeFlags.value[module] = true;
+    console.log(`📝 数据变化标记: ${module}`);
+  }
+};
+
+// 重置所有变化标记
+const resetChangeFlags = () => {
+  Object.keys(dataChangeFlags.value).forEach(key => {
+    dataChangeFlags.value[key] = false;
+  });
+};
+
+// 检查是否有任何数据变化
+const hasAnyChanges = () => {
+  return Object.values(dataChangeFlags.value).some(flag => flag === true);
+};
+
+// 格式化保存时间
+const formatSaveTime = (time) => {
+  if (!time) return '';
+  const date = new Date(time);
+  const now = new Date();
+  const diff = Math.floor((now - date) / 1000); // 秒数差
+  
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`;
+  return date.toLocaleString('zh-CN', { 
+    month: '2-digit', 
+    day: '2-digit', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+};
+
+// 全局自动保存函数（每小时触发一次）
+const performAutoSave = async () => {
+  if (!autoSaveEnabled.value || isSaving.value || !isInitialized.value) {
+    return;
+  }
+  
+  // 检查是否有任何数据变化
+  if (!hasAnyChanges()) {
+    console.log('🕐 定时检查：没有数据变化，跳过自动保存');
+    return;
+  }
+  
+  console.log('💾 开始自动保存，变化的模块:', dataChangeFlags.value);
+  
   try {
-    const response = await patchDramaWorldview(project._id || project.id, worldviewData);
+    isSaving.value = true;
+    const savedModules = [];
+    
+    // 保存所有有变化的模块
+    if (dataChangeFlags.value.worldview) {
+      await handleSaveWorldview(worldview.value, true);
+      savedModules.push('世界观');
+    }
+    
+    if (dataChangeFlags.value.characters) {
+      await handleSaveCharacters(characters.value, true);
+      savedModules.push('角色');
+    }
+    
+    if (dataChangeFlags.value.outline) {
+      await handleSaveOutline(outline.value, true);
+      savedModules.push('大纲');
+    }
+    
+    if (dataChangeFlags.value.episodes) {
+      await handleSaveEpisodes(episodes.value, true);
+      savedModules.push('分集');
+    }
+    
+    // 更新保存时间
+    lastSaveTime.value = new Date();
+    lastAutoSaveTime.value = new Date();
+    
+    // 重置变化标记
+    resetChangeFlags();
+    
+    // 显示通知
+    if (savedModules.length > 0) {
+      ElNotification.success({
+        title: '自动保存',
+        message: `已保存: ${savedModules.join('、')}`,
+        duration: 3000,
+        offset: 50
+      });
+    }
+    
+    console.log('✅ 自动保存完成，保存了:', savedModules);
+  } catch (error) {
+    console.error('自动保存失败:', error);
+    ElNotification.error({
+      title: '自动保存失败',
+      message: '部分数据保存失败，请手动保存',
+      duration: 3000
+    });
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+// 启动自动保存定时器
+const startAutoSaveTimer = () => {
+  // 清除现有定时器
+  if (autoSaveTimer) {
+    clearInterval(autoSaveTimer);
+  }
+  
+  // 设置1小时定时器
+  autoSaveTimer = setInterval(() => {
+    performAutoSave();
+  }, autoSaveInterval);
+  
+  console.log('✅ 自动保存定时器已启动，间隔: 1小时');
+};
+
+// 停止自动保存定时器
+const stopAutoSaveTimer = () => {
+  if (autoSaveTimer) {
+    clearInterval(autoSaveTimer);
+    autoSaveTimer = null;
+    console.log('⚠️ 自动保存定时器已停止');
+  }
+};
+
+// 世界观相关
+const handleSaveWorldview = async (worldviewData, isAutoSave = false) => {
+  try {
+    const projectId = project._id || project.id;
+    const response = await patchDramaWorldview(projectId, worldviewData);
     
     if (response.code === 200) {
-      // 不再修改worldview.value，避免循环更新
-      ElMessage.success('世界观已保存');
-      // 更新项目进度
+      // 创建版本快照
+      try {
+        await createVersion('worldview', projectId, worldviewData, projectId, { isAutoSave });
+      } catch (versionError) {
+        console.error('创建版本失败:', versionError);
+        // 版本创建失败不影响保存
+      }
+      
+      // 自动保存时不显示消息（由autoSaveWrapper统一处理）
+      if (!isAutoSave) {
+        ElMessage.success('世界观已保存');
+      }
+      // 更新项目进度和状态
       await updateProjectProgress();
+      await updateProjectStatus();
     } else {
       throw new Error(response.message || '保存失败');
     }
   } catch (error) {
     console.error('保存世界观失败:', error);
+    // 错误始终显示
     ElMessage.error(error.message || '保存世界观失败');
+    throw error; // 重新抛出错误供autoSaveWrapper捕获
   }
 };
 
 // 角色相关
-const handleSaveCharacters = async (charactersData) => {
+const handleSaveCharacters = async (charactersData, isAutoSave = false) => {
   try {
-    const response = await patchDramaCharacters(project._id || project.id, charactersData);
+    const projectId = project._id || project.id;
+    const response = await patchDramaCharacters(projectId, charactersData);
     
     if (response.code === 200) {
-      // 不再修改characters.value，避免循环更新
-      ElMessage.success('角色已保存');
-      // 更新项目进度
+      // 为每个角色创建版本快照
+      try {
+        for (const character of charactersData) {
+          await createVersion('character', character.id, character, projectId, { isAutoSave });
+        }
+      } catch (versionError) {
+        console.error('创建版本失败:', versionError);
+      }
+      
+      // 自动保存时不显示消息
+      if (!isAutoSave) {
+        ElMessage.success('角色已保存');
+      }
+      // 更新项目进度和状态
       await updateProjectProgress();
+      await updateProjectStatus();
     } else {
       throw new Error(response.message || '保存失败');
     }
   } catch (error) {
     console.error('保存角色失败:', error);
     ElMessage.error(error.message || '保存角色失败');
+    throw error;
   }
 };
 
@@ -411,22 +782,33 @@ const handleGenerateOutline = () => {
   ElMessage.info('请在大纲编辑器中使用生成提示词功能');
 };
 
-const handleSaveOutline = async (outlineData) => {
+const handleSaveOutline = async (outlineData, isAutoSave = false) => {
   try {
-    const response = await patchDramaOutline(project._id || project.id, outlineData);
+    const projectId = project._id || project.id;
+    const response = await patchDramaOutline(projectId, outlineData);
     
     if (response.code === 200) {
-      // 不再修改outline.value，避免循环更新
-      // OutlineEditor组件会通过v-model自动同步数据
-      ElMessage.success('大纲已保存');
-      // 更新项目进度
+      // 创建版本快照
+      try {
+        await createVersion('outline', projectId, outlineData, projectId, { isAutoSave });
+      } catch (versionError) {
+        console.error('创建版本失败:', versionError);
+      }
+      
+      // 自动保存时不显示消息
+      if (!isAutoSave) {
+        ElMessage.success('大纲已保存');
+      }
+      // 更新项目进度和状态
       await updateProjectProgress();
+      await updateProjectStatus();
     } else {
       throw new Error(response.message || '保存失败');
     }
   } catch (error) {
     console.error('保存大纲失败:', error);
     ElMessage.error(error.message || '保存大纲失败');
+    throw error;
   }
 };
 
@@ -472,21 +854,32 @@ const handleGenerateEpisode = () => {
   // EpisodeManager内部处理
 };
 
-const handleSaveEpisodes = async (episodesData) => {
+const handleSaveEpisodes = async (episodesData, isAutoSave = false) => {
   try {
-    const response = await patchDramaEpisodes(project._id || project.id, episodesData);
+    const projectId = project._id || project.id;
+    const response = await patchDramaEpisodes(projectId, episodesData);
     
     if (response.code === 200) {
-      // 不再修改episodes.value，避免循环更新
+      // 为每个分集创建版本快照
+      try {
+        for (const episode of episodesData) {
+          await createVersion('episode', episode.id || episode.number.toString(), episode, projectId, { isAutoSave });
+        }
+      } catch (versionError) {
+        console.error('创建版本失败:', versionError);
+      }
+      
       // 成功消息已在EpisodeManager中显示，这里不重复提示
-      // 更新项目进度（分集数据变化时尤其重要）
+      // 更新项目进度和状态（分集数据变化时尤其重要）
       await updateProjectProgress();
+      await updateProjectStatus();
     } else {
       throw new Error(response.message || '保存失败');
     }
   } catch (error) {
     console.error('保存分集失败:', error);
     ElMessage.error(error.message || '保存分集失败');
+    throw error;
   }
 };
 
@@ -529,13 +922,99 @@ const handleRefreshData = async () => {
 };
 
 // 版本历史相关
-const handleRestoreVersion = (version) => {
-  ElMessage.success(`已恢复到版本: ${version.name}`);
+const handleRestoreVersion = async (restoreData) => {
+  try {
+    const { moduleType, moduleId, content } = restoreData;
+    const projectId = project._id || project.id;
+    
+    // 根据模块类型恢复数据
+    switch (moduleType) {
+      case 'worldview':
+        // 恢复世界观
+        worldview.value = { ...content };
+        await patchDramaWorldview(projectId, content);
+        ElMessage.success('世界观已恢复');
+        break;
+        
+      case 'character':
+        // 恢复角色（找到并替换对应角色）
+        const charIndex = characters.value.findIndex(c => c.id === moduleId);
+        if (charIndex > -1) {
+          characters.value[charIndex] = { ...content };
+          await patchDramaCharacters(projectId, characters.value);
+          ElMessage.success(`角色 "${content.name}" 已恢复`);
+        } else {
+          ElMessage.warning('找不到对应的角色');
+        }
+        break;
+        
+      case 'outline':
+        // 恢复大纲
+        outline.value = { ...content };
+        await patchDramaOutline(projectId, content);
+        ElMessage.success('大纲已恢复');
+        break;
+        
+      case 'episode':
+        // 恢复分集（找到并替换对应分集）
+        const epIndex = episodes.value.findIndex(e => e.id === moduleId || e.number === content.number);
+        if (epIndex > -1) {
+          episodes.value[epIndex] = { ...content };
+          await patchDramaEpisodes(projectId, episodes.value);
+          ElMessage.success(`第${content.number}集已恢复`);
+        } else {
+          ElMessage.warning('找不到对应的分集');
+        }
+        break;
+        
+      default:
+        ElMessage.error('未知的模块类型');
+    }
+    
+    // 刷新项目进度
+    await updateProjectProgress();
+  } catch (error) {
+    console.error('恢复版本失败:', error);
+    ElMessage.error('恢复版本失败');
+  }
 };
 
-const handleCompareVersions = (v1, v2) => {
-  ElMessage.info('版本对比功能开发中...');
-};
+// 设置数据变化监听器（只标记变化，不立即保存）
+watch(
+  () => worldview.value,
+  () => {
+    if (!isInitialized.value) return;
+    markDataChanged('worldview');
+  },
+  { deep: true }
+);
+
+watch(
+  () => characters.value,
+  () => {
+    if (!isInitialized.value) return;
+    markDataChanged('characters');
+  },
+  { deep: true }
+);
+
+watch(
+  () => outline.value,
+  () => {
+    if (!isInitialized.value) return;
+    markDataChanged('outline');
+  },
+  { deep: true }
+);
+
+watch(
+  () => episodes.value,
+  () => {
+    if (!isInitialized.value) return;
+    markDataChanged('episodes');
+  },
+  { deep: true }
+);
 
 // 初始化
 onMounted(async () => {
@@ -580,6 +1059,16 @@ onMounted(async () => {
           lastModified: null
         };
       }
+      
+      // 标记初始化完成，延迟1秒后启用自动保存监听
+      setTimeout(() => {
+        isInitialized.value = true;
+        // 重置所有变化标记（初始化不算变化）
+        resetChangeFlags();
+        // 启动自动保存定时器
+        startAutoSaveTimer();
+        console.log('✅ 自动保存功能已启用，每1小时检查一次');
+      }, 1000);
     } else {
       throw new Error(response.message || '加载失败');
     }
@@ -591,6 +1080,12 @@ onMounted(async () => {
       router.push({ name: 'DramaScriptGenerator' });
     }, 1500);
   }
+});
+
+// 组件销毁时清理定时器
+import { onBeforeUnmount } from 'vue';
+onBeforeUnmount(() => {
+  stopAutoSaveTimer();
 });
 </script>
 
@@ -636,6 +1131,46 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* 自动保存指示器 */
+.auto-save-indicator {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.save-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #67c23a;
+  cursor: pointer;
+}
+
+.save-status .el-icon {
+  font-size: 14px;
+}
+
+.save-status .el-icon.saving {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.save-text {
+  font-weight: 500;
 }
 
 .workbench-content {

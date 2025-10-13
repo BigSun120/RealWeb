@@ -567,6 +567,97 @@ class DramaController {
       next(error);
     }
   }
+
+  /**
+   * 导出项目剧本
+   * @route GET /api/tools/drama/projects/:id/export
+   */
+  async exportProject(req, res, next) {
+    try {
+      const projectId = req.params.id;
+      
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({
+          code: 400,
+          message: '无效的项目ID'
+        });
+      }
+
+      const project = await DramaProject.findOne({
+        _id: projectId,
+        userId: req.user._id
+      });
+
+      if (!project) {
+        return res.status(404).json({
+          code: 404,
+          message: '项目不存在'
+        });
+      }
+
+      // 获取导出格式和选项
+      const { 
+        format = 'txt',
+        includeIncomplete = false,
+        upToEpisode = null,
+        includeMetadata = 'true' // 默认包含创作辅助信息
+      } = req.query;
+
+      // 验证格式
+      const validFormats = ['txt', 'markdown', 'md'];
+      if (!validFormats.includes(format.toLowerCase())) {
+        return res.status(400).json({
+          code: 400,
+          message: '不支持的导出格式，支持: txt, markdown/md'
+        });
+      }
+
+      const exportFormat = format.toLowerCase() === 'md' ? 'markdown' : format.toLowerCase();
+      const { exportScript } = require('../utils/dramaExporter');
+
+      try {
+        const result = exportScript(project, {
+          format: exportFormat,
+          includeIncomplete: includeIncomplete === 'true',
+          upToEpisode: upToEpisode ? parseInt(upToEpisode, 10) : null,
+          includeMetadata: includeMetadata === 'true'
+        });
+
+        if (!result.success) {
+          return res.status(400).json({
+            code: 400,
+            message: result.message || '导出失败',
+            data: { warnings: result.warnings }
+          });
+        }
+
+        // 设置下载响应头
+        const fileExt = exportFormat === 'markdown' ? 'md' : 'txt';
+        const fileName = `${project.name}_${Date.now()}.${fileExt}`;
+        
+        res.setHeader('Content-Type', `text/${exportFormat === 'markdown' ? 'markdown' : 'plain'}; charset=utf-8`);
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+        
+        res.send(result.content);
+
+        logger.info('Drama project exported', {
+          userId: req.user._id,
+          projectId: project._id,
+          format: exportFormat
+        });
+      } catch (exportError) {
+        logger.error('导出剧本失败:', exportError);
+        return res.status(500).json({
+          code: 500,
+          message: '导出过程中发生错误',
+          error: exportError.message
+        });
+      }
+    } catch (error) {
+      logger.error('导出短剧项目失败:', error);
+      next(error);
+    }
+  }
 }
 
 module.exports = new DramaController();

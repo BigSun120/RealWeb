@@ -45,14 +45,16 @@
                 v-model="formData.background"
                 type="textarea"
                 :rows="4"
-                placeholder="描述故事发生的时代背景、社会环境等...
-例如：现代都市，某顶级跨国集团总部大楼"
+                :placeholder="getPlaceholder('background')"
               />
               <div class="field-tip" :class="{ 'field-warning': formData.background.length > 500 }">
                 💡 提示：包括时代、地点、社会结构等基本信息 
                 <span v-if="formData.background.length > 0">
                   (当前 {{ formData.background.length }} 字<span v-if="formData.background.length > 500" class="warning-text">，建议不超过500字</span>)
                 </span>
+              </div>
+              <div v-if="getExample('background')" class="field-example">
+                📝 示例：{{ getExample('background') }}
               </div>
             </el-form-item>
           </el-col>
@@ -63,14 +65,16 @@
                 v-model="formData.setting"
                 type="textarea"
                 :rows="4"
-                placeholder="描述这个世界的特殊规则、独特设定等...
-例如：豪门世家的等级制度、契约婚姻的社会背景"
+                :placeholder="getPlaceholder('setting')"
               />
               <div class="field-tip" :class="{ 'field-warning': formData.setting.length > 500 }">
                 💡 提示：世界的独特规则、价值观、特殊设定
                 <span v-if="formData.setting.length > 0">
                   (当前 {{ formData.setting.length }} 字<span v-if="formData.setting.length > 500" class="warning-text">，建议不超过500字</span>)
                 </span>
+              </div>
+              <div v-if="getExample('setting')" class="field-example">
+                📝 示例：{{ getExample('setting') }}
               </div>
             </el-form-item>
           </el-col>
@@ -81,14 +85,16 @@
                 v-model="formData.theme"
                 type="textarea"
                 :rows="3"
-                placeholder="故事想表达的核心主题...
-例如：爱情与自我救赎、从契约到真爱"
+                :placeholder="getPlaceholder('theme')"
               />
               <div class="field-tip" :class="{ 'field-warning': formData.theme.length > 200 }">
                 💡 提示：故事的核心理念和价值观
                 <span v-if="formData.theme.length > 0">
                   (当前 {{ formData.theme.length }} 字<span v-if="formData.theme.length > 200" class="warning-text">，建议不超过200字</span>)
                 </span>
+              </div>
+              <div v-if="getExample('theme')" class="field-example">
+                📝 示例：{{ getExample('theme') }}
               </div>
             </el-form-item>
           </el-col>
@@ -99,14 +105,16 @@
                 v-model="formData.conflict"
                 type="textarea"
                 :rows="3"
-                placeholder="故事的主要矛盾和冲突点...
-例如：男女主的身份差距、家族恩怨、契约限制"
+                :placeholder="getPlaceholder('conflict')"
               />
               <div class="field-tip" :class="{ 'field-warning': formData.conflict.length > 200 }">
                 💡 提示：推动剧情发展的核心矛盾
                 <span v-if="formData.conflict.length > 0">
                   (当前 {{ formData.conflict.length }} 字<span v-if="formData.conflict.length > 200" class="warning-text">，建议不超过200字</span>)
                 </span>
+              </div>
+              <div v-if="getExample('conflict')" class="field-example">
+                📝 示例：{{ getExample('conflict') }}
               </div>
             </el-form-item>
           </el-col>
@@ -291,6 +299,82 @@ const handleCustomToneBlur = () => {
   }
 };
 
+// 根据项目类型获取字段提示文本
+const getPlaceholder = (field) => {
+  const projectType = props.projectInfo?.type || '';
+  
+  const placeholders = {
+    '霸道总裁': {
+      background: '描述故事发生的时代背景、社会环境等...\n例如：现代都市，某顶级跨国集团总部，豪华写字楼里的权力游戏',
+      setting: '描述这个世界的特殊规则、独特设定等...\n例如：豪门世家的等级制度、契约婚姻的社会惯例、商场规则',
+      theme: '故事想表达的核心主题...\n例如：从契约到真爱、爱情与自我成长、破除偏见找到真爱',
+      conflict: '故事的主要矛盾和冲突点...\n例如：男女主的身份地位悬殊、家族利益冲突、契约限制与真心'
+    },
+    '悬疑推理': {
+      background: '描述故事发生的时代背景、社会环境等...\n例如：现代城市，一个阐蓝的滘江小镇，连续发生神秘案件',
+      setting: '描述这个世界的特殊规则、独特设定等...\n例如：封闭的社交圈层、错综复杂的人际关系、隐藏的秘密',
+      theme: '故事想表达的核心主题...\n例如：真相与谎言、人性的黑暗面、正义与复仇',
+      conflict: '故事的主要矛盾和冲突点...\n例如：错综复杂的案情真相、多方势力的博弈、主角的信任危机'
+    },
+    '甜宠日常': {
+      background: '描述故事发生的时代背景、社会环境等...\n例如：现代城市，一个充满活力的大学校园或温馨小镇',
+      setting: '描述这个世界的特殊规则、独特设定等...\n例如：轻松愉快的生活氛围、简单纯粹的人际关系、小美好不断',
+      theme: '故事想表达的核心主题...\n例如：纯粹的爱情、疅0的美好、陇伴与成长',
+      conflict: '故事的主要矛盾和冲突点...\n例如：小误会小矛盾、性格差异的磨合、外界的小干扰'
+    },
+    '复仇爽剧': {
+      background: '描述故事发生的时代背景、社会环境等...\n例如：现代都市，上流社会的权势交锣、利益博弈',
+      setting: '描述这个世界的特殊规则、独特设定等...\n例如：弱肉强食的丛林法则、复仇者的成长体系、打脸设定',
+      theme: '故事想表达的核心主题...\n例如：复仇与正义、凤凰涅槃、绝地反击爽文',
+      conflict: '故事的主要矛盾和冲突点...\n例如：深仇大恨、地位悬殊的对抗、步步为营的复仇计划'
+    },
+    '古装穿越': {
+      background: '描述故事发生的时代背景、社会环境等...\n例如：架空古代王朝，皇宫权谋与江湖义气交织',
+      setting: '描述这个世界的特殊规则、独特设定等...\n例如：穿越者的金手指能力、古代礼仪制度、皇宫权力结构',
+      theme: '故事想表达的核心主题...\n例如：现代思想与古代碰撞、命运改变、爱情超越时空',
+      conflict: '故事的主要矛盾和冲突点...\n例如：现代人的身份秘密、皇宫权力斗争、历史轨迹的改变'
+    },
+    '职场励志': {
+      background: '描述故事发生的时代背景、社会环境等...\n例如：现代都市，竞争激烈的某行业（金融、传媒、科技）',
+      setting: '描述这个世界的特殊规则、独特设定等...\n例如：职场潜规则、行业特有文化、成功的标准与代价',
+      theme: '故事想表达的核心主题...\n例如：奋斗与梦想、自我价值实现、职场与生活平衡',
+      conflict: '故事的主要矛盾和冲突点...\n例如：职场竞争与合作、个人梦想与现实压力、职场陷阱与险恶'
+    }
+  };
+  
+  // 默认提示文本
+const defaultPlaceholders = {
+    background: '描述故事发生的时代背景、社会环境等...\n例如：现代都市，某顶级跨国集团总部大楼',
+    setting: '描述这个世界的特殊规则、独特设定等...\n例如：豪门世家的等级制度、契约婚姻的社会背景',
+    theme: '故事想表达的核心主题...\n例如：爱情与自我救赎、从契约到真爱',
+    conflict: '故事的主要矛盾和冲突点...\n例如：男女主的身份差距、家族恩怨、契约限制'
+  };
+  
+  return placeholders[projectType]?.[field] || defaultPlaceholders[field] || '';
+};
+
+// 获取示例文本
+const getExample = (field) => {
+  const projectType = props.projectInfo?.type || '';
+  
+  const examples = {
+    '霸道总裁': {
+      background: 'A市的经济中心，盛天集团总部占据了整栋88层的摩天大楼，掌控着城市的经济命脉',
+      setting: '商界精英阶层以利益为先，婚姻契约是家族联盟的常见手段，但真爱难觅',
+      theme: '在利益交换的冰冷契约中，逐渐解冻心防，发现真爱的可贵',
+      conflict: '男主是高冷总裁，女主是普通职员，因契约结婚，但面对家族反对和身份鸿沟'
+    },
+    '悬疑推理': {
+      background: '滘江小镇，夜雨绵绵，连续三起密室谋杀案震惊全镇',
+      setting: '小镇社交圈层错综复杂，每个人都有秘密，真相被层层谎言掩盖',
+      theme: '揭露人性黑暗面，探索真相背后的动机与代价',
+      conflict: '探员与凶手的智力博弈，真相逼近时的危险与考验'
+    }
+  };
+  
+  return examples[projectType]?.[field] || '';
+};
+
 // 生成提示词
 const handleGeneratePrompt = () => {
   if (!hasContent.value) {
@@ -393,6 +477,17 @@ const handleAIParseConfirm = (parsedData) => {
 .warning-text {
   color: #F56C6C;
   font-weight: 600;
+}
+
+.field-example {
+  font-size: 12px;
+  color: #67C23A;
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: #F0F9FF;
+  border-left: 3px solid #409EFF;
+  border-radius: 4px;
+  line-height: 1.6;
 }
 
 .preview-card {

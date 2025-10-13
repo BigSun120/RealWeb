@@ -34,8 +34,8 @@ class DramaDatabase extends Dexie {
       // 模板表
       templates: 'id, category, type',
       
-      // 版本历史表
-      versions: 'id, [projectId+moduleType+moduleId], createdAt'
+      // 版本历史表（扩展：支持注释、标签、重要性标记）
+      versions: 'id, [projectId+moduleType+moduleId], projectId, createdAt, isImportant'
     });
 
     // 表的类型声明（可选，但推荐用于 TypeScript）

@@ -539,16 +539,24 @@ export function generateCompleteCreationPackage(options) {
         text += `${act.description}\n\n`;
       }
       
-      if (act.nodes && act.nodes.length > 0) {
+      if (act.plotPoints && act.plotPoints.length > 0) {
         text += `**关键节点**：\n\n`;
-        act.nodes.forEach((node, idx) => {
-          text += `${idx + 1}. **${node.name}**`;
-          if (node.episodes) {
-            text += ` (第${node.episodes}集)`;
+        act.plotPoints.forEach((point, idx) => {
+          text += `${idx + 1}. **${point.name}**`;
+          if (point.episodeRange) {
+            text += ` (第${point.episodeRange}集)`;
           }
           text += `\n`;
-          if (node.description) {
-            text += `   ${node.description}\n`;
+          if (point.description) {
+            text += `   ${point.description}\n`;
+          }
+          // 添加涉及角色信息
+          if (point.characters && point.characters.length > 0) {
+            text += `   涉及角色：${point.characters.join('、')}\n`;
+          }
+          // 添加情感变化信息
+          if (point.emotion && point.emotion.length > 0) {
+            text += `   情感变化：${point.emotion.join('、')}\n`;
           }
           text += `\n`;
         });

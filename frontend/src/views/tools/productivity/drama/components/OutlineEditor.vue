@@ -40,12 +40,38 @@
     </div>
 
     <div class="editor-content">
-      <!-- 结构选择 -->
-      <div class="structure-selector">
-        <el-radio-group v-model="outlineData.structure" size="large">
-          <el-radio-button label="three-act">三幕结构</el-radio-button>
-          <el-radio-button label="hero-journey" disabled>英雄之旅（开发中）</el-radio-button>
-        </el-radio-group>
+      <!-- 使用指导 -->
+      <el-alert
+        type="info"
+        :closable="false"
+        style="margin-bottom: 20px;"
+      >
+        <template #title>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <el-icon><InfoFilled /></el-icon>
+            <strong>大纲编写指导</strong>
+          </div>
+        </template>
+        <template #default>
+          <div class="guide-content">
+            <p>🎯 <strong>三幕结构说明：</strong></p>
+            <ul style="margin: 8px 0; padding-left: 24px;">
+              <li><strong>第一幕（开端）：</strong>建立世界观，介绍主要角色，引发核心冲突（建议20-25%篇幅）</li>
+              <li><strong>第二幕（对抗）：</strong>角色面对挑战，冲突升级，经历转折（建议50-60%篇幅）</li>
+              <li><strong>第三幕（结局）：</strong>冲突解决，故事高潮，收尾（建议15-25%篇幅）</li>
+            </ul>
+            <p style="margin-top: 12px;">💡 <strong>建议：</strong>每一幕设置3-5个关键节点，每个节点明确事件、角色和情感变化。</p>
+          </div>
+        </template>
+      </el-alert>
+
+      <!-- 结构说明 -->
+      <div class="structure-info">
+        <el-tag type="primary" size="large">
+          <el-icon><List /></el-icon>
+          三幕结构
+        </el-tag>
+        <span class="structure-desc">经典编剧法，适合所有类型的短剧创作</span>
       </div>
 
       <!-- 三幕结构编辑器 -->
@@ -75,6 +101,9 @@
               show-word-limit
               class="act-description"
             />
+            <div class="field-tip">
+              💡 {{ getActGuidance(act.actNumber) }}
+            </div>
           </div>
 
           <!-- 关键节点 -->
@@ -122,6 +151,9 @@
                     placeholder="描述在这个节点发生的关键事件...（100-200字建议）"
                     :class="{ 'warning-border': isFieldTooLong(point.description, 500) }"
                   />
+                  <div class="field-tip">
+                    💡 建议：描述具体发生什么事、为什么发生、产生什么影响。例如：“女主因家族债务被迫签下契约，与男主初次见面，双方都对这段婚姻抵触”
+                  </div>
                 </el-form-item>
 
                 <el-row :gutter="12">
@@ -140,6 +172,9 @@
                           :value="char"
                         />
                       </el-select>
+                      <div class="field-tip" style="margin-top: 4px;">
+                        👥 选择在此节点出现的主要角色
+                      </div>
                     </el-form-item>
                   </el-col>
 
@@ -257,7 +292,8 @@ import {
   Plus,
   Delete,
   DataAnalysis,
-  DocumentCopy
+  DocumentCopy,
+  InfoFilled
 } from '@element-plus/icons-vue';
 import PromptDialog from './PromptDialog.vue';
 import AIResponseParser from './AIResponseParser.vue';
@@ -375,6 +411,16 @@ const numberToChinese = (num) => {
 const getActTagType = (actNumber) => {
   const types = ['', 'success', 'warning', 'danger'];
   return types[actNumber] || 'info';
+};
+
+// 获取幕的指导文本
+const getActGuidance = (actNumber) => {
+  const guidance = {
+    1: '建议：包含世界观介绍、主要角色登场、日常生活展示、触发事件发生。让观众熟悉人物和环境，为后续冲突铺垫。',
+    2: '建议：设置多个困难和挑战，让主角成长和变化。包括关系深化、冲突升级、转折点出现。这是故事的主体部分。',
+    3: '建议：最终对决、高潮场面、冲突解决、情感升华、结局交代。给观众一个满意的结果，留下深刻印象。'
+  };
+  return guidance[actNumber] || '';
 };
 
 // 生成唯一ID
@@ -740,8 +786,24 @@ const isFieldTooLong = (value, maxLength) => {
   overflow-y: auto;
 }
 
-.structure-selector {
+.structure-info {
   margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+  border-radius: 8px;
+  border: 1px solid #BAE6FD;
+}
+
+.structure-info .el-tag {
+  font-weight: 600;
+}
+
+.structure-desc {
+  color: #606266;
+  font-size: 14px;
 }
 
 .acts-container {
