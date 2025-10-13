@@ -4,8 +4,8 @@
 html,
 body {
   height: 100%;
-  /* 临时调试：允许所有滚动 */
-  overflow: visible !important;
+  margin: 0;
+  padding: 0;
 }
 
 // 项目特定的组件样式扩展

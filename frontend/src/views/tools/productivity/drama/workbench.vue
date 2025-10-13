@@ -3,16 +3,12 @@
     <!-- 顶部导航栏 -->
     <div class="workbench-header">
       <div class="header-left">
-        <el-button
-          type="text"
-          :icon="ArrowLeft"
-          @click="goBack"
-        >
+        <el-button type="text" :icon="ArrowLeft" @click="goBack">
           返回项目列表
         </el-button>
-        
+
         <el-divider direction="vertical" />
-        
+
         <div class="project-info">
           <h2 class="project-name">{{ project.name }}</h2>
           <el-tag :type="getStatusType(project.status)" size="small">
@@ -22,40 +18,85 @@
       </div>
 
       <div class="header-right">
-        <!-- 自动保存状态指示器 -->
-        <div class="auto-save-indicator" v-if="lastSaveTime">
-          <el-tooltip :content="`最后保存: ${formatSaveTime(lastSaveTime)}`" placement="bottom">
-            <div class="save-status">
-              <el-icon :class="{ 'saving': isSaving }"><CircleCheck /></el-icon>
-              <span class="save-text">{{ isSaving ? '保存中...' : '已保存' }}</span>
+        <!-- 自动保存状态指示器（优化版） -->
+        <div class="auto-save-indicator">
+          <el-tooltip placement="bottom">
+            <template #content>
+              <div class="auto-save-tooltip">
+                <div v-if="isSaving" class="tooltip-row">
+                  <strong>⏳ 正在保存...</strong>
+                </div>
+                <div v-else-if="lastSaveTime" class="tooltip-row">
+                  <strong>✅ 最后保存:</strong> {{ formatSaveTime(lastSaveTime) }}
+                </div>
+                <div v-else class="tooltip-row">
+                  <strong>📝 未保存</strong>
+                </div>
+                <el-divider style="margin: 8px 0;" />
+                <div class="tooltip-section">
+                  <div class="tooltip-title">🛡️ 自动保存规则</div>
+                  <div class="tooltip-item">• 每1小时自动检查一次</div>
+                  <div class="tooltip-item">• 仅保存有变化的模块</div>
+                  <div class="tooltip-item">• 手动保存后重置计时</div>
+                  <div class="tooltip-item" style="color: #67c23a;">• 最多保留10个自动保存版本</div>
+                </div>
+                <el-divider style="margin: 8px 0;" />
+                <div class="tooltip-section">
+                  <div class="tooltip-title">💡 建议</div>
+                  <div class="tooltip-item">• 重要修改请手动保存</div>
+                  <div class="tooltip-item">• 长时间编辑建议定期手动保存</div>
+                </div>
+                <div v-if="hasAnyChanges()" class="tooltip-warning">
+                  <el-icon>
+                    <WarningFilled />
+                  </el-icon>
+                  有未保存的修改
+                </div>
+              </div>
+            </template>
+            <div class="save-status" :class="{ 'has-changes': hasAnyChanges() }">
+              <el-icon :class="{ 'saving': isSaving }">
+                <CircleCheck v-if="!isSaving && !hasAnyChanges()" />
+                <Loading v-else-if="isSaving" />
+                <EditPen v-else />
+              </el-icon>
+              <span class="save-text">
+                {{ getSaveStatusText() }}
+              </span>
             </div>
           </el-tooltip>
         </div>
-        
-        <el-progress
-          :percentage="project.progress"
-          :stroke-width="8"
-          style="width: 150px"
-        />
+
+        <el-progress :percentage="project.progress" :stroke-width="8" style="width: 150px" />
         <el-dropdown @command="handleExportCommand" split-button @click="handleQuickExport">
-          <el-icon><Download /></el-icon>
+          <el-icon>
+            <Download />
+          </el-icon>
           导出
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="txt">
-                <el-icon><Document /></el-icon>
+                <el-icon>
+                  <Document />
+                </el-icon>
                 导出TXT
               </el-dropdown-item>
               <el-dropdown-item command="markdown">
-                <el-icon><Tickets /></el-icon>
+                <el-icon>
+                  <Tickets />
+                </el-icon>
                 导出Markdown
               </el-dropdown-item>
               <el-dropdown-item command="with-incomplete" divided>
-                <el-icon><FolderOpened /></el-icon>
+                <el-icon>
+                  <FolderOpened />
+                </el-icon>
                 包含未完成剧集
               </el-dropdown-item>
               <el-dropdown-item command="custom">
-                <el-icon><Setting /></el-icon>
+                <el-icon>
+                  <Setting />
+                </el-icon>
                 自定义导出...
               </el-dropdown-item>
             </el-dropdown-menu>
@@ -71,43 +112,55 @@
     <div class="workbench-content">
       <!-- 左侧导航 -->
       <div class="sidebar">
-        <el-menu
-          :default-active="activeTab"
-          class="sidebar-menu"
-          @select="handleTabChange"
-        >
+        <el-menu :default-active="activeTab" class="sidebar-menu" @select="handleTabChange">
           <el-menu-item index="worldview">
-            <el-icon><Document /></el-icon>
+            <el-icon>
+              <Document />
+            </el-icon>
             <span>世界观设定</span>
           </el-menu-item>
           <el-menu-item index="characters">
-            <el-icon><User /></el-icon>
+            <el-icon>
+              <User />
+            </el-icon>
             <span>角色管理</span>
             <el-badge v-if="characters.length" :value="characters.length" class="item-badge" />
           </el-menu-item>
           <el-menu-item index="outline">
-            <el-icon><List /></el-icon>
+            <el-icon>
+              <List />
+            </el-icon>
             <span>剧情大纲</span>
           </el-menu-item>
           <el-menu-item index="episodes">
-            <el-icon><Tickets /></el-icon>
+            <el-icon>
+              <Tickets />
+            </el-icon>
             <span>分集剧本</span>
             <el-badge v-if="episodes.length" :value="episodes.length" class="item-badge" />
           </el-menu-item>
           <el-menu-item index="analysis">
-            <el-icon><Monitor /></el-icon>
+            <el-icon>
+              <Monitor />
+            </el-icon>
             <span>剧本医生</span>
           </el-menu-item>
           <el-menu-item index="statistics">
-            <el-icon><DataAnalysis /></el-icon>
+            <el-icon>
+              <DataAnalysis />
+            </el-icon>
             <span>数据统计</span>
           </el-menu-item>
           <el-menu-item index="prompt-template">
-            <el-icon><Edit /></el-icon>
+            <el-icon>
+              <Edit />
+            </el-icon>
             <span>提示词模板</span>
           </el-menu-item>
           <el-menu-item index="versions">
-            <el-icon><Clock /></el-icon>
+            <el-icon>
+              <Clock />
+            </el-icon>
             <span>版本历史</span>
           </el-menu-item>
         </el-menu>
@@ -117,102 +170,56 @@
       <div class="main-content">
         <!-- 世界观设定 -->
         <div v-if="activeTab === 'worldview'" class="content-panel">
-          <WorldviewEditor
-            v-model="worldview"
-            :project-info="project"
-            @save="handleSaveWorldview"
-          />
+          <WorldviewEditor v-model="worldview" :project-info="project" @save="handleSaveWorldview" />
         </div>
 
         <!-- 角色管理 -->
         <div v-else-if="activeTab === 'characters'" class="content-panel">
-          <CharacterManager
-            v-model="characters"
-            :project-info="project"
-            :worldview="worldview"
-            @save="handleSaveCharacters"
-          />
+          <CharacterManager v-model="characters" :project-info="project" :worldview="worldview"
+            @save="handleSaveCharacters" />
         </div>
 
         <!-- 剧情大纲 -->
         <div v-else-if="activeTab === 'outline'" class="content-panel">
-          <OutlineEditor
-            v-model="outline"
-            :project-info="project"
-            :worldview="worldview"
-            :characters="characters"
-            @generate="handleGenerateOutline"
-            @save="handleSaveOutline"
-          />
+          <OutlineEditor v-model="outline" :project-info="project" :worldview="worldview" :characters="characters"
+            @generate="handleGenerateOutline" @save="handleSaveOutline" />
         </div>
 
         <!-- 分集剧本 -->
         <div v-else-if="activeTab === 'episodes'" class="content-panel">
-          <EpisodeManager
-            v-model="episodes"
-            :project-info="project"
-            :worldview="worldview"
-            :outline="outline"
-            :characters="characters"
-            :prompt-template="promptTemplate"
-            @save="handleSaveEpisodes"
-          />
+          <EpisodeManager v-model="episodes" :project-info="project" :worldview="worldview" :outline="outline"
+            :characters="characters" :prompt-template="promptTemplate" @save="handleSaveEpisodes" />
         </div>
 
         <!-- 提示词模板 -->
         <div v-else-if="activeTab === 'prompt-template'" class="content-panel">
-          <PromptTemplateEditor
-            v-model="promptTemplate"
-            :project-info="project"
-            :worldview="worldview"
-            :characters="characters"
-            @save="handleSavePromptTemplate"
-          />
+          <PromptTemplateEditor v-model="promptTemplate" :project-info="project" :worldview="worldview"
+            :characters="characters" @save="handleSavePromptTemplate" />
         </div>
 
         <!-- 剧本医生 -->
         <div v-else-if="activeTab === 'analysis'" class="content-panel">
-          <ScriptAnalysis
-            :project="fullProjectData"
-            @goto-module="handleTabChange"
-          />
+          <ScriptAnalysis :project="fullProjectData" @goto-module="handleTabChange" />
         </div>
 
         <!-- 数据统计 -->
         <div v-else-if="activeTab === 'statistics'" class="content-panel">
-          <StatisticsPanel
-            :project="project"
-            @refresh="handleRefreshData"
-            @go-to-tab="handleTabChange"
-          />
+          <StatisticsPanel :project="project" @refresh="handleRefreshData" @go-to-tab="handleTabChange" />
         </div>
 
         <!-- 版本历史 -->
         <div v-else-if="activeTab === 'versions'" class="content-panel">
-          <VersionHistory
-            :project="project"
-            @restore="handleRestoreVersion"
-          />
+          <VersionHistory :project="project" @restore="handleRestoreVersion" />
         </div>
       </div>
     </div>
 
     <!-- 导出对话框 -->
-    <ExportDialog
-      ref="exportDialogRef"
-      v-model="exportDialogVisible"
-      :project-id="project._id || project.id"
-      :project-name="project.name"
-      :project-data="exportProjectData"
-      @confirm="handleConfirmExport"
-    />
+    <ExportDialog ref="exportDialogRef" v-model="exportDialogVisible" :project-id="project._id || project.id"
+      :project-name="project.name" :project-data="exportProjectData" @confirm="handleConfirmExport" />
 
     <!-- 项目设置对话框 -->
-    <el-dialog
-      v-model="showSettings"
-      title="项目设置"
-      width="600px"
-    >
+    <el-dialog v-model="showSettings" title="项目设置" width="600px">
       <el-form :model="project" label-width="100px">
         <el-form-item label="项目名称">
           <el-input v-model="project.name" />
@@ -262,7 +269,10 @@ import {
   Edit,
   FolderOpened,
   CircleCheck,
-  Monitor
+  Monitor,
+  Loading,
+  EditPen,
+  WarningFilled
 } from '@element-plus/icons-vue';
 
 // 导入组件
@@ -443,14 +453,14 @@ const performExport = async (options) => {
   try {
     const projectId = project._id || project.id;
     const blob = await exportDramaProject(projectId, options);
-    
+
     // 生成文件名
     const ext = options.format === 'markdown' ? 'md' : 'txt';
     const filename = generateFilename(project.name, ext);
-    
+
     // 下载文件
     downloadBlob(blob, filename);
-    
+
     ElMessage.success('导出成功');
   } catch (error) {
     console.error('导出失败:', error);
@@ -485,7 +495,7 @@ const handleSaveSettings = async () => {
       episodeCount: project.episodeCount,
       description: project.description
     });
-    
+
     if (response.code === 200) {
       Object.assign(project, response.data);
       ElMessage.success('项目设置已保存');
@@ -530,7 +540,7 @@ const updateProjectStatus = async () => {
   if (newStatus !== project.status) {
     const oldStatus = project.status;
     project.status = newStatus;
-    
+
     // 更新到服务器
     try {
       await updateDramaProject(project._id || project.id, {
@@ -551,30 +561,30 @@ const calculateProjectStatus = () => {
   const completedEpisodes = episodes.value.filter(
     ep => ep.status === 'completed' || ep.status === 'reviewed'
   ).length;
-  
+
   if (currentEpisodes >= targetEpisodes && completedEpisodes >= targetEpisodes) {
     return '已完成';
   }
-  
+
   // 2. 检查是否在剧本中：有分集且有已完成的分集
   if (currentEpisodes > 0 && completedEpisodes > 0) {
     return '剧本中';
   }
-  
+
   // 3. 检查是否在大纲中：有大纲节点且有分集（但没有完成的）
   const hasOutlinePoints = outline.value?.acts?.some(
     act => act.plotPoints && act.plotPoints.length > 0
   ) || false;
-  
+
   if (hasOutlinePoints && currentEpisodes > 0) {
     return '大纲中';
   }
-  
+
   // 4. 检查是否在大纲中：只有大纲节点，没有分集
   if (hasOutlinePoints) {
     return '大纲中';
   }
-  
+
   // 5. 默认：还在设定中（有世界观或角色，但没有大纲）
   return '设定中';
 };
@@ -605,16 +615,27 @@ const formatSaveTime = (time) => {
   const date = new Date(time);
   const now = new Date();
   const diff = Math.floor((now - date) / 1000); // 秒数差
-  
+
   if (diff < 60) return '刚刚';
   if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`;
-  return date.toLocaleString('zh-CN', { 
-    month: '2-digit', 
-    day: '2-digit', 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
   });
+};
+
+// 获取保存状态文本
+const getSaveStatusText = () => {
+  if (isSaving.value) {
+    return '保存中...';
+  }
+  if (hasAnyChanges()) {
+    return '有修改';
+  }
+  return '已保存';
 };
 
 // 全局自动保存函数（每小时触发一次）
@@ -622,47 +643,47 @@ const performAutoSave = async () => {
   if (!autoSaveEnabled.value || isSaving.value || !isInitialized.value) {
     return;
   }
-  
+
   // 检查是否有任何数据变化
   if (!hasAnyChanges()) {
     console.log('🕐 定时检查：没有数据变化，跳过自动保存');
     return;
   }
-  
+
   console.log('💾 开始自动保存，变化的模块:', dataChangeFlags.value);
-  
+
   try {
     isSaving.value = true;
     const savedModules = [];
-    
+
     // 保存所有有变化的模块
     if (dataChangeFlags.value.worldview) {
       await handleSaveWorldview(worldview.value, true);
       savedModules.push('世界观');
     }
-    
+
     if (dataChangeFlags.value.characters) {
       await handleSaveCharacters(characters.value, true);
       savedModules.push('角色');
     }
-    
+
     if (dataChangeFlags.value.outline) {
       await handleSaveOutline(outline.value, true);
       savedModules.push('大纲');
     }
-    
+
     if (dataChangeFlags.value.episodes) {
       await handleSaveEpisodes(episodes.value, true);
       savedModules.push('分集');
     }
-    
+
     // 更新保存时间
     lastSaveTime.value = new Date();
     lastAutoSaveTime.value = new Date();
-    
+
     // 重置变化标记
     resetChangeFlags();
-    
+
     // 显示通知
     if (savedModules.length > 0) {
       ElNotification.success({
@@ -672,7 +693,7 @@ const performAutoSave = async () => {
         offset: 50
       });
     }
-    
+
     console.log('✅ 自动保存完成，保存了:', savedModules);
   } catch (error) {
     console.error('自动保存失败:', error);
@@ -692,12 +713,12 @@ const startAutoSaveTimer = () => {
   if (autoSaveTimer) {
     clearInterval(autoSaveTimer);
   }
-  
+
   // 设置1小时定时器
   autoSaveTimer = setInterval(() => {
     performAutoSave();
   }, autoSaveInterval);
-  
+
   console.log('✅ 自动保存定时器已启动，间隔: 1小时');
 };
 
@@ -715,7 +736,7 @@ const handleSaveWorldview = async (worldviewData, isAutoSave = false) => {
   try {
     const projectId = project._id || project.id;
     const response = await patchDramaWorldview(projectId, worldviewData);
-    
+
     if (response.code === 200) {
       // 创建版本快照
       try {
@@ -724,11 +745,14 @@ const handleSaveWorldview = async (worldviewData, isAutoSave = false) => {
         console.error('创建版本失败:', versionError);
         // 版本创建失败不影响保存
       }
-      
-      // 自动保存时不显示消息（由autoSaveWrapper统一处理）
+
+      // 修复：手动保存后更新保存时间和重置变化标记
       if (!isAutoSave) {
+        lastSaveTime.value = new Date();
+        dataChangeFlags.value.worldview = false;
         ElMessage.success('世界观已保存');
       }
+
       // 更新项目进度和状态
       await updateProjectProgress();
       await updateProjectStatus();
@@ -748,7 +772,7 @@ const handleSaveCharacters = async (charactersData, isAutoSave = false) => {
   try {
     const projectId = project._id || project.id;
     const response = await patchDramaCharacters(projectId, charactersData);
-    
+
     if (response.code === 200) {
       // 为每个角色创建版本快照
       try {
@@ -758,11 +782,14 @@ const handleSaveCharacters = async (charactersData, isAutoSave = false) => {
       } catch (versionError) {
         console.error('创建版本失败:', versionError);
       }
-      
-      // 自动保存时不显示消息
+
+      // 修复：手动保存后更新保存时间和重置变化标记
       if (!isAutoSave) {
+        lastSaveTime.value = new Date();
+        dataChangeFlags.value.characters = false;
         ElMessage.success('角色已保存');
       }
+
       // 更新项目进度和状态
       await updateProjectProgress();
       await updateProjectStatus();
@@ -786,7 +813,7 @@ const handleSaveOutline = async (outlineData, isAutoSave = false) => {
   try {
     const projectId = project._id || project.id;
     const response = await patchDramaOutline(projectId, outlineData);
-    
+
     if (response.code === 200) {
       // 创建版本快照
       try {
@@ -794,11 +821,14 @@ const handleSaveOutline = async (outlineData, isAutoSave = false) => {
       } catch (versionError) {
         console.error('创建版本失败:', versionError);
       }
-      
-      // 自动保存时不显示消息
+
+      // 修复：手动保存后更新保存时间和重置变化标记
       if (!isAutoSave) {
+        lastSaveTime.value = new Date();
+        dataChangeFlags.value.outline = false;
         ElMessage.success('大纲已保存');
       }
+
       // 更新项目进度和状态
       await updateProjectProgress();
       await updateProjectStatus();
@@ -834,9 +864,9 @@ const handleSavePromptTemplate = async (templateData) => {
       customTemplate: templateData.customTemplate ?? null,
       lastModified: templateData.lastModified ?? null
     };
-    
+
     const response = await patchDramaPromptTemplate(project._id || project.id, promptTemplateToSave);
-    
+
     if (response.code === 200) {
       // 修复：保存成功后同步更新本地状态，避免数据不一致
       promptTemplate.value = { ...promptTemplateToSave };
@@ -858,17 +888,34 @@ const handleSaveEpisodes = async (episodesData, isAutoSave = false) => {
   try {
     const projectId = project._id || project.id;
     const response = await patchDramaEpisodes(projectId, episodesData);
-    
+
     if (response.code === 200) {
-      // 为每个分集创建版本快照
+      // 修复：只为实际修改的分集创建版本快照
+      // 通过对比 updatedAt 时间戳来判断哪些分集是刚刚修改的
       try {
+        const now = new Date();
+        const recentThreshold = 5000; // 5秒内的修改视为本次保存
+
         for (const episode of episodesData) {
-          await createVersion('episode', episode.id || episode.number.toString(), episode, projectId, { isAutoSave });
+          const updatedAt = new Date(episode.updatedAt);
+          const timeDiff = now - updatedAt;
+
+          // 只为最近修改的分集创建版本
+          if (timeDiff <= recentThreshold) {
+            await createVersion('episode', episode.id || episode.number.toString(), episode, projectId, { isAutoSave });
+            console.log(`✅ 创建版本: 第${episode.number}集 (修改于 ${timeDiff}ms 前)`);
+          }
         }
       } catch (versionError) {
         console.error('创建版本失败:', versionError);
       }
-      
+
+      // 修复：手动保存后更新保存时间和重置变化标记
+      if (!isAutoSave) {
+        lastSaveTime.value = new Date();
+        dataChangeFlags.value.episodes = false;
+      }
+
       // 成功消息已在EpisodeManager中显示，这里不重复提示
       // 更新项目进度和状态（分集数据变化时尤其重要）
       await updateProjectProgress();
@@ -889,7 +936,7 @@ const handleRefreshData = async () => {
     const response = await getDramaProject(route.params.id);
     if (response.code === 200) {
       Object.assign(project, response.data);
-      
+
       // 更新所有数据
       if (response.data.worldview) {
         worldview.value = { ...response.data.worldview };
@@ -911,7 +958,7 @@ const handleRefreshData = async () => {
           lastModified: response.data.promptTemplate.lastModified ?? null
         };
       }
-      
+
       // 刷新后重新计算进度
       project.progress = calculateProjectProgress();
     }
@@ -926,7 +973,7 @@ const handleRestoreVersion = async (restoreData) => {
   try {
     const { moduleType, moduleId, content } = restoreData;
     const projectId = project._id || project.id;
-    
+
     // 根据模块类型恢复数据
     switch (moduleType) {
       case 'worldview':
@@ -935,42 +982,52 @@ const handleRestoreVersion = async (restoreData) => {
         await patchDramaWorldview(projectId, content);
         ElMessage.success('世界观已恢复');
         break;
-        
+
       case 'character':
-        // 恢复角色（找到并替换对应角色）
+        // 恢夏角色（找到则替换，找不到则添加）
         const charIndex = characters.value.findIndex(c => c.id === moduleId);
         if (charIndex > -1) {
+          // 找到了，替换现有角色
           characters.value[charIndex] = { ...content };
           await patchDramaCharacters(projectId, characters.value);
           ElMessage.success(`角色 "${content.name}" 已恢复`);
         } else {
-          ElMessage.warning('找不到对应的角色');
+          // 找不到，说明已被删除，重新添加
+          characters.value.push({ ...content });
+          await patchDramaCharacters(projectId, characters.value);
+          ElMessage.success(`角色 "${content.name}" 已恢复（已重新添加）`);
         }
         break;
-        
+
       case 'outline':
         // 恢复大纲
         outline.value = { ...content };
         await patchDramaOutline(projectId, content);
         ElMessage.success('大纲已恢复');
         break;
-        
+
       case 'episode':
-        // 恢复分集（找到并替换对应分集）
+        // 恢复分集（找到则替换，找不到则添加）
         const epIndex = episodes.value.findIndex(e => e.id === moduleId || e.number === content.number);
         if (epIndex > -1) {
+          // 找到了，替换现有分集
           episodes.value[epIndex] = { ...content };
           await patchDramaEpisodes(projectId, episodes.value);
           ElMessage.success(`第${content.number}集已恢复`);
         } else {
-          ElMessage.warning('找不到对应的分集');
+          // 找不到，说明已被删除，重新添加
+          episodes.value.push({ ...content });
+          // 按集数排序
+          episodes.value.sort((a, b) => a.number - b.number);
+          await patchDramaEpisodes(projectId, episodes.value);
+          ElMessage.success(`第${content.number}集已恢复（已重新添加）`);
         }
         break;
-        
+
       default:
         ElMessage.error('未知的模块类型');
     }
-    
+
     // 刷新项目进度
     await updateProjectProgress();
   } catch (error) {
@@ -1022,27 +1079,27 @@ onMounted(async () => {
     const response = await getDramaProject(route.params.id);
     if (response.code === 200) {
       Object.assign(project, response.data);
-      
+
       // 初始化世界观数据
       if (response.data.worldview) {
         worldview.value = { ...response.data.worldview };
       }
-      
+
       // 初始化角色数据
       if (response.data.characters) {
         characters.value = [...response.data.characters];
       }
-      
+
       // 初始化大纲数据
       if (response.data.outline) {
         outline.value = { ...response.data.outline };
       }
-      
+
       // 初始化分集数据
       if (response.data.episodes) {
         episodes.value = [...response.data.episodes];
       }
-      
+
       // 初始化提示词模板数据
       if (response.data.promptTemplate) {
         // 修复：确保正确读取并保留所有字段
@@ -1059,7 +1116,7 @@ onMounted(async () => {
           lastModified: null
         };
       }
-      
+
       // 标记初始化完成，延迟1秒后启用自动保存监听
       setTimeout(() => {
         isInitialized.value = true;
@@ -1091,7 +1148,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .drama-workbench {
-  height: 100vh;
+  height: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: #f5f7fa;
@@ -1133,44 +1191,108 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 
-/* 自动保存指示器 */
+/* 自动保存指示器（优化版） */
 .auto-save-indicator {
   display: flex;
   align-items: center;
-  padding: 4px 12px;
-  background: #f0f9ff;
-  border: 1px solid #e0f2fe;
-  border-radius: 4px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae7ff;
+  border-radius: 6px;
   font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.auto-save-indicator:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .save-status {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: #67c23a;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.save-status.has-changes {
+  color: #e6a23c;
 }
 
 .save-status .el-icon {
-  font-size: 14px;
+  font-size: 16px;
+  transition: all 0.3s ease;
 }
 
 .save-status .el-icon.saving {
   animation: rotate 1s linear infinite;
+  color: #409eff;
 }
 
 @keyframes rotate {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
 }
 
 .save-text {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Tooltip 样式 */
+.auto-save-tooltip {
+  max-width: 280px;
+  padding: 4px;
+}
+
+.tooltip-row {
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.tooltip-section {
+  margin: 8px 0;
+}
+
+.tooltip-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #409eff;
+  margin-bottom: 6px;
+}
+
+.tooltip-item {
+  font-size: 12px;
+  color: #ffffff;
+  /* 修复：使用白色文字，与深色 tooltip 背景对比 */
+  line-height: 1.6;
+  padding-left: 4px;
+}
+
+.tooltip-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #fef0f0;
+  border-radius: 4px;
+  color: #f56c6c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tooltip-warning .el-icon {
+  font-size: 14px;
 }
 
 .workbench-content {

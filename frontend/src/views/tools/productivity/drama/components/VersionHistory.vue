@@ -96,7 +96,7 @@
       <div class="save-type-filter">
         <span class="filter-label">保存类型：</span>
         <el-tag
-          :type="filterSaveType === 'all' ? 'primary' : ''"
+          :type="filterSaveType === 'all' ? 'primary' : undefined"
           :effect="filterSaveType === 'all' ? 'dark' : 'plain'"
           @click="filterSaveType = 'all'"
           style="cursor: pointer; margin-right: 8px;"
@@ -104,7 +104,7 @@
           全部
         </el-tag>
         <el-tag
-          :type="filterSaveType === 'manual' ? 'success' : ''"
+          :type="filterSaveType === 'manual' ? 'success' : undefined"
           :effect="filterSaveType === 'manual' ? 'dark' : 'plain'"
           @click="filterSaveType = 'manual'"
           style="cursor: pointer; margin-right: 8px;"
@@ -112,7 +112,7 @@
           手动保存
         </el-tag>
         <el-tag
-          :type="filterSaveType === 'auto' ? 'info' : ''"
+          :type="filterSaveType === 'auto' ? 'info' : undefined"
           :effect="filterSaveType === 'auto' ? 'dark' : 'plain'"
           @click="filterSaveType = 'auto'"
           style="cursor: pointer;"
@@ -130,9 +130,6 @@
     <!-- 空状态 -->
     <div v-else-if="versions.length === 0" class="empty-state">
       <el-empty description="暂无历史版本">
-        <template #image>
-          <el-icon :size="80" color="#909399"><Clock /></el-icon>
-        </template>
         <template #description>
           <p>当前项目还没有历史版本</p>
           <p class="tip">保存世界观、角色、大纲或分集时会自动创建版本</p>
@@ -301,19 +298,19 @@
         <div class="rules-section">
           <h4><el-icon><Clock /></el-icon> 保存频率</h4>
           <ul>
-            <li><strong>间隔时间：</strong>每 <strong class="highlight">1小时</strong> 自动保存一次</li>
-            <li><strong>防抖延迟：</strong>停止编辑后 30 秒才会检查是否需要保存</li>
-            <li><strong>冷却时间：</strong>每次保存后至少等待 1 小时才会再次保存</li>
+            <li><strong>定时检查：</strong>每 <strong class="highlight">1小时</strong> 自动检查一次</li>
+            <li><strong>按需保存：</strong>仅保存有变化的模块</li>
+            <li><strong>手动重置：</strong>手动保存后重置计时</li>
           </ul>
         </div>
 
         <div class="rules-section">
           <h4><el-icon><Document /></el-icon> 保存范围</h4>
           <ul>
-            <li>世界观设定</li>
-            <li>角色管理</li>
-            <li>剧情大纲</li>
-            <li>分集剧本</li>
+            <li>✅ 世界观设定</li>
+            <li>✅ 角色管理</li>
+            <li>✅ 剧情大纲</li>
+            <li>✅ 分集剧本</li>
           </ul>
           <p class="note">ℹ️ 提示词模板不包含在自动保存中，需手动保存</p>
         </div>
@@ -330,10 +327,11 @@
         <div class="rules-section">
           <h4><el-icon><Warning /></el-icon> 注意事项</h4>
           <ul>
-            <li>自动保存仅在内容发生变化时触发</li>
-            <li>重要修改建议手动保存，以便添加注释和标签</li>
-            <li>网络异常时自动保存可能失败，请注意保存状态提示</li>
-            <li>手动保存不受时间间隔限制，可以随时保存</li>
+            <li>⏰ 每1小时自动检查一次，只有数据发生变化才会保存</li>
+            <li>💾 仅保存变化的模块（世界观/角色/大纲/分集）</li>
+            <li>🔄 手动保存后会重置定时器计时</li>
+            <li>📦 最多保留10个自动保存版本，超出自动删除最旧版本</li>
+            <li>⚠️ 重要修改建议手动保存，以便添加注释和标签</li>
           </ul>
         </div>
 
@@ -344,6 +342,7 @@
           <p>1. 日常编辑依赖自动保存，无需频繁手动操作</p>
           <p>2. 完成重要阶段性工作后，手动保存并添加备注</p>
           <p>3. 定期查看版本历史，清理不需要的版本</p>
+          <p>4. 长时间编辑建议定期手动保存，避免依赖1小时自动保存</p>
         </div>
       </div>
 
