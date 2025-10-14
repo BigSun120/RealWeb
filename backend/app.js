@@ -47,6 +47,8 @@ const bookmarkRoutes = require('./src/routes/bookmarks');
 const backgroundRoutes = require('./src/routes/backgrounds');
 const promptsRoutes = require('./src/routes/prompts');
 const promptUsageRoutes = require('./src/routes/prompt-usage');
+const aiRoutes = require('./src/routes/ai');
+const adminPublicAIConnectionsRoutes = require('./src/routes/admin/publicAIConnections');
 
 const app = express();
 const PORT = process.env.PORT || 8001;
@@ -258,6 +260,8 @@ app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/backgrounds', backgroundRoutes);
 app.use('/api/tools/prompt-vault', promptsRoutes);
 app.use('/api/prompts', promptUsageRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/admin/ai-connections', adminPublicAIConnectionsRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

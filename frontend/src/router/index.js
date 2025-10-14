@@ -73,6 +73,12 @@ const routes = [
     meta: { title: '个人中心', requiresAuth: true }
   },
   {
+    path: '/ai-connections',
+    name: 'AIConnections',
+    component: () => import('@/views/user/AIConnections.vue'),
+    meta: { title: 'AI连接管理', requiresAuth: true }
+  },
+  {
     path: '/user/:id',
     name: 'UserProfile',
     component: () => import('@/views/user/UserProfile.vue'),
@@ -274,6 +280,12 @@ const routes = [
         name: 'AdminTokenManagement',
         component: () => import('@/views/admin/TokenManagement.vue'),
         meta: { title: '全部令牌管理', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'public-ai-connections',
+        name: 'AdminPublicAIConnections',
+        component: () => import('@/views/admin/PublicAIConnections.vue'),
+        meta: { title: '公共API连接管理', requiresAuth: true, requiresAdmin: true }
       }
     ]
   },

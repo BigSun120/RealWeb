@@ -75,6 +75,9 @@
             <el-menu-item index="/admin/tokens" class="sub-menu-item">
               <span class="sub-menu-title">全部令牌</span>
             </el-menu-item>
+            <el-menu-item index="/admin/public-ai-connections" class="sub-menu-item">
+              <span class="sub-menu-title">公共API连接</span>
+            </el-menu-item>
           </el-sub-menu>
 
           <!-- 用户管理区 -->
@@ -289,6 +292,7 @@ export default {
         'temp-email-activation-codes': '验证码管理',
         backgrounds: '背景管理',
         tokens: '全部令牌管理',
+        'public-ai-connections': '公共API连接管理',
         activity: '活动日志',
         settings: '系统设置'
       };

@@ -59,6 +59,7 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Lock } from '@element-plus/icons-vue';
 import { useProfile } from '@/composables/useProfile';
@@ -76,6 +77,7 @@ export default {
     Lock
   },
   setup() {
+    const router = useRouter();
     const userStore = useUserStore();
 
     // 使用Profile状态管理
@@ -100,6 +102,11 @@ export default {
 
     // 处理菜单选择
     const handleMenuSelect = (menuIndex) => {
+      // 如果选择AI连接，跳转到对应页面
+      if (menuIndex === 'ai-connections') {
+        router.push('/ai-connections');
+        return;
+      }
       profileMenuSelect(menuIndex);
     };
 
