@@ -1,11 +1,14 @@
 <template>
   <div v-show="placements.includes('banner')" class="public-notice-banner-wrapper">
-    <div v-if="visibleNotices.length > 0" class="public-notice-banner" :class="[`level-${visibleNotices[0].level}`, { 'is-unread': userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead) }]">
+    <div v-if="visibleNotices.length > 0" class="public-notice-banner"
+      :class="[`level-${visibleNotices[0].level}`, { 'is-unread': userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead) }]">
       <div class="container">
         <div class="banner-content">
           <div class="banner-text">
             <div class="title-wrapper">
-              <div v-if="userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead)" class="unread-indicator">
+              <div
+                v-if="userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead)"
+                class="unread-indicator">
                 <div class="unread-dot"></div>
               </div>
               <strong class="title">{{ visibleNotices[0].title }}</strong>
@@ -21,11 +24,7 @@
             </el-button>
             <el-button
               v-if="userStore && userStore.isLoggedIn && (!visibleNotices[0].readStatus || !visibleNotices[0].readStatus.isRead)"
-              size="small"
-              type="text"
-              @click="markAsRead(visibleNotices[0]._id)"
-              :loading="markingRead"
-            >
+              size="small" type="text" @click="markAsRead(visibleNotices[0]._id)" :loading="markingRead">
               标记已读
             </el-button>
             <el-button size="small" type="text" @click="dismiss(visibleNotices[0]._id)">不再显示</el-button>
@@ -46,7 +45,7 @@ import { useUserStore } from '@/stores/user';
 export default {
   name: 'PublicNoticeBanner',
   props: {
-    placements: { type: Array, default: () => ['banner','dropdown'] }
+    placements: { type: Array, default: () => ['banner', 'dropdown'] }
   },
   setup() {
     const router = useRouter();
@@ -170,7 +169,7 @@ export default {
       try {
         const res = await getLatestPublicNotices(5);
         if (res.data?.success) notices.value = res.data.data || [];
-      } catch (_) {}
+      } catch (_) { }
     };
 
     // 全局事件监听器，用于同步其他组件的操作
@@ -202,11 +201,38 @@ export default {
   background: #eef5ff;
   border-bottom: 1px solid #dbeafe;
 }
-.public-notice-banner.level-warning { background: #fff7ed; border-color: #ffedd5; }
-.public-notice-banner.level-critical { background: #fef2f2; border-color: #fee2e2; }
-.public-notice-banner.is-unread { border-left: 4px solid #409eff; }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
-.banner-content { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; min-height: 40px; max-height: 80px; }
+
+
+.public-notice-banner.level-warning {
+  background: #fff7ed;
+  border-color: #ffedd5;
+}
+
+.public-notice-banner.level-critical {
+  background: #fef2f2;
+  border-color: #fee2e2;
+}
+
+.public-notice-banner.is-unread {
+  border-left: 4px solid #409eff;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  min-height: 40px;
+  max-height: 80px;
+}
+
 .banner-text {
   flex: 1;
   min-width: 0;
@@ -215,16 +241,36 @@ export default {
   gap: 4px;
   overflow: hidden;
 }
-.title-wrapper { display: flex; align-items: center; gap: 8px; }
-.unread-indicator { display: flex; align-items: center; }
-.unread-dot { width: 8px; height: 8px; background: #409eff; border-radius: 50%; }
+
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unread-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  background: #409eff;
+  border-radius: 50%;
+}
+
 .title {
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.public-notice-banner.is-unread .title { font-weight: 600; }
+
+.public-notice-banner.is-unread .title {
+  font-weight: 600;
+}
+
 .body {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -235,7 +281,12 @@ export default {
   line-height: 1.4;
   max-height: 2.8em;
 }
-.body :deep(p) { display: inline; margin: 0; }
+
+.body :deep(p) {
+  display: inline;
+  margin: 0;
+}
+
 .banner-actions {
   display: flex;
   gap: 8px;

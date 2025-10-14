@@ -57,6 +57,7 @@
 .blog-list-page {
   min-height: 100vh;
   position: relative;
+  /* header高度70px + 额外间距20px */
 }
 
 .page-background {
@@ -112,7 +113,8 @@
   color: #1a202c;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   position: sticky;
-  top: 2rem;
+  top: calc(70px + 2rem);
+  /* header高度 + 额外间距 */
   height: fit-content;
 }
 

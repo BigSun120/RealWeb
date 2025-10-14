@@ -87,12 +87,8 @@
           </div>
           <div class="section-content">
             <div class="timeline">
-              <div
-                v-for="(item, index) in timeline"
-                :key="item.time + item.title"
-                class="timeline-item"
-                :class="{ 'timeline-item-active': index === 0 }"
-              >
+              <div v-for="(item, index) in timeline" :key="item.time + item.title" class="timeline-item"
+                :class="{ 'timeline-item-active': index === 0 }">
                 <div class="timeline-dot"></div>
                 <div class="timeline-content">
                   <div class="timeline-time">{{ item.time }}</div>
@@ -117,18 +113,10 @@
           </div>
           <div class="section-content">
             <div class="skills-grid">
-              <div
-                v-for="(category, categoryName) in skillCategories"
-                :key="categoryName"
-                class="skill-category"
-              >
+              <div v-for="(category, categoryName) in skillCategories" :key="categoryName" class="skill-category">
                 <h4 class="skill-category-title">{{ categoryName }}</h4>
                 <div class="skill-tags">
-                  <span
-                    v-for="skill in category"
-                    :key="skill"
-                    class="skill-tag"
-                  >
+                  <span v-for="skill in category" :key="skill" class="skill-tag">
                     {{ skill }}
                   </span>
                 </div>
@@ -147,29 +135,15 @@
           </div>
           <div class="section-content">
             <div class="contact-list">
-              <a
-                v-if="settingsStore.contactEmail"
-                :href="`mailto:${settingsStore.contactEmail}`"
-                class="contact-item"
-              >
+              <a v-if="settingsStore.contactEmail" :href="`mailto:${settingsStore.contactEmail}`" class="contact-item">
                 <span class="contact-text">{{ settingsStore.contactEmail }}</span>
               </a>
-              <a
-                v-if="settingsStore.socialLinks.github"
-                :href="settingsStore.socialLinks.github"
-                target="_blank"
-                rel="noopener"
-                class="contact-item"
-              >
+              <a v-if="settingsStore.socialLinks.github" :href="settingsStore.socialLinks.github" target="_blank"
+                rel="noopener" class="contact-item">
                 <span class="contact-text">GitHub</span>
               </a>
-              <a
-                v-if="settingsStore.socialLinks.weibo"
-                :href="settingsStore.socialLinks.weibo"
-                target="_blank"
-                rel="noopener"
-                class="contact-item"
-              >
+              <a v-if="settingsStore.socialLinks.weibo" :href="settingsStore.socialLinks.weibo" target="_blank"
+                rel="noopener" class="contact-item">
                 <span class="contact-text">微博</span>
               </a>
             </div>
@@ -374,9 +348,17 @@ onMounted(() => {
 }
 
 @keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* 额外的装饰层 */
@@ -414,27 +396,85 @@ onMounted(() => {
   animation: float 6s ease-in-out infinite;
 }
 
-.particle:nth-child(1) { width: 4px; height: 4px; left: 10%; animation-delay: 0s; }
-.particle:nth-child(2) { width: 6px; height: 6px; left: 20%; animation-delay: 1s; }
-.particle:nth-child(3) { width: 3px; height: 3px; left: 30%; animation-delay: 2s; }
-.particle:nth-child(4) { width: 5px; height: 5px; left: 40%; animation-delay: 3s; }
-.particle:nth-child(5) { width: 4px; height: 4px; left: 50%; animation-delay: 4s; }
-.particle:nth-child(6) { width: 7px; height: 7px; left: 60%; animation-delay: 5s; }
-.particle:nth-child(7) { width: 3px; height: 3px; left: 70%; animation-delay: 0.5s; }
-.particle:nth-child(8) { width: 5px; height: 5px; left: 80%; animation-delay: 1.5s; }
-.particle:nth-child(9) { width: 4px; height: 4px; left: 90%; animation-delay: 2.5s; }
+.particle:nth-child(1) {
+  width: 4px;
+  height: 4px;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.particle:nth-child(2) {
+  width: 6px;
+  height: 6px;
+  left: 20%;
+  animation-delay: 1s;
+}
+
+.particle:nth-child(3) {
+  width: 3px;
+  height: 3px;
+  left: 30%;
+  animation-delay: 2s;
+}
+
+.particle:nth-child(4) {
+  width: 5px;
+  height: 5px;
+  left: 40%;
+  animation-delay: 3s;
+}
+
+.particle:nth-child(5) {
+  width: 4px;
+  height: 4px;
+  left: 50%;
+  animation-delay: 4s;
+}
+
+.particle:nth-child(6) {
+  width: 7px;
+  height: 7px;
+  left: 60%;
+  animation-delay: 5s;
+}
+
+.particle:nth-child(7) {
+  width: 3px;
+  height: 3px;
+  left: 70%;
+  animation-delay: 0.5s;
+}
+
+.particle:nth-child(8) {
+  width: 5px;
+  height: 5px;
+  left: 80%;
+  animation-delay: 1.5s;
+}
+
+.particle:nth-child(9) {
+  width: 4px;
+  height: 4px;
+  left: 90%;
+  animation-delay: 2.5s;
+}
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(100vh) rotate(0deg);
     opacity: 0;
   }
+
   10% {
     opacity: 1;
   }
+
   90% {
     opacity: 1;
   }
+
   50% {
     transform: translateY(-10vh) rotate(180deg);
     opacity: 0.8;
@@ -444,7 +484,7 @@ onMounted(() => {
 /* 页面头部 */
 .page-header {
   text-align: center;
-  padding: 80px 20px 60px;
+  padding: 140px 20px 60px;
   position: relative;
   z-index: 1;
 }
@@ -491,6 +531,7 @@ onMounted(() => {
       0 0 20px rgba(255, 107, 157, 0.6),
       0 0 30px rgba(224, 86, 253, 0.4);
   }
+
   to {
     text-shadow:
       0 0 15px rgba(255, 255, 255, 1),
@@ -630,6 +671,7 @@ onMounted(() => {
   font-weight: 500;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
+
 /* 个人简介样式 */
 .intro-text {
   font-size: 1.1rem;
@@ -693,10 +735,10 @@ onMounted(() => {
   bottom: 0;
   width: 3px;
   background: linear-gradient(to bottom,
-    rgba(255, 255, 255, 0.8),
-    rgba(255, 107, 157, 0.6),
-    rgba(224, 86, 253, 0.6),
-    rgba(248, 181, 0, 0.6));
+      rgba(255, 255, 255, 0.8),
+      rgba(255, 107, 157, 0.6),
+      rgba(224, 86, 253, 0.6),
+      rgba(248, 181, 0, 0.6));
   border-radius: 2px;
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
 }

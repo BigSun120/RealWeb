@@ -158,8 +158,10 @@ export default {
 
     // 滚动监听
     const handleScroll = () => {
-      const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+      // 优先读取 body.scrollTop，因为滚动可能发生在 body 上而不是 window
+      const scrollY = document.body.scrollTop || window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
       const shouldHide = route.path === '/' && scrollY < 50;
+      const previousValue = isAtTop.value;
       isAtTop.value = shouldHide;
     };
 
@@ -171,26 +173,18 @@ export default {
 
       // 立即检查初始状态
       const initialCheck = () => {
-        const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+        const scrollY = document.body.scrollTop || window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
         const shouldHide = route.path === '/' && scrollY < 50;
         isAtTop.value = shouldHide;
 
-        // 开发环境下的调试信息
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Header check:', {
-            path: route.path,
-            scrollY,
-            isAtTop: isAtTop.value,
-            shouldHide
-          });
-        }
       };
 
       // 立即执行一次
       initialCheck();
 
-      // 添加滚动监听
+      // 添加滚动监听 - 同时监听 window 和 body，因为滚动可能发生在任一元素上
       window.addEventListener('scroll', handleScroll, { passive: true });
+      document.body.addEventListener('scroll', handleScroll, { passive: true });
 
       // 多次检查确保状态正确
       setTimeout(initialCheck, 50);
@@ -213,6 +207,7 @@ export default {
 
     onUnmounted(() => {
       window.removeEventListener('scroll', handleScroll);
+      document.body.removeEventListener('scroll', handleScroll);
     });
 
     // 监听路由变化，确保状态正确
@@ -220,19 +215,11 @@ export default {
       () => route.path,
       newPath => {
         // 路由变化时立即检查
-        const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+        const scrollY = document.body.scrollTop || window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
         const shouldHide = newPath === '/' && scrollY < 50;
         isAtTop.value = shouldHide;
 
-        // 开发环境下的调试信息
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Route change header check:', {
-            newPath,
-            scrollY,
-            isAtTop: isAtTop.value,
-            shouldHide
-          });
-        }
+
       },
       { immediate: true }
     );

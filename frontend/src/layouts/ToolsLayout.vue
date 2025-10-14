@@ -22,12 +22,10 @@
             </div>
           </div>
           <div class="header-right">
-            <el-button
-              type="text"
-              @click="goBack"
-              v-if="$route.name !== 'ToolsIndex'"
-            >
-              <el-icon><ArrowLeft /></el-icon>
+            <el-button type="text" @click="goBack" v-if="$route.name !== 'ToolsIndex'">
+              <el-icon>
+                <ArrowLeft />
+              </el-icon>
               返回
             </el-button>
           </div>
@@ -136,7 +134,8 @@ export default {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: transparent; /* 改为透明，让背景图片显示 */
+  background: transparent;
+  /* 改为透明，让背景图片显示 */
 }
 
 .container {
@@ -164,7 +163,6 @@ export default {
   background: rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  position: sticky;
   top: 0;
   z-index: 100;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
@@ -210,7 +208,7 @@ export default {
 /* 主体内容 */
 .tools-main {
   flex: 1;
-  padding: 20px 0;
+  padding: 0px 0;
 }
 
 /* 底部样式 */
@@ -255,7 +253,7 @@ export default {
   .container {
     padding: 0 15px;
   }
-  
+
   .container.full-width {
     padding: 0 20px;
   }

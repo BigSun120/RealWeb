@@ -496,7 +496,7 @@ export default {
     position: relative;
     width: 100%;
     height: 100vh;
-    margin-top: -70px; // 向上移动70px以实现全屏背景效果
+    margin-top: 0px; // 向上移动70px以实现全屏背景效果，使页面可以滚动
     margin-bottom: 0;
     display: flex;
     align-items: center;
@@ -834,7 +834,7 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 300px;
+    min-height: 400px; // 确保加载状态时页面也有足够高度可以滚动
 
     .loading-spinner {
       font-size: 18px;
@@ -846,6 +846,7 @@ export default {
   .empty-state {
     text-align: center;
     padding: 60px 20px;
+    min-height: 400px; // 确保即使没有文章，页面也有足够高度可以滚动
     color: #718096;
 
     .empty-icon {
@@ -1108,7 +1109,7 @@ export default {
 
     .fullscreen-hero {
       min-height: 80vh;
-      margin-top: -70px;
+      margin-top: 0px; // 向上移动70px以实现全屏背景效果，使页面可以滚动
       pointer-events: none;
 
       .hero-content {

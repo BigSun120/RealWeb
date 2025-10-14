@@ -1280,7 +1280,7 @@ onUnmounted(() => {
 
 <style scoped>
 .temp-email-container {
-  padding: 8px;
+  /* 顶部: header高度70px + 额外间距20px */
   max-width: 1200px;
   margin: 0 auto;
   min-height: calc(100vh - 120px);

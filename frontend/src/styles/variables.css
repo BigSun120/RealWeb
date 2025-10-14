@@ -108,7 +108,12 @@
   --transition-slow: 350ms ease-in-out;
 
   /* ========== 布局尺寸 ========== */
-  --header-height: 60px;
+  --header-height: 70px;
+  /* AppHeader 固定头部高度 */
+  --notice-banner-height: 0px;
+  /* PublicNoticeBanner 高度（动态，默认0，有公告时由JS设置） */
+  --top-offset: 70px;
+  /* 页面内容顶部偏移量 = header高度 + 额外间距 */
 
   /* ========== Z-index层级 ========== */
   --z-dropdown: 1000;

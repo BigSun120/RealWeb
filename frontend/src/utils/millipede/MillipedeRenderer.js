@@ -369,10 +369,6 @@ export class MillipedeWebGLRenderer {
     this.frameCount++;
     this.time += 0.016;
 
-    if (this.frameCount % 100 === 0) {
-      console.log('千足虫WebGL渲染帧数:', this.frameCount);
-    }
-
     this.update();
     this.render();
   }

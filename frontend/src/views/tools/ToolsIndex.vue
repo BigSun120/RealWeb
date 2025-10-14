@@ -729,7 +729,8 @@ export default {
 .tools-index {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0px 20px 0;
+  /* 顶部: header高度70px + 额外间距20px */
   position: relative;
 }
 
@@ -829,7 +830,8 @@ export default {
   padding: 1.5rem;
   height: fit-content;
   position: sticky;
-  top: 2rem;
+  top: calc(70px + 2rem);
+  /* header高度 + 额外间距 */
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }

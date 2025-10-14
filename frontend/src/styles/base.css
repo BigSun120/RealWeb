@@ -15,7 +15,7 @@ html {
 body {
   margin: 0;
   padding: 0;
-  padding-top: 70px; /* 为固定header留出空间 */
+  /* Fixed header不需要body padding，各页面自行控制顶部间距 */
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-normal);

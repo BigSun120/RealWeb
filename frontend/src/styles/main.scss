@@ -5,7 +5,18 @@ html,
 body {
   height: 100%;
   margin: 0;
-  padding: 0;
+  /* Fixed header不需要body padding，每个页面根据需要自行添加顶部间距 */
+}
+
+:root {
+  --header-height: 70px;
+  --notice-height: 0px;
+  /* 动态设置，有公告时通过JS更新 */
+  --top-offset: calc(var(--header-height) + var(--notice-height));
+}
+
+body {
+  padding-top: var(--top-offset);
 }
 
 // 项目特定的组件样式扩展
