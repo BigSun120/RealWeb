@@ -5,15 +5,10 @@
       <div class="header-content">
         <h1 class="page-title">
           <span class="title-icon">🎬</span>
-          AI短剧脚本生成器
+          AI短剧剧本生成器
         </h1>
         <div class="header-actions">
-          <el-button
-            type="primary"
-            size="large"
-            :icon="Plus"
-            @click="handleCreateProject"
-          >
+          <el-button type="primary" size="large" :icon="Plus" @click="handleCreateProject">
             新建项目
           </el-button>
         </div>
@@ -22,36 +17,18 @@
 
     <!-- 搜索和筛选栏 -->
     <div class="filter-bar">
-      <el-input
-        v-model="searchKeyword"
-        placeholder="搜索项目名称、描述..."
-        :prefix-icon="Search"
-        clearable
-        class="search-input"
-        @input="handleSearch"
-      />
-      
-      <el-select
-        v-model="filterStatus"
-        placeholder="状态筛选"
-        clearable
-        class="filter-select"
-        @change="handleFilter"
-      >
+      <el-input v-model="searchKeyword" placeholder="搜索项目名称、描述..." :prefix-icon="Search" clearable class="search-input"
+        @input="handleSearch" />
+
+      <el-select v-model="filterStatus" placeholder="状态筛选" clearable class="filter-select" @change="handleFilter">
         <el-option label="全部状态" value="" />
         <el-option label="设定中" value="设定中" />
         <el-option label="大纲中" value="大纲中" />
         <el-option label="剧本中" value="剧本中" />
         <el-option label="已完成" value="已完成" />
       </el-select>
-      
-      <el-select
-        v-model="filterType"
-        placeholder="类型筛选"
-        clearable
-        class="filter-select"
-        @change="handleFilter"
-      >
+
+      <el-select v-model="filterType" placeholder="类型筛选" clearable class="filter-select" @change="handleFilter">
         <el-option label="全部类型" value="" />
         <el-option label="霸道总裁" value="霸道总裁" />
         <el-option label="悬疑推理" value="悬疑推理" />
@@ -60,13 +37,8 @@
         <el-option label="古装穿越" value="古装穿越" />
         <el-option label="职场励志" value="职场励志" />
       </el-select>
-      
-      <el-select
-        v-model="sortBy"
-        placeholder="排序方式"
-        class="filter-select"
-        @change="handleSort"
-      >
+
+      <el-select v-model="sortBy" placeholder="排序方式" class="filter-select" @change="handleSort">
         <el-option label="修改时间降序" value="updatedAt-desc" />
         <el-option label="修改时间升序" value="updatedAt-asc" />
         <el-option label="创建时间降序" value="createdAt-desc" />
@@ -74,7 +46,7 @@
         <el-option label="进度降序" value="progress-desc" />
         <el-option label="进度升序" value="progress-asc" />
       </el-select>
-      
+
       <div class="filter-result">
         <el-tag type="info" size="small">
           显示 {{ filteredProjects.length }} / {{ projects.length }} 个项目
@@ -133,55 +105,24 @@
     </div>
 
     <!-- 项目列表 -->
-    <ProjectList
-      :projects="filteredProjects"
-      :loading="loading"
-      @create="handleCreateProject"
-      @open="handleOpenProject"
-      @edit="handleEditProject"
-      @delete="handleDeleteProject"
-      @export="handleExportProject"
-      @refresh="loadProjects"
-    />
+    <ProjectList :projects="filteredProjects" :loading="loading" @create="handleCreateProject" @open="handleOpenProject"
+      @edit="handleEditProject" @delete="handleDeleteProject" @export="handleExportProject" @refresh="loadProjects" />
 
     <!-- 导出对话框 -->
-    <ExportDialog
-      ref="exportDialogRef"
-      v-model="exportDialogVisible"
+    <ExportDialog ref="exportDialogRef" v-model="exportDialogVisible"
       :project-id="currentExportProject?._id || currentExportProject?.id || ''"
-      :project-name="currentExportProject?.name || ''"
-      :project-data="currentExportProjectData"
-      @confirm="handleConfirmExport"
-    />
+      :project-name="currentExportProject?.name || ''" :project-data="currentExportProjectData"
+      @confirm="handleConfirmExport" />
 
     <!-- 创建/编辑项目对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogTitle"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-form
-        ref="formRef"
-        :model="projectForm"
-        :rules="formRules"
-        label-width="100px"
-      >
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" :close-on-click-modal="false">
+      <el-form ref="formRef" :model="projectForm" :rules="formRules" label-width="100px">
         <el-form-item label="项目名称" prop="name">
-          <el-input
-            v-model="projectForm.name"
-            placeholder="例如：霸道总裁的百日契约"
-            maxlength="50"
-            show-word-limit
-          />
+          <el-input v-model="projectForm.name" placeholder="例如：霸道总裁的百日契约" maxlength="50" show-word-limit />
         </el-form-item>
 
         <el-form-item label="剧本类型" prop="type">
-          <el-select
-            v-model="projectForm.type"
-            placeholder="选择短剧类型"
-            style="width: 100%"
-          >
+          <el-select v-model="projectForm.type" placeholder="选择短剧类型" style="width: 100%">
             <el-option label="霸道总裁" value="霸道总裁">
               <span>👔 霸道总裁</span>
             </el-option>
@@ -204,25 +145,13 @@
         </el-form-item>
 
         <el-form-item label="计划集数" prop="episodeCount">
-          <el-input-number
-            v-model="projectForm.episodeCount"
-            :min="1"
-            :max="100"
-            :step="1"
-            style="width: 100%"
-          />
+          <el-input-number v-model="projectForm.episodeCount" :min="1" :max="100" :step="1" style="width: 100%" />
           <div class="form-tip">建议 30-80 集，每集 1-3 分钟</div>
         </el-form-item>
 
         <el-form-item label="项目描述" prop="description">
-          <el-input
-            v-model="projectForm.description"
-            type="textarea"
-            :rows="4"
-            placeholder="简要描述你的短剧创意、核心冲突、主要角色等..."
-            maxlength="500"
-            show-word-limit
-          />
+          <el-input v-model="projectForm.description" type="textarea" :rows="4" placeholder="简要描述你的短剧创意、核心冲突、主要角色等..."
+            maxlength="500" show-word-limit />
         </el-form-item>
       </el-form>
 
@@ -304,7 +233,7 @@ const formRules = {
 // 筛选和排序后的项目列表
 const filteredProjects = computed(() => {
   let result = [...projects.value];
-  
+
   // 1. 搜索过滤
   if (searchKeyword.value.trim()) {
     const keyword = searchKeyword.value.toLowerCase();
@@ -315,42 +244,42 @@ const filteredProjects = computed(() => {
       return name.includes(keyword) || description.includes(keyword) || type.includes(keyword);
     });
   }
-  
+
   // 2. 状态筛选
   if (filterStatus.value) {
     result = result.filter(project => project.status === filterStatus.value);
   }
-  
+
   // 3. 类型筛选
   if (filterType.value) {
     result = result.filter(project => project.type === filterType.value);
   }
-  
+
   // 4. 排序
   const [sortField, sortOrder] = sortBy.value.split('-');
   result.sort((a, b) => {
     let aVal = a[sortField];
     let bVal = b[sortField];
-    
+
     // 处理日期字段
     if (sortField === 'createdAt' || sortField === 'updatedAt') {
       aVal = new Date(aVal).getTime();
       bVal = new Date(bVal).getTime();
     }
-    
+
     // 处理数字字段
     if (sortField === 'progress') {
       aVal = aVal || 0;
       bVal = bVal || 0;
     }
-    
+
     if (sortOrder === 'desc') {
       return bVal > aVal ? 1 : bVal < aVal ? -1 : 0;
     } else {
       return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
     }
   });
-  
+
   return result;
 });
 
@@ -446,7 +375,7 @@ const handleEditProject = (project) => {
 const handleDeleteProject = async (project) => {
   try {
     const response = await deleteDramaProject(project._id || project.id);
-if (response.code === 200) {
+    if (response.code === 200) {
       projects.value = projects.value.filter(p => (p._id || p.id) !== (project._id || project.id));
       // 删除后刷新统计
       await loadStatistics();
@@ -481,7 +410,7 @@ const handleExportProject = async (project) => {
 // 确认导出
 const handleConfirmExport = async (options) => {
   if (!currentExportProject.value) return;
-  
+
   // 设置导出中状态
   if (exportDialogRef.value) {
     exportDialogRef.value.setExporting(true);
@@ -490,14 +419,14 @@ const handleConfirmExport = async (options) => {
   try {
     const projectId = currentExportProject.value._id || currentExportProject.value.id;
     const blob = await exportDramaProject(projectId, options);
-    
+
     // 生成文件名
     const ext = options.format === 'markdown' ? 'md' : 'txt';
     const filename = generateFilename(currentExportProject.value.name, ext);
-    
+
     // 下载文件
     downloadBlob(blob, filename);
-    
+
     ElMessage.success('导出成功');
     exportDialogVisible.value = false;
   } catch (error) {
@@ -514,7 +443,7 @@ const handleConfirmExport = async (options) => {
 // 提交表单
 const handleSubmit = async () => {
   if (!formRef.value) return;
-  
+
   await formRef.value.validate(async (valid) => {
     if (!valid) return;
 
@@ -536,7 +465,7 @@ const handleSubmit = async () => {
         if (response.code === 201) {
           projects.value.unshift(response.data);
           ElMessage.success('项目创建成功');
-          
+
           // 创建后直接进入工作台
           setTimeout(() => {
             handleOpenProject(response.data);
@@ -545,7 +474,7 @@ const handleSubmit = async () => {
           throw new Error(response.message || '创建失败');
         }
       }
-      
+
       dialogVisible.value = false;
       resetForm();
     } catch (error) {

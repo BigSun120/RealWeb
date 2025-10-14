@@ -462,11 +462,15 @@ watch(() => props.episode, (newVal) => {
 // 监听对话框打开
 watch(() => props.modelValue, (newVal) => {
   if (!newVal) {
-    // 关闭时重置表单
+    // 关闭时重置表单和AI响应区域
     setTimeout(() => {
       if (formRef.value) {
         formRef.value.resetFields();
       }
+      // 修复问题1：清空AI响应内容，避免切换分集时内容残留
+      aiResponseText.value = '';
+      parseResult.value = null;
+      activeSection.value = '';
     }, 300);
   }
 });

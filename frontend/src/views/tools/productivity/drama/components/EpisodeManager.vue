@@ -2,30 +2,20 @@
   <div class="episode-manager">
     <div class="manager-header">
       <h3 class="section-title">
-        <el-icon><Film /></el-icon>
+        <el-icon>
+          <Film />
+        </el-icon>
         分集管理
       </h3>
       <div class="header-actions">
-        <el-button 
-          type="success" 
-          :icon="MagicStick"
-          @click="handleAIBatchCreate"
-        >
-          AI批量创建
+        <el-button type="success" :icon="MagicStick" @click="handleAIBatchCreate">
+          批量创建
         </el-button>
-        <el-button 
-          type="primary" 
-          :icon="Plus"
-          @click="handleAddEpisode"
-        >
+        <el-button type="primary" :icon="Plus" @click="handleAddEpisode">
           添加分集
         </el-button>
         <el-dropdown @command="handleExport">
-          <el-button 
-            type="info"
-            :icon="Download"
-            :disabled="completedCount === 0"
-          >
+          <el-button type="info" :icon="Download" :disabled="completedCount === 0">
             导出剧本<el-icon class="el-icon--right"><arrow-down /></el-icon>
           </el-button>
           <template #dropdown>
@@ -45,12 +35,7 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        <el-button 
-          type="warning"
-          :icon="MagicStick"
-          :disabled="episodes.length === 0"
-          @click="handleBatchGenerate"
-        >
+        <el-button type="warning" :icon="MagicStick" :disabled="episodes.length === 0" @click="handleBatchGenerate">
           批量生成提示词
         </el-button>
       </div>
@@ -61,15 +46,19 @@
       <div class="view-switcher">
         <el-radio-group v-model="viewMode" size="default">
           <el-radio-button label="grid">
-            <el-icon><Grid /></el-icon>
+            <el-icon>
+              <Grid />
+            </el-icon>
             卡片视图
           </el-radio-button>
           <el-radio-button label="list">
-            <el-icon><List /></el-icon>
+            <el-icon>
+              <List />
+            </el-icon>
             列表视图
           </el-radio-button>
         </el-radio-group>
-        
+
         <div class="stats-info">
           <el-tag type="info">共 {{ episodes.length }} 集</el-tag>
           <el-tag type="success">已完成 {{ completedCount }} 集</el-tag>
@@ -78,30 +67,30 @@
 
       <!-- 卡片视图 -->
       <div v-if="viewMode === 'grid'" class="episodes-grid">
-        <div
-          v-for="episode in sortedEpisodes"
-          :key="episode.id"
-          class="episode-card"
-          @click="handleEditEpisode(episode)"
-        >
+        <div v-for="episode in sortedEpisodes" :key="episode.id" class="episode-card"
+          @click="handleEditEpisode(episode)">
           <div class="card-header">
             <div class="episode-number">第 {{ episode.number }} 集</div>
             <el-tag :type="getStatusType(episode.status)" size="small">
               {{ getStatusText(episode.status) }}
             </el-tag>
           </div>
-          
+
           <div class="card-body">
             <h4 class="episode-title">{{ episode.title || '未命名' }}</h4>
             <p class="episode-summary">{{ episode.content?.summary || '暂无简介' }}</p>
-            
+
             <div class="episode-meta">
               <span class="meta-item">
-                <el-icon><Document /></el-icon>
+                <el-icon>
+                  <Document />
+                </el-icon>
                 {{ episode.wordCount || 0 }} 字
               </span>
               <span class="meta-item">
-                <el-icon><Calendar /></el-icon>
+                <el-icon>
+                  <Calendar />
+                </el-icon>
                 {{ formatDate(episode.updatedAt) }}
               </span>
             </div>
@@ -109,43 +98,25 @@
 
           <div class="card-footer" @click.stop>
             <div class="footer-row">
-              <el-button
-                size="small"
-                :icon="Edit"
-                @click="handleEditEpisode(episode)"
-                class="action-btn-flex"
-              >
+              <el-button size="small" :icon="Edit" @click="handleEditEpisode(episode)" class="action-btn-flex">
                 编辑
               </el-button>
               <el-tooltip content="生成普通提示词" placement="top">
-                <el-button
-                  size="small"
-                  :icon="MagicStick"
-                  @click="handleGeneratePrompt(episode, false)"
-                  class="action-btn-flex"
-                >
+                <el-button size="small" :icon="MagicStick" @click="handleGeneratePrompt(episode, false)"
+                  class="action-btn-flex">
                   提示词
                 </el-button>
               </el-tooltip>
             </div>
             <div class="footer-row">
               <el-tooltip content="下载完整创作包（含项目设定、角色、已完成剧集和当前集提示词）" placement="top">
-                <el-button
-                  size="small"
-                  :icon="DocumentCopy"
-                  @click="handleDownloadCompletePackage(episode)"
-                  class="action-btn-flex"
-                >
+                <el-button size="small" :icon="DocumentCopy" @click="handleDownloadCompletePackage(episode)"
+                  class="action-btn-flex">
                   完整包
                 </el-button>
               </el-tooltip>
-              <el-button
-                size="small"
-                type="danger"
-                :icon="Delete"
-                @click="handleDeleteEpisode(episode)"
-                class="action-btn-flex"
-              >
+              <el-button size="small" type="danger" :icon="Delete" @click="handleDeleteEpisode(episode)"
+                class="action-btn-flex">
                 删除
               </el-button>
             </div>
@@ -153,20 +124,12 @@
         </div>
 
         <!-- 空状态 -->
-        <el-empty
-          v-if="episodes.length === 0"
-          description="暂无分集，点击上方按钮添加"
-          :image-size="120"
-        />
+        <el-empty v-if="episodes.length === 0" description="暂无分集，点击上方按钮添加" :image-size="120" />
       </div>
 
       <!-- 列表视图 -->
       <div v-if="viewMode === 'list'" class="episodes-list">
-        <el-table
-          :data="sortedEpisodes"
-          style="width: 100%"
-          @row-click="handleEditEpisode"
-        >
+        <el-table :data="sortedEpisodes" style="width: 100%" @row-click="handleEditEpisode">
           <el-table-column prop="number" label="集数" width="80" sortable />
           <el-table-column prop="title" label="标题" min-width="200">
             <template #default="{ row }">
@@ -203,16 +166,13 @@
                     </el-button>
                   </el-tooltip>
                   <el-tooltip content="下载完整创作包" placement="top">
-                    <el-button 
-                      size="small" 
-                      :icon="DocumentCopy" 
-                      @click.stop="handleDownloadCompletePackage(row)"
-                    >
+                    <el-button size="small" :icon="DocumentCopy" @click.stop="handleDownloadCompletePackage(row)">
                       完整包
                     </el-button>
                   </el-tooltip>
                 </el-button-group>
-                <el-button size="small" type="danger" :icon="Delete" @click.stop="handleDeleteEpisode(row)" style="margin-left: 8px">
+                <el-button size="small" type="danger" :icon="Delete" @click.stop="handleDeleteEpisode(row)"
+                  style="margin-left: 8px">
                   删除
                 </el-button>
               </div>
@@ -221,59 +181,28 @@
         </el-table>
 
         <!-- 空状态 -->
-        <el-empty
-          v-if="episodes.length === 0"
-          description="暂无分集，点击上方按钮添加"
-          :image-size="120"
-        />
+        <el-empty v-if="episodes.length === 0" description="暂无分集，点击上方按钮添加" :image-size="120" />
       </div>
     </div>
 
     <!-- 分集编辑对话框 -->
-    <EpisodeDialog
-      v-model="showEpisodeDialog"
-      :episode="currentEpisode"
-      :episode-number="nextEpisodeNumber"
-      :characters="characters"
-      @submit="handleEpisodeSubmit"
-    />
+    <EpisodeDialog v-model="showEpisodeDialog" :episode="currentEpisode" :episode-number="nextEpisodeNumber"
+      :characters="characters" @submit="handleEpisodeSubmit" />
 
     <!-- 提示词对话框 -->
-    <PromptDialog
-      v-model="showPromptDialog"
-      :prompt="generatedPrompt"
-      :title="`第${currentEpisode?.number}集提示词`"
-    />
+    <PromptDialog v-model="showPromptDialog" :prompt="generatedPrompt" :title="`第${currentEpisode?.number}集提示词`" />
 
     <!-- 批量创建集数输入对话框 -->
-    <el-dialog
-      v-model="showBatchCreateDialog"
-      title="AI批量创建分集"
-      width="500px"
-    >
+    <el-dialog v-model="showBatchCreateDialog" title="批量创建分集" width="500px">
       <el-form :model="batchCreateForm" label-width="120px">
         <el-form-item label="起始集数">
-          <el-input-number 
-            v-model="batchCreateForm.startNumber" 
-            :min="1" 
-            :max="100"
-            style="width: 100%"
-          />
+          <el-input-number v-model="batchCreateForm.startNumber" :min="1" :max="100" style="width: 100%" />
         </el-form-item>
         <el-form-item label="结束集数">
-          <el-input-number 
-            v-model="batchCreateForm.endNumber" 
-            :min="batchCreateForm.startNumber" 
-            :max="100"
-            style="width: 100%"
-          />
+          <el-input-number v-model="batchCreateForm.endNumber" :min="batchCreateForm.startNumber" :max="100"
+            style="width: 100%" />
         </el-form-item>
-        <el-alert
-          title="说明"
-          :closable="false"
-          type="info"
-          show-icon
-        >
+        <el-alert title="说明" :closable="false" type="info" show-icon>
           将根据大纲和角色信息为每一集创建基本框架，然后可使用“批量生成提示词”功能生成详细内容。
         </el-alert>
       </el-form>
@@ -284,29 +213,14 @@
     </el-dialog>
 
     <!-- 批量提示词对话框 -->
-    <el-dialog
-      v-model="showBatchPromptDialog"
-      title="批量提示词"
-      width="800px"
-      :close-on-click-modal="false"
-    >
+    <el-dialog v-model="showBatchPromptDialog" title="批量提示词" width="800px" :close-on-click-modal="false">
       <div class="batch-prompt-container">
-        <el-alert
-          title="使用说明"
-          type="info"
-          :closable="false"
-          show-icon
-          style="margin-bottom: 16px"
-        >
+        <el-alert title="使用说明" type="info" :closable="false" show-icon style="margin-bottom: 16px">
           已为 {{ batchPrompts.length }} 集生成提示词，可以分别复制到AI工具生成内容。
         </el-alert>
-        
+
         <el-collapse v-model="activePrompts" accordion>
-          <el-collapse-item
-            v-for="(item, index) in batchPrompts"
-            :key="index"
-            :name="index"
-          >
+          <el-collapse-item v-for="(item, index) in batchPrompts" :key="index" :name="index">
             <template #title>
               <div class="prompt-item-header">
                 <span class="episode-badge">第 {{ item.episode.number }} 集</span>
@@ -314,18 +228,9 @@
               </div>
             </template>
             <div class="prompt-content">
-              <el-input
-                v-model="item.prompt"
-                type="textarea"
-                :rows="12"
-                readonly
-              />
+              <el-input v-model="item.prompt" type="textarea" :rows="12" readonly />
               <div class="prompt-actions">
-                <el-button
-                  type="primary"
-                  size="small"
-                  @click="copyPrompt(item.prompt)"
-                >
+                <el-button type="primary" size="small" @click="copyPrompt(item.prompt)">
                   复制提示词
                 </el-button>
               </div>
@@ -344,7 +249,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { 
+import {
   Film,
   Plus,
   MagicStick,
@@ -361,11 +266,11 @@ import {
 import EpisodeDialog from './EpisodeDialog.vue';
 import PromptDialog from './PromptDialog.vue';
 import { generateEpisodePrompt } from '../utils/promptTemplates';
-import { 
-  checkScriptCompleteness, 
-  generateFullScript, 
+import {
+  checkScriptCompleteness,
+  generateFullScript,
   downloadTextFile,
-  generateCompleteCreationPackage 
+  generateCompleteCreationPackage
 } from '../utils/scriptExporter';
 
 const props = defineProps({
@@ -509,8 +414,8 @@ const handleDeleteEpisode = async (episode) => {
 
 // 检查是否有已完成的前置剧集
 const hasCompletedBeforeEpisode = (episodeNumber) => {
-  return episodes.value.some(ep => 
-    ep.number < episodeNumber && 
+  return episodes.value.some(ep =>
+    ep.number < episodeNumber &&
     (ep.status === 'completed' || ep.status === 'reviewed')
   );
 };
@@ -518,12 +423,12 @@ const hasCompletedBeforeEpisode = (episodeNumber) => {
 // 生成提示词
 const handleGeneratePrompt = (episode, includeContext = false) => {
   currentEpisode.value = episode;
-  
+
   try {
     // 如果需要包含上下文，检查完整性
     if (includeContext) {
       const completenessCheck = checkScriptCompleteness(episodes.value, episode.number - 1);
-      
+
       if (!completenessCheck.isComplete && completenessCheck.warnings.length > 0) {
         ElMessageBox.confirm(
           `检测到以下问题：\n${completenessCheck.warnings.slice(0, 5).join('\n')}${completenessCheck.warnings.length > 5 ? '\n...' : ''}\n\n是否继续生成带上下文的提示词？`,
@@ -541,7 +446,7 @@ const handleGeneratePrompt = (episode, includeContext = false) => {
         return;
       }
     }
-    
+
     generatePromptWithContext(episode, includeContext);
   } catch (error) {
     console.error('生成提示词失败:', error);
@@ -564,7 +469,7 @@ const generatePromptWithContext = (episode, includeContext) => {
   showPromptDialog.value = true;
 };
 
-// AI批量创建集数
+// 批量创建集数
 const handleAIBatchCreate = () => {
   // 检查是否有大纲数据
   if (!props.outline || !props.outline.acts || props.outline.acts.length === 0) {
@@ -597,18 +502,18 @@ const openBatchCreateDialog = () => {
 const confirmBatchCreate = () => {
   const start = batchCreateForm.value.startNumber;
   const end = batchCreateForm.value.endNumber;
-  
+
   if (start > end) {
     ElMessage.warning('起始集数不能大于结束集数');
     return;
   }
-  
+
   const count = end - start + 1;
   if (count > 50) {
     ElMessage.warning('批量创建最多50集');
     return;
   }
-  
+
   // 创建新的分集
   const newEpisodes = [];
   for (let i = start; i <= end; i++) {
@@ -627,10 +532,10 @@ const confirmBatchCreate = () => {
     };
     newEpisodes.push(newEpisode);
   }
-  
+
   episodes.value.push(...newEpisodes);
   emit('save', episodes.value);
-  
+
   ElMessage.success(`成功创建 ${count} 个分集框架`);
   showBatchCreateDialog.value = false;
 };
@@ -641,10 +546,10 @@ const handleBatchGenerate = () => {
     ElMessage.warning('暂无分集');
     return;
   }
-  
+
   try {
     const allEpisodes = sortedEpisodes.value;
-    
+
     // 为所有分集生成提示词，每个提示词都包含完整的上下文
     batchPrompts.value = allEpisodes.map(episode => ({
       episode,
@@ -658,7 +563,7 @@ const handleBatchGenerate = () => {
         promptTemplate: props.promptTemplate // 传递提示词模板
       })
     }));
-    
+
     activePrompts.value = 0; // 默认展开第一个
     showBatchPromptDialog.value = true;
     ElMessage.success(`成功生成 ${batchPrompts.value.length} 个提示词，已包含上下集链接信息`);
@@ -688,7 +593,7 @@ const copyAllPrompts = async () => {
 ${item.prompt}
 `)
       .join('\n\n');
-    
+
     await navigator.clipboard.writeText(allPrompts);
     ElMessage.success('已复制所有提示词到剪贴板');
   } catch (error) {
@@ -718,7 +623,7 @@ const handleEpisodeSubmit = (episodeData) => {
     };
     episodes.value.push(newEpisode);
   }
-  
+
   emit('save', episodes.value);
   ElMessage.success(episodeData.id ? '已更新' : '已添加');
 };
@@ -736,7 +641,7 @@ const handleDownloadCompletePackage = (episode) => {
       allEpisodes: sortedEpisodes.value,
       promptTemplate: props.promptTemplate // 传递提示词模板
     });
-    
+
     // 生成完整创作包内容
     const packageContent = generateCompleteCreationPackage({
       episode: episode,
@@ -747,14 +652,14 @@ const handleDownloadCompletePackage = (episode) => {
       allEpisodes: sortedEpisodes.value,
       prompt: episodePrompt  // 添加提示词
     });
-    
+
     // 生成文件名
     const projectName = props.projectInfo.name || '未命名剧本';
     const filename = `${projectName}-第${episode.number}集-完整创作包.md`;
-    
+
     // 下载文件
     downloadTextFile(packageContent, filename);
-    
+
     ElMessage.success('完整创作包下载成功！');
   } catch (error) {
     console.error('下载完整创作包失败:', error);
@@ -766,12 +671,12 @@ const handleDownloadCompletePackage = (episode) => {
 const handleExport = async (command) => {
   const [type, format] = command.split('-'); // 'completed-txt' -> ['completed', 'txt']
   const includeIncomplete = type === 'all';
-  
+
   try {
     // 检查完整性
     if (!includeIncomplete) {
       const completenessCheck = checkScriptCompleteness(episodes.value);
-      
+
       if (!completenessCheck.isComplete && completenessCheck.warnings.length > 0) {
         const proceed = await ElMessageBox.confirm(
           `检测到以下问题：\n${completenessCheck.warnings.slice(0, 10).join('\n')}${completenessCheck.warnings.length > 10 ? `\n...还有${completenessCheck.warnings.length - 10}个问题` : ''}\n\n是否继续导出？`,
@@ -784,7 +689,7 @@ const handleExport = async (command) => {
         );
       }
     }
-    
+
     // 生成剧本文本
     const scriptContent = generateFullScript({
       projectInfo: props.projectInfo,
@@ -794,16 +699,16 @@ const handleExport = async (command) => {
       format: format,
       includeIncomplete: includeIncomplete
     });
-    
+
     // 生成文件名
     const projectName = props.projectInfo.name || '未命名剧本';
     const statusText = includeIncomplete ? '完整' : '已完成';
     const ext = format === 'markdown' ? 'md' : 'txt';
     const filename = `${projectName}-${statusText}剧本.${ext}`;
-    
+
     // 下载文件
     downloadTextFile(scriptContent, filename);
-    
+
     ElMessage.success('导出成功！');
   } catch (error) {
     if (error !== 'cancel') {

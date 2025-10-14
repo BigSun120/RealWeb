@@ -719,7 +719,6 @@ const startAutoSaveTimer = () => {
     performAutoSave();
   }, autoSaveInterval);
 
-  console.log('✅ 自动保存定时器已启动，间隔: 1小时');
 };
 
 // 停止自动保存定时器
@@ -727,7 +726,6 @@ const stopAutoSaveTimer = () => {
   if (autoSaveTimer) {
     clearInterval(autoSaveTimer);
     autoSaveTimer = null;
-    console.log('⚠️ 自动保存定时器已停止');
   }
 };
 
@@ -745,6 +743,9 @@ const handleSaveWorldview = async (worldviewData, isAutoSave = false) => {
         console.error('创建版本失败:', versionError);
         // 版本创建失败不影响保存
       }
+
+      // 修复问题3：同步更新 project 对象，触发统计面板响应式更新
+      project.worldview = { ...worldviewData };
 
       // 修复：手动保存后更新保存时间和重置变化标记
       if (!isAutoSave) {
@@ -782,6 +783,9 @@ const handleSaveCharacters = async (charactersData, isAutoSave = false) => {
       } catch (versionError) {
         console.error('创建版本失败:', versionError);
       }
+
+      // 修复问题3：同步更新 project 对象，触发统计面板响应式更新
+      project.characters = [...charactersData];
 
       // 修复：手动保存后更新保存时间和重置变化标记
       if (!isAutoSave) {
@@ -821,6 +825,9 @@ const handleSaveOutline = async (outlineData, isAutoSave = false) => {
       } catch (versionError) {
         console.error('创建版本失败:', versionError);
       }
+
+      // 修复问题3：同步更新 project 对象，触发统计面板响应式更新
+      project.outline = { ...outlineData };
 
       // 修复：手动保存后更新保存时间和重置变化标记
       if (!isAutoSave) {
@@ -909,6 +916,9 @@ const handleSaveEpisodes = async (episodesData, isAutoSave = false) => {
       } catch (versionError) {
         console.error('创建版本失败:', versionError);
       }
+
+      // 修复问题3：同步更新 project 对象，触发统计面板响应式更新
+      project.episodes = [...episodesData];
 
       // 修复：手动保存后更新保存时间和重置变化标记
       if (!isAutoSave) {
@@ -1124,7 +1134,6 @@ onMounted(async () => {
         resetChangeFlags();
         // 启动自动保存定时器
         startAutoSaveTimer();
-        console.log('✅ 自动保存功能已启用，每1小时检查一次');
       }, 1000);
     } else {
       throw new Error(response.message || '加载失败');
