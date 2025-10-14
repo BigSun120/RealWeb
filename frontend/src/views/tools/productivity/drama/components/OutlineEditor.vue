@@ -2,38 +2,25 @@
   <div class="outline-editor">
     <div class="editor-header">
       <h3 class="section-title">
-        <el-icon><List /></el-icon>
+        <el-icon>
+          <List />
+        </el-icon>
         剧情大纲
       </h3>
       <div class="header-actions">
-        <el-button 
-          type="success" 
-          :icon="MagicStick"
-          @click="handleAIGenerate"
-        >
-          AI智能生成
+        <el-button type="success" :icon="MagicStick" @click="handleAIGenerate" :loading="aiGenerating">
+          {{ aiGenerating ? 'AI生成中...' : 'AI智能生成' }}
         </el-button>
-        <el-button 
-          type="warning" 
-          :icon="DocumentCopy"
-          @click="handleImportOutline"
-        >
+        <el-button type="primary" :icon="DocumentCopy" @click="generateAIPrompt">
+          生成提示词（外部AI）
+        </el-button>
+        <el-button type="warning" :icon="DocumentCopy" @click="handleImportOutline">
           导入大纲
         </el-button>
-        <el-button 
-          type="primary" 
-          :icon="MagicStick"
-          :disabled="!hasPlotPoints"
-          @click="handleGeneratePrompt"
-        >
+        <el-button type="primary" :icon="MagicStick" :disabled="!hasPlotPoints" @click="handleGeneratePrompt">
           生成提示词
         </el-button>
-        <el-button 
-          type="success"
-          :icon="Check"
-          :loading="saving"
-          @click="handleSave"
-        >
+        <el-button type="success" :icon="Check" :loading="saving" @click="handleSave">
           保存
         </el-button>
       </div>
@@ -41,14 +28,12 @@
 
     <div class="editor-content">
       <!-- 使用指导 -->
-      <el-alert
-        type="info"
-        :closable="false"
-        style="margin-bottom: 20px;"
-      >
+      <el-alert type="info" :closable="false" style="margin-bottom: 20px;">
         <template #title>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <el-icon><InfoFilled /></el-icon>
+            <el-icon>
+              <InfoFilled />
+            </el-icon>
             <strong>大纲编写指导</strong>
           </div>
         </template>
@@ -60,7 +45,10 @@
               <li><strong>第二幕（对抗）：</strong>角色面对挑战，冲突升级，经历转折（建议50-60%篇幅）</li>
               <li><strong>第三幕（结局）：</strong>冲突解决，故事高潮，收尾（建议15-25%篇幅）</li>
             </ul>
-            <p style="margin-top: 12px;">💡 <strong>建议：</strong>每一幕设置3-5个关键节点，每个节点明确事件、角色和情感变化。</p>
+            <p style="margin-top: 12px;">💡 <strong>建议：</strong>
+              1. 每一幕设置3-5个关键节点，每个节点明确事件、角色和情感变化。
+              2. 建议生成完毕后去【剧本医生】处核查剧本。
+            </p>
           </div>
         </template>
       </el-alert>
@@ -68,7 +56,9 @@
       <!-- 结构说明 -->
       <div class="structure-info">
         <el-tag type="primary" size="large">
-          <el-icon><List /></el-icon>
+          <el-icon>
+            <List />
+          </el-icon>
           三幕结构
         </el-tag>
         <span class="structure-desc">经典编剧法，适合所有类型的短剧创作</span>
@@ -76,31 +66,16 @@
 
       <!-- 三幕结构编辑器 -->
       <div v-if="outlineData.structure === 'three-act'" class="acts-container">
-        <div
-          v-for="(act, actIndex) in outlineData.acts"
-          :key="act.actNumber"
-          class="act-section"
-        >
+        <div v-for="(act, actIndex) in outlineData.acts" :key="act.actNumber" class="act-section">
           <div class="act-header">
             <div class="act-title-row">
               <el-tag :type="getActTagType(act.actNumber)" size="large">
                 第{{ numberToChinese(act.actNumber) }}幕
               </el-tag>
-              <el-input
-                v-model="act.title"
-                placeholder="幕标题"
-                class="act-title-input"
-              />
+              <el-input v-model="act.title" placeholder="幕标题" class="act-title-input" />
             </div>
-            <el-input
-              v-model="act.description"
-              type="textarea"
-              :rows="2"
-              placeholder="描述这一幕的整体内容和目标..."
-              maxlength="200"
-              show-word-limit
-              class="act-description"
-            />
+            <el-input v-model="act.description" type="textarea" :rows="2" placeholder="描述这一幕的整体内容和目标..." maxlength="200"
+              show-word-limit class="act-description" />
             <div class="field-tip">
               💡 {{ getActGuidance(act.actNumber) }}
             </div>
@@ -110,47 +85,26 @@
           <div class="plot-points">
             <div class="plot-points-header">
               <span class="subtitle">关键节点</span>
-              <el-button
-                size="small"
-                :icon="Plus"
-                @click="addPlotPoint(actIndex)"
-              >
+              <el-button size="small" :icon="Plus" @click="addPlotPoint(actIndex)">
                 添加节点
               </el-button>
             </div>
 
-            <div
-              v-for="(point, pointIndex) in act.plotPoints"
-              :key="point.id"
-              class="plot-point-card"
-            >
+            <div v-for="(point, pointIndex) in act.plotPoints" :key="point.id" class="plot-point-card">
               <div class="point-header">
-                <el-input
-                  v-model="point.name"
-                  placeholder="节点名称（5-10字建议）"
-                  :class="{ 'warning-border': isFieldTooLong(point.name, 50) }"
-                  class="point-name"
-                />
-                <el-button
-                  size="small"
-                  type="danger"
-                  text
-                  :icon="Delete"
-                  @click="removePlotPoint(actIndex, pointIndex)"
-                >
+                <el-input v-model="point.name" placeholder="节点名称（5-10字建议）"
+                  :class="{ 'warning-border': isFieldTooLong(point.name, 50) }" class="point-name" />
+                <el-button size="small" type="danger" text :icon="Delete"
+                  @click="removePlotPoint(actIndex, pointIndex)">
                   删除
                 </el-button>
               </div>
 
               <el-form label-width="80px" size="small">
                 <el-form-item label="事件描述">
-                  <el-input
-                    v-model="point.description"
-                    type="textarea"
-                    :rows="3"
+                  <el-input v-model="point.description" type="textarea" :rows="3"
                     placeholder="描述在这个节点发生的关键事件...（100-200字建议）"
-                    :class="{ 'warning-border': isFieldTooLong(point.description, 500) }"
-                  />
+                    :class="{ 'warning-border': isFieldTooLong(point.description, 500) }" />
                   <div class="field-tip">
                     💡 建议：描述具体发生什么事、为什么发生、产生什么影响。例如：“女主因家族债务被迫签下契约，与男主初次见面，双方都对这段婚姻抵触”
                   </div>
@@ -159,18 +113,8 @@
                 <el-row :gutter="12">
                   <el-col :xs="24" :sm="12">
                     <el-form-item label="涉及角色">
-                      <el-select
-                        v-model="point.characters"
-                        multiple
-                        placeholder="选择角色"
-                        style="width: 100%"
-                      >
-                        <el-option
-                          v-for="char in availableCharacters"
-                          :key="char"
-                          :label="char"
-                          :value="char"
-                        />
+                      <el-select v-model="point.characters" multiple placeholder="选择角色" style="width: 100%">
+                        <el-option v-for="char in availableCharacters" :key="char" :label="char" :value="char" />
                       </el-select>
                       <div class="field-tip" style="margin-top: 4px;">
                         👥 选择在此节点出现的主要角色
@@ -180,15 +124,8 @@
 
                   <el-col :xs="24" :sm="12">
                     <el-form-item label="情感变化">
-                      <el-select
-                        v-model="point.emotion"
-                        multiple
-                        filterable
-                        allow-create
-                        default-first-option
-                        placeholder="选择或输入情感"
-                        style="width: 100%"
-                      >
+                      <el-select v-model="point.emotion" multiple filterable allow-create default-first-option
+                        placeholder="选择或输入情感" style="width: 100%">
                         <el-option label="平静" value="平静" />
                         <el-option label="好奇" value="好奇" />
                         <el-option label="紧张" value="紧张" />
@@ -210,21 +147,13 @@
                 </el-row>
 
                 <el-form-item label="预估集数">
-                  <el-input
-                    v-model="point.episodeRange"
-                    placeholder="如：1-2"
-                    style="width: 150px"
-                  />
+                  <el-input v-model="point.episodeRange" placeholder="如：1-2" style="width: 150px" />
                 </el-form-item>
               </el-form>
             </div>
 
             <!-- 空状态 -->
-            <el-empty
-              v-if="act.plotPoints.length === 0"
-              description="暂无节点，点击上方按钮添加"
-              :image-size="80"
-            />
+            <el-empty v-if="act.plotPoints.length === 0" description="暂无节点，点击上方按钮添加" :image-size="80" />
           </div>
         </div>
       </div>
@@ -234,7 +163,9 @@
         <el-card shadow="hover">
           <template #header>
             <div class="stats-header">
-              <el-icon><DataAnalysis /></el-icon>
+              <el-icon>
+                <DataAnalysis />
+              </el-icon>
               <span>大纲统计</span>
             </div>
           </template>
@@ -257,37 +188,24 @@
     </div>
 
     <!-- 提示词对话框 -->
-    <PromptDialog
-      v-model="showPromptDialog"
-      :prompt="generatedPrompt"
-      title="剧情大纲提示词"
-    />
+    <PromptDialog v-model="showPromptDialog" :prompt="generatedPrompt" title="剧情大纲提示词" />
 
     <!-- AI智能生成提示词对话框 -->
-    <PromptDialog
-      v-model="showAIPromptDialog"
-      :prompt="aiGeneratedPrompt"
-      title="AI智能大纲生成提示词"
-      description="复制以下提示词到AI工具（如ChatGPT）生成完整的三幕式大纲，然后使用【导入大纲】功能导入生成的内容"
-    />
+    <PromptDialog v-model="showAIPromptDialog" :prompt="aiGeneratedPrompt" title="AI智能大纲生成提示词"
+      description="复制以下提示词到AI工具（如ChatGPT）生成完整的三幕式大纲，然后使用【导入大纲】功能导入生成的内容" />
 
     <!-- 大纲导入对话框 -->
-    <AIResponseParser
-      v-model="showImportDialog"
-      mode="outline"
-      title="导入大纲"
-      description="粘贴AI生成的大纲内容，系统将自动解析并填充到大纲编辑器"
-      @parsed="handleOutlineParsed"
-    />
+    <AIResponseParser v-model="showImportDialog" mode="outline" title="导入大纲" description="粘贴AI生成的大纲内容，系统将自动解析并填充到大纲编辑器"
+      @parsed="handleOutlineParsed" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { 
+import {
   List,
-  MagicStick, 
+  MagicStick,
   Check,
   Plus,
   Delete,
@@ -297,9 +215,11 @@ import {
 } from '@element-plus/icons-vue';
 import PromptDialog from './PromptDialog.vue';
 import AIResponseParser from './AIResponseParser.vue';
-import { 
+import { generateAIContent } from '@/api/ai';
+import {
   generateOutlinePrompt,
-  generateCompleteOutlinePrompt 
+  generateCompleteOutlinePrompt,
+  parseOutlineResponse
 } from '../utils/promptTemplates';
 
 const props = defineProps({
@@ -332,6 +252,7 @@ const generatedPrompt = ref('');
 const showAIPromptDialog = ref(false);
 const aiGeneratedPrompt = ref('');
 const showImportDialog = ref(false);
+const aiGenerating = ref(false);  // AI生成中状态
 
 // 大纲数据
 const outlineData = ref({
@@ -457,7 +378,7 @@ watch(() => props.modelValue, (newVal, oldVal) => {
   if (newVal && newVal.acts && newVal.acts.length > 0) {
     const newValStr = JSON.stringify(newVal);
     const currentValStr = JSON.stringify(outlineData.value);
-    
+
     // 只有当数据真的不同时才更新
     if (newValStr !== currentValStr) {
       outlineData.value = JSON.parse(newValStr);
@@ -502,14 +423,14 @@ const handleGeneratePrompt = () => {
 };
 
 // AI智能生成大纲
-const handleAIGenerate = () => {
+const handleAIGenerate = async () => {
   try {
     // 检查是否有世界观和角色数据
     const hasWorldview = props.worldview && Object.keys(props.worldview).length > 0;
     const hasCharacters = props.characters && props.characters.length > 0;
-    
+
     if (!hasWorldview || !hasCharacters) {
-      ElMessageBox.confirm(
+      const confirmed = await ElMessageBox.confirm(
         '建议先完善世界观和角色设定，这样AI能生成更符合剧本背景的大纲。是否继续？',
         '提示',
         {
@@ -517,30 +438,148 @@ const handleAIGenerate = () => {
           cancelButtonText: '取消',
           type: 'warning'
         }
-      ).then(() => {
-        generateAIPrompt();
-      }).catch(() => {
-        // 用户取消
-      });
-    } else {
-      generateAIPrompt();
+      ).catch(() => false);
+
+      if (!confirmed) return;
     }
+
+    // 检查是否有现有大纲内容
+    if (hasPlotPoints.value) {
+      const confirmed = await ElMessageBox.confirm(
+        `检测到已有大纲内容（共 ${totalPlotPoints.value} 个节点），AI生成将覆盖所有现有内容。是否继续？`,
+        '确认覆盖',
+        {
+          confirmButtonText: '覆盖并生成',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      ).catch(() => false);
+
+      if (!confirmed) return;
+    }
+
+    // 开始AI生成
+    await performAIGeneration();
   } catch (error) {
-    console.error('生成AI提示词失败:', error);
-    ElMessage.error('生成提示词失败');
+    console.error('生成AI大纲失败:', error);
+    ElMessage.error('生成大纲失败');
   }
 };
 
-// 生成AI提示词的具体逻辑
-const generateAIPrompt = () => {
-  aiGeneratedPrompt.value = generateCompleteOutlinePrompt({
-    projectType: props.projectInfo.type,
-    projectName: props.projectInfo.name,
-    worldview: props.worldview,
-    characters: props.characters,
-    totalEpisodes: props.projectInfo.episodeCount || 60
+// 执行AI生成的具体逻辑
+const performAIGeneration = async () => {
+  aiGenerating.value = true;
+
+  // 显示加载提示
+  const loadingMessage = ElMessage({
+    message: '🤖 AI正在生成完整的三幕式大纲，预计需要30-40秒...',
+    type: 'info',
+    duration: 0,
+    iconClass: 'el-icon-loading'
   });
-  showAIPromptDialog.value = true;
+
+  try {
+    // 获取角色关系数据（从 localStorage 加载）
+    let relationships = [];
+    try {
+      const storageKey = `drama_relationships_${props.projectInfo.name || 'default'}`;
+      const savedData = localStorage.getItem(storageKey);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        relationships = parsed.relationships || [];
+      }
+    } catch (e) {
+      console.warn('无法加载角色关系数据:', e);
+    }
+
+    // 生成提示词
+    const prompt = generateCompleteOutlinePrompt({
+      projectType: props.projectInfo.type,
+      projectName: props.projectInfo.name,
+      worldview: props.worldview,
+      characters: props.characters,
+      relationships,  // 传入关系图谱
+      totalEpisodes: props.projectInfo.episodeCount || 60
+    });
+
+    console.log('🤖 发送AI请求，生成大纲...');
+
+    // 调用AI API
+    const response = await generateAIContent(
+      [{ role: 'user', content: prompt }],
+      {
+        temperature: 0.8,
+        maxTokens: 4000  // 大纲需要更多的token
+      }
+    );
+
+    loadingMessage.close();
+
+    if (response.code === 200 && response.data?.content) {
+      const { content } = response.data;
+
+      // 解析AI返回的大纲数据
+      const parsedOutline = parseOutlineResponse(content);
+
+      console.log('✅ AI解析结果:', parsedOutline);
+
+      if (!parsedOutline || !parsedOutline.acts || parsedOutline.acts.length === 0) {
+        ElMessage.warning('未能从AI回答中解析到有效的大纲数据，请检查AI回答格式');
+        // 显示原始回答供手动导入
+        aiGeneratedPrompt.value = content;
+        showAIPromptDialog.value = true;
+        return;
+      }
+
+      // 导入解析后的大纲
+      performImport(parsedOutline);
+
+      const totalNodes = parsedOutline.acts.reduce((sum, act) => sum + (act.nodes?.length || 0), 0);
+      ElMessage.success({
+        message: `✅ 成功生成大纲！共${parsedOutline.acts.length}幕，${totalNodes}个关键节点`,
+        duration: 3000
+      });
+    } else {
+      throw new Error(response.message || 'AI生成失败');
+    }
+  } catch (error) {
+    console.error('❌ AI生成失败:', error);
+    loadingMessage.close();
+    ElMessage.error(error.message || 'AI生成失败，请稍后重试');
+  } finally {
+    aiGenerating.value = false;
+  }
+};
+
+// 生成AI提示词（用于外部AI）
+const generateAIPrompt = () => {
+  try {
+    // 获取角色关系数据
+    let relationships = [];
+    try {
+      const storageKey = `drama_relationships_${props.projectInfo.name || 'default'}`;
+      const savedData = localStorage.getItem(storageKey);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        relationships = parsed.relationships || [];
+      }
+    } catch (e) {
+      console.warn('无法加载角色关系数据:', e);
+    }
+
+    aiGeneratedPrompt.value = generateCompleteOutlinePrompt({
+      projectType: props.projectInfo.type,
+      projectName: props.projectInfo.name,
+      worldview: props.worldview,
+      characters: props.characters,
+      relationships,  // 传入关系图谱
+      totalEpisodes: props.projectInfo.episodeCount || 60
+    });
+    showAIPromptDialog.value = true;
+  } catch (error) {
+    console.error('生成提示词失败:', error);
+    ElMessage.error('生成提示词失败');
+  }
 };
 
 // 导入大纲
@@ -557,7 +596,7 @@ const handleOutlineParsed = (parsedData) => {
 
   // 检查是否有现有大纲内容
   const hasExistingContent = hasPlotPoints.value;
-  
+
   if (hasExistingContent) {
     // 如果有现有内容，先确认是否覆盖
     ElMessageBox.confirm(
@@ -586,7 +625,7 @@ const performImport = (parsedData) => {
     // 将解析的数据转换为组件数据格式
     const convertedActs = parsedData.acts.map((act, index) => {
       const actNumber = index + 1;
-      
+
       // 转换节点数据
       const plotPoints = (act.nodes || []).map(node => {
         // 将emotion字符串转换为数组
@@ -599,7 +638,7 @@ const performImport = (parsedData) => {
             emotionArray = node.emotion.split(/[、,\s\n]+/).filter(e => e.trim());
           }
         }
-        
+
         // 过滤掉非情感词汇并去重
         const emotionSet = new Set();
         emotionArray.forEach(e => {
@@ -611,27 +650,41 @@ const performImport = (parsedData) => {
           // 4. 不以冒号开头
           // 5. 长度在2-6个字之间（情感词一般较短）
           // 6. 不包含数字和特殊符号
-          if (trimmed && 
-              !trimmed.includes('集数') && 
-              !trimmed.match(/^\d+-\d+$/) &&
-              !trimmed.match(/^：/) &&
-              !trimmed.match(/[\uff1a:\d]/) && // 不包含冒号和数字
-              trimmed.length >= 2 && 
-              trimmed.length <= 6) {
+          if (trimmed &&
+            !trimmed.includes('集数') &&
+            !trimmed.match(/^\d+-\d+$/) &&
+            !trimmed.match(/^：/) &&
+            !trimmed.match(/[\uff1a:\d]/) && // 不包含冒号和数字
+            trimmed.length >= 2 &&
+            trimmed.length <= 6) {
             emotionSet.add(trimmed);
           }
         });
-        
+
         // 转回数组
         emotionArray = Array.from(emotionSet);
-        
+
+        // 将characters字符串转换为数组
+        let charactersArray = [];
+        if (node.characters) {
+          if (Array.isArray(node.characters)) {
+            charactersArray = node.characters;
+          } else if (typeof node.characters === 'string') {
+            // 将字符串按顿号、逗号、空格或换行分隔
+            charactersArray = node.characters
+              .split(/[、,\s\n]+/)
+              .map(c => c.trim())
+              .filter(c => c);
+          }
+        }
+
         return {
           id: generateId(),
           name: node.title || '',
-          description: node.content || '',
-          characters: node.characters || [],
+          description: node.description || node.content || '',
+          characters: charactersArray,
           emotion: emotionArray,
-          episodeRange: node.episodeRange || ''
+          episodeRange: node.episodes || node.episodeRange || ''
         };
       });
 
@@ -645,14 +698,14 @@ const performImport = (parsedData) => {
 
     // 数据质量校验
     const validation = validateImportedData(convertedActs);
-    
+
     // 更新大纲数据
     outlineData.value.acts = convertedActs;
-    
+
     // 显示导入结果和校验信息
     showImportResult(parsedData, validation);
     showImportDialog.value = false;
-    
+
     // 自动保存
     emit('update:modelValue', outlineData.value);
     emit('save', outlineData.value);
@@ -676,20 +729,20 @@ const validateImportedData = (acts) => {
   acts.forEach((act, actIndex) => {
     act.plotPoints.forEach((node, nodeIndex) => {
       validation.totalNodes++;
-      
+
       if (!node.name || node.name.trim() === '') {
         validation.emptyTitles++;
         validation.warnings.push(`第${actIndex + 1}幕-节点${nodeIndex + 1}：标题为空`);
       }
-      
+
       if (!node.description || node.description.trim() === '') {
         validation.emptyDescriptions++;
       }
-      
+
       if (!node.characters || node.characters.length === 0) {
         validation.noCharacters++;
       }
-      
+
       if (!node.episodeRange || node.episodeRange.trim() === '') {
         validation.noEpisodeRange++;
       }
@@ -702,10 +755,10 @@ const validateImportedData = (acts) => {
 // 显示导入结果
 const showImportResult = (parsedData, validation) => {
   const totalNodes = getTotalNodesFromParsed(parsedData);
-  
+
   // 基本成功消息
   let message = `成功导入大纲：${parsedData.acts.length} 幕，${totalNodes} 个节点`;
-  
+
   // 添加校验警告
   const warnings = [];
   if (validation.emptyTitles > 0) {
@@ -720,7 +773,7 @@ const showImportResult = (parsedData, validation) => {
   if (validation.noEpisodeRange > 0) {
     warnings.push(`${validation.noEpisodeRange}个节点未指定集数`);
   }
-  
+
   if (warnings.length > 0) {
     ElMessageBox.alert(
       `${message}\n\n⚠️ 数据质量提示：\n${warnings.map(w => `• ${w}`).join('\n')}\n\n建议手动完善这些信息以获得更好的效果。`,

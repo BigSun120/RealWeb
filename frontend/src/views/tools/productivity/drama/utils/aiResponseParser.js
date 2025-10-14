@@ -142,6 +142,28 @@ function extractTone(text) {
 }
 
 /**
+ * 清理AI回答中的思考标签和无关内容
+ * @param {string} text - 原始AI回答
+ * @returns {string} 清理后的内容
+ */
+function cleanAIResponse(text) {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+  
+  return text
+    // 移除 <think> 和 </think> 标签及其内容
+    .replace(/<think[^>]*>[\s\S]*?<\/think>/gi, '')
+    // 移除单独的 </think> 标签
+    .replace(/<\/think>/gi, '')
+    // 移除其他可能的 XML/HTML 标签
+    .replace(/<\/?[a-z][a-z0-9]*[^>]*>/gi, '')
+    // 移除多余的空行
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
  * 解析世界观AI回答
  * @param {string} text - AI回答全文
  * @returns {Object} 解析出的世界观数据
@@ -157,12 +179,15 @@ export function parseWorldviewResponse(text) {
     };
   }
   
+  // 清理AI回答
+  const cleanedText = cleanAIResponse(text);
+  
   return {
-    background: extractField(text, ['故事背景', '背景', '世界背景', '背景设定'], 500),
-    setting: extractField(text, ['世界设定', '设定', '设定内容', '世界观设定'], 500),
-    theme: extractField(text, ['核心主题', '主题', '故事主题', '主题思想'], 200),
-    conflict: extractField(text, ['主要冲突', '冲突', '核心冲突', '矛盾'], 200),
-    tone: extractTone(text)
+    background: extractField(cleanedText, ['故事背景', '背景', '世界背景', '背景设定'], 500),
+    setting: extractField(cleanedText, ['世界设定', '设定', '设定内容', '世界观设定'], 500),
+    theme: extractField(cleanedText, ['核心主题', '主题', '故事主题', '主题思想'], 200),
+    conflict: extractField(cleanedText, ['主要冲突', '冲突', '核心冲突', '矛盾'], 200),
+    tone: extractTone(cleanedText)
   };
 }
 
@@ -185,15 +210,17 @@ export function parseCharacterResponse(text) {
     };
   }
   
+  const cleanedText = cleanAIResponse(text);
+  
   return {
-    name: extractField(text, ['姓名', '角色名', '名字', '人物'], 20),
-    age: extractAge(text),
-    gender: extractGender(text),
-    description: extractField(text, ['描述', '简介', '角色描述', '人物描述'], 100),
-    personality: extractField(text, ['性格', '性格特点', '个性', '性格特征'], 300),
-    background: extractField(text, ['背景', '角色背景', '身世', '经历', '背景故事'], 500),
-    motivation: extractField(text, ['动机', '行为动机', '目标', '追求'], 300),
-    relationships: extractField(text, ['关系', '人际关系', '社会关系', '人物关系'], 300)
+    name: extractField(cleanedText, ['姓名', '角色名', '名字', '人物'], 20),
+    age: extractAge(cleanedText),
+    gender: extractGender(cleanedText),
+    description: extractField(cleanedText, ['描述', '简介', '角色描述', '人物描述'], 100),
+    personality: extractField(cleanedText, ['性格', '性格特点', '个性', '性格特征'], 300),
+    background: extractField(cleanedText, ['背景', '角色背景', '身世', '经历', '背景故事'], 500),
+    motivation: extractField(cleanedText, ['动机', '行为动机', '目标', '追求'], 300),
+    relationships: extractField(cleanedText, ['关系', '人际关系', '社会关系', '人物关系'], 300)
   };
 }
 

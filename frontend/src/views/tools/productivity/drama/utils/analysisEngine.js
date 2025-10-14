@@ -52,14 +52,15 @@ export function analyzeBasicStats(project) {
     
     // 大纲统计
     if (project.outline && project.outline.acts) {
+      // 统计节点数量
       project.outline.acts.forEach(act => {
         if (act.plotPoints && Array.isArray(act.plotPoints)) {
           stats.outlinePointCount += act.plotPoints.length;
-          act.plotPoints.forEach(point => {
-            stats.outlineWords += countWords(point, 'outline');
-          });
         }
       });
+      
+      // 对整个 outline 对象统计一次字数（包含幕次标题、描述和所有节点）
+      stats.outlineWords = countWords(project.outline, 'outline');
       
       if (stats.outlinePointCount > 0) {
         stats.avgOutlinePointWords = Math.round(stats.outlineWords / stats.outlinePointCount);
@@ -588,8 +589,10 @@ function countWords(obj, type = null) {
               if (typeof point === 'string') {
                 contentFields.push(point);
               } else if (typeof point === 'object') {
-                if (point.content) contentFields.push(point.content);
+                // 统计节点的 name、description、content 字段
+                if (point.name) contentFields.push(point.name);
                 if (point.description) contentFields.push(point.description);
+                if (point.content) contentFields.push(point.content);
               }
             });
           }

@@ -6,13 +6,31 @@
         世界观设定
       </h3>
       <div class="header-actions">
-        <el-button 
-          type="primary" 
-          :icon="MagicStick"
-          @click="handleGeneratePrompt"
+        <!-- AI自动生成按钮（新增）-->
+        <el-dropdown 
+          split-button 
+          type="primary"
+          :loading="aiGenerating"
+          :disabled="aiGenerating"
+          @click="handleAIAutoGenerate"
+          @command="handleAICommand"
         >
-          生成提示词
-        </el-button>
+          <el-icon><MagicStick /></el-icon>
+          {{ aiGenerating ? 'AI生成中...' : 'AI自动生成' }}
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="auto-generate">
+                <el-icon><MagicStick /></el-icon>
+                自动生成并填充
+              </el-dropdown-item>
+              <el-dropdown-item command="generate-prompt" divided>
+                <el-icon><Document /></el-icon>
+                生成提示词（手动）
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+        
         <el-button 
           type="warning" 
           :icon="Upload"
@@ -32,6 +50,29 @@
     </div>
 
     <div class="editor-content">
+      <!-- AI生成状态提示 -->
+      <el-alert
+        v-if="aiGenerating"
+        type="info"
+        :closable="false"
+        class="ai-generating-tip"
+      >
+        <template #title>
+          <div class="generating-header">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            <span>AI正在生成世界观设定，请稍候...</span>
+          </div>
+        </template>
+        <el-progress 
+          :percentage="generateProgress" 
+          :indeterminate="generateProgress < 10"
+        />
+        <div class="generating-tip">
+          <el-icon><InfoFilled /></el-icon>
+          <span>预计需要20-60秒，请耐心等待（根据AI模型和内容复杂度）</span>
+        </div>
+      </el-alert>
+
       <el-form
         ref="formRef"
         :model="formData"
@@ -200,11 +241,15 @@ import {
   MagicStick, 
   Check, 
   View,
-  Upload
+  Upload,
+  Loading,
+  InfoFilled
 } from '@element-plus/icons-vue';
 import PromptDialog from './PromptDialog.vue';
 import AIResponseParser from './AIResponseParser.vue';
 import { generateWorldviewPrompt } from '../utils/promptTemplates';
+import { parseWorldviewResponse } from '../utils/aiResponseParser';
+import { generateAIContent } from '@/api/ai';
 
 const props = defineProps({
   modelValue: {
@@ -231,6 +276,10 @@ const showPromptDialog = ref(false);
 const generatedPrompt = ref('');
 const showAIParser = ref(false);
 const customTone = ref('');
+
+// AI自动生成相关状态
+const aiGenerating = ref(false);
+const generateProgress = ref(0);
 
 // 是否显示自定义输入框
 const showCustomTone = computed(() => {
@@ -421,6 +470,227 @@ const handleAIParseConfirm = (parsedData) => {
   
   ElMessage.success('已从AI回答中提取并填充内容');
 };
+
+// ==================== AI自动生成功能 ====================
+
+// AI自动生成（主按钮点击）
+const handleAIAutoGenerate = () => {
+  handleAICommand('auto-generate');
+};
+
+// AI命令处理
+const handleAICommand = async (command) => {
+  switch (command) {
+    case 'auto-generate':
+      await performAIGenerate();
+      break;
+    case 'generate-prompt':
+      handleGeneratePrompt();
+      break;
+  }
+};
+
+// 执行AI生成
+const performAIGenerate = async () => {
+  // 1. 检查是否有基础内容
+  const hasBasicInfo = formData.value.background || 
+                       formData.value.setting || 
+                       formData.value.theme;
+  
+  if (!hasBasicInfo) {
+    try {
+      await ElMessageBox.confirm(
+        '建议先填写部分世界观内容（如背景、主题等），AI会根据这些信息生成更符合预期的设定。是否继续？',
+        '提示',
+        {
+          confirmButtonText: '继续生成',
+          cancelButtonText: '去填写',
+          type: 'warning'
+        }
+      );
+    } catch {
+      return; // 用户取消
+    }
+  }
+
+  // 2. 生成提示词
+  const prompt = generateWorldviewPrompt({
+    ...formData.value,
+    projectType: props.projectInfo.type,
+    projectName: props.projectInfo.name
+  });
+
+  const messages = [
+    { role: 'system', content: '你是专业的编剧助手，擅长创作短剧世界观设定。请严格按照要求的格式输出，使用【】标记字段。' },
+    { role: 'user', content: prompt }
+  ];
+
+  aiGenerating.value = true;
+  generateProgress.value = 0;
+
+  try {
+    // 执行AI生成
+    await performNormalGenerate(messages);
+  } catch (error) {
+    console.error('AI生成失败:', error);
+    
+    // 错误处理
+    if (error.response?.data?.code === 500 && error.response?.data?.message?.includes('未找到')) {
+      try {
+        await ElMessageBox.confirm(
+          '未找到可用的AI连接。您可以：\n1. 前往【个人中心】配置自己的AI密钥（推荐）\n2. 联系管理员配置平台AI服务\n3. 使用手动模式生成提示词',
+          '需要配置AI',
+          {
+            confirmButtonText: '去配置',
+            cancelButtonText: '手动模式',
+            type: 'warning'
+          }
+        );
+        // 跳转到AI配置页面（需要根据实际路由调整）
+        window.open('/#/profile/ai-settings', '_blank');
+      } catch {
+        // 用户选择手动模式
+        handleGeneratePrompt();
+      }
+    } else {
+      ElMessage.error(error.response?.data?.message || error.message || 'AI生成失败，请稍后重试');
+    }
+  } finally {
+    aiGenerating.value = false;
+    generateProgress.value = 0;
+  }
+};
+
+// 普通AI生成
+const performNormalGenerate = async (messages) => {
+  // 记录开始时间
+  const startTime = Date.now();
+  
+  // 模拟进度
+  const progressInterval = setInterval(() => {
+    if (generateProgress.value < 90) {
+      generateProgress.value += 10;
+    }
+  }, 500);
+
+  try {
+    const response = await generateAIContent(messages, {
+      temperature: 0.8,
+      maxTokens: 2000
+    });
+
+    clearInterval(progressInterval);
+    generateProgress.value = 100;
+    
+    const duration = Date.now() - startTime;
+
+    if (response.code === 200 && response.data?.content) {
+      const { content, usage, finishReason, latency } = response.data;
+      
+      // 解析AI回答并填充
+      const parsedData = parseWorldviewResponse(content);
+      
+      // 填充数据
+      Object.keys(parsedData).forEach(key => {
+        if (parsedData[key]) {
+          if (key === 'tone') {
+            // 处理情感基调
+            const presetTones = ['轻松幽默', '紧张悬疑', '浪漫甜蜜', '热血励志', '虐心催泪', '爽快打脸'];
+            if (presetTones.includes(parsedData[key])) {
+              formData.value.tone = parsedData[key];
+            } else {
+              customTone.value = parsedData[key];
+              formData.value.tone = 'custom';
+            }
+          } else {
+            formData.value[key] = parsedData[key];
+          }
+        }
+      });
+
+      // 根据finishReason显示不同的提示
+      handleGenerationComplete(finishReason, usage, duration, parsedData);
+      
+      // 显示生成统计信息
+      console.log('📊 AI生成统计:', {
+        '耗时': `${(duration/1000).toFixed(1)}秒`,
+        'Token使用': usage?.total_tokens || 0,
+        '输入Token': usage?.prompt_tokens || 0,
+        '输出Token': usage?.completion_tokens || 0,
+        '完成原因': finishReason || 'unknown',
+        '响应时间': latency ? `${latency}ms` : '-'
+      });
+    } else {
+      throw new Error(response.message || '生成失败');
+    }
+  } finally {
+    clearInterval(progressInterval);
+  }
+};
+
+// 处理生成完成后的提示
+const handleGenerationComplete = (finishReason, usage, duration, parsedData) => {
+  // 检查内容完整性
+  const completenessCheck = {
+    hasBackground: parsedData.background && parsedData.background.length > 10,
+    hasSetting: parsedData.setting && parsedData.setting.length > 10,
+    hasTheme: parsedData.theme && parsedData.theme.length > 5,
+    hasConflict: parsedData.conflict && parsedData.conflict.length > 5,
+    hasTone: !!parsedData.tone
+  };
+  
+  const completedFields = Object.values(completenessCheck).filter(Boolean).length;
+  const totalFields = Object.keys(completenessCheck).length;
+  const completenessRate = (completedFields / totalFields * 100).toFixed(0);
+  
+  // 根据finishReason和完整性显示不同提示
+  if (finishReason === 'stop') {
+    // AI正常完成
+    if (completedFields === totalFields) {
+      ElMessage.success({
+        message: `✅ AI生成成功！已自动填充所有字段（耗时${(duration/1000).toFixed(1)}秒）`,
+        duration: 3000
+      });
+    } else {
+      ElMessage.success({
+        message: `✅ AI生成完成，已填充${completedFields}/${totalFields}个字段，请检查并补充`,
+        duration: 4000
+      });
+    }
+  } else if (finishReason === 'length') {
+    // 达到Token限制
+    ElMessage.warning({
+      message: `⚠️ AI生成达到长度限制（${usage?.completion_tokens || 0} tokens），内容可能不完整。已填充${completedFields}/${totalFields}个字段。`,
+      duration: 5000
+    });
+    console.warn('⚠️ 建议：增加maxTokens参数或简化提示词');
+  } else if (finishReason === 'content_filter') {
+    // 内容被过滤
+    ElMessage.error({
+      message: '🚫 生成内容触发了内容策略，请调整提示词后重试',
+      duration: 5000
+    });
+  } else {
+    // 其他情况或未知finishReason
+    if (completedFields >= totalFields * 0.8) {
+      ElMessage.success({
+        message: `✅ AI生成完成，已填充${completedFields}/${totalFields}个字段（完整度${completenessRate}%）`,
+        duration: 3000
+      });
+    } else if (completedFields >= totalFields * 0.5) {
+      ElMessage.warning({
+        message: `⚠️ AI生成部分完成，已填充${completedFields}/${totalFields}个字段，请检查并补充`,
+        duration: 4000
+      });
+    } else {
+      ElMessage.error({
+        message: `❌ AI生成内容不完整（仅${completedFields}/${totalFields}个字段），建议重新生成`,
+        duration: 5000
+      });
+    }
+  }
+};
+
 </script>
 
 <style scoped>
@@ -522,6 +792,38 @@ const handleAIParseConfirm = (parsedData) => {
 .preview-item strong {
   color: #FF6B6B;
   margin-right: 8px;
+}
+
+/* AI生成状态样式 */
+.ai-generating-tip {
+  margin-bottom: 20px;
+}
+
+.generating-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.generating-header .el-icon {
+  font-size: 18px;
+}
+
+.generating-tip {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #f0f9ff;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #409eff;
+}
+
+.generating-tip .el-icon {
+  font-size: 14px;
 }
 
 /* 响应式 */

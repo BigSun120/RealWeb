@@ -21,9 +21,13 @@ class AIGatewayService {
       requireUserKey = false 
     } = options;
 
+    // 调试日志
+    logger.info('🔍 selectConnection called', { userId, preferredProvider, requireUserKey });
+
     try {
       // 1. 尝试获取用户自带密钥（BYOK）
       if (userId) {
+        logger.info('✅ userId exists, querying user connection...');
         const userConnection = preferredProvider 
           ? await UserAIConnection.findOne({ 
               user: userId, 
@@ -33,9 +37,14 @@ class AIGatewayService {
           : await UserAIConnection.getUserDefaultConnection(userId);
 
         if (userConnection) {
+          logger.info('📝 userConnection found', { 
+            provider: userConnection.provider, 
+            isActive: userConnection.isActive 
+          });
+          
           // 检查用户配额
           if (await this.checkUserQuota(userConnection)) {
-            logger.info('使用用户BYOK连接', { userId, provider: userConnection.provider });
+            logger.info('✅ 使用用户BYOK连接', { userId, provider: userConnection.provider });
             return {
               type: 'user',
               connection: userConnection,
@@ -47,9 +56,13 @@ class AIGatewayService {
               timeout: userConnection.timeout
             };
           } else {
-            logger.warn('用户配额不足', { userId });
+            logger.warn('⚠️ 用户配额不足', { userId });
           }
+        } else {
+          logger.info('⚠️ userConnection not found for userId:', userId);
         }
+      } else {
+        logger.info('⚠️ userId is null/undefined, skipping user connection query');
       }
 
       // 2. 如果要求必须使用用户密钥，则返回错误
@@ -58,8 +71,15 @@ class AIGatewayService {
       }
 
       // 3. 回退到平台配置
+      logger.info('🔄 Falling back to platform config...');
       const platformConfig = await AIConfig.getActiveConfig();
+      logger.info('📝 platformConfig query result:', { 
+        found: !!platformConfig, 
+        providersCount: platformConfig?.providers?.length || 0 
+      });
+      
       if (!platformConfig || !platformConfig.providers.length) {
+        logger.error('❌ 平台AI服务未配置');
         throw new Error('平台AI服务未配置');
       }
 

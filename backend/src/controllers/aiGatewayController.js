@@ -35,7 +35,8 @@ exports.generate = async (req, res) => {
           content: result.content,
           usage: result.usage,
           model: result.model,
-          latency: result.latency
+          latency: result.latency,
+          finishReason: result.finishReason // 添加完成原因
         }
       });
     } else {

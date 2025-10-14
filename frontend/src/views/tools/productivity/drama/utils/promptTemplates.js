@@ -708,7 +708,8 @@ export function generateCompleteOutlinePrompt(data) {
     projectType, 
     totalEpisodes = 60,
     worldview,
-    characters
+    characters,
+    relationships  // 新增：角色关系图谱
   } = data;
   
   // 使用 episodeCount 作为内部变量名，保持下面代码不变
@@ -756,6 +757,41 @@ export function generateCompleteOutlinePrompt(data) {
       }
       prompt += `\n`;
     });
+  }
+  
+  // 角色关系图谱（新增）
+  if (relationships && relationships.length > 0) {
+    prompt += `## 角色关系图谱\n\n`;
+    prompt += `以下是角色之间的重要关系，请在大纲中充分考虑这些关系的发展和变化：\n\n`;
+    
+    // 按角色分组显示关系
+    const relationsByChar = {};
+    relationships.forEach(rel => {
+      if (!relationsByChar[rel.from]) {
+        relationsByChar[rel.from] = [];
+      }
+      relationsByChar[rel.from].push(rel);
+    });
+    
+    Object.keys(relationsByChar).forEach((charName, index) => {
+      prompt += `**${index + 1}. ${charName}的关系网络**\n`;
+      const relations = relationsByChar[charName];
+      relations.forEach(rel => {
+        const direction = rel.direction === 'bidirectional' ? '↔' : '→';
+        const strengthStars = '★'.repeat(rel.strength || 3);
+        prompt += `  - 与 **${rel.to}**：${rel.type}${direction}（强度${strengthStars}）\n`;
+        if (rel.description) {
+          prompt += `    ${rel.description}\n`;
+        }
+      });
+      prompt += `\n`;
+    });
+    
+    prompt += `**💡 提示**：请在剧情设计中充分考虑这些关系的发展，比如：\n`;
+    prompt += `- 暗恋关系可以设计心动的告白场景\n`;
+    prompt += `- 仇恨关系需要安排对峻和冲突场面\n`;
+    prompt += `- 竞争关系可以创造紧张刺激的场面\n`;
+    prompt += `- 友情/亲情关系能增加情感深度\n\n`;
   }
 
   prompt += `## 请你完成以下任务\n\n`;
@@ -858,6 +894,405 @@ export function generateCompleteOutlinePrompt(data) {
   return prompt;
 }
 
+/**
+ * 解析AI返回的角色数据
+ * @param {String} content AI返回的文本内容
+ * @returns {Object} 解析后的角色数据
+ */
+export function parseCharacterResponse(content) {
+  if (!content || typeof content !== 'string') {
+    return {};
+  }
+
+  // 清理常见的AI思考标签和无关内容
+  let cleanedContent = content
+    // 移除 <think> 和 </think> 标签及其内容
+    .replace(/<think[^>]*>[\s\S]*?<\/think>/gi, '')
+    // 移除单独的 </think> 标签
+    .replace(/<\/think>/gi, '')
+    // 移除其他可能的 XML/HTML 标签
+    .replace(/<\/?[a-z][a-z0-9]*[^>]*>/gi, '')
+    // 移除多余的空行
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const result = {};
+  
+  // 字段映射表
+  const fieldMap = {
+    '角色姓名': 'name',
+    '姓名': 'name',
+    '年龄': 'age',
+    '性别': 'gender',
+    '角色定位': 'role',
+    '角色描述': 'description',
+    '描述': 'description',
+    '性格特点': 'personality',
+    '性格': 'personality',
+    '角色背景': 'background',
+    '背景': 'background',
+    '行为动机': 'motivation',
+    '动机': 'motivation',
+    '人际关系': 'relationships',
+    '关系': 'relationships'
+  };
+
+  // 使用【】标记提取字段
+  const fieldRegex = /【([^】]+)】[\s\S]*?(?=【[^】]+】|$)/g;
+  let match;
+  
+  while ((match = fieldRegex.exec(cleanedContent)) !== null) {
+    const fieldName = match[0].match(/【([^】]+)】/)[1].trim();
+    const fieldKey = fieldMap[fieldName];
+    
+    if (fieldKey) {
+      // 提取字段内容（去掉字段名和【】标记）
+      let fieldContent = match[0]
+        .replace(/【[^】]+】/, '')
+        .trim();
+      
+      // 特殊处理年龄字段
+      if (fieldKey === 'age') {
+        const ageMatch = fieldContent.match(/\d+/);
+        if (ageMatch) {
+          result[fieldKey] = parseInt(ageMatch[0]);
+        }
+      } 
+      // 特殊处理性别字段
+      else if (fieldKey === 'gender') {
+        if (fieldContent.includes('女')) {
+          result[fieldKey] = '女';
+        } else if (fieldContent.includes('男')) {
+          result[fieldKey] = '男';
+        } else if (fieldContent.includes('其他')) {
+          result[fieldKey] = '其他';
+        }
+      }
+      // 其他文本字段
+      else {
+        result[fieldKey] = fieldContent;
+      }
+    }
+  }
+  
+  // 如果没有使用【】标记，尝试其他格式
+  if (Object.keys(result).length === 0) {
+    // 尝试匹配 "字段名：内容" 格式
+    Object.keys(fieldMap).forEach(fieldName => {
+      const fieldKey = fieldMap[fieldName];
+      const regex = new RegExp(`${fieldName}[:：]\\s*([\\s\\S]*?)(?=(?:${Object.keys(fieldMap).join('|')})[:：]|$)`, 'i');
+      const match = cleanedContent.match(regex);
+      
+      if (match && match[1]) {
+        let value = match[1].trim();
+        
+        if (fieldKey === 'age') {
+          const ageMatch = value.match(/\d+/);
+          if (ageMatch) {
+            result[fieldKey] = parseInt(ageMatch[0]);
+          }
+        } else if (fieldKey === 'gender') {
+          if (value.includes('女')) {
+            result[fieldKey] = '女';
+          } else if (value.includes('男')) {
+            result[fieldKey] = '男';
+          } else if (value.includes('其他')) {
+            result[fieldKey] = '其他';
+          }
+        } else {
+          result[fieldKey] = value;
+        }
+      }
+    });
+  }
+  
+  return result;
+}
+
+/**
+ * 生成角色关系图谱提示词
+ * @param {Object} data 项目数据
+ * @returns {String} 生成的提示词
+ */
+export function generateRelationshipGraphPrompt(data) {
+  const { 
+    projectName, 
+    projectType, 
+    worldview,
+    characters
+  } = data;
+
+  let prompt = `# 角色关系推断任务\n\n`;
+  
+  prompt += `## 项目信息\n`;
+  prompt += `- 剧本名称：${projectName || '未命名'}\n`;
+  prompt += `- 剧本类型：${projectType || '未指定'}\n`;
+  prompt += `- 角色数量：${characters.length}个\n\n`;
+
+  // 世界观信息
+  if (worldview && Object.keys(worldview).length > 0) {
+    prompt += `## 世界观设定\n\n`;
+    
+    if (worldview.background) {
+      prompt += `**故事背景**：${worldview.background}\n\n`;
+    }
+    
+    if (worldview.theme) {
+      prompt += `**核心主题**：${worldview.theme}\n\n`;
+    }
+    
+    if (worldview.conflict) {
+      prompt += `**主要冲突**：${worldview.conflict}\n\n`;
+    }
+    
+    if (worldview.tone) {
+      prompt += `**情感基调**：${worldview.tone}\n\n`;
+    }
+  }
+
+  // 角色信息
+  if (characters && characters.length > 0) {
+    prompt += `## 角色列表\n\n`;
+    characters.forEach((char, index) => {
+      prompt += `**${index + 1}. ${char.name}**（${char.role || '角色'}）\n`;
+      if (char.age) prompt += `- 年龄：${char.age}岁\n`;
+      if (char.gender) prompt += `- 性别：${char.gender}\n`;
+      if (char.description) prompt += `- 描述：${char.description}\n`;
+      if (char.personality) prompt += `- 性格：${char.personality}\n`;
+      if (char.background) prompt += `- 背景：${char.background}\n`;
+      prompt += `\n`;
+    });
+  }
+
+  prompt += `## 任务要求\n\n`;
+  prompt += `基于以上信息，请为这些角色设计合理的人际关系网络。要求：\n\n`;
+  
+  prompt += `### 1. 关系类型多样化\n`;
+  prompt += `- **情感关系**：爱情、暗恋、前任、亲情、友情、闺蜜\n`;
+  prompt += `- **对抗关系**：仇恨、竞争、商业竞争、利用、误会\n`;
+  prompt += `- **职业关系**：上下级、合作伙伴、雇佣\n`;
+  prompt += `- **特殊关系**：秘密、保护、嫉妒\n\n`;
+  
+  prompt += `### 2. 符合剧本基调\n`;
+  if (worldview.tone) {
+    prompt += `- 根据「${worldview.tone}」的基调设计冲突点\n`;
+  }
+  prompt += `- 确保关系设定能推动剧情发展\n`;
+  prompt += `- 男女主角之间应有情感张力\n\n`;
+  
+  prompt += `### 3. 逻辑合理性\n`;
+  prompt += `- 根据角色的定位、年龄、背景推断\n`;
+  prompt += `- 避免关系设定矛盾\n`;
+  prompt += `- 预留剧情发展空间\n\n`;
+  
+  prompt += `### 4. 关系密度建议\n`;
+  prompt += `- 男主角/女主角：4-6个关系（核心位置）\n`;
+  prompt += `- 主要配角：3-4个关系\n`;
+  prompt += `- 次要配角：2-3个关系\n`;
+  prompt += `- 反派：3-5个关系（冲突源）\n\n`;
+  
+  prompt += `## ⚠️ 重要：请严格按照以下格式输出\n\n`;
+  prompt += `请为每个角色列出其与其他角色的关系，格式如下：\n\n`;
+  
+  prompt += `【角色：${characters[0]?.name || '张三'}】\n`;
+  prompt += `关系1：${characters[1]?.name || '李四'} | 类型：暗恋 | 方向：单向 | 强度：5 | 描述：对TA一见钟情，但因身份差异不敢表白\n`;
+  prompt += `关系2：${characters[2]?.name || '王五'} | 类型：商业竞争 | 方向：双向 | 强度：4 | 描述：争夺公司控制权的竞争对手\n\n`;
+  
+  prompt += `【角色：${characters[1]?.name || '李四'}】\n`;
+  prompt += `关系1：${characters[0]?.name || '张三'} | 类型：雇佣关系 | 方向：双向 | 强度：3 | 描述：作为秘书工作，初期关系疏离\n`;
+  prompt += `关系2：${characters[2]?.name || '王五'} | 类型：闺蜜 | 方向：双向 | 强度：5 | 描述：大学时期的好友，互相扶持\n\n`;
+  
+  prompt += `...（继续其他角色）\n\n`;
+  
+  prompt += `## 字段说明\n`;
+  prompt += `- **方向**：单向（A→B）或 双向（A↔B）\n`;
+  prompt += `- **强度**：1-5（1最弱，5最强）\n`;
+  prompt += `- **类型**：必须使用上述推荐的关系类型\n`;
+  prompt += `- **描述**：简要说明关系的具体内容，30-50字\n\n`;
+  
+  prompt += `请确保每个角色至少有2-3个关系，主角应有4-6个关系。\n`;
+  prompt += `关系设定要合理，避免逻辑矛盾，为剧情发展预留空间。`;
+
+  return prompt;
+}
+
+/**
+ * 解析AI返回的角色关系数据
+ * @param {String} content AI返回的文本内容
+ * @returns {Array} 解析后的关系数组
+ */
+export function parseRelationshipResponse(content) {
+  if (!content || typeof content !== 'string') {
+    return [];
+  }
+
+  // 清理AI思考标签
+  let cleanedContent = content
+    .replace(/<think[^>]*>[\s\S]*?<\/think>/gi, '')
+    .replace(/<\/think>/gi, '')
+    .replace(/<\/?[a-z][a-z0-9]*[^>]*>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const relationships = [];
+  
+  // 按【角色：XXX】分割，支持中英文冒号
+  const characterBlocks = cleanedContent.split(/【角色[\uff1a:]([^】]+)】/);
+  
+  console.log(`解析到 ${Math.floor(characterBlocks.length / 2)} 个角色块`);
+  
+  for (let i = 1; i < characterBlocks.length; i += 2) {
+    const characterName = characterBlocks[i].trim();
+    const relationsText = characterBlocks[i + 1];
+    
+    if (!relationsText) continue;
+    
+    console.log(`处理角色: ${characterName}`);
+    
+    // 优化正则表达式，支持中英文冒号、空格等各种情况
+    // 格式：关系N：/: 目标 | 类型：/: XX | 方向：/: XX | 强度：/: N | 描述：/: XX
+    const relationPattern = /关系\d+[\uff1a:]\s*([^|\uff5c]+?)\s*[|\uff5c]\s*类型[\uff1a:]\s*([^|\uff5c]+?)\s*[|\uff5c]\s*方向[\uff1a:]\s*([^|\uff5c]+?)\s*[|\uff5c]\s*强度[\uff1a:]\s*(\d+)\s*[|\uff5c]\s*描述[\uff1a:]\s*([^\n\r]+)/g;
+    
+    let match;
+    let relationCount = 0;
+    while ((match = relationPattern.exec(relationsText)) !== null) {
+      const targetName = match[1].trim();
+      const type = match[2].trim();
+      const direction = match[3].trim();
+      const strength = parseInt(match[4]);
+      const description = match[5].trim();
+      
+      relationCount++;
+      console.log(`  - 关系${relationCount}: ${characterName} -> ${targetName} (类型: ${type})`);
+      
+      relationships.push({
+        from: characterName,
+        to: targetName,
+        type: type,
+        direction: direction.includes('双向') || direction.includes('相互') || direction.toLowerCase().includes('bidirectional') ? 'bidirectional' : 'single',
+        strength: strength || 3,
+        description: description
+      });
+    }
+    
+    console.log(`  总计解析到 ${relationCount} 条关系`);
+  }
+  
+  console.log(`最终解析结果: ${relationships.length} 条关系`);
+  return relationships;
+}
+
+/**
+ * 解析AI返回的大纲数据
+ * @param {String} content AI返回的文本内容
+ * @returns {Object} 解析后的大纲数据 { acts: [...] }
+ */
+export function parseOutlineResponse(content) {
+  if (!content || typeof content !== 'string') {
+    return { acts: [] };
+  }
+
+  // 清理AI思考标签
+  let cleanedContent = content
+    .replace(/<think[^>]*>[\s\S]*?<\/think>/gi, '')
+    .replace(/<\/think>/gi, '')
+    .replace(/<\/?[a-z][a-z0-9]*[^>]*>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const acts = [];
+  
+  // 匹配幕标记：【第一幕：XXX】、【第二幕：XXX】、【第三幕：XXX】
+  const actPattern = /【第([一二三])幕[：:](.*?)】/g;
+  const actMatches = [];
+  let match;
+  
+  while ((match = actPattern.exec(cleanedContent)) !== null) {
+    actMatches.push({
+      index: match.index,
+      number: match[1],
+      title: match[2].trim(),
+      fullMatch: match[0]
+    });
+  }
+  
+  console.log(`解析到 ${actMatches.length} 幕`);
+  
+  if (actMatches.length === 0) {
+    console.warn('未找到任何幕标记');
+    return { acts: [] };
+  }
+  
+  // 处理每一幕
+  actMatches.forEach((actMatch, actIndex) => {
+    const actNumber = actMatch.number;
+    const actTitle = actMatch.title;
+    const actStartIndex = actMatch.index;
+    const actEndIndex = actIndex < actMatches.length - 1 
+      ? actMatches[actIndex + 1].index 
+      : cleanedContent.length;
+    
+    const actContent = cleanedContent.substring(actStartIndex, actEndIndex);
+    
+    // 提取幕描述（在【第X幕】后、第一个【节点】前的内容）
+    const descPattern = /【第[一二三]幕[：:][^】]*】[\s\S]*?幕描述[：:]([^【]*)/;
+    const descMatch = actContent.match(descPattern);
+    const actDescription = descMatch ? descMatch[1].trim() : '';
+    
+    // 提取节点
+    const nodes = [];
+    const nodePattern = /【节点(\d+)】[\s\S]*?(?=【节点\d+】|【第[一二三]幕|$)/g;
+    let nodeMatch;
+    
+    while ((nodeMatch = nodePattern.exec(actContent)) !== null) {
+      const nodeNumber = parseInt(nodeMatch[1]);
+      const nodeContent = nodeMatch[0];
+      
+      // 提取节点的各个字段
+      const nameMatch = nodeContent.match(/名称[：:]\s*([^\n]*)/i);
+      const descMatch = nodeContent.match(/描述[：:]\s*([\s\S]*?)(?=涉及角色|$)/i);
+      const charactersMatch = nodeContent.match(/涉及角色[：:]\s*([^\n]*)/i);
+      const emotionMatch = nodeContent.match(/情感[：:]\s*([^\n]*)/i);
+      const episodesMatch = nodeContent.match(/集数[：:]\s*([^\n]*)/i);
+      
+      const nodeName = nameMatch ? nameMatch[1].trim() : `节点${nodeNumber}`;
+      const nodeDesc = descMatch ? descMatch[1].trim() : '';
+      const characters = charactersMatch ? charactersMatch[1].trim() : '';
+      const emotion = emotionMatch ? emotionMatch[1].trim() : '';
+      const episodes = episodesMatch ? episodesMatch[1].trim() : '';
+      
+      console.log(`  - 节点${nodeNumber}: ${nodeName}`);
+      
+      nodes.push({
+        id: `act${actIndex + 1}-node${nodeNumber}`,
+        title: nodeName,
+        description: nodeDesc,
+        characters: characters,
+        emotion: emotion,
+        episodes: episodes
+      });
+    }
+    
+    console.log(`第${actNumber}幕共解析到 ${nodes.length} 个节点`);
+    
+    // 映射中文数字到阿拉伯数字
+    const actNumberMap = { '一': 1, '二': 2, '三': 3 };
+    const actNum = actNumberMap[actNumber] || 1;
+    
+    acts.push({
+      id: `act${actNum}`,
+      number: actNum,
+      title: actTitle,
+      description: actDescription,
+      nodes: nodes
+    });
+  });
+  
+  console.log(`最终解析结果: ${acts.length} 幕，共 ${acts.reduce((sum, act) => sum + act.nodes.length, 0)} 个节点`);
+  
+  return { acts };
+}
+
 export default {
   generateWorldviewPrompt,
   generateCharacterPrompt,
@@ -865,5 +1300,9 @@ export default {
   generateEpisodePrompt,
   generateBatchEpisodesPrompt,
   generateBatchCharactersPrompt,
-  generateCompleteOutlinePrompt
+  generateCompleteOutlinePrompt,
+  parseCharacterResponse,
+  generateRelationshipGraphPrompt,
+  parseRelationshipResponse,
+  parseOutlineResponse  // 新增
 };

@@ -176,7 +176,8 @@
         <!-- 角色管理 -->
         <div v-else-if="activeTab === 'characters'" class="content-panel">
           <CharacterManager v-model="characters" :project-info="project" :worldview="worldview"
-            @save="handleSaveCharacters" />
+            @save="handleSaveCharacters"
+            @relationships-save="handleSaveRelationships" />
         </div>
 
         <!-- 剧情大纲 -->
@@ -804,6 +805,40 @@ const handleSaveCharacters = async (charactersData, isAutoSave = false) => {
     console.error('保存角色失败:', error);
     ElMessage.error(error.message || '保存角色失败');
     throw error;
+  }
+};
+
+// 关系图谱相关
+const handleSaveRelationships = async (payload) => {
+  try {
+    const { data, isAutoSave = true } = payload;
+    const projectId = project._id || project.id;
+    
+    // 创建关系图谱的版本快照
+    await createVersion(
+      'relationships', 
+      projectId, 
+      { relationships: data }, 
+      projectId, 
+      { 
+        comment: `包含 ${data.length} 条关系`,
+        isAutoSave  // 使用传入的参数
+      }
+    );
+    
+    const saveType = isAutoSave ? '自动保存' : '手动保存';
+    console.log(`✅ 关系图谱已${saveType}到版本历史`);
+    
+    // 手动保存显示成功消息
+    if (!isAutoSave) {
+      ElMessage.success('关系图谱已保存');
+    }
+  } catch (error) {
+    console.error('保存关系图谱失败:', error);
+    // 手动保存失败显示错误
+    if (!payload.isAutoSave) {
+      ElMessage.error('保存关系图谱失败');
+    }
   }
 };
 
