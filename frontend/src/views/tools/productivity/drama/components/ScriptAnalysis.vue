@@ -1,17 +1,7 @@
 <template>
   <div class="script-analysis">
     <!-- 头部标题 -->
-    <div class="analysis-header">
-      <div class="header-left">
-        <el-icon :size="24" class="header-icon">
-          <Document />
-        </el-icon>
-        <div class="header-info">
-          <h2>剧本医生</h2>
-          <p class="header-subtitle">智能分析剧本结构与质量，提供优化建议</p>
-        </div>
-      </div>
-    </div>
+
 
     <!-- 阶段Tab -->
     <el-card class="tabs-card" shadow="never">
@@ -527,14 +517,8 @@
     </el-dialog>
 
     <!-- 提示词对话框 -->
-    <PromptDialog 
-      v-model="showPromptDialog" 
-      :prompt="generatedPrompt" 
-      :title="promptDialogTitle"
-      :supports-paste="promptSupportsPaste"
-      :paste-mode="promptPasteMode"
-      @paste="handlePromptPaste"
-    />
+    <PromptDialog v-model="showPromptDialog" :prompt="generatedPrompt" :title="promptDialogTitle"
+      :supports-paste="promptSupportsPaste" :paste-mode="promptPasteMode" @paste="handlePromptPaste" />
 
     <!-- AI回答导入对话框 -->
     <AIResponseParser v-model="showImportDialog" mode="diagnosis" title="导入AI诊断结果" description="粘贴AI返回的诊断结果，系统将自动解析问题列表"
@@ -1356,22 +1340,22 @@ const showSolutionResponseDialog = () => {
             done(false);
             return;
           }
-          
+
           try {
             // 解析解决方案
             const solution = parseSolutionResponse(aiResponse);
-            
+
             if (!solution.suggestedContent) {
               ElMessage.warning('未能解析到解决方案，请检查格式');
               done(false);
               return;
             }
-            
+
             // 应用到当前问题
             if (currentPromptIssue.value) {
               await handleParsedSolution(solution);
             }
-            
+
             done();
           } catch (error) {
             console.error('解析失败:', error);
@@ -1394,28 +1378,28 @@ const handleParsedSolution = async (solution) => {
     ElMessage.error('未找到当前问题');
     return;
   }
-  
+
   const issue = currentPromptIssue.value;
-  
+
   try {
     console.log('📦 解析到的方案:', solution);
     console.log('  - suggestedContent 长度:', solution.suggestedContent.length);
     console.log('  - explanation 长度:', solution.explanation?.length || 0);
-    
+
     // 保存方案到issue对象
     issue.solution = {
       suggestedContent: solution.suggestedContent,
       explanation: solution.explanation || '（无说明）',
       generatedAt: new Date().toISOString()
     };
-    
+
     console.log('💾 已保存到 issue.solution:', issue.solution);
-    
+
     // 显示解决方案对话框
     await generateSolution(issue, false);
-    
+
     ElMessage.success('✅ 已导入外部 AI 解决方案');
-    
+
     // 清理状态
     currentPromptIssue.value = null;
   } catch (error) {
