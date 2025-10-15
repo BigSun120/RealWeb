@@ -445,7 +445,8 @@ export function generateCompleteCreationPackage(options) {
     characters = [],
     outline = {},
     allEpisodes = [],
-    prompt = ''
+    prompt = '',
+    relationshipGraph = null
   } = options;
   
   const episodeNumber = episode.number;
@@ -525,6 +526,34 @@ export function generateCompleteCreationPackage(options) {
       if (char.motivation) {
         text += `**行为动机**：${char.motivation}\n\n`;
       }
+    });
+  }
+  
+  // 角色关系图谱
+  if (relationshipGraph && Array.isArray(relationshipGraph) && relationshipGraph.length > 0) {
+    text += `## 🔗 角色关系图谱\n\n`;
+    text += `> 以下是角色间的关系网络，请在创作时注意保持关系的一致性和连贯性。\n\n`;
+    
+    // 按关系类型分组
+    const relationsByType = {};
+    relationshipGraph.forEach(rel => {
+      if (!relationsByType[rel.type]) {
+        relationsByType[rel.type] = [];
+      }
+      relationsByType[rel.type].push(rel);
+    });
+    
+    // 输出各种关系
+    Object.keys(relationsByType).forEach(type => {
+      text += `### ${type}\n\n`;
+      relationsByType[type].forEach(rel => {
+        text += `- **${rel.from}** → **${rel.to}**`;
+        if (rel.description) {
+          text += `：${rel.description}`;
+        }
+        text += `\n`;
+      });
+      text += `\n`;
     });
   }
   

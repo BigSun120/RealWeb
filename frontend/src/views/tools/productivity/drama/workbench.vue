@@ -200,7 +200,7 @@
 
         <!-- 剧本医生 -->
         <div v-else-if="activeTab === 'analysis'" class="content-panel">
-          <ScriptAnalysis :project="fullProjectData" @goto-module="handleTabChange" />
+          <ScriptAnalysis :project="fullProjectData" @goto-module="handleTabChange" @content-updated="handleContentUpdated" />
         </div>
 
         <!-- 数据统计 -->
@@ -427,20 +427,36 @@ const handleTabChange = (index) => {
 
 // 快速导出（默认TXT格式，仅已完成）
 const handleQuickExport = async () => {
-  await performExport({ format: 'txt', includeIncomplete: false });
+  await performExport({ 
+    format: 'txt', 
+    includeIncomplete: false, 
+    includeMetadata: true // 显式指定默认包含创作辅助信息
+  });
 };
 
 // 导出命令处理
 const handleExportCommand = async (command) => {
   switch (command) {
     case 'txt':
-      await performExport({ format: 'txt', includeIncomplete: false });
+      await performExport({ 
+        format: 'txt', 
+        includeIncomplete: false, 
+        includeMetadata: true 
+      });
       break;
     case 'markdown':
-      await performExport({ format: 'markdown', includeIncomplete: false });
+      await performExport({ 
+        format: 'markdown', 
+        includeIncomplete: false, 
+        includeMetadata: true 
+      });
       break;
     case 'with-incomplete':
-      await performExport({ format: 'txt', includeIncomplete: true });
+      await performExport({ 
+        format: 'txt', 
+        includeIncomplete: true, 
+        includeMetadata: true 
+      });
       break;
     case 'custom':
       // 打开自定义导出对话框
@@ -453,6 +469,72 @@ const handleExportCommand = async (command) => {
 const performExport = async (options) => {
   try {
     const projectId = project._id || project.id;
+    
+    // 如果包含创作辅助信息，尝试从 localStorage 获取关系图谱数据
+    if (options.includeMetadata) {
+      try {
+        // 使用与 RelationshipGraph 组件一致的 storage key 格式
+        const storageKey = `drama_relationships_${project.name}`;
+        console.log('🔍 尝试读取关系图谱，key:', storageKey);
+        
+        const storedData = localStorage.getItem(storageKey);
+        
+        if (storedData) {
+          console.log('✅ 找到 localStorage 数据，开始解析...');
+          const parsedData = JSON.parse(storedData);
+          console.log('📊 解析后的数据结构:', {
+            isObject: typeof parsedData === 'object',
+            hasRelationships: parsedData?.relationships !== undefined,
+            relationshipsLength: parsedData?.relationships?.length || 0,
+            timestamp: parsedData?.timestamp,
+            characterNames: parsedData?.characterNames
+          });
+          
+          // RelationshipGraph 保存的数据结构是 { relationships: [...], timestamp, characterNames }
+          let relationshipData = parsedData;
+          
+          // 如果是对象且包含 relationships 字段，提取该字段
+          if (parsedData && typeof parsedData === 'object' && parsedData.relationships) {
+            relationshipData = parsedData.relationships;
+            console.log('✅ 提取到 relationships 字段，数量:', relationshipData.length);
+          }
+          
+          // 验证数据格式：必须是数组且有效
+          if (Array.isArray(relationshipData) && relationshipData.length > 0) {
+            // 验证每个关系对象是否包含必要字段
+            console.log('🔍 验证关系数据，总数:', relationshipData.length);
+            
+            const validRelationships = relationshipData.filter(rel => 
+              rel && rel.from && rel.to && rel.type
+            );
+            
+            console.log('✅ 有效关系数量:', validRelationships.length);
+            
+            if (validRelationships.length > 0) {
+              // 显示前3条关系作为示例
+              console.log('📝 示例关系数据:', validRelationships.slice(0, 3));
+              
+              options.relationshipGraph = validRelationships;
+              console.log(`✅ 成功：将导出 ${validRelationships.length} 条关系图谱`);
+            } else {
+              console.warn('⚠️ 关系图谱数据格式无效：没有包含 from/to/type 字段');
+            }
+          } else if (Array.isArray(relationshipData)) {
+            console.warn('⚠️ 关系图谱数据为空数组');
+          } else {
+            console.warn('⚠️ 关系图谱数据不是数组，类型:', typeof relationshipData);
+          }
+        } else {
+          console.warn('⚠️ 未找到关系图谱数据');
+          console.log('📝 可用的 localStorage keys:', Object.keys(localStorage).filter(k => k.includes('relationship')));
+        }
+      } catch (error) {
+        console.error('❌ 读取关系图谱数据失败:', error);
+        console.error('错误堆栈:', error.stack);
+        // 不影响导出进程，继续
+      }
+    }
+    
     const blob = await exportDramaProject(projectId, options);
 
     // 生成文件名
@@ -1078,6 +1160,54 @@ const handleRestoreVersion = async (restoreData) => {
   } catch (error) {
     console.error('恢复版本失败:', error);
     ElMessage.error('恢复版本失败');
+  }
+};
+
+// 处理AI替换内容后的刷新
+const handleContentUpdated = async (updateInfo) => {
+  console.log('🔄 内容已更新:', updateInfo);
+  
+  try {
+    // 重新加载项目数据以获取最新内容
+    const response = await getDramaProject(route.params.id);
+    if (response.code === 200) {
+      // 根据更新的模块刷新对应的数据
+      if (typeof updateInfo === 'string') {
+        // 兼容旧格式（直接传module字符串）
+        const module = updateInfo;
+        if (module === 'worldview' && response.data.worldview) {
+          worldview.value = { ...response.data.worldview };
+        } else if (module === 'characters' && response.data.characters) {
+          characters.value = [...response.data.characters];
+        } else if (module === 'outline' && response.data.outline) {
+          outline.value = { ...response.data.outline };
+        } else if (module === 'episodes' && response.data.episodes) {
+          episodes.value = [...response.data.episodes];
+        }
+      } else if (updateInfo && updateInfo.module) {
+        // 新格式（传入对象）
+        const { module } = updateInfo;
+        if (module === 'worldview' && response.data.worldview) {
+          worldview.value = { ...response.data.worldview };
+          project.worldview = { ...response.data.worldview };
+        } else if (module === 'characters' && response.data.characters) {
+          characters.value = [...response.data.characters];
+          project.characters = [...response.data.characters];
+        } else if (module === 'outline' && response.data.outline) {
+          outline.value = { ...response.data.outline };
+          project.outline = { ...response.data.outline };
+        } else if (module === 'episodes' && response.data.episodes) {
+          episodes.value = [...response.data.episodes];
+          project.episodes = [...response.data.episodes];
+        }
+      }
+      
+      console.log('✅ 内容刷新成功');
+      ElMessage.success('内容已更新');
+    }
+  } catch (error) {
+    console.error('刷新内容失败:', error);
+    ElMessage.warning('请手动刷新页面查看更新');
   }
 };
 

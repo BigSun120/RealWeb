@@ -157,14 +157,38 @@ router.patch(
   dramaController.updatePromptTemplate
 );
 
+// AI诊断结果接口
+router.patch(
+  '/projects/:id/ai-diagnosis',
+  [
+    body('stage').isIn(['preparation', 'episodes', 'overall']).withMessage('阶段必须是preparation、episodes或overall'),
+    body('issues').isArray().withMessage('问题列表必须是数组')
+  ],
+  dramaController.saveAIDiagnosis
+);
+
+router.get('/projects/:id/ai-diagnosis/:stage', dramaController.getAIDiagnosis);
+
 /**
  * @route   GET /api/tools/drama/projects/:id/export
- * @desc    导出项目剧本
+ * @desc    导出项目剧本 (GET 方法，保留向后兼容)
  * @access  Private
  * @query   format: txt|markdown|md
  * @query   includeIncomplete: true|false
  * @query   upToEpisode: number
  */
 router.get('/projects/:id/export', dramaController.exportProject);
+
+/**
+ * @route   POST /api/tools/drama/projects/:id/export
+ * @desc    导出项目剧本 (POST 方法，支持传递 relationshipGraph 数据)
+ * @access  Private
+ * @body    format: txt|markdown|md
+ * @body    includeIncomplete: boolean
+ * @body    upToEpisode: number
+ * @body    includeMetadata: boolean
+ * @body    relationshipGraph: array (可选)
+ */
+router.post('/projects/:id/export', dramaController.exportProject);
 
 module.exports = router;

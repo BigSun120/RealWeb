@@ -631,6 +631,35 @@ const handleEpisodeSubmit = (episodeData) => {
 // 下载完整创作包
 const handleDownloadCompletePackage = (episode) => {
   try {
+    // 尝试从 localStorage 读取关系图谱数据
+    let relationshipGraph = null;
+    try {
+      const storageKey = `drama_relationships_${props.projectInfo.name}`;
+      const storedData = localStorage.getItem(storageKey);
+      
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        // RelationshipGraph 保存的数据结构是 { relationships: [...], timestamp, characterNames }
+        if (parsedData && typeof parsedData === 'object' && parsedData.relationships) {
+          relationshipGraph = parsedData.relationships;
+        } else if (Array.isArray(parsedData)) {
+          relationshipGraph = parsedData;
+        }
+        
+        // 验证数据格式
+        if (Array.isArray(relationshipGraph) && relationshipGraph.length > 0) {
+          const validRelationships = relationshipGraph.filter(rel => 
+            rel && rel.from && rel.to && rel.type
+          );
+          relationshipGraph = validRelationships.length > 0 ? validRelationships : null;
+        } else {
+          relationshipGraph = null;
+        }
+      }
+    } catch (error) {
+      console.error('读取关系图谱数据失败:', error);
+    }
+    
     // 生成该集的提示词
     const episodePrompt = generateEpisodePrompt({
       episode,
@@ -650,7 +679,8 @@ const handleDownloadCompletePackage = (episode) => {
       characters: props.characters,
       outline: props.outline,
       allEpisodes: sortedEpisodes.value,
-      prompt: episodePrompt  // 添加提示词
+      prompt: episodePrompt,  // 添加提示词
+      relationshipGraph: relationshipGraph  // 添加关系图谱
     });
 
     // 生成文件名

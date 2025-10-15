@@ -123,22 +123,34 @@ export const patchDramaPromptTemplate = (id, promptTemplate) => {
  * @param {String} options.format 格式: txt|markdown|md
  * @param {Boolean} options.includeIncomplete 是否包含未完成的剧集
  * @param {Number} options.upToEpisode 截止到哪一集
- * @param {Boolean} options.includeMetadata 是否包含创作辅助信息（关键对白、结尾悬念、备注）
+ * @param {Boolean} options.includeMetadata 是否包含创作辅助信息（关键对白、结尾悬念、备注、角色关系图谱）
+ * @param {Array} options.relationshipGraph 角色关系图谱数据（可选）
  * @returns {Promise}
  */
 export const exportDramaProject = async (id, options = {}) => {
-  const { format = 'txt', includeIncomplete = false, upToEpisode = null, includeMetadata = true } = options;
+  const { 
+    format = 'txt', 
+    includeIncomplete = false, 
+    upToEpisode = null, 
+    includeMetadata = true,
+    relationshipGraph = null 
+  } = options;
   
-  const params = { format };
-  if (includeIncomplete) params.includeIncomplete = 'true';
-  if (upToEpisode) params.upToEpisode = upToEpisode;
-  if (includeMetadata !== undefined) params.includeMetadata = includeMetadata ? 'true' : 'false';
+  // 使用 POST 方法以便传递 relationshipGraph 数据
+  const requestData = {
+    format,
+    includeIncomplete,
+    includeMetadata
+  };
+  
+  if (upToEpisode) requestData.upToEpisode = upToEpisode;
+  if (relationshipGraph) requestData.relationshipGraph = relationshipGraph;
   
   try {
     const response = await request({
       url: `/tools/drama/projects/${id}/export`,
-      method: 'get',
-      params,
+      method: 'post',
+      data: requestData,
       responseType: 'blob'
     });
     
@@ -174,6 +186,34 @@ export const exportDramaProject = async (id, options = {}) => {
   }
 };
 
+/**
+ * 保存AI诊断结果
+ * @param {String} id 项目ID
+ * @param {String} stage 阶段: preparation|episodes|overall
+ * @param {Array} issues 问题列表
+ * @returns {Promise}
+ */
+export const saveAIDiagnosis = (id, stage, issues) => {
+  return request({
+    url: `/tools/drama/projects/${id}/ai-diagnosis`,
+    method: 'patch',
+    data: { stage, issues }
+  });
+};
+
+/**
+ * 获取AI诊断结果
+ * @param {String} id 项目ID
+ * @param {String} stage 阶段: preparation|episodes|overall
+ * @returns {Promise}
+ */
+export const getAIDiagnosis = (id, stage) => {
+  return request({
+    url: `/tools/drama/projects/${id}/ai-diagnosis/${stage}`,
+    method: 'get'
+  });
+};
+
 export default {
   getDramaProjects,
   getDramaProject,
@@ -186,5 +226,7 @@ export default {
   patchDramaOutline,
   patchDramaEpisodes,
   patchDramaPromptTemplate,
-  exportDramaProject
+  exportDramaProject,
+  saveAIDiagnosis,
+  getAIDiagnosis
 };

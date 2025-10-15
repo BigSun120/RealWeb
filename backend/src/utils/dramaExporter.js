@@ -215,6 +215,85 @@ function generateEpisodeScript(episode, format = 'txt', includeMetadata = true) 
 }
 
 /**
+ * 格式化角色关系图谱
+ * @param {Array} relationships 关系数据数组
+ * @param {Array} characters 角色列表
+ * @param {String} format 格式 (markdown/txt)
+ * @returns {String} 格式化后的关系图谱文本
+ */
+function formatRelationshipGraph(relationships, characters, format = 'txt') {
+  if (!relationships || relationships.length === 0) {
+    return '';
+  }
+  
+  const isMarkdown = format === 'markdown';
+  let content = '';
+  
+  // 标题
+  if (isMarkdown) {
+    content += `## 角色关系图谱\n\n`;
+    content += `*角色数量*：${characters?.length || 0} 个\n`;
+    content += `*关系数量*：${relationships.length} 条\n\n`;
+  } else {
+    content += `角色关系图谱\n`;
+    content += `${'-'.repeat(60)}\n`;
+    content += `角色数量：${characters?.length || 0} 个\n`;
+    content += `关系数量：${relationships.length} 条\n\n`;
+  }
+  
+  // 按角色分组关系
+  const relationsByCharacter = {};
+  relationships.forEach(rel => {
+    if (!relationsByCharacter[rel.from]) {
+      relationsByCharacter[rel.from] = [];
+    }
+    relationsByCharacter[rel.from].push(rel);
+  });
+  
+  // 生成关系详情
+  Object.keys(relationsByCharacter).forEach((charName, index) => {
+    if (isMarkdown) {
+      content += `### ${index + 1}. ${charName}\n\n`;
+      
+      const relations = relationsByCharacter[charName];
+      
+      // Markdown表格
+      content += `| 目标角色 | 关系类型 | 方向 | 强度 | 关系描述 |\n`;
+      content += `|----------|----------|------|------|----------|\n`;
+      
+      relations.forEach(rel => {
+        const directionSymbol = rel.direction === 'bidirectional' ? '↔️' : '→';
+        const strengthStars = '⭐'.repeat(rel.strength || 1);
+        content += `| ${rel.to} | ${rel.type || '未知'} | ${directionSymbol} | ${strengthStars} | ${rel.description || ''} |\n`;
+      });
+      
+      content += `\n`;
+    } else {
+      // TXT格式
+      content += `${index + 1}. 【角色：${charName}】\n\n`;
+      
+      const relations = relationsByCharacter[charName];
+      relations.forEach((rel, relIndex) => {
+        const directionSymbol = rel.direction === 'bidirectional' ? '↔' : '→';
+        const strengthStars = '★'.repeat(rel.strength || 1);
+        
+        content += `   关系${relIndex + 1}：${rel.from} ${directionSymbol} ${rel.to}\n`;
+        content += `   类型：${rel.type || '未知'}\n`;
+        content += `   强度：${strengthStars} (${rel.strength || 1}/5)\n`;
+        if (rel.description) {
+          content += `   描述：${rel.description}\n`;
+        }
+        content += `\n`;
+      });
+      
+      content += '-'.repeat(60) + '\n\n';
+    }
+  });
+  
+  return content;
+}
+
+/**
  * 生成完整剧本文档
  * @param {Object} project 项目对象
  * @param {Object} options 选项
@@ -225,7 +304,8 @@ function exportScript(project, options = {}) {
     format = 'txt',
     includeIncomplete = false,
     upToEpisode = null,
-    includeMetadata = true // 默认包含创作辅助信息
+    includeMetadata = true, // 默认包含创作辅助信息
+    relationshipGraph = null // 关系图谱数据（可选）
   } = options;
 
   const result = {
@@ -280,24 +360,42 @@ function exportScript(project, options = {}) {
   }
 
   // 世界观设定（如果有）
-  if (project.worldview && (project.worldview.background || project.worldview.setting)) {
+  if (project.worldview && Object.keys(project.worldview).some(key => project.worldview[key])) {
     if (isMarkdown) {
       content += `## 世界观设定\n\n`;
       if (project.worldview.background) {
-        content += `**背景**：${project.worldview.background}\n\n`;
+        content += `**故事背景**：${project.worldview.background}\n\n`;
       }
       if (project.worldview.setting) {
-        content += `**设定**：${project.worldview.setting}\n\n`;
+        content += `**世界设定**：${project.worldview.setting}\n\n`;
+      }
+      if (project.worldview.theme) {
+        content += `**核心主题**：${project.worldview.theme}\n\n`;
+      }
+      if (project.worldview.conflict) {
+        content += `**主要冲突**：${project.worldview.conflict}\n\n`;
+      }
+      if (project.worldview.tone) {
+        content += `**情感基调**：${project.worldview.tone}\n\n`;
       }
       content += `---\n\n`;
     } else {
       content += `世界观设定\n`;
       content += `${'-'.repeat(60)}\n`;
       if (project.worldview.background) {
-        content += `背景：${project.worldview.background}\n\n`;
+        content += `故事背景：${project.worldview.background}\n\n`;
       }
       if (project.worldview.setting) {
-        content += `设定：${project.worldview.setting}\n\n`;
+        content += `世界设定：${project.worldview.setting}\n\n`;
+      }
+      if (project.worldview.theme) {
+        content += `核心主题：${project.worldview.theme}\n\n`;
+      }
+      if (project.worldview.conflict) {
+        content += `主要冲突：${project.worldview.conflict}\n\n`;
+      }
+      if (project.worldview.tone) {
+        content += `情感基调：${project.worldview.tone}\n\n`;
       }
     }
   }
@@ -306,25 +404,195 @@ function exportScript(project, options = {}) {
   if (project.characters && project.characters.length > 0) {
     if (isMarkdown) {
       content += `## 主要角色\n\n`;
-      project.characters.forEach(char => {
-        content += `### ${char.name}`;
+      project.characters.forEach((char, index) => {
+        content += `### ${index + 1}. ${char.name}`;
         if (char.role) content += ` (${char.role})`;
         content += `\n\n`;
+        
+        // 基本信息
+        if (char.age || char.gender) {
+          content += `**基本信息**：`;
+          if (char.age) content += `${char.age}岁`;
+          if (char.age && char.gender) content += `、`;
+          if (char.gender) content += char.gender;
+          content += `\n\n`;
+        }
+        
+        // 角色简介
         if (char.description) {
-          content += `${char.description}\n\n`;
+          content += `**简介**：${char.description}\n\n`;
+        }
+        
+        // 性格特点
+        if (char.personality) {
+          content += `**性格**：${char.personality}\n\n`;
+        }
+        
+        // 角色背景
+        if (char.background) {
+          content += `**背景**：${char.background}\n\n`;
+        }
+        
+        // 行为动机
+        if (char.motivation) {
+          content += `**动机**：${char.motivation}\n\n`;
+        }
+        
+        // 人际关系（文本描述）
+        if (char.relationships) {
+          content += `**关系**：${char.relationships}\n\n`;
+        }
+        
+        // 标签
+        if (char.tags && char.tags.length > 0) {
+          content += `**标签**：${char.tags.join('、')}\n\n`;
         }
       });
       content += `---\n\n`;
     } else {
       content += `主要角色\n`;
       content += `${'-'.repeat(60)}\n`;
-      project.characters.forEach(char => {
-        content += `${char.name}`;
+      project.characters.forEach((char, index) => {
+        content += `${index + 1}. ${char.name}`;
         if (char.role) content += ` (${char.role})`;
         content += `\n`;
-        if (char.description) {
-          content += `${char.description}\n`;
+        
+        // 基本信息
+        if (char.age || char.gender) {
+          content += `基本信息：`;
+          if (char.age) content += `${char.age}岁`;
+          if (char.age && char.gender) content += `、`;
+          if (char.gender) content += char.gender;
+          content += `\n`;
         }
+        
+        // 角色简介
+        if (char.description) {
+          content += `简介：${char.description}\n`;
+        }
+        
+        // 性格特点
+        if (char.personality) {
+          content += `性格：${char.personality}\n`;
+        }
+        
+        // 角色背景
+        if (char.background) {
+          content += `背景：${char.background}\n`;
+        }
+        
+        // 行为动机
+        if (char.motivation) {
+          content += `动机：${char.motivation}\n`;
+        }
+        
+        // 人际关系（文本描述）
+        if (char.relationships) {
+          content += `关系：${char.relationships}\n`;
+        }
+        
+        // 标签
+        if (char.tags && char.tags.length > 0) {
+          content += `标签：${char.tags.join('、')}\n`;
+        }
+        
+        content += `\n`;
+      });
+    }
+  }
+  
+  // 角色关系图谱（如果包含创作辅助信息且有关系数据）
+  if (includeMetadata && relationshipGraph && relationshipGraph.length > 0) {
+    const relationshipContent = formatRelationshipGraph(relationshipGraph, project.characters, format);
+    if (relationshipContent) {
+      content += relationshipContent;
+      if (isMarkdown) {
+        content += `---\n\n`;
+      }
+    }
+  }
+  
+  // 剧情大纲（如果有）
+  if (project.outline && project.outline.acts && project.outline.acts.length > 0) {
+    if (isMarkdown) {
+      content += `## 剧情大纲\n\n`;
+      
+      project.outline.acts.forEach((act, actIndex) => {
+        content += `### ${act.title || `第${actIndex + 1}幕`}\n\n`;
+        
+        if (act.description) {
+          content += `${act.description}\n\n`;
+        }
+        
+        // 情节点
+        if (act.plotPoints && act.plotPoints.length > 0) {
+          content += `**情节点**：\n\n`;
+          act.plotPoints.forEach((point, pointIndex) => {
+            content += `${pointIndex + 1}. **${point.name || '未命名情节点'}**`;
+            
+            if (point.episodeRange) {
+              content += ` (预计集数：${point.episodeRange})`;
+            }
+            content += `\n`;
+            
+            if (point.description) {
+              content += `   ${point.description}\n`;
+            }
+            
+            if (point.characters && point.characters.length > 0) {
+              content += `   *涉及角色*：${point.characters.join('、')}\n`;
+            }
+            
+            if (point.emotion && point.emotion.length > 0) {
+              content += `   *情感变化*：${point.emotion.join('、')}\n`;
+            }
+            
+            content += `\n`;
+          });
+        }
+        
+        content += `\n`;
+      });
+      
+      content += `---\n\n`;
+    } else {
+      content += `剧情大纲\n`;
+      content += `${'-'.repeat(60)}\n\n`;
+      
+      project.outline.acts.forEach((act, actIndex) => {
+        content += `${act.title || `第${actIndex + 1}幕`}\n`;
+        
+        if (act.description) {
+          content += `${act.description}\n\n`;
+        }
+        
+        // 情节点
+        if (act.plotPoints && act.plotPoints.length > 0) {
+          content += `情节点：\n`;
+          act.plotPoints.forEach((point, pointIndex) => {
+            content += `  ${pointIndex + 1}. ${point.name || '未命名情节点'}`;
+            
+            if (point.episodeRange) {
+              content += ` (预计集数：${point.episodeRange})`;
+            }
+            content += `\n`;
+            
+            if (point.description) {
+              content += `     ${point.description}\n`;
+            }
+            
+            if (point.characters && point.characters.length > 0) {
+              content += `     涉及角色：${point.characters.join('、')}\n`;
+            }
+            
+            if (point.emotion && point.emotion.length > 0) {
+              content += `     情感变化：${point.emotion.join('、')}\n`;
+            }
+            
+            content += `\n`;
+          });
+        }
+        
         content += `\n`;
       });
     }

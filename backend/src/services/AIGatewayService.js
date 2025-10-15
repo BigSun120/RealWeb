@@ -226,7 +226,8 @@ class AIGatewayService {
       temperature = null,
       maxTokens = null,
       stream = false,
-      requireUserKey = false
+      requireUserKey = false,
+      responseFormat = null
     } = params;
 
     try {
@@ -248,7 +249,8 @@ class AIGatewayService {
           maxTokens: maxTokens ?? connection.requestParams.maxTokens,
           topP: connection.requestParams.topP,
           frequencyPenalty: connection.requestParams.frequencyPenalty,
-          presencePenalty: connection.requestParams.presencePenalty
+          presencePenalty: connection.requestParams.presencePenalty,
+          responseFormat // 传递结构化输出参数
         },
         stream,
         timeout: connection.timeout
@@ -301,7 +303,8 @@ class AIGatewayService {
           maxTokens: params.maxTokens ?? connection.requestParams.maxTokens,
           topP: connection.requestParams.topP,
           frequencyPenalty: connection.requestParams.frequencyPenalty,
-          presencePenalty: connection.requestParams.presencePenalty
+          presencePenalty: connection.requestParams.presencePenalty,
+          responseFormat: params.responseFormat // 传递结构化输出参数
         },
         timeout: connection.timeout
       };

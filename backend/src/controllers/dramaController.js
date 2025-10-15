@@ -570,7 +570,7 @@ class DramaController {
 
   /**
    * 导出项目剧本
-   * @route GET /api/tools/drama/projects/:id/export
+   * @route GET/POST /api/tools/drama/projects/:id/export
    */
   async exportProject(req, res, next) {
     try {
@@ -595,13 +595,24 @@ class DramaController {
         });
       }
 
+      // 支持 GET 和 POST 两种方式
+      const isPost = req.method === 'POST';
+      const params = isPost ? req.body : req.query;
+      
+      // 日志：记录请求方法和参数
+      logger.info(`导出请求: ${req.method}`, {
+        projectId,
+        params: isPost ? { ...params, relationshipGraph: params.relationshipGraph ? `${params.relationshipGraph.length} items` : 'none' } : params
+      });
+      
       // 获取导出格式和选项
       const { 
         format = 'txt',
         includeIncomplete = false,
         upToEpisode = null,
-        includeMetadata = 'true' // 默认包含创作辅助信息
-      } = req.query;
+        includeMetadata = true, // 默认包含创作辅助信息
+        relationshipGraph = null // 关系图谱数据（仅 POST 支持）
+      } = params;
 
       // 验证格式
       const validFormats = ['txt', 'markdown', 'md'];
@@ -616,12 +627,16 @@ class DramaController {
       const { exportScript } = require('../utils/dramaExporter');
 
       try {
-        const result = exportScript(project, {
+        // 处理导出选项，兼容 GET 和 POST 请求
+        const exportOptions = {
           format: exportFormat,
-          includeIncomplete: includeIncomplete === 'true',
+          includeIncomplete: isPost ? includeIncomplete : (includeIncomplete === 'true'),
           upToEpisode: upToEpisode ? parseInt(upToEpisode, 10) : null,
-          includeMetadata: includeMetadata === 'true'
-        });
+          includeMetadata: isPost ? includeMetadata : (includeMetadata === 'true'),
+          relationshipGraph: relationshipGraph // 关系图谱数据（POST only）
+        };
+        
+        const result = exportScript(project, exportOptions);
 
         if (!result.success) {
           return res.status(400).json({
@@ -655,6 +670,99 @@ class DramaController {
       }
     } catch (error) {
       logger.error('导出短剧项目失败:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * 保存AI诊断结果
+   * @route PATCH /api/tools/drama/projects/:id/ai-diagnosis
+   */
+  async saveAIDiagnosis(req, res, next) {
+    try {
+      const projectId = req.params.id;
+      const { stage, issues } = req.body;
+
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ code: 400, message: '无效的项目ID' });
+      }
+
+      if (!stage || !['preparation', 'episodes', 'overall'].includes(stage)) {
+        return res.status(400).json({ code: 400, message: '无效的阶段' });
+      }
+
+      const project = await DramaProject.findOne({ _id: projectId, userId: req.user._id });
+      if (!project) {
+        return res.status(404).json({ code: 404, message: '项目不存在' });
+      }
+
+      // 初始化 aiDiagnosis 字段
+      if (!project.aiDiagnosis) {
+        project.aiDiagnosis = {};
+      }
+
+      // 保存诊断结果
+      project.aiDiagnosis[stage] = {
+        issues: issues || [],
+        lastUpdated: new Date()
+      };
+
+      // 标记为已修改
+      project.markModified('aiDiagnosis');
+      await project.save();
+
+      logger.info('AI诊断结果已保存', {
+        userId: req.user._id,
+        projectId: project._id,
+        stage,
+        issuesCount: issues.length
+      });
+
+      res.json({ 
+        code: 200, 
+        message: 'AI诊断结果已保存', 
+        data: {
+          stage,
+          issues: project.aiDiagnosis[stage].issues,
+          lastUpdated: project.aiDiagnosis[stage].lastUpdated
+        }
+      });
+    } catch (error) {
+      logger.error('保存AI诊断结果失败:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * 获取AI诊断结果
+   * @route GET /api/tools/drama/projects/:id/ai-diagnosis/:stage
+   */
+  async getAIDiagnosis(req, res, next) {
+    try {
+      const projectId = req.params.id;
+      const stage = req.params.stage;
+
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ code: 400, message: '无效的项目ID' });
+      }
+
+      if (!['preparation', 'episodes', 'overall'].includes(stage)) {
+        return res.status(400).json({ code: 400, message: '无效的阶段' });
+      }
+
+      const project = await DramaProject.findOne({ _id: projectId, userId: req.user._id });
+      if (!project) {
+        return res.status(404).json({ code: 404, message: '项目不存在' });
+      }
+
+      const diagnosisData = project.aiDiagnosis?.[stage] || { issues: [], lastUpdated: null };
+
+      res.json({ 
+        code: 200, 
+        data: diagnosisData
+      });
+    } catch (error) {
+      logger.error('获取AI诊断结果失败:', error);
       next(error);
     }
   }

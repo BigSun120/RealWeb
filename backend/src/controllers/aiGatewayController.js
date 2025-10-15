@@ -7,7 +7,7 @@ const logger = require('../utils/logger');
  */
 exports.generate = async (req, res) => {
   try {
-    const { messages, provider, model, temperature, maxTokens, requireUserKey } = req.body;
+    const { messages, provider, model, temperature, maxTokens, requireUserKey, responseFormat } = req.body;
     const userId = req.user?.id;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -24,7 +24,8 @@ exports.generate = async (req, res) => {
       temperature,
       maxTokens,
       stream: false,
-      requireUserKey: requireUserKey || false
+      requireUserKey: requireUserKey || false,
+      responseFormat // 传递结构化输出参数
     });
 
     if (result.success) {
@@ -62,7 +63,7 @@ exports.generate = async (req, res) => {
  */
 exports.generateStream = async (req, res) => {
   try {
-    const { messages, provider, model, temperature, maxTokens, requireUserKey } = req.body;
+    const { messages, provider, model, temperature, maxTokens, requireUserKey, responseFormat } = req.body;
     const userId = req.user?.id;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -85,7 +86,8 @@ exports.generateStream = async (req, res) => {
         model,
         temperature,
         maxTokens,
-        requireUserKey: requireUserKey || false
+        requireUserKey: requireUserKey || false,
+        responseFormat // 传递结构化输出参数
       },
       (content, data) => {
         // 发送数据块

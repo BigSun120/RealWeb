@@ -106,6 +106,69 @@ const dramaProjectSchema = new mongoose.Schema(
       customTemplate: { type: String, trim: true }, // 自定义模板内容
       lastModified: { type: Date } // 最后修改时间
     },
+    // AI诊断结果（剧本医生）
+    aiDiagnosis: {
+      preparation: { // 前期检查
+        issues: [{
+          severity: { type: String }, // critical | medium | low
+          title: { type: String },
+          description: { type: String },
+          location: {
+            module: { type: String },
+            field: { type: String },
+            characterId: { type: String }
+          },
+          status: { type: String, default: 'pending' }, // pending | solution_ready | solved | ignored
+          generating: { type: Boolean, default: false },
+          solution: { // AI生成的解决方案
+            suggestedContent: { type: String },
+            explanation: { type: String },
+            generatedAt: { type: Date }
+          }
+        }],
+        lastUpdated: { type: Date }
+      },
+      episodes: { // 分集检查
+        issues: [{
+          severity: { type: String },
+          title: { type: String },
+          description: { type: String },
+          location: {
+            module: { type: String },
+            field: { type: String },
+            characterId: { type: String }
+          },
+          status: { type: String, default: 'pending' },
+          generating: { type: Boolean, default: false },
+          solution: { // AI生成的解决方案
+            suggestedContent: { type: String },
+            explanation: { type: String },
+            generatedAt: { type: Date }
+          }
+        }],
+        lastUpdated: { type: Date }
+      },
+      overall: { // 整体检查
+        issues: [{
+          severity: { type: String },
+          title: { type: String },
+          description: { type: String },
+          location: {
+            module: { type: String },
+            field: { type: String },
+            characterId: { type: String }
+          },
+          status: { type: String, default: 'pending' },
+          generating: { type: Boolean, default: false },
+          solution: { // AI生成的解决方案
+            suggestedContent: { type: String },
+            explanation: { type: String },
+            generatedAt: { type: Date }
+          }
+        }],
+        lastUpdated: { type: Date }
+      }
+    },
     // 分集剧本元数据
     episodes: [
       {

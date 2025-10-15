@@ -98,12 +98,13 @@
               包含创作辅助信息
               <el-tooltip placement="top" effect="light">
                 <template #content>
-                  <div style="max-width: 300px;">
+                  <div style="max-width: 320px;">
                     <div style="font-weight: 600; margin-bottom: 8px;">包括：</div>
                     <ul style="margin: 0; padding-left: 20px;">
                       <li>关键对白：AI提取的重要台词</li>
                       <li>结尾悬念：连续性设计备注</li>
                       <li>备注：创作过程中的记录</li>
+                      <li>角色关系图谱：完整的角色关系网络</li>
                     </ul>
                     <div style="margin-top: 8px; font-size: 12px; color: #909399;">
                       • 勾选：完整工作版（适合内部协作、备份）<br>

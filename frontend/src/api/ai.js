@@ -9,21 +9,36 @@ import request from '@/utils/request';
  * @param {boolean} options.requireUserKey - 是否要求使用用户密钥，默认false
  * @param {string} options.provider - 指定provider，如'openai'、'deepseek'等
  * @param {string} options.model - 指定模型，如'gpt-4'等
+ * @param {Object} options.responseFormat - 响应格式控制 { type: 'json_object' } 或 { type: 'json_schema', json_schema: {...} }
+ * @param {Object} options.jsonSchema - JSON Schema定义（简化参数，自动转换为responseFormat）
  * @returns {Promise}
  */
 export function generateAIContent(messages, options = {}) {
+  const data = {
+    messages,
+    temperature: options.temperature || 0.8,
+    maxTokens: options.maxTokens || 2000,
+    requireUserKey: options.requireUserKey || false,
+    provider: options.provider || null,
+    model: options.model || null
+  };
+
+  // 支持结构化输出
+  if (options.responseFormat) {
+    data.responseFormat = options.responseFormat;
+  } else if (options.jsonSchema) {
+    // 简化用法：直接传 jsonSchema 对象
+    data.responseFormat = {
+      type: 'json_schema',
+      json_schema: options.jsonSchema
+    };
+  }
+
   return request({
     url: '/ai/generate',
     method: 'post',
     timeout: 60000, // AI生成请求设置60秒超时
-    data: {
-      messages,
-      temperature: options.temperature || 0.8,
-      maxTokens: options.maxTokens || 2000,
-      requireUserKey: options.requireUserKey || false,
-      provider: options.provider || null,
-      model: options.model || null
-    }
+    data
   });
 }
 

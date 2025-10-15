@@ -198,6 +198,7 @@ class AIService {
           top_p: options.topP,
           frequency_penalty: options.frequencyPenalty,
           presence_penalty: options.presencePenalty,
+          ...(options.responseFormat && { response_format: options.responseFormat }), // 支持结构化输出
           ...options.custom
         };
         break;
@@ -213,7 +214,8 @@ class AIService {
           max_tokens: options.maxTokens || 4000,
           top_p: options.topP,
           frequency_penalty: options.frequencyPenalty,
-          presence_penalty: options.presencePenalty
+          presence_penalty: options.presencePenalty,
+          ...(options.responseFormat && { response_format: options.responseFormat }) // 支持结构化输出
         };
         break;
 
@@ -273,6 +275,7 @@ class AIService {
           stream,
           temperature: options.temperature || 0.8,
           max_tokens: options.maxTokens || 4000,
+          ...(options.responseFormat && { response_format: options.responseFormat }), // 支持结构化输出
           ...options.custom
         };
         break;
