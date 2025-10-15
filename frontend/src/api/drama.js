@@ -116,6 +116,14 @@ export const patchDramaPromptTemplate = (id, promptTemplate) => {
   });
 };
 
+export const patchDramaRelationshipGraph = (id, relationshipGraph) => {
+  return request({
+    url: `/tools/drama/projects/${id}/relationship-graph`,
+    method: 'patch',
+    data: { relationshipGraph }
+  });
+};
+
 /**
  * 导出项目剧本
  * @param {String} id 项目ID
@@ -226,6 +234,7 @@ export default {
   patchDramaOutline,
   patchDramaEpisodes,
   patchDramaPromptTemplate,
+  patchDramaRelationshipGraph,
   exportDramaProject,
   saveAIDiagnosis,
   getAIDiagnosis

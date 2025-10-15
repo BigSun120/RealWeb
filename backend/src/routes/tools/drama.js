@@ -157,6 +157,14 @@ router.patch(
   dramaController.updatePromptTemplate
 );
 
+router.patch(
+  '/projects/:id/relationship-graph',
+  [
+    body('relationshipGraph').isArray().withMessage('关系图谱必须是数组')
+  ],
+  dramaController.updateRelationshipGraph
+);
+
 // AI诊断结果接口
 router.patch(
   '/projects/:id/ai-diagnosis',

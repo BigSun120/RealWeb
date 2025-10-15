@@ -152,6 +152,7 @@
         :characters="characters"
         :worldview="worldview"
         :project-info="projectInfo"
+        :relationship-graph="projectInfo.relationshipGraph || []"
         @relationships-changed="handleRelationshipsChanged"
         @relationships-save="handleRelationshipsSave"
       />

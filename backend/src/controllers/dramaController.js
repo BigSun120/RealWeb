@@ -569,6 +569,42 @@ class DramaController {
   }
 
   /**
+   * PATCH: 更新关系图谱
+   */
+  async updateRelationshipGraph(req, res, next) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(422).json({ code: 422, message: '参数校验失败', errors: errors.array() });
+      }
+
+      const projectId = req.params.id;
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ code: 400, message: '无效的项目ID' });
+      }
+
+      const project = await DramaProject.findOne({ _id: projectId, userId: req.user._id });
+      if (!project) {
+        return res.status(404).json({ code: 404, message: '项目不存在' });
+      }
+
+      const { relationshipGraph } = req.body;
+      project.relationshipGraph = Array.isArray(relationshipGraph) ? relationshipGraph : [];
+      await project.save();
+
+      logger.info('Relationship graph updated', {
+        userId: req.user._id,
+        projectId: project._id,
+        relationshipCount: project.relationshipGraph.length
+      });
+
+      res.json({ code: 200, message: '关系图谱已更新', data: project });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * 导出项目剧本
    * @route GET/POST /api/tools/drama/projects/:id/export
    */

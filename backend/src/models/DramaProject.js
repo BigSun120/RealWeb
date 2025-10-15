@@ -81,6 +81,15 @@ const dramaProjectSchema = new mongoose.Schema(
         tags: [{ type: String, trim: true }] // 标签
       }
     ],
+    // 角色关系图谱
+    relationshipGraph: [
+      {
+        from: { type: String, required: true, trim: true }, // 起始角色
+        to: { type: String, required: true, trim: true }, // 目标角色
+        type: { type: String, required: true, trim: true }, // 关系类型
+        description: { type: String, trim: true } // 关系描述
+      }
+    ],
     // 剧情大纲
     outline: {
       structure: { type: String, default: 'three-act' }, // 结构类型

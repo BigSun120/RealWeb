@@ -254,7 +254,7 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElNotification } from 'element-plus';
-import { getDramaProject, updateDramaProject, patchDramaWorldview, patchDramaCharacters, patchDramaOutline, patchDramaEpisodes, patchDramaPromptTemplate, exportDramaProject } from '@/api/drama';
+import { getDramaProject, updateDramaProject, patchDramaWorldview, patchDramaCharacters, patchDramaOutline, patchDramaEpisodes, patchDramaPromptTemplate, patchDramaRelationshipGraph, exportDramaProject } from '@/api/drama';
 import { downloadBlob, generateFilename } from '@/utils/download';
 import { createVersion } from './utils/versionManager';
 import {
@@ -470,68 +470,15 @@ const performExport = async (options) => {
   try {
     const projectId = project._id || project.id;
     
-    // 如果包含创作辅助信息，尝试从 localStorage 获取关系图谱数据
-    if (options.includeMetadata) {
-      try {
-        // 使用与 RelationshipGraph 组件一致的 storage key 格式
-        const storageKey = `drama_relationships_${project.name}`;
-        console.log('🔍 尝试读取关系图谱，key:', storageKey);
-        
-        const storedData = localStorage.getItem(storageKey);
-        
-        if (storedData) {
-          console.log('✅ 找到 localStorage 数据，开始解析...');
-          const parsedData = JSON.parse(storedData);
-          console.log('📊 解析后的数据结构:', {
-            isObject: typeof parsedData === 'object',
-            hasRelationships: parsedData?.relationships !== undefined,
-            relationshipsLength: parsedData?.relationships?.length || 0,
-            timestamp: parsedData?.timestamp,
-            characterNames: parsedData?.characterNames
-          });
-          
-          // RelationshipGraph 保存的数据结构是 { relationships: [...], timestamp, characterNames }
-          let relationshipData = parsedData;
-          
-          // 如果是对象且包含 relationships 字段，提取该字段
-          if (parsedData && typeof parsedData === 'object' && parsedData.relationships) {
-            relationshipData = parsedData.relationships;
-            console.log('✅ 提取到 relationships 字段，数量:', relationshipData.length);
-          }
-          
-          // 验证数据格式：必须是数组且有效
-          if (Array.isArray(relationshipData) && relationshipData.length > 0) {
-            // 验证每个关系对象是否包含必要字段
-            console.log('🔍 验证关系数据，总数:', relationshipData.length);
-            
-            const validRelationships = relationshipData.filter(rel => 
-              rel && rel.from && rel.to && rel.type
-            );
-            
-            console.log('✅ 有效关系数量:', validRelationships.length);
-            
-            if (validRelationships.length > 0) {
-              // 显示前3条关系作为示例
-              console.log('📝 示例关系数据:', validRelationships.slice(0, 3));
-              
-              options.relationshipGraph = validRelationships;
-              console.log(`✅ 成功：将导出 ${validRelationships.length} 条关系图谱`);
-            } else {
-              console.warn('⚠️ 关系图谱数据格式无效：没有包含 from/to/type 字段');
-            }
-          } else if (Array.isArray(relationshipData)) {
-            console.warn('⚠️ 关系图谱数据为空数组');
-          } else {
-            console.warn('⚠️ 关系图谱数据不是数组，类型:', typeof relationshipData);
-          }
-        } else {
-          console.warn('⚠️ 未找到关系图谱数据');
-          console.log('📝 可用的 localStorage keys:', Object.keys(localStorage).filter(k => k.includes('relationship')));
-        }
-      } catch (error) {
-        console.error('❌ 读取关系图谱数据失败:', error);
-        console.error('错误堆栈:', error.stack);
-        // 不影响导出进程，继续
+    // 如果包含创作辅助信息，从 project 获取关系图谱数据
+    if (options.includeMetadata && project.relationshipGraph && Array.isArray(project.relationshipGraph)) {
+      const validRelationships = project.relationshipGraph.filter(rel => 
+        rel && rel.from && rel.to && rel.type
+      );
+      
+      if (validRelationships.length > 0) {
+        options.relationshipGraph = validRelationships;
+        console.log(`✅ 将导出 ${validRelationships.length} 条关系图谱`);
       }
     }
     
@@ -896,31 +843,46 @@ const handleSaveRelationships = async (payload) => {
     const { data, isAutoSave = true } = payload;
     const projectId = project._id || project.id;
     
-    // 创建关系图谱的版本快照
-    await createVersion(
-      'relationships', 
-      projectId, 
-      { relationships: data }, 
-      projectId, 
-      { 
-        comment: `包含 ${data.length} 条关系`,
-        isAutoSave  // 使用传入的参数
+    // 保存到数据库
+    const response = await patchDramaRelationshipGraph(projectId, data);
+    
+    if (response.code === 200) {
+      // 创建关系图谱的版本快照
+      try {
+        await createVersion(
+          'relationships', 
+          projectId, 
+          { relationships: data }, 
+          projectId, 
+          { 
+            comment: `包含 ${data.length} 条关系`,
+            isAutoSave
+          }
+        );
+      } catch (versionError) {
+        console.error('创建版本失败:', versionError);
       }
-    );
-    
-    const saveType = isAutoSave ? '自动保存' : '手动保存';
-    console.log(`✅ 关系图谱已${saveType}到版本历史`);
-    
-    // 手动保存显示成功消息
-    if (!isAutoSave) {
-      ElMessage.success('关系图谱已保存');
+      
+      // 同步更新 project 对象
+      project.relationshipGraph = [...data];
+      
+      const saveType = isAutoSave ? '自动保存' : '手动保存';
+      console.log(`✅ 关系图谱已${saveType}到数据库`);
+      
+      // 手动保存显示成功消息
+      if (!isAutoSave) {
+        ElMessage.success('关系图谱已保存');
+      }
+    } else {
+      throw new Error(response.message || '保存失败');
     }
   } catch (error) {
     console.error('保存关系图谱失败:', error);
     // 手动保存失败显示错误
     if (!payload.isAutoSave) {
-      ElMessage.error('保存关系图谱失败');
+      ElMessage.error(error.message || '保存关系图谱失败');
     }
+    throw error;
   }
 };
 

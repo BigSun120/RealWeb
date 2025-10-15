@@ -479,18 +479,8 @@ const performAIGeneration = async () => {
   });
 
   try {
-    // 获取角色关系数据（从 localStorage 加载）
-    let relationships = [];
-    try {
-      const storageKey = `drama_relationships_${props.projectInfo.name || 'default'}`;
-      const savedData = localStorage.getItem(storageKey);
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        relationships = parsed.relationships || [];
-      }
-    } catch (e) {
-      console.warn('无法加载角色关系数据:', e);
-    }
+    // 获取角色关系数据（从 projectInfo 读取）
+    const relationships = props.projectInfo.relationshipGraph || [];
 
     // 生成提示词
     const prompt = generateCompleteOutlinePrompt({
@@ -554,18 +544,8 @@ const performAIGeneration = async () => {
 // 生成AI提示词（用于外部AI）
 const generateAIPrompt = () => {
   try {
-    // 获取角色关系数据
-    let relationships = [];
-    try {
-      const storageKey = `drama_relationships_${props.projectInfo.name || 'default'}`;
-      const savedData = localStorage.getItem(storageKey);
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        relationships = parsed.relationships || [];
-      }
-    } catch (e) {
-      console.warn('无法加载角色关系数据:', e);
-    }
+    // 获取角色关系数据（从 projectInfo 读取）
+    const relationships = props.projectInfo.relationshipGraph || [];
 
     aiGeneratedPrompt.value = generateCompleteOutlinePrompt({
       projectType: props.projectInfo.type,

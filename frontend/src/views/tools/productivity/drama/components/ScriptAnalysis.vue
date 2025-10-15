@@ -1797,6 +1797,29 @@ const generateDiagnosisPrompt = (stage, project) => {
     }).join('\n\n');
   };
 
+  // 格式化角色关系图谱
+  const formatRelationshipGraph = () => {
+    // 从 project 对象读取关系图谱
+    const relationships = project.relationshipGraph || [];
+    
+    if (Array.isArray(relationships) && relationships.length > 0) {
+      const validRelationships = relationships.filter(rel => 
+        rel && rel.from && rel.to && rel.type
+      );
+      
+      if (validRelationships.length > 0) {
+        return validRelationships.map((rel, index) => {
+          let relInfo = [`${index + 1}. **${rel.from}** → **${rel.to}**`];
+          relInfo.push(`   - 关系类型：${rel.type}`);
+          if (rel.description) relInfo.push(`   - 关系描述：${rel.description}`);
+          return relInfo.join('\n');
+        }).join('\n\n');
+      }
+    }
+    
+    return '暂无角色关系图谱';
+  };
+
   // 根据不同阶段生成不同的提示词
   if (stage === 'preparation') {
     return `# 短剧前期设定诊断
@@ -1819,6 +1842,12 @@ ${formatCharacters()}
 
 ---
 
+## 角色关系图谱
+
+${formatRelationshipGraph()}
+
+---
+
 ## 剧情大纲
 
 ${formatOutline(outline)}
@@ -1827,11 +1856,12 @@ ${formatOutline(outline)}
 
 # 诊断任务
 
-请作为专业的短剧编剧，仔细分析以上【世界观设定】、【角色设定】和【剧情大纲】。
+请作为专业的短剧编剧，仔细分析以上【世界观设定】、【角色设定】、【角色关系图谱】和【剧情大纲】。
 
 ## 评估标准
 - 世界观是否完整、自洽？
 - 角色设定是否鲜明、有冲突性？
+- 角色关系是否清晰、合理，是否能推动剧情发展？
 - 大纲是否逻辑清晰、节奏合理？
 - 是否符合【${type}】类型的核心要素？
 - 核心剧情上是否存在漏洞？

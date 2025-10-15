@@ -312,6 +312,10 @@ const props = defineProps({
   projectInfo: {
     type: Object,
     default: () => ({})
+  },
+  relationshipGraph: {
+    type: Array,
+    default: () => []
   }
 });
 
@@ -349,8 +353,6 @@ const relationTypeOptions = [
   { value: '合作', label: '合作', icon: '🤝' }
 ];
 
-// 持久化存储key
-const STORAGE_KEY_PREFIX = 'drama_relationships_';
 
 // 获取特定类型的关系数量
 const getRelationTypeCount = (category) => {
@@ -401,54 +403,16 @@ const handleTypeChange = (type, checked) => {
   updateChart();
 };
 
-// 生成存储key
-const getStorageKey = () => {
-  const projectName = props.projectInfo?.name || 'default';
-  return `${STORAGE_KEY_PREFIX}${projectName}`;
-};
-
-// 保存关系数据到localStorage
-const saveRelationshipsToLocal = () => {
-  if (relationshipsData.value.length === 0) return;
-  
-  try {
-    const storageKey = getStorageKey();
-    const dataToSave = {
-      relationships: relationshipsData.value,
-      timestamp: Date.now(),
-      characterNames: props.characters.map(c => c.name)
-    };
-    localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-    console.log('✅ 关系数据已保存到localStorage', dataToSave);
-  } catch (error) {
-    console.error('保存关系数据失败:', error);
-  }
-};
-
-// 从 localStorage 加载关系数据
+// 从 props 加载关系数据
 const loadRelationships = () => {
   try {
-    const storageKey = getStorageKey();
-    const savedData = localStorage.getItem(storageKey);
-
-    if (!savedData) {
+    if (!props.relationshipGraph || props.relationshipGraph.length === 0) {
       console.log('ℹ️ 未找到已保存的关系数据');
       return false;
     }
 
-    const parsed = JSON.parse(savedData);
-
-    // 验证角色是否匹配
-    const currentCharNames = props.characters.map(c => c.name).sort();
-    const savedCharNames = (parsed.characterNames || []).sort();
-
-    if (JSON.stringify(currentCharNames) !== JSON.stringify(savedCharNames)) {
-      console.log('⚠️ 角色列表已变化，不加载旧数据');
-      return false;
-    }
-
     // 恢复数据
-    relationshipsData.value = parsed.relationships || [];
+    relationshipsData.value = props.relationshipGraph;
     convertToGraphData(relationshipsData.value);
 
     nextTick(() => {
@@ -557,9 +521,6 @@ const handleAIGenerate = async () => {
         updateChart();
       });
 
-      // 保存到localStorage
-      saveRelationshipsToLocal();
-      
       // 触发自动保存事件
       emit('relationships-changed', { data: parsedRelationships, isAutoSave: true });
       
@@ -632,9 +593,6 @@ const handleImportConfirm = () => {
       updateChart();
     });
 
-    // 保存到localStorage
-    saveRelationshipsToLocal();
-    
     // 触发自动保存事件
     emit('relationships-changed', { data: parsedRelationships, isAutoSave: true });
     
@@ -667,13 +625,8 @@ const handleSaveRelationships = () => {
     return;
   }
   
-  // 保存到 localStorage
-  saveRelationshipsToLocal();
-  
-  // 触发手动保存事件
+  // 触发手动保存事件（保存到数据库）
   emit('relationships-save', { data: relationshipsData.value, isAutoSave: false });
-  
-  ElMessage.success(`已保存 ${relationshipsData.value.length} 条关系`);
 };
 
 // 清空关系图谱
@@ -694,10 +647,6 @@ const handleClearGraph = async () => {
     relationshipsData.value = [];
     graphData.value = { nodes: [], links: [] };
 
-    // 清空 localStorage
-    const storageKey = getStorageKey();
-    localStorage.removeItem(storageKey);
-
     // 清空图表
     if (chartInstance.value) {
       chartInstance.value.clear();
@@ -705,7 +654,7 @@ const handleClearGraph = async () => {
 
     ElMessage.success('已清空关系图谱');
     
-    // 触发清空事件（自动保存）
+    // 触发清空事件（保存到数据库）
     emit('relationships-changed', { data: [], isAutoSave: true });
   } catch (error) {
     // 用户取消
