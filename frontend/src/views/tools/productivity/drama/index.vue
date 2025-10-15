@@ -122,7 +122,14 @@
         </el-form-item>
 
         <el-form-item label="剧本类型" prop="type">
-          <el-select v-model="projectForm.type" placeholder="选择短剧类型" style="width: 100%">
+          <el-select 
+            v-model="projectForm.type" 
+            placeholder="选择或输入短剧类型" 
+            style="width: 100%"
+            filterable
+            allow-create
+            default-first-option
+          >
             <el-option label="霸道总裁" value="霸道总裁">
               <span>👔 霸道总裁</span>
             </el-option>
@@ -142,6 +149,7 @@
               <span>💼 职场励志</span>
             </el-option>
           </el-select>
+          <div class="form-tip">可选择预设类型或自定义输入</div>
         </el-form-item>
 
         <el-form-item label="计划集数" prop="episodeCount">
