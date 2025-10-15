@@ -7,6 +7,8 @@
  */
 export const DEFAULT_PROMPT_TEMPLATE = `# 第{{episodeNumber}}集剧本创作任务
 
+## 注意：需要先细致阅读附件内容！
+
 ## 项目信息
 - 剧本名称：{{projectName}}
 - 剧本类型：{{projectType}}
@@ -16,9 +18,18 @@ export const DEFAULT_PROMPT_TEMPLATE = `# 第{{episodeNumber}}集剧本创作任
 - 集名：{{episodeTitle}}
 {{/if}}
 
-{{#if worldviewTheme}}
 ## 世界观设定
+{{#if worldviewBackground}}
+- 故事背景：{{worldviewBackground}}
+{{/if}}
+{{#if worldviewSetting}}
+- 世界设定：{{worldviewSetting}}
+{{/if}}
+{{#if worldviewTheme}}
 - 核心主题：{{worldviewTheme}}
+{{/if}}
+{{#if worldviewConflict}}
+- 主要冲突：{{worldviewConflict}}
 {{/if}}
 {{#if worldviewTone}}
 - 情感基调：{{worldviewTone}}
@@ -371,23 +382,23 @@ export function generateCharacterPrompt(data) {
   // 完整显示世界观设定，让AI能根据完整背景生成更准确的角色
   if (worldview && Object.keys(worldview).some(key => worldview[key])) {
     prompt += `## 世界观设定\n\n`;
-    
+
     if (worldview.background) {
       prompt += `**故事背景**：${worldview.background}\n\n`;
     }
-    
+
     if (worldview.setting) {
       prompt += `**世界设定**：${worldview.setting}\n\n`;
     }
-    
+
     if (worldview.theme) {
       prompt += `**核心主题**：${worldview.theme}\n\n`;
     }
-    
+
     if (worldview.conflict) {
       prompt += `**主要冲突**：${worldview.conflict}\n\n`;
     }
-    
+
     if (worldview.tone) {
       prompt += `**情感基调**：${worldview.tone}\n\n`;
     }
@@ -1042,7 +1053,7 @@ export function parseCharacterResponse(content) {
     if (fieldKey) {
       // 提取字段内容并清理
       let fieldContent = match[2].trim();
-      
+
       // 如果内容为空，跳过
       if (!fieldContent) {
         continue;
