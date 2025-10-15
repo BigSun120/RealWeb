@@ -306,6 +306,10 @@ const insertVariable = (varName) => {
   
   const textarea = document.querySelector('.template-textarea textarea');
   if (textarea) {
+    // 保存当前滚动位置
+    const scrollTop = textarea.scrollTop;
+    const scrollLeft = textarea.scrollLeft;
+    
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = localTemplate.value.customTemplate;
@@ -313,11 +317,15 @@ const insertVariable = (varName) => {
     const after = text.substring(end);
     localTemplate.value.customTemplate = before + `{{${varName}}}` + after;
     
-    // 设置新的光标位置
+    // 设置新的光标位置并恢复滚动位置
     setTimeout(() => {
       textarea.focus();
       const newPos = start + varName.length + 4; // {{}}的长度
       textarea.setSelectionRange(newPos, newPos);
+      
+      // 恢复滚动位置，防止自动滚动到底部
+      textarea.scrollTop = scrollTop;
+      textarea.scrollLeft = scrollLeft;
     }, 10);
   }
 };
@@ -445,11 +453,20 @@ const copyPreview = async () => {
 // 监听prop变化
 watch(() => props.modelValue, (newVal) => {
   if (newVal && JSON.stringify(newVal) !== JSON.stringify(localTemplate.value)) {
-    // 修复：使用 ?? 运算符，避免覆盖已保存的自定义模板
+    // 修复：避免覆盖本地已设置的 customTemplate
+    // 只有在以下情况才更新 customTemplate:
+    // 1. 本地没有 customTemplate 且父组件传来了新值
+    // 2. 父组件传来的值与本地不同且不是 null
+    const shouldUpdateCustomTemplate = 
+      (!localTemplate.value.customTemplate && newVal.customTemplate) ||
+      (newVal.customTemplate && newVal.customTemplate !== localTemplate.value.customTemplate);
+    
     localTemplate.value = {
-      useCustom: newVal.useCustom ?? false,
-      customTemplate: newVal.customTemplate ?? DEFAULT_PROMPT_TEMPLATE,
-      lastModified: newVal.lastModified ?? null
+      useCustom: newVal.useCustom ?? localTemplate.value.useCustom,
+      customTemplate: shouldUpdateCustomTemplate 
+        ? newVal.customTemplate 
+        : localTemplate.value.customTemplate,
+      lastModified: newVal.lastModified ?? localTemplate.value.lastModified
     };
     originalTemplate.value = JSON.parse(JSON.stringify(localTemplate.value));
   }

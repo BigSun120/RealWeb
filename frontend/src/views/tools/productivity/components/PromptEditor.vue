@@ -384,18 +384,27 @@ function parseVariables() {
 
 function insertVariable() {
   const variable = '{{变量名}}';
-  const textarea = document.querySelector('textarea');
+  // 修复：使用更精确的选择器，限定在内容编辑器的textarea
+  const textarea = document.querySelector('.content-editor textarea');
   if (textarea) {
+    // 修复：保存当前滚动位置
+    const scrollTop = textarea.scrollTop;
+    const scrollLeft = textarea.scrollLeft;
+    
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = form.content;
     form.content = text.substring(0, start) + variable + text.substring(end);
 
-    // 设置光标位置
+    // 设置光标位置并恢复滚动位置
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + 2, start + 2 + 3); // 选中"变量名"
-    }, 0);
+      
+      // 修复：恢复滚动位置，防止自动滚动
+      textarea.scrollTop = scrollTop;
+      textarea.scrollLeft = scrollLeft;
+    }, 10);
   }
 }
 

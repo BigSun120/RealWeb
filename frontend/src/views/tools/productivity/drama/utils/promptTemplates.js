@@ -138,18 +138,79 @@ export function replaceTemplateVariables(template, data) {
   // 修复：递归处理条件块，支持嵌套和对象属性访问
   // 处理条件块 {{#if condition}}...{{/if}}
   function processConditionals(text) {
-    let hasMatch = true;
+    let maxIterations = 50; // 防止无限循环
+    let iteration = 0;
     
     // 循环处理直到没有条件块
-    while (hasMatch) {
-      hasMatch = false;
+    while (iteration < maxIterations) {
+      iteration++;
       
-      // 从内到外处理嵌套的条件块
-      // 查找最内层的 {{#if}}...{{/if}} 对（不包含嵌套的条件块）
-      const pattern = /{{#if\s+([\w.]+)}}((?:(?!{{#if|{{\/if}}).)*){{\/if}}/s;
+      // 使用栈来匹配配对的 if/endif，处理任意层级的嵌套
+      let result = '';
+      let i = 0;
+      let modified = false;
       
-      text = text.replace(pattern, (match, condition, content) => {
-        hasMatch = true;
+      while (i < text.length) {
+        // 查找 {{#if
+        const ifStart = text.indexOf('{{#if', i);
+        
+        if (ifStart === -1) {
+          // 没有更多的 if 块，追加剩余文本
+          result += text.substring(i);
+          break;
+        }
+        
+        // 追加 if 之前的文本
+        result += text.substring(i, ifStart);
+        
+        // 查找条件名称的结束位置
+        const conditionStart = ifStart + 5; // '{{#if'.length
+        const conditionEnd = text.indexOf('}}', conditionStart);
+        
+        if (conditionEnd === -1) {
+          // 格式错误，保留原样
+          result += text.substring(ifStart);
+          break;
+        }
+        
+        const condition = text.substring(conditionStart, conditionEnd).trim();
+        
+        // 查找匹配的 {{/if}}，需要考虑嵌套
+        let depth = 1;
+        let pos = conditionEnd + 2; // '}}' 之后
+        let endifPos = -1;
+        
+        while (pos < text.length && depth > 0) {
+          const nextIf = text.indexOf('{{#if', pos);
+          const nextEndif = text.indexOf('{{/if}}', pos);
+          
+          if (nextEndif === -1) {
+            // 没有找到结束标记
+            break;
+          }
+          
+          if (nextIf !== -1 && nextIf < nextEndif) {
+            // 遇到嵌套的 if
+            depth++;
+            pos = nextIf + 5;
+          } else {
+            // 遇到 endif
+            depth--;
+            if (depth === 0) {
+              endifPos = nextEndif;
+            }
+            pos = nextEndif + 7; // '{{/if}}'.length
+          }
+        }
+        
+        if (endifPos === -1) {
+          // 没有找到匹配的结束标记，保留原样
+          result += text.substring(ifStart);
+          break;
+        }
+        
+        // 提取内容（不包括 {{#if condition}} 和 {{/if}}）
+        const content = text.substring(conditionEnd + 2, endifPos);
         
         // 获取条件值（支持点号访问）
         let value;
@@ -170,10 +231,22 @@ export function replaceTemplateVariables(template, data) {
         
         // 检查值是否为真
         if (value && value !== '' && value !== 0) {
-          return content;
+          // 条件为真，保留内容（需要继续处理内部的条件块）
+          result += content;
+          modified = true;
         }
-        return '';
-      });
+        // 条件为假，不添加内容（相当于移除整个块）
+        
+        // 移动到 {{/if}} 之后
+        i = endifPos + 7;
+      }
+      
+      text = result;
+      
+      // 如果没有修改，说明没有更多条件块需要处理
+      if (!modified) {
+        break;
+      }
     }
     
     return text;

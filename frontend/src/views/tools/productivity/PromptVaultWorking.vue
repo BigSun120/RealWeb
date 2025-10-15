@@ -522,7 +522,8 @@ const promptService = {
 
   parseVariables(content) {
     if (!content) return [];
-    const variableRegex = /\{\{(\w+)(?::([^}]*))?\}\}/g;
+    // 修复：排除条件块标签 {{#if}} {{/if}}
+    const variableRegex = /\{\{(?!#|\/)([\w]+)(?::([^}]*))?\}\}/g;
     const variables = [];
     const seen = new Set();
     let match;
@@ -566,12 +567,214 @@ const promptService = {
 
   renderPrompt(content, values = {}) {
     if (!content) return '';
-    let rendered = content;
-    Object.entries(values).forEach(([key, value]) => {
-      const regex = new RegExp(`\\{\\{${key}(?::[^}]*)?\\}\\}`, 'g');
-      rendered = rendered.replace(regex, value || '');
+    
+    // 准备变量数据（支持对象属性的展开）
+    const vars = { ...values };
+    
+    // 展开对象属性以支持点号访问
+    Object.keys(values).forEach(key => {
+      const value = values[key];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        Object.keys(value).forEach(subKey => {
+          vars[`${key}.${subKey}`] = value[subKey];
+        });
+      }
     });
-    return rendered;
+    
+    let result = content;
+    
+    // 第一步：循环处理条件块直到没有条件块为止
+    result = this._processConditionals(result, vars);
+    
+    // 第二步：处理对象属性访问 {{object.property}}
+    const objectRegex = /\{\{(\w+)\.(\w+)\}\}/g;
+    result = result.replace(objectRegex, (match, objName, propName) => {
+      // 先尝试直接访问展开的属性
+      const expandedKey = `${objName}.${propName}`;
+      if (vars[expandedKey] !== undefined) {
+        return vars[expandedKey];
+      }
+      // 如果没有展开，尝试通过对象访问
+      const obj = vars[objName];
+      if (obj && typeof obj === 'object' && obj[propName] !== undefined) {
+        return obj[propName];
+      }
+      return '';
+    });
+    
+    // 第三步：替换简单变量（包括已展开的对象属性）
+    Object.keys(vars).forEach(key => {
+      const value = vars[key];
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        // 转义点号以处理展开的属性名
+        const escapedKey = key.replace(/\./g, '\\.');
+        const regex = new RegExp(`\\{\\{${escapedKey}(?::[^}]*)?\\}\\}`, 'g');
+        result = result.replace(regex, String(value));
+      }
+    });
+    
+    return result;
+  },
+  
+  // 修复：循环递归处理条件块，确保所有条件块标记都被移除
+  _processConditionals(text, vars = {}) {
+    let maxIterations = 50;
+    let iteration = 0;
+    
+    // 循环处理直到没有条件块
+    while (iteration < maxIterations) {
+      iteration++;
+      
+      let result = '';
+      let i = 0;
+      let modified = false;
+      
+      while (i < text.length) {
+        // 查找 {{#if
+        const ifStart = text.indexOf('{{#if', i);
+        
+        if (ifStart === -1) {
+          // 没有更多的 if 块，追加剩余文本
+          result += text.substring(i);
+          break;
+        }
+        
+        // 追加 if 之前的文本
+        result += text.substring(i, ifStart);
+        
+        // 查找条件名称的结束位置
+        const conditionStart = ifStart + 5;
+        const conditionEnd = text.indexOf('}}', conditionStart);
+        
+        if (conditionEnd === -1) {
+          // 格式错误，保留原样
+          result += text.substring(ifStart);
+          break;
+        }
+        
+        const condition = text.substring(conditionStart, conditionEnd).trim();
+        
+        // 查找匹配的 {{/if}}，需要考虑嵌套
+        let depth = 1;
+        let pos = conditionEnd + 2;
+        let endifPos = -1;
+        
+        while (pos < text.length && depth > 0) {
+          const nextIf = text.indexOf('{{#if', pos);
+          const nextEndif = text.indexOf('{{/if}}', pos);
+          
+          if (nextEndif === -1) {
+            // 没有找到结束标记
+            break;
+          }
+          
+          if (nextIf !== -1 && nextIf < nextEndif) {
+            // 遇到嵌套的 if
+            depth++;
+            pos = nextIf + 5;
+          } else {
+            // 遇到 endif
+            depth--;
+            if (depth === 0) {
+              endifPos = nextEndif;
+            }
+            pos = nextEndif + 7;
+          }
+        }
+        
+        if (endifPos === -1) {
+          // 没有找到匹配的结束标记，保留原样
+          result += text.substring(ifStart);
+          break;
+        }
+        
+        // 提取内容（不包括 {{#if condition}} 和 {{/if}}）
+        const content = text.substring(conditionEnd + 2, endifPos);
+        
+        // 获取条件值（支持点号访问）
+        let value;
+        if (condition.includes('.')) {
+          // 处理对象属性访问
+          value = vars[condition]; // 先尝试直接访问展开的属性
+          if (value === undefined) {
+            // 如果没有直接映射，尝试通过对象访问
+            const parts = condition.split('.');
+            value = vars[parts[0]];
+            for (let j = 1; j < parts.length && value; j++) {
+              value = value[parts[j]];
+            }
+          }
+        } else {
+          value = vars[condition];
+        }
+        
+        // 检查值是否为真
+        if (value && value !== '' && value !== 0 && value !== false) {
+          // 条件为真，保留内容（内容可能还有嵌套的条件块，下一轮迭代会处理）
+          result += content;
+          modified = true;
+        }
+        // 条件为假，不添加内容（相当于移除整个块）
+        
+        // 移动到 {{/if}} 之后
+        i = endifPos + 7;
+      }
+      
+      text = result;
+      
+      // 如果没有修改，说明没有更多条件块需要处理
+      if (!modified) {
+        break;
+      }
+    }
+    
+    return text;
+  },
+  
+  // 高级模板引擎API（如果后端支持）
+  async renderTemplate(template, variables) {
+    try {
+      const response = await request({
+        url: '/template/render',
+        method: 'post',
+        data: { template, variables }
+      });
+      if (response.code === 200) {
+        return response;
+      }
+      throw new Error(response.message || '渲染模板失败');
+    } catch (error) {
+      // API不存在时降级到简单模式
+      return {
+        code: 200,
+        data: {
+          rendered: this.renderPrompt(template, variables)
+        }
+      };
+    }
+  },
+  
+  async extractVariables(template) {
+    try {
+      const response = await request({
+        url: '/template/extract-variables',
+        method: 'post',
+        data: { template }
+      });
+      if (response.code === 200) {
+        return response;
+      }
+      throw new Error(response.message || '提取变量失败');
+    } catch (error) {
+      // API不存在时降级到简单解析
+      const variables = this.parseVariables(template);
+      return {
+        code: 200,
+        data: {
+          variables: variables.map(v => v.name)
+        }
+      };
+    }
   },
 
   async generateShareLink(id) {
@@ -738,19 +941,10 @@ const promptService = {
   },
 
   // ====================  模板引擎 ====================
-  async renderTemplate(content, variables) {
-    const response = await request({
-      url: '/tools/prompt-vault/template/render',
-      method: 'post',
-      data: { content, variables }
-    });
-    if (response.code === 200) {
-      return response;
-    }
-    throw new Error(response.message || '模板渲染失败');
-  },
-
+  // renderTemplate 和 extractVariables 已在上方定义，带有降级逻辑
+  
   async extractTemplateVariables(content) {
+    // 这个方法用于后端 API 调用，但前端使用 extractVariables 代替
     const response = await request({
       url: '/tools/prompt-vault/template/extract-variables',
       method: 'post',

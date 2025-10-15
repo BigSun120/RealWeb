@@ -215,11 +215,106 @@ class PromptService {
   renderPrompt(content, values = {}) {
     if (!content) return '';
     let rendered = content;
+    
+    // 修复：先处理条件块（使用与剧本模板相同的算法）
+    rendered = this._processConditionals(rendered, values);
+    
+    // 然后进行简单变量替换
     Object.entries(values).forEach(([key, value]) => {
       const regex = new RegExp(`\\{\\{${key}(?::[^}]*)?\\}\\}`, 'g');
       rendered = rendered.replace(regex, value || '');
     });
     return rendered;
+  }
+  
+  // 修复：处理条件块（支持嵌套）
+  _processConditionals(text, values = {}) {
+    let maxIterations = 50;
+    let iteration = 0;
+    
+    while (iteration < maxIterations) {
+      iteration++;
+      
+      let result = '';
+      let i = 0;
+      let modified = false;
+      
+      while (i < text.length) {
+        const ifStart = text.indexOf('{{#if', i);
+        
+        if (ifStart === -1) {
+          result += text.substring(i);
+          break;
+        }
+        
+        result += text.substring(i, ifStart);
+        
+        const conditionStart = ifStart + 5;
+        const conditionEnd = text.indexOf('}}', conditionStart);
+        
+        if (conditionEnd === -1) {
+          result += text.substring(ifStart);
+          break;
+        }
+        
+        const condition = text.substring(conditionStart, conditionEnd).trim();
+        
+        // 查找匹配的 {{/if}}，考虑嵌套
+        let depth = 1;
+        let pos = conditionEnd + 2;
+        let endifPos = -1;
+        
+        while (pos < text.length && depth > 0) {
+          const nextIf = text.indexOf('{{#if', pos);
+          const nextEndif = text.indexOf('{{/if}}', pos);
+          
+          if (nextEndif === -1) break;
+          
+          if (nextIf !== -1 && nextIf < nextEndif) {
+            depth++;
+            pos = nextIf + 5;
+          } else {
+            depth--;
+            if (depth === 0) {
+              endifPos = nextEndif;
+            }
+            pos = nextEndif + 7;
+          }
+        }
+        
+        if (endifPos === -1) {
+          result += text.substring(ifStart);
+          break;
+        }
+        
+        const content = text.substring(conditionEnd + 2, endifPos);
+        
+        // 评估条件
+        let value;
+        if (condition.includes('.')) {
+          const parts = condition.split('.');
+          value = values[parts[0]];
+          for (let j = 1; j < parts.length && value; j++) {
+            value = value[parts[j]];
+          }
+        } else {
+          value = values[condition];
+        }
+        
+        if (value && value !== '' && value !== 0) {
+          result += content;
+          modified = true;
+        }
+        
+        i = endifPos + 7;
+      }
+      
+      text = result;
+      
+      if (!modified) break;
+    }
+    
+    return text;
   }
 
   // 高级模板引擎 API
