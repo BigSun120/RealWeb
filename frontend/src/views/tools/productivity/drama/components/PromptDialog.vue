@@ -19,8 +19,8 @@
               <ol>
                 <li>打开 ChatGPT / Claude / 文心一言 等AI平台</li>
                 <li>粘贴提示词到对话框</li>
-                <li>根据AI的回复进行调整和完善</li>
-                <li>将生成的内容复制回本工具保存</li>
+                <li>复制AI的回复</li>
+                <li>点击下方"粘贴AI回复"按钮，智能解析并导入</li>
               </ol>
             </div>
           </template>
@@ -70,6 +70,14 @@
       <div class="dialog-footer">
         <el-button @click="handleClose">关闭</el-button>
         <el-button
+          v-if="supportsPaste"
+          type="success"
+          :icon="DocumentAdd"
+          @click="handlePasteResponse"
+        >
+          粘贴AI回复
+        </el-button>
+        <el-button
           type="primary"
           :icon="CopyDocument"
           @click="handleCopy"
@@ -84,7 +92,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
-import { CopyDocument, Edit, Check } from '@element-plus/icons-vue';
+import { CopyDocument, Edit, Check, DocumentAdd } from '@element-plus/icons-vue';
 
 const props = defineProps({
   modelValue: {
@@ -98,10 +106,22 @@ const props = defineProps({
   title: {
     type: String,
     default: 'AI 提示词'
+  },
+  // 是否支持粘贴AI回复
+  supportsPaste: {
+    type: Boolean,
+    default: false
+  },
+  // 粘贴模式：用于判断如何解析AI回复
+  // 可选值: 'solution' (解决方案)
+  pasteMode: {
+    type: String,
+    default: 'solution',
+    validator: (value) => ['solution'].includes(value)
   }
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'paste']);
 
 // 编辑状态和可编辑的提示词
 const isEditing = ref(false);
@@ -154,6 +174,14 @@ const handleCopy = async () => {
       ElMessage.error('复制失败，请手动复制');
     }
   }
+};
+
+// 粘贴AI回复
+const handlePasteResponse = () => {
+  // 关闭当前对话框
+  emit('update:modelValue', false);
+  // 触发粘贴事件，由父组件处理
+  emit('paste', { mode: props.pasteMode });
 };
 </script>
 

@@ -1,0 +1,105 @@
+{
+  "description": "AI诊断结果测试样例 - 用于测试 AIResponseParser 组件的 diagnosis 模式",
+  "samples": [
+    {
+      "name": "标准JSON格式",
+      "format": "纯JSON对象",
+      "data": {
+        "issues": [
+          {
+            "id": "issue-001",
+            "title": "世界观背景描述不够具体",
+            "description": "故事背景过于笼统,缺少具体的时代、地理、社会结构等细节描述,导致读者难以构建清晰的世界图景。",
+            "severity": "critical",
+            "location": {
+              "module": "worldview",
+              "field": "background"
+            },
+            "suggestion": "建议增加具体的时代背景(如民国时期、现代、架空王朝等)、地理位置、社会制度等关键信息,让世界观更立体饱满。"
+          },
+          {
+            "id": "issue-002",
+            "title": "主角性格特点矛盾",
+            "description": "主角在不同场景中表现出相互矛盾的性格特点:开篇描述为冷静理智,但在关键情节中却表现得冲动鲁莽。",
+            "severity": "critical",
+            "location": {
+              "module": "characters",
+              "field": "personality",
+              "characterId": "主角"
+            },
+            "suggestion": "统一角色性格设定,或为性格转变提供合理的情节铺垫和心理变化描写。"
+          },
+          {
+            "id": "issue-003",
+            "title": "情节推进过于突兀",
+            "description": "第5集到第6集之间的情节跳跃过大,缺少必要的过渡,主角从困境到解决问题的转变缺乏铺垫。",
+            "severity": "medium",
+            "location": {
+              "module": "outline",
+              "field": "第5-6集过渡"
+            },
+            "suggestion": "在第5集末尾增加转折铺垫,或在第6集开头补充回忆/说明性场景,让情节过渡更自然。"
+          },
+          {
+            "id": "issue-004",
+            "title": "配角缺乏立体感",
+            "description": "多个配角仅作为功能性角色存在,缺少个人特点和成长弧线,显得扁平化。",
+            "severity": "medium",
+            "location": {
+              "module": "characters",
+              "field": "配角群"
+            },
+            "suggestion": "为主要配角增加独特的性格特点、行为动机和小的成长弧线,让他们更加鲜活立体。"
+          },
+          {
+            "id": "issue-005",
+            "title": "部分台词过于书面化",
+            "description": "部分对话台词过于文绉绉,不符合角色身份和日常表达习惯,影响真实感。",
+            "severity": "low",
+            "location": {
+              "module": "episodes",
+              "field": "对话"
+            },
+            "suggestion": "根据角色性格、身份、文化背景调整台词风格,让对话更口语化、更符合角色特点。"
+          }
+        ]
+      }
+    },
+    {
+      "name": "带Markdown包装的JSON",
+      "format": "Markdown代码块包装JSON",
+      "data": "根据您的短剧内容,我为您诊断出以下问题:\n\n```json\n{\n  \"issues\": [\n    {\n      \"title\": \"核心冲突不够清晰\",\n      \"description\": \"故事的主要矛盾和冲突点表达不够明确,观众难以快速抓住故事的核心张力。\",\n      \"severity\": \"critical\",\n      \"location\": {\n        \"module\": \"worldview\",\n        \"field\": \"conflict\"\n      },\n      \"suggestion\": \"明确主要冲突(如阶级对立、情感纠葛、生存危机等),并在开篇就点明矛盾焦点。\"\n    },\n    {\n      \"title\": \"节奏拖沓\",\n      \"description\": \"第2-4集的节奏偏慢,重复性场景较多,缺少关键转折点,容易让观众失去耐心。\",\n      \"severity\": \"medium\",\n      \"location\": {\n        \"module\": \"outline\",\n        \"field\": \"第2-4集\"\n      },\n      \"suggestion\": \"压缩重复性内容,在每集增加至少1个小高潮或转折,保持观众兴趣。\"\n    },\n    {\n      \"title\": \"情感基调不统一\",\n      \"description\": \"前半部分偏轻松幽默,后半部分突然转为虐心悲剧,风格跳跃较大。\",\n      \"severity\": \"medium\",\n      \"location\": {\n        \"module\": \"worldview\",\n        \"field\": \"tone\"\n      },\n      \"suggestion\": \"在前期埋下悲剧伏笔,或在后期保持一定的轻松元素,让情感基调过渡更自然。\"\n    }\n  ]\n}\n```\n\n以上是主要诊断问题,建议您优先处理严重等级的问题。"
+    },
+    {
+      "name": "简化JSON格式(无location)",
+      "format": "简化的issues数组",
+      "data": "{\n  \"issues\": [\n    {\n      \"title\": \"人物关系网过于简单\",\n      \"description\": \"角色之间的关系主要集中在主角身上,配角之间缺少互动和独立的关系线。\",\n      \"severity\": \"medium\",\n      \"suggestion\": \"构建配角之间的关系网,增加横向关系线,让人物关系更复杂立体。\"\n    },\n    {\n      \"title\": \"高潮场景缺乏冲击力\",\n      \"description\": \"第8集的高潮场景铺垫不足,情感爆发点的冲击力较弱。\",\n      \"severity\": \"critical\",\n      \"suggestion\": \"在第6-7集增加情感积累,强化矛盾冲突,让第8集的爆发更有力量。\"\n    },\n    {\n      \"title\": \"结局过于仓促\",\n      \"description\": \"最后一集匆忙收尾,多条故事线未得到充分交代。\",\n      \"severity\": \"critical\",\n      \"suggestion\": \"适当延长最后1-2集,给每条故事线合理的收尾空间,或砍掉部分次要支线。\"\n    }\n  ]\n}"
+    },
+    {
+      "name": "纯数组格式",
+      "format": "直接issues数组",
+      "data": "[\n  {\n    \"title\": \"世界观设定存在逻辑漏洞\",\n    \"description\": \"设定中的权力体系和实际情节中的权力运作方式存在矛盾,影响故事可信度。\",\n    \"severity\": \"critical\",\n    \"location\": {\n      \"module\": \"worldview\",\n      \"field\": \"setting\"\n    },\n    \"suggestion\": \"重新审视权力体系设定,确保与情节逻辑一致,或调整相关情节使其符合设定。\"\n  },\n  {\n    \"title\": \"主题表达过于直白\",\n    \"description\": \"故事主题通过角色对话直接说教,缺少润物细无声的表达方式。\",\n    \"severity\": \"low\",\n    \"location\": {\n      \"module\": \"worldview\",\n      \"field\": \"theme\"\n    },\n    \"suggestion\": \"通过情节、细节、象征等方式间接传达主题,避免生硬说教。\"\n  }\n]"
+    },
+    {
+      "name": "中英混合格式",
+      "format": "包含英文key的JSON",
+      "data": "AI诊断结果如下:\n\n```json\n{\n  \"diagnosis_result\": {\n    \"total_issues\": 4,\n    \"issues\": [\n      {\n        \"issue_title\": \"开篇吸引力不足\",\n        \"issue_description\": \"第1集前3分钟未能有效建立悬念或冲突,容易导致观众流失。\",\n        \"severity_level\": \"critical\",\n        \"module_location\": \"outline\",\n        \"suggestion_text\": \"在开篇30秒内设置钩子(如突发事件、悬念、强烈冲突),快速抓住观众注意力。\"\n      },\n      {\n        \"issue_title\": \"反派动机不足\",\n        \"issue_description\": \"反派角色的行为动机交代不清,显得为了坏而坏,缺乏说服力。\",\n        \"severity_level\": \"medium\",\n        \"module_location\": \"characters\",\n        \"suggestion_text\": \"为反派增加合理的行为动机(如过往创伤、利益驱动、扭曲的价值观等),让角色更立体。\"\n      },\n      {\n        \"issue_title\": \"感情线发展过快\",\n        \"issue_description\": \"男女主角从相识到产生情感仅用了2集,缺少情感发展的铺垫和积累。\",\n        \"severity_level\": \"medium\",\n        \"module_location\": \"outline\",\n        \"suggestion_text\": \"增加情感铺垫桥段,让感情发展更有层次感(好感-心动-试探-确认)。\"\n      },\n      {\n        \"issue_title\": \"部分场景描述过于简略\",\n        \"issue_description\": \"关键场景的环境、氛围描述不够,影响画面感和代入感。\",\n        \"severity_level\": \"low\",\n        \"module_location\": \"episodes\",\n        \"suggestion_text\": \"为关键场景增加环境、氛围、细节描写,帮助导演和演员更好理解场景氛围。\"\n      }\n    ]\n  }\n}\n```"
+    },
+    {
+      "name": "复杂嵌套格式",
+      "format": "多层嵌套结构",
+      "data": "{\n  \"diagnosis\": {\n    \"metadata\": {\n      \"version\": \"1.0\",\n      \"timestamp\": \"2024-01-15\"\n    },\n    \"result\": {\n      \"summary\": \"共发现6个问题,其中严重问题2个,中等问题3个,轻微问题1个\",\n      \"issues\": [\n        {\n          \"id\": \"diag-001\",\n          \"title\": \"世界观与情节脱节\",\n          \"description\": \"设定的世界观背景在实际故事推进中未能有效运用,世界观沦为摆设。\",\n          \"severity\": \"critical\",\n          \"category\": \"consistency\",\n          \"location\": {\n            \"module\": \"worldview\",\n            \"field\": \"background\",\n            \"ref\": \"第1-3集\"\n          },\n          \"suggestion\": \"在情节中主动融入世界观元素,让世界观设定真正影响故事走向和角色命运。\",\n          \"examples\": [\n            \"可在关键情节中加入世界观特有的规则限制\",\n            \"让角色的选择受到世界观背景的约束和影响\"\n          ]\n        },\n        {\n          \"id\": \"diag-002\",\n          \"title\": \"角色缺乏成长弧线\",\n          \"description\": \"主角从头到尾性格、能力、价值观基本不变,缺少内在成长。\",\n          \"severity\": \"critical\",\n          \"category\": \"character_development\",\n          \"location\": {\n            \"module\": \"characters\",\n            \"field\": \"personality\",\n            \"characterId\": \"主角\"\n          },\n          \"suggestion\": \"设计主角的成长路径:初始状态→遭遇挑战→内心挣扎→做出改变→收获成长。\"\n        },\n        {\n          \"id\": \"diag-003\",\n          \"title\": \"冲突解决过于简单\",\n          \"description\": \"每集的冲突都通过巧合或外力轻易解决,缺少角色主动性和智慧博弈。\",\n          \"severity\": \"medium\",\n          \"category\": \"plot_structure\",\n          \"location\": {\n            \"module\": \"outline\"\n          },\n          \"suggestion\": \"让角色通过自身努力、成长、智慧来解决问题,减少巧合和外力干预。\"\n        }\n      ]\n    }\n  }\n}"
+    }
+  ],
+  "usage_instructions": {
+    "zh": "使用方法:复制samples中任意一个data字段的内容,粘贴到AIResponseParser的diagnosis模式中进行测试。",
+    "test_scenarios": [
+      "测试标准JSON格式的解析",
+      "测试带Markdown包装的JSON解析",
+      "测试简化格式(缺少部分字段)的容错性",
+      "测试纯数组格式的识别",
+      "测试中英混合key的兼容性",
+      "测试复杂嵌套结构的深度解析"
+    ]
+  }
+}

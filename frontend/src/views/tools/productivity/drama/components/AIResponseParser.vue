@@ -92,6 +92,58 @@
         </div>
       </div>
 
+      <!-- 诊断解析结果预览 -->
+      <div v-else-if="parsed && props.mode === 'diagnosis'" class="parse-result">
+        <div class="result-header">
+          <div class="header-left">
+            <el-icon :size="20" color="#67C23A"><SuccessFilled /></el-icon>
+            <span class="header-title">解析结果</span>
+            <el-tag type="success" size="small">
+              成功解析 {{ parsedData.issues?.length || 0 }} 个问题
+            </el-tag>
+          </div>
+          <el-button size="small" text @click="handleReparse">
+            <el-icon><RefreshRight /></el-icon>
+            重新解析
+          </el-button>
+        </div>
+
+        <div class="diagnosis-preview">
+          <!-- 问题严重程度统计 -->
+          <div class="severity-stats">
+            <div class="stat-item critical">
+              <span class="stat-label">严重</span>
+              <span class="stat-count">{{ countBySeverity('critical') }}</span>
+            </div>
+            <div class="stat-item medium">
+              <span class="stat-label">中等</span>
+              <span class="stat-count">{{ countBySeverity('medium') }}</span>
+            </div>
+            <div class="stat-item low">
+              <span class="stat-label">轻微</span>
+              <span class="stat-count">{{ countBySeverity('low') }}</span>
+            </div>
+          </div>
+
+          <!-- 问题列表预览 -->
+          <div class="issues-preview">
+            <div v-for="(issue, index) in parsedData.issues" :key="index" class="issue-preview-item">
+              <div class="issue-header">
+                <el-tag :type="getSeverityType(issue.severity)" size="small">
+                  {{ getSeverityText(issue.severity) }}
+                </el-tag>
+                <span class="issue-title">{{ issue.title }}</span>
+              </div>
+              <div class="issue-description">{{ issue.description }}</div>
+              <div v-if="issue.location" class="issue-location">
+                <el-icon><Location /></el-icon>
+                <span>{{ getLocationText(issue.location) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 大纲解析结果预览 -->
       <div v-else-if="parsed && props.mode === 'outline'" class="parse-result">
         <div class="result-header">
@@ -241,13 +293,15 @@ import {
   Check,
   MagicStick,
   SuccessFilled,
-  RefreshRight
+  RefreshRight,
+  Location
 } from '@element-plus/icons-vue';
 import {
   parseWorldviewResponse,
   parseCharacterResponse,
   parseBatchCharactersResponse,
   parseOutlineResponse,
+  parseDiagnosisResponse,
   evaluateParseResult,
   calculateSuccessRate,
   formatParseResultForDisplay
@@ -259,9 +313,9 @@ const props = defineProps({
     default: false
   },
   mode: {
-    type: String, // 'worldview', 'character', 'batch-characters', 'outline'
+    type: String, // 'worldview', 'character', 'batch-characters', 'outline', 'diagnosis'
     required: true,
-    validator: (value) => ['worldview', 'character', 'batch-characters', 'outline'].includes(value)
+    validator: (value) => ['worldview', 'character', 'batch-characters', 'outline', 'diagnosis'].includes(value)
   },
   title: {
     type: String,
@@ -381,6 +435,16 @@ const handleParse = async () => {
       } else {
         ElMessage.warning('未能解析到大纲信息，请检查格式');
       }
+    } else if (props.mode === 'diagnosis') {
+      parsedData.value = parseDiagnosisResponse(aiResponse.value);
+      parsed.value = true;
+      
+      const count = parsedData.value.issues?.length || 0;
+      if (count > 0) {
+        ElMessage.success(`成功解析 ${count} 个诊断问题`);
+      } else {
+        ElMessage.warning('未能解析到问题信息，请检查格式');
+      }
     }
   } catch (error) {
     console.error('解析失败:', error);
@@ -421,8 +485,8 @@ const cancelFieldEdit = () => {
 };
 
 const handleConfirm = () => {
-  // 对于 batch-characters 和 outline 模式，使用 parsed 事件
-  if (props.mode === 'batch-characters' || props.mode === 'outline') {
+  // 对于 batch-characters、outline 和 diagnosis 模式，使用 parsed 事件
+  if (props.mode === 'batch-characters' || props.mode === 'outline' || props.mode === 'diagnosis') {
     emit('parsed', parsedData.value);
   } else {
     emit('confirm', parsedData.value);
@@ -431,6 +495,7 @@ const handleConfirm = () => {
   
   const message = props.mode === 'batch-characters' ? '角色已导入' : 
                   props.mode === 'outline' ? '大纲已导入' : 
+                  props.mode === 'diagnosis' ? '诊断问题已导入' :
                   '已填充到表单';
   ElMessage.success(message);
 };
@@ -472,6 +537,50 @@ const getTotalNodes = () => {
   return parsedData.value.acts.reduce((total, act) => {
     return total + (act.nodes?.length || 0);
   }, 0);
+};
+
+// 计算按严重程度的问题数量
+const countBySeverity = (severity) => {
+  if (!parsedData.value.issues || !Array.isArray(parsedData.value.issues)) {
+    return 0;
+  }
+  return parsedData.value.issues.filter(issue => issue.severity === severity).length;
+};
+
+// 获取严重程度类型
+const getSeverityType = (severity) => {
+  const map = {
+    'critical': 'danger',
+    'medium': 'warning',
+    'low': 'info'
+  };
+  return map[severity] || 'info';
+};
+
+// 获取严重程度文本
+const getSeverityText = (severity) => {
+  const map = {
+    'critical': '严重',
+    'medium': '中等',
+    'low': '轻微'
+  };
+  return map[severity] || '未知';
+};
+
+// 获取位置文本
+const getLocationText = (location) => {
+  const moduleMap = {
+    'worldview': '世界观',
+    'characters': '角色',
+    'outline': '大纲',
+    'episodes': '分集'
+  };
+  
+  const moduleName = moduleMap[location.module] || location.module;
+  const field = location.field || '';
+  const charId = location.characterId ? ` > ${location.characterId}` : '';
+  
+  return `${moduleName} > ${field}${charId}`;
 };
 
 // 监听对话框打开
@@ -746,6 +855,108 @@ watch(() => props.modelValue, (newVal) => {
   color: #606266;
   margin: 0;
   line-height: 1.6;
+}
+
+/* 诊断预览样式 */
+.diagnosis-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.severity-stats {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #DCDFE6;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.stat-item.critical {
+  background: #FEF0F0;
+  border-color: #F56C6C;
+}
+
+.stat-item.medium {
+  background: #FDF6EC;
+  border-color: #E6A23C;
+}
+
+.stat-item.low {
+  background: #F0F9FF;
+  border-color: #409EFF;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 4px;
+}
+
+.stat-count {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.issues-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.issue-preview-item {
+  background: white;
+  border-radius: 6px;
+  padding: 12px;
+  border: 1px solid #DCDFE6;
+}
+
+.issue-preview-item .issue-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.issue-preview-item .issue-title {
+  font-weight: 600;
+  color: #303133;
+  font-size: 14px;
+  flex: 1;
+}
+
+.issue-preview-item .issue-description {
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.issue-preview-item .issue-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.issue-preview-item .issue-location .el-icon {
+  font-size: 14px;
 }
 
 /* 响应式 */

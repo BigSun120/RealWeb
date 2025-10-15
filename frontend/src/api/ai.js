@@ -37,7 +37,7 @@ export function generateAIContent(messages, options = {}) {
   return request({
     url: '/ai/generate',
     method: 'post',
-    timeout: 60000, // AI生成请求设置60秒超时
+    timeout: options.timeout || 60000, // ✅ 支持自定义超时，默认60秒
     data
   });
 }

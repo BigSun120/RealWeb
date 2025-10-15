@@ -446,7 +446,7 @@ function extractCharactersList(text) {
   let field = extractField(text, ['涉及角色', '角色', '参与角色'], 100);
   if (!field) return [];
   
-  // 如果包含“情感”或“集数”，截断到这些关键词之前
+  // 如果包含"情感"或"集数"，截断到这些关键词之前
   const cutoffMatch = field.match(/(.+?)(?=情感|集数|$)/);
   if (cutoffMatch) {
     field = cutoffMatch[1];
@@ -460,7 +460,7 @@ function extractCharactersList(text) {
       // 1. 不为空
       // 2. 长度合理（2-20字）
       // 3. 不包含冒号和数字
-      // 4. 不是“情感”、“集数”等关键词
+      // 4. 不是"情感"、"集数"等关键词
       return name && 
              name.length >= 2 && 
              name.length <= 20 &&
@@ -468,4 +468,176 @@ function extractCharactersList(text) {
              !name.includes('情感') &&
              !name.includes('集数');
     });
+}
+
+/**
+ * 解析解决方案AI回答
+ * @param {string} text - AI回答全文
+ * @returns {Object} 包含建议内容和解释的对象
+ */
+export function parseSolutionResponse(text) {
+  if (!text) {
+    return {
+      suggestedContent: '',
+      explanation: ''
+    };
+  }
+  
+  const cleanedText = cleanAIResponse(text);
+  
+  try {
+    // 方法1：尝试直接解析完整JSON（AI可能返回结构化对象）
+    try {
+      const parsed = JSON.parse(cleanedText);
+      // 检查是否有suggestedContent或建议内容字段
+      if (parsed.suggestedContent || parsed.suggested_content || parsed.建议内容) {
+        return {
+          suggestedContent: parsed.suggestedContent || parsed.suggested_content || parsed.建议内容,
+          explanation: parsed.explanation || parsed.解释说明 || parsed.说明 || ''
+        };
+      }
+      // 如果解析成功但没有特定字段，可能整个对象就是建议内容
+      return {
+        suggestedContent: cleanedText,
+        explanation: ''
+      };
+    } catch (e) {
+      // 不是纯JSON，继续尝试其他方法
+    }
+    
+    // 方法2：从mardown代码块中提取
+    const codeBlockMatch = cleanedText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      const codeContent = codeBlockMatch[1].trim();
+      try {
+        // 尝试解析代码块中的JSON
+        const parsed = JSON.parse(codeContent);
+        // 检查是否有suggestedContent字段
+        if (parsed.suggestedContent || parsed.suggested_content || parsed.建议内容) {
+          return {
+            suggestedContent: parsed.suggestedContent || parsed.suggested_content || parsed.建议内容,
+            explanation: parsed.explanation || parsed.解释说明 || parsed.说明 || ''
+          };
+        }
+        // 如果没有特定字段，可能整个对象就是建议内容
+        return {
+          suggestedContent: codeContent,
+          explanation: ''
+        };
+      } catch (e) {
+        // 代码块不是JSON，可能是纯文本内容
+        return {
+          suggestedContent: codeContent,
+          explanation: ''
+        };
+      }
+    }
+    
+    // 方法3：查找特定标记的内容
+    const suggestedMatch = cleanedText.match(/【建议内容】|【修改后】|【优化后】|\*\*建议内容\*\*|\*\*修改后\*\*/i);
+    if (suggestedMatch) {
+      const startIndex = suggestedMatch.index + suggestedMatch[0].length;
+      let suggestedContent = cleanedText.substring(startIndex).trim();
+      
+      // 查找解释说明
+      const explanationMatch = cleanedText.match(/【解释说明】|【说明】|\*\*解释说明\*\*|\*\*说明\*\*/i);
+      let explanation = '';
+      
+      if (explanationMatch && explanationMatch.index < suggestedMatch.index) {
+        // 说明在建议内容之前
+        explanation = cleanedText.substring(explanationMatch.index + explanationMatch[0].length, suggestedMatch.index).trim();
+      } else if (explanationMatch && explanationMatch.index > suggestedMatch.index) {
+        // 说明在建议内容之后
+        suggestedContent = cleanedText.substring(startIndex, explanationMatch.index).trim();
+        explanation = cleanedText.substring(explanationMatch.index + explanationMatch[0].length).trim();
+      }
+      
+      return {
+        suggestedContent,
+        explanation
+      };
+    }
+    
+    // 方法4：如果没有找到特定标记，将整个内容作为建议
+    console.log('⚠️ 未找到特定标记，使用完整内容作为建议');
+    return {
+      suggestedContent: cleanedText,
+      explanation: ''
+    };
+  } catch (error) {
+    console.error('❌ 解析解决方案失败:', error);
+    return {
+      suggestedContent: '',
+      explanation: ''
+    };
+  }
+}
+
+/**
+ * 解析诊断AI回答（问题列表）
+ * @param {string} text - AI回答全文
+ * @returns {Object} 包含问题数组的对象
+ */
+export function parseDiagnosisResponse(text) {
+  if (!text) return { issues: [] };
+  
+  const cleanedText = cleanAIResponse(text);
+  
+  try {
+    // 方法1：直接尝试解析整个JSON
+    try {
+      const parsed = JSON.parse(cleanedText);
+      if (parsed.issues && Array.isArray(parsed.issues)) {
+        console.log('✅ 直接解析成功，问题数量:', parsed.issues.length);
+        return parsed;
+      }
+    } catch (e) {
+      // 继续尝试
+    }
+    
+    // 方法2：从markdown代码块中提取JSON
+    const codeBlockMatch = cleanedText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      try {
+        const jsonContent = codeBlockMatch[1].trim();
+        const parsed = JSON.parse(jsonContent);
+        if (parsed.issues && Array.isArray(parsed.issues)) {
+          console.log('✅ 从代码块解析成功，问题数量:', parsed.issues.length);
+          return parsed;
+        }
+      } catch (e) {
+        // 继续尝试
+      }
+    }
+    
+    // 方法3：使用正则提取JSON对象
+    const jsonMatch = cleanedText.match(/\{[\s\S]*"issues"[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        let jsonStr = jsonMatch[0];
+        // 清理控制字符
+        jsonStr = jsonStr
+          .replace(/\r\n/g, '\\n')
+          .replace(/\r/g, '\\n')
+          .replace(/\n/g, '\\n')
+          .replace(/\t/g, '\\t')
+          .replace(/\\\\n/g, '\\n')
+          .replace(/\\\\t/g, '\\t');
+        
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.issues && Array.isArray(parsed.issues)) {
+          console.log('✅ 正则提取解析成功，问题数量:', parsed.issues.length);
+          return parsed;
+        }
+      } catch (e) {
+        // 继续
+      }
+    }
+    
+    console.warn('⚠️ 所有解析方法均失败');
+    return { issues: [] };
+  } catch (error) {
+    console.error('❌ 解析诊断结果失败:', error);
+    return { issues: [] };
+  }
 }

@@ -425,6 +425,9 @@
                       @click="generateSolution(issue, false)">
                       {{ issue.generating ? '生成中...' : (issue.solution ? '查看方案' : '生成解决方案') }}
                     </el-button>
+                    <el-button size="small" :icon="DocumentCopy" @click="showSolutionPrompt(issue)">
+                      复制提示词
+                    </el-button>
                     <el-button v-if="issue.solution" size="small" type="warning" :loading="issue.generating"
                       @click="generateSolution(issue, true)">
                       重新生成
@@ -524,8 +527,14 @@
     </el-dialog>
 
     <!-- 提示词对话框 -->
-    <PromptDialog v-model="showPromptDialog" :prompt="generatedPrompt" title="剧本诊断提示词"
-      description="复制以下提示词到AI工具（如ChatGPT、Claude、文心一言），然后使用【导入AI回答】功能导入生成的内容" />
+    <PromptDialog 
+      v-model="showPromptDialog" 
+      :prompt="generatedPrompt" 
+      :title="promptDialogTitle"
+      :supports-paste="promptSupportsPaste"
+      :paste-mode="promptPasteMode"
+      @paste="handlePromptPaste"
+    />
 
     <!-- AI回答导入对话框 -->
     <AIResponseParser v-model="showImportDialog" mode="diagnosis" title="导入AI诊断结果" description="粘贴AI返回的诊断结果，系统将自动解析问题列表"
@@ -600,6 +609,7 @@ import { DataService } from '../services/DataService';
 import { AIService } from '../services/AIService';
 import { UpdateStrategyFactory } from '../services/UpdateStrategyFactory';
 import { FieldMapper } from '../mappers/FieldMapper';
+import { DIAGNOSIS_ISSUES_SCHEMA } from '../schemas/aiResponseSchemas';
 
 // Props
 const props = defineProps({
@@ -643,6 +653,10 @@ const originalSuggestedContent = ref(''); // 保存原AI建议方案，用于恢
 const showPromptDialog = ref(false);
 const generatedPrompt = ref('');
 const showImportDialog = ref(false);
+const promptDialogTitle = ref('AI 提示词');
+const promptSupportsPaste = ref(false);
+const promptPasteMode = ref('solution');
+const currentPromptIssue = ref(null); // 当前正在处理的问题（用于外部AI对接）
 
 // 剪贴板
 const { copy, isSupported: clipboardSupported } = useClipboard();
@@ -809,12 +823,14 @@ const runAIDiagnosis = async () => {
     // 生成提示词
     const prompt = generateDiagnosisPrompt(activeStage.value, props.project);
 
-    // 调用AI API（正确格式）
+    // 调用AI API（添加JSON Schema约束）
     const response = await generateAIContent(
       [{ role: 'user', content: prompt }],
       {
         temperature: 0.7,
-        maxTokens: 3000
+        maxTokens: 3000,
+        jsonSchema: DIAGNOSIS_ISSUES_SCHEMA,  // ✅ 使用结构化输出
+        timeout: 300000  // ✅ 诊断超时设置为5分钟
       }
     );
 
@@ -1301,6 +1317,111 @@ const restoreIssue = (issue) => {
 const markAsCompleted = (issue) => {
   issue.status = 'completed';
   ElMessage.success('✅ 已标记为已完成');
+};
+
+// 显示解决方案提示词（用于外部AI对接）
+const showSolutionPrompt = (issue) => {
+  // 生成提示词
+  generatedPrompt.value = generateSolutionPrompt(issue, props.project);
+  promptDialogTitle.value = `解决方案提示词：${issue.title}`;
+  promptSupportsPaste.value = true;
+  promptPasteMode.value = 'solution';
+  currentPromptIssue.value = issue;
+  showPromptDialog.value = true;
+};
+
+// 处理提示词对话框的粘贴事件
+const handlePromptPaste = ({ mode }) => {
+  if (mode === 'solution') {
+    // 打开粘贴解决方案对话框
+    showSolutionResponseDialog();
+  }
+};
+
+// 显示解决方案回复对话框
+const showSolutionResponseDialog = () => {
+  ElMessageBox.prompt(
+    '请粘贴 AI 返回的解决方案：',
+    '导入 AI 解决方案',
+    {
+      confirmButtonText: '解析并导入',
+      cancelButtonText: '取消',
+      inputType: 'textarea',
+      inputPlaceholder: '粘贴 AI 的回复内容...',
+      beforeClose: async (action, instance, done) => {
+        if (action === 'confirm') {
+          const aiResponse = instance.inputValue;
+          if (!aiResponse || !aiResponse.trim()) {
+            ElMessage.warning('请粘贴 AI 回复内容');
+            done(false);
+            return;
+          }
+          
+          try {
+            // 解析解决方案
+            const solution = parseSolutionResponse(aiResponse);
+            
+            if (!solution.suggestedContent) {
+              ElMessage.warning('未能解析到解决方案，请检查格式');
+              done(false);
+              return;
+            }
+            
+            // 应用到当前问题
+            if (currentPromptIssue.value) {
+              await handleParsedSolution(solution);
+            }
+            
+            done();
+          } catch (error) {
+            console.error('解析失败:', error);
+            ElMessage.error('解析失败：' + error.message);
+            done(false);
+          }
+        } else {
+          done();
+        }
+      }
+    }
+  ).catch(() => {
+    // 用户取消
+  });
+};
+
+// 处理解析后的解决方案
+const handleParsedSolution = async (solution) => {
+  if (!currentPromptIssue.value) {
+    ElMessage.error('未找到当前问题');
+    return;
+  }
+  
+  const issue = currentPromptIssue.value;
+  
+  try {
+    console.log('📦 解析到的方案:', solution);
+    console.log('  - suggestedContent 长度:', solution.suggestedContent.length);
+    console.log('  - explanation 长度:', solution.explanation?.length || 0);
+    
+    // 保存方案到issue对象
+    issue.solution = {
+      suggestedContent: solution.suggestedContent,
+      explanation: solution.explanation || '（无说明）',
+      generatedAt: new Date().toISOString()
+    };
+    
+    console.log('💾 已保存到 issue.solution:', issue.solution);
+    
+    // 显示解决方案对话框
+    await generateSolution(issue, false);
+    
+    ElMessage.success('✅ 已导入外部 AI 解决方案');
+    
+    // 清理状态
+    currentPromptIssue.value = null;
+  } catch (error) {
+    console.error('应用解决方案失败:', error);
+    ElMessage.error('应用失败：' + error.message);
+  }
 };
 
 // 重新生成方案
@@ -2138,6 +2259,9 @@ const formatOutline = (outline) => {
 
 // ✅ 已删除旧的解析函数 parseAICharacterSolution 和 parseAIOutlineSolution
 // 这些函数已被集成到 AIService 中，无需在这里重复实现
+
+// 导入parseSolutionResponse函数
+import { parseSolutionResponse } from '../utils/aiResponseParser';
 
 // 解析AI返回的问题列表
 const parseAIIssues = (content) => {
