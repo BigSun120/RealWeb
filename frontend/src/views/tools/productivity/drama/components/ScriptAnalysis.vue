@@ -1801,12 +1801,12 @@ const generateDiagnosisPrompt = (stage, project) => {
   const formatRelationshipGraph = () => {
     // 从 project 对象读取关系图谱
     const relationships = project.relationshipGraph || [];
-    
+
     if (Array.isArray(relationships) && relationships.length > 0) {
-      const validRelationships = relationships.filter(rel => 
+      const validRelationships = relationships.filter(rel =>
         rel && rel.from && rel.to && rel.type
       );
-      
+
       if (validRelationships.length > 0) {
         return validRelationships.map((rel, index) => {
           let relInfo = [`${index + 1}. **${rel.from}** → **${rel.to}**`];
@@ -1816,7 +1816,7 @@ const generateDiagnosisPrompt = (stage, project) => {
         }).join('\n\n');
       }
     }
-    
+
     return '暂无角色关系图谱';
   };
 
@@ -1885,7 +1885,7 @@ ${generateFieldConstraints(project)}
     {
       "severity": "critical|medium|low",
       "title": "问题标题（10字内）",
-      "description": "详细描述问题，为什么这是问题，会造成什么影响（50字内）",
+      "description": "详细描述问题，为什么这是问题，会造成什么影响（100字内）",
       "location": {
         "module": "worldview|characters|outline",
         "field": "具体字段名或节点",
@@ -1990,6 +1990,34 @@ const generateSolutionPrompt = (issue, project) => {
     { format: 'formatted' }
   );
 
+  // 格式化角色（简略版）
+  const formatCharacters = (characters) => {
+    if (!characters || characters.length === 0) {
+      return '暂无角色';
+    }
+    
+    return characters.map((c, index) => {
+      let info = [`${index + 1}. **${c.name || '未命名'}**`];
+      if (c.role) info.push(`定位：${c.role}`);
+      if (c.description) {
+        const desc = c.description.substring(0, 100);
+        info.push(`简介：${desc}${c.description.length > 100 ? '...' : ''}`);
+      }
+      return info.join(' | ');
+    }).join('\n');
+  };
+  
+  // 格式化关系图谱（简略版）
+  const formatRelationshipGraph = (relationshipGraph) => {
+    if (!relationshipGraph || relationshipGraph.length === 0) {
+      return '暂无关系图谱';
+    }
+    
+    return relationshipGraph.slice(0, 10).map((rel, index) => {
+      return `${index + 1}. ${rel.from} → ${rel.to}：${rel.type}${rel.description ? ` (${rel.description.substring(0, 30)}${rel.description.length > 30 ? '...' : ''})` : ''}`;
+    }).join('\n') + (relationshipGraph.length > 10 ? `\n... 还有${relationshipGraph.length - 10}条关系` : '');
+  };
+
   // 格式化大纲（完整版）
   const formatOutlineForSolution = (outline) => {
     if (!outline || !outline.acts || outline.acts.length === 0) {
@@ -2038,6 +2066,8 @@ ${characterId ? `- **目标角色**：${characterId}` : ''}
 ## 原文案
 ${originalContent || '(无原文案)'}
 
+## 请作为专业的短剧编剧，仔细分析以下【世界观设定】、【角色设定】、【角色关系图谱】和【剧情大纲】后，生成解决方案。
+
 ## 项目上下文
 
 ### 基本信息
@@ -2049,6 +2079,12 @@ ${originalContent || '(无原文案)'}
 ${project.worldview?.background ? `- 故事背景：${project.worldview.background.substring(0, 100)}${project.worldview.background.length > 100 ? '...' : ''}` : ''}
 ${project.worldview?.theme ? `- 核心主题：${project.worldview.theme}` : ''}
 ${project.worldview?.conflict ? `- 主要冲突：${project.worldview.conflict}` : ''}
+
+### 角色设定
+${formatCharacters(project.characters)}
+
+### 角色关系图谱
+${formatRelationshipGraph(project.relationshipGraph)}
 
 ### 剧情大纲
 ${formatOutlineForSolution(project.outline)}
