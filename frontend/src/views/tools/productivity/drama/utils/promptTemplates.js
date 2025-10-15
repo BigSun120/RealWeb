@@ -1031,19 +1031,22 @@ export function parseCharacterResponse(content) {
     '关系': 'relationships'
   };
 
-  // 使用【】标记提取字段
-  const fieldRegex = /【([^】]+)】[\s\S]*?(?=【[^】]+】|$)/g;
+  // 使用【】标记提取字段（支持字段名与内容分行的格式）
+  const fieldRegex = /【([^】]+)】\s*([\s\S]*?)(?=\n\s*【|$)/g;
   let match;
 
   while ((match = fieldRegex.exec(cleanedContent)) !== null) {
-    const fieldName = match[0].match(/【([^】]+)】/)[1].trim();
+    const fieldName = match[1].trim();
     const fieldKey = fieldMap[fieldName];
 
     if (fieldKey) {
-      // 提取字段内容（去掉字段名和【】标记）
-      let fieldContent = match[0]
-        .replace(/【[^】]+】/, '')
-        .trim();
+      // 提取字段内容并清理
+      let fieldContent = match[2].trim();
+      
+      // 如果内容为空，跳过
+      if (!fieldContent) {
+        continue;
+      }
 
       // 特殊处理年龄字段
       if (fieldKey === 'age') {
@@ -1052,15 +1055,20 @@ export function parseCharacterResponse(content) {
           result[fieldKey] = parseInt(ageMatch[0]);
         }
       }
-      // 特殊处理性别字段
+      // 特殊处理性别字段（只取第一行）
       else if (fieldKey === 'gender') {
-        if (fieldContent.includes('女')) {
+        const firstLine = fieldContent.split('\n')[0].trim();
+        if (firstLine.includes('女')) {
           result[fieldKey] = '女';
-        } else if (fieldContent.includes('男')) {
+        } else if (firstLine.includes('男')) {
           result[fieldKey] = '男';
-        } else if (fieldContent.includes('其他')) {
+        } else if (firstLine.includes('其他')) {
           result[fieldKey] = '其他';
         }
+      }
+      // 特殊处理姓名字段（只取第一行）
+      else if (fieldKey === 'name') {
+        result[fieldKey] = fieldContent.split('\n')[0].trim();
       }
       // 其他文本字段
       else {

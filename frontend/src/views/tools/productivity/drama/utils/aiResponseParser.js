@@ -20,13 +20,14 @@ function extractField(text, keywords, maxLength = null) {
   for (const keyword of keywords) {
     // 匹配 【关键词】、**关键词**、## 关键词、关键词：
     const patterns = [
-      new RegExp(`【${keyword}】[\uff1a:]*\\s*([\\s\\S]*?)(?=【|$)`, 'i'),
-      new RegExp(`\\*\\*${keyword}\\*\\*[\uff1a:]*\\s*([\\s\\S]*?)(?=\\*\\*|$)`, 'i'),
-      new RegExp(`##\\s*${keyword}[\uff1a:]*\\s*([\\s\\S]*?)(?=##|$)`, 'i'),
+      // 【】格式，支持分行：【关键词】\n内容
+      new RegExp(`【${keyword}】[\\uff1a:]*\\s*\\n?([\\s\\S]*?)(?=\\n\\s*【|$)`, 'i'),
+      new RegExp(`\\*\\*${keyword}\\*\\*[\\uff1a:]*\\s*([\\s\\S]*?)(?=\\*\\*|$)`, 'i'),
+      new RegExp(`##\\s*${keyword}[\\uff1a:]*\\s*([\\s\\S]*?)(?=##|$)`, 'i'),
       // 关键优化：匹配到下一个字段名之前
-      new RegExp(`${keyword}[\uff1a:]+\\s*([^\\n]*?)(?=\\n(?:${fieldNames})[\uff1a:]|\\n\\n|$)`, 'i'),
+      new RegExp(`${keyword}[\\uff1a:]+\\s*([^\\n]*?)(?=\\n(?:${fieldNames})[\\uff1a:]|\\n\\n|$)`, 'i'),
       // 单行匹配
-      new RegExp(`^${keyword}[\uff1a:]+\\s*(.+?)$`, 'im')
+      new RegExp(`^${keyword}[\\uff1a:]+\\s*(.+?)$`, 'im')
     ];
     
     for (const pattern of patterns) {
@@ -64,6 +65,19 @@ function extractField(text, keywords, maxLength = null) {
 function extractAge(text) {
   if (!text) return null;
   
+  // 先尝试使用通用字段提取（支持分行格式）
+  const ageField = extractField(text, ['年龄', 'age']);
+  if (ageField) {
+    const ageMatch = ageField.match(/\d+/);
+    if (ageMatch) {
+      const age = parseInt(ageMatch[0], 10);
+      if (age >= 1 && age <= 120) {
+        return age;
+      }
+    }
+  }
+  
+  // 备用：尝试同行格式
   const patterns = [
     /年龄[：:]*\s*(\d+)/i,
     /(\d+)\s*岁/i,
@@ -74,7 +88,7 @@ function extractAge(text) {
     const match = text.match(pattern);
     if (match && match[1]) {
       const age = parseInt(match[1], 10);
-      if (age >= 1 && age <= 100) {
+      if (age >= 1 && age <= 120) {
         return age;
       }
     }
@@ -91,6 +105,16 @@ function extractAge(text) {
 function extractGender(text) {
   if (!text) return '';
   
+  // 先尝试使用通用字段提取（支持分行格式）
+  const genderField = extractField(text, ['性别', 'gender']);
+  if (genderField) {
+    const firstLine = genderField.split('\n')[0].trim().toLowerCase();
+    if (firstLine.includes('女') || firstLine === 'female') return '女';
+    if (firstLine.includes('男') || firstLine === 'male') return '男';
+    if (firstLine.includes('其他') || firstLine === 'other') return '其他';
+  }
+  
+  // 备用：尝试同行格式
   const patterns = [
     /性别[：:]*\s*(男|女|其他)/i,
     /(男|女)性/i,
@@ -111,6 +135,7 @@ function extractGender(text) {
 }
 
 /**
+ * 提取情感基调
  * 提取情感基调
  * @param {string} text - AI回答全文
  * @returns {string} 情感基调
@@ -213,14 +238,14 @@ export function parseCharacterResponse(text) {
   const cleanedText = cleanAIResponse(text);
   
   return {
-    name: extractField(cleanedText, ['姓名', '角色名', '名字', '人物'], 20),
+    name: extractField(cleanedText, ['角色姓名', '姓名', '角色名', '名字', '人物']),
     age: extractAge(cleanedText),
     gender: extractGender(cleanedText),
-    description: extractField(cleanedText, ['描述', '简介', '角色描述', '人物描述'], 100),
-    personality: extractField(cleanedText, ['性格', '性格特点', '个性', '性格特征'], 300),
-    background: extractField(cleanedText, ['背景', '角色背景', '身世', '经历', '背景故事'], 500),
-    motivation: extractField(cleanedText, ['动机', '行为动机', '目标', '追求'], 300),
-    relationships: extractField(cleanedText, ['关系', '人际关系', '社会关系', '人物关系'], 300)
+    description: extractField(cleanedText, ['角色描述', '描述', '简介', '人物描述']),
+    personality: extractField(cleanedText, ['性格特点', '性格', '个性', '性格特征']),
+    background: extractField(cleanedText, ['角色背景', '背景', '身世', '经历', '背景故事']),
+    motivation: extractField(cleanedText, ['行为动机', '动机', '目标', '追求']),
+    relationships: extractField(cleanedText, ['人际关系', '关系', '社会关系', '人物关系'])
   };
 }
 
