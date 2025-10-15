@@ -24,7 +24,9 @@ const dramaProjectSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ['霸道总裁', '悬疑推理', '甜宠日常', '复仇爽剧', '古装穿越', '职场励志'],
+      trim: true,
+      minlength: 2,
+      maxlength: 20,
       index: true
     },
     // 计划集数

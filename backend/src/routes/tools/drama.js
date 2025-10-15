@@ -42,9 +42,9 @@ router.post(
       .notEmpty().withMessage('项目名称不能为空')
       .isLength({ min: 2, max: 50 }).withMessage('项目名称长度应在2-50个字符之间'),
     body('type')
+      .trim()
       .notEmpty().withMessage('剧本类型不能为空')
-      .isIn(['霸道总裁', '悬疑推理', '甜宠日常', '复仇爽剧', '古装穿越', '职场励志'])
-      .withMessage('无效的剧本类型'),
+      .isLength({ min: 2, max: 20 }).withMessage('剧本类型长度应在2-20个字符之间'),
     body('episodeCount')
       .optional()
       .isInt({ min: 1, max: 100 }).withMessage('集数范围应在1-100之间'),
@@ -72,8 +72,8 @@ router.put(
       .isLength({ min: 2, max: 50 }).withMessage('项目名称长度应在2-50个字符之间'),
     body('type')
       .optional()
-      .isIn(['霸道总裁', '悬疑推理', '甜宠日常', '复仇爽剧', '古装穿越', '职场励志'])
-      .withMessage('无效的剧本类型'),
+      .trim()
+      .isLength({ min: 2, max: 20 }).withMessage('剧本类型长度应在2-20个字符之间'),
     body('episodeCount')
       .optional()
       .isInt({ min: 1, max: 100 }).withMessage('集数范围应在1-100之间'),
