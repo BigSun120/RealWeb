@@ -162,6 +162,7 @@
             <el-option label="DeepSeek" value="deepseek" />
             <el-option label="Anthropic (Claude)" value="anthropic" />
             <el-option label="Google (Gemini)" value="google" />
+            <el-option label="Perplexity" value="perplexity" />
             <el-option label="其他/自定义" value="custom" />
           </el-select>
         </el-form-item>
@@ -170,14 +171,18 @@
           <el-input v-model="form.baseURL" placeholder="https://api.openai.com" />
         </el-form-item>
 
-        <el-form-item label="API密钥" prop="apiKey">
+        <el-form-item :label="form.provider === 'perplexity' ? 'Session Token' : 'API密钥'" prop="apiKey">
           <el-input
             v-model="form.apiKey"
             type="password"
             show-password
-            :placeholder="isEditing ? '保持不变则不填' : 'sk-...'"
+            :placeholder="isEditing ? '保持不变则不填' : (form.provider === 'perplexity' ? '__Secure-next-auth.session-token' : 'sk-...')"
           />
-          <div v-if="isEditing" style="color: #909399; font-size: 12px; margin-top: 5px;">
+          <div v-if="form.provider === 'perplexity'" style="color: #e6a23c; font-size: 12px; margin-top: 5px;">
+            <el-icon><InfoFilled /></el-icon>
+            请填写你的 Perplexity Pro 账号的 Session Token，可在浏览器 Cookie 中查看 __Secure-next-auth.session-token
+          </div>
+          <div v-else-if="isEditing" style="color: #909399; font-size: 12px; margin-top: 5px;">
             <el-icon><InfoFilled /></el-icon>
             留空则不修改API密钥，填写则更新为新密钥
           </div>
@@ -201,6 +206,14 @@
 
         <el-form-item label="设为默认">
           <el-switch v-model="form.isDefault" />
+        </el-form-item>
+
+        <el-form-item label="私有连接" v-if="form.provider === 'perplexity'">
+          <el-switch v-model="form.isPrivate" />
+          <div style="color: #909399; font-size: 12px; margin-top: 5px;">
+            <el-icon><InfoFilled /></el-icon>
+            开启后，只有你可以使用这个 Perplexity 连接
+          </div>
         </el-form-item>
       </el-form>
 
@@ -235,6 +248,7 @@ const providerLabels = {
   deepseek: 'DeepSeek',
   anthropic: 'Anthropic',
   google: 'Google',
+  perplexity: 'Perplexity',
   custom: '自定义',
   other: '其他'
 };
@@ -256,6 +270,10 @@ const providerDefaults = {
     baseURL: 'https://generativelanguage.googleapis.com',
     defaultModel: 'gemini-pro'
   },
+  perplexity: {
+    baseURL: 'https://www.perplexity.ai',
+    defaultModel: 'pplx_alpha'
+  },
   custom: {
     baseURL: '',
     defaultModel: ''
@@ -272,7 +290,8 @@ const form = reactive({
     temperature: 0.8,
     maxTokens: 4000
   },
-  isDefault: false
+  isDefault: false,
+  isPrivate: false
 });
 
 // 响应式验证规则 - 根据isEditing动态调整
@@ -339,7 +358,8 @@ const editConnection = (connection) => {
     apiKey: connection.apiKey || '', // 显示完整的API密钥
     defaultModel: connection.defaultModel,
     requestParams: { ...connection.requestParams },
-    isDefault: connection.isDefault
+    isDefault: connection.isDefault,
+    isPrivate: connection.isPrivate || false
   });
   dialogVisible.value = true;
 };
@@ -356,7 +376,8 @@ const resetForm = () => {
       temperature: 0.8,
       maxTokens: 4000
     },
-    isDefault: false
+    isDefault: false,
+    isPrivate: false
   });
   formRef.value?.clearValidate();
 };
@@ -419,7 +440,10 @@ const deleteConnection = async (id) => {
 const validateConnection = async (id) => {
   validating[id] = true;
   try {
-    const response = await request.post(`/ai/connections/${id}/validate`);
+    // Perplexity 验证需要更长时间，设置 60 秒超时
+    const response = await request.post(`/ai/connections/${id}/validate`, {}, {
+      timeout: 60000
+    });
     // response 已经是解析后的数据 { code, message, data }
     // 直接访问 response.data 获取验证结果
     if (response.data.valid) {

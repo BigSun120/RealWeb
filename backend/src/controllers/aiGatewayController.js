@@ -155,7 +155,8 @@ exports.createUserConnection = async (req, res) => {
       availableModels,
       requestParams,
       timeout,
-      isDefault
+      isDefault,
+      isPrivate
     } = req.body;
 
     // 验证必填字段
@@ -179,7 +180,8 @@ exports.createUserConnection = async (req, res) => {
       availableModels,
       requestParams,
       timeout,
-      isDefault: isDefault || false
+      isDefault: isDefault || false,
+      isPrivate: isPrivate || false // 支持私有连接
     });
 
     const savedConnection = await connection.save();
@@ -223,7 +225,8 @@ exports.updateUserConnection = async (req, res) => {
       requestParams,
       timeout,
       isDefault,
-      isActive
+      isActive,
+      isPrivate
     } = req.body;
 
     const connection = await UserAIConnection.findOne({ _id: id, user: userId });
@@ -246,6 +249,7 @@ exports.updateUserConnection = async (req, res) => {
     if (timeout !== undefined) connection.timeout = timeout;
     if (isDefault !== undefined) connection.isDefault = isDefault;
     if (isActive !== undefined) connection.isActive = isActive;
+    if (isPrivate !== undefined) connection.isPrivate = isPrivate;
 
     // 如果提供了新的API密钥，直接更新
     if (apiKey) {

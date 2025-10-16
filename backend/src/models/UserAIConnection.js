@@ -42,11 +42,18 @@ const userAIConnectionSchema = new mongoose.Schema(
       default: false
     },
 
+    // 是否为私有连接（只有创建者可见）
+    isPrivate: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+
     // Provider类型
     provider: {
       type: String,
       required: true,
-      enum: ['openai', 'deepseek', 'anthropic', 'google', 'custom', 'other'],
+      enum: ['openai', 'deepseek', 'anthropic', 'google', 'perplexity', 'custom', 'other'],
       default: 'openai'
     },
 
