@@ -4,24 +4,22 @@
       <template #header>
         <div class="card-header">
           <span class="title">
-            <el-icon><Connection /></el-icon>
+            <el-icon>
+              <Connection />
+            </el-icon>
             我的AI连接
           </span>
           <el-button type="primary" @click="showCreateDialog">
-            <el-icon><Plus /></el-icon>
+            <el-icon>
+              <Plus />
+            </el-icon>
             添加连接
           </el-button>
         </div>
       </template>
-      
-      <el-alert
-        v-if="!connections.length"
-        title="还没有配置AI连接"
-        type="info"
-        description="您可以添加自己的AI API密钥，或使用平台提供的免费服务。配置后即可使用AI生成功能。"
-        :closable="false"
-        show-icon
-      />
+
+      <el-alert v-if="!connections.length" title="还没有配置AI连接" type="info"
+        description="您可以添加自己的AI API密钥，或使用平台提供的免费服务。配置后即可使用AI生成功能。" :closable="false" show-icon />
 
       <!-- 使用统计 - 只显示AI平台返回的Token参数 -->
       <div v-if="stats && stats.totalTokens > 0" class="stats-section">
@@ -41,14 +39,7 @@
 
     <!-- 连接列表 -->
     <el-row :gutter="20" class="connections-list">
-      <el-col
-        v-for="connection in connections"
-        :key="connection._id"
-        :xs="24"
-        :sm="12"
-        :md="8"
-        :lg="6"
-      >
+      <el-col v-for="connection in connections" :key="connection._id" :xs="24" :sm="12" :md="8" :lg="6">
         <el-card class="connection-card" :class="{ 'is-default': connection.isDefault }">
           <template #header>
             <div class="connection-header">
@@ -63,28 +54,22 @@
               <span class="label">提供商:</span>
               <el-tag>{{ providerLabels[connection.provider] || connection.provider }}</el-tag>
             </div>
-            
+
             <div class="info-item api-key-item">
               <span class="label">API密钥:</span>
               <div class="api-key-display">
                 <code v-if="showApiKey[connection._id]">{{ connection.apiKey || '****' }}</code>
                 <code v-else>{{ '****' }}</code>
-                <el-button 
-                  text 
-                  size="small" 
-                  @click="toggleApiKeyVisibility(connection._id)"
-                  class="toggle-btn"
-                >
-                  <el-icon v-if="showApiKey[connection._id]"><Hide /></el-icon>
-                  <el-icon v-else><View /></el-icon>
+                <el-button text size="small" @click="toggleApiKeyVisibility(connection._id)" class="toggle-btn">
+                  <el-icon v-if="showApiKey[connection._id]">
+                    <Hide />
+                  </el-icon>
+                  <el-icon v-else>
+                    <View />
+                  </el-icon>
                 </el-button>
-                <el-button 
-                  v-if="showApiKey[connection._id] && connection.apiKey"
-                  text 
-                  size="small" 
-                  @click="copyApiKey(connection.apiKey)"
-                  class="copy-btn"
-                >
+                <el-button v-if="showApiKey[connection._id] && connection.apiKey" text size="small"
+                  @click="copyApiKey(connection.apiKey)" class="copy-btn">
                   复制
                 </el-button>
               </div>
@@ -97,10 +82,7 @@
 
             <div class="info-item">
               <span class="label">验证状态:</span>
-              <el-tag 
-                :type="connection.validation?.isVerified ? 'success' : 'warning'"
-                size="small"
-              >
+              <el-tag :type="connection.validation?.isVerified ? 'success' : 'warning'" size="small">
                 {{ connection.validation?.isVerified ? '已验证' : '未验证' }}
               </el-tag>
             </div>
@@ -126,15 +108,21 @@
           <template #footer>
             <div class="connection-actions">
               <el-button size="small" @click="validateConnection(connection._id)" :loading="validating[connection._id]">
-                <el-icon><CircleCheck /></el-icon>
+                <el-icon>
+                  <CircleCheck />
+                </el-icon>
                 验证
               </el-button>
               <el-button size="small" @click="editConnection(connection)">
-                <el-icon><Edit /></el-icon>
+                <el-icon>
+                  <Edit />
+                </el-icon>
                 编辑
               </el-button>
               <el-button size="small" type="danger" @click="deleteConnection(connection._id)">
-                <el-icon><Delete /></el-icon>
+                <el-icon>
+                  <Delete />
+                </el-icon>
                 删除
               </el-button>
             </div>
@@ -144,13 +132,8 @@
     </el-row>
 
     <!-- 创建/编辑对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="isEditing ? '编辑AI连接' : '添加AI连接'"
-      width="600px"
-      :close-on-click-modal="false"
-      @close="handleDialogClose"
-    >
+    <el-dialog v-model="dialogVisible" :title="isEditing ? '编辑AI连接' : '添加AI连接'" width="600px"
+      :close-on-click-modal="false" @close="handleDialogClose">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
         <el-form-item label="连接名称" prop="name">
           <el-input v-model="form.name" placeholder="例如: 我的OpenAI" />
@@ -162,7 +145,6 @@
             <el-option label="DeepSeek" value="deepseek" />
             <el-option label="Anthropic (Claude)" value="anthropic" />
             <el-option label="Google (Gemini)" value="google" />
-            <el-option label="Perplexity" value="perplexity" />
             <el-option label="其他/自定义" value="custom" />
           </el-select>
         </el-form-item>
@@ -171,19 +153,14 @@
           <el-input v-model="form.baseURL" placeholder="https://api.openai.com" />
         </el-form-item>
 
-        <el-form-item :label="form.provider === 'perplexity' ? 'Session Token' : 'API密钥'" prop="apiKey">
-          <el-input
-            v-model="form.apiKey"
-            type="password"
-            show-password
-            :placeholder="isEditing ? '保持不变则不填' : (form.provider === 'perplexity' ? '__Secure-next-auth.session-token' : 'sk-...')"
-          />
-          <div v-if="form.provider === 'perplexity'" style="color: #e6a23c; font-size: 12px; margin-top: 5px;">
-            <el-icon><InfoFilled /></el-icon>
-            请填写你的 Perplexity Pro 账号的 Session Token，可在浏览器 Cookie 中查看 __Secure-next-auth.session-token
-          </div>
-          <div v-else-if="isEditing" style="color: #909399; font-size: 12px; margin-top: 5px;">
-            <el-icon><InfoFilled /></el-icon>
+        <el-form-item label="API密钥" prop="apiKey">
+          <el-input v-model="form.apiKey" type="password" show-password
+            :placeholder="isEditing ? '保持不变则不填' : 'sk-...'"
+            style="flex: 1;" />
+          <div v-if="isEditing" style="color: #909399; font-size: 12px; margin-top: 5px;">
+            <el-icon>
+              <InfoFilled />
+            </el-icon>
             留空则不修改API密钥，填写则更新为新密钥
           </div>
         </el-form-item>
@@ -195,7 +172,9 @@
         <el-form-item label="温度" prop="temperature">
           <el-slider v-model="form.requestParams.temperature" :min="0" :max="2" :step="0.1" show-input />
           <div style="color: #909399; font-size: 12px; margin-top: 5px;">
-            <el-icon><InfoFilled /></el-icon>
+            <el-icon>
+              <InfoFilled />
+            </el-icon>
             控制输出的随机性：0.0-0.3(保守/准确) | 0.4-0.9(平衡/推荐) | 1.0-2.0(创意/多样)
           </div>
         </el-form-item>
@@ -206,14 +185,6 @@
 
         <el-form-item label="设为默认">
           <el-switch v-model="form.isDefault" />
-        </el-form-item>
-
-        <el-form-item label="私有连接" v-if="form.provider === 'perplexity'">
-          <el-switch v-model="form.isPrivate" />
-          <div style="color: #909399; font-size: 12px; margin-top: 5px;">
-            <el-icon><InfoFilled /></el-icon>
-            开启后，只有你可以使用这个 Perplexity 连接
-          </div>
         </el-form-item>
       </el-form>
 
@@ -248,7 +219,6 @@ const providerLabels = {
   deepseek: 'DeepSeek',
   anthropic: 'Anthropic',
   google: 'Google',
-  perplexity: 'Perplexity',
   custom: '自定义',
   other: '其他'
 };
@@ -269,10 +239,6 @@ const providerDefaults = {
   google: {
     baseURL: 'https://generativelanguage.googleapis.com',
     defaultModel: 'gemini-pro'
-  },
-  perplexity: {
-    baseURL: 'https://www.perplexity.ai',
-    defaultModel: 'pplx_pro'
   },
   custom: {
     baseURL: '',
@@ -300,10 +266,10 @@ const rules = computed(() => ({
   provider: [{ required: true, message: '请选择提供商', trigger: 'change' }],
   baseURL: [{ required: true, message: '请输入基础URL', trigger: 'blur' }],
   apiKey: [
-    { 
+    {
       required: !isEditing.value, // 创建时必填，编辑时可选
-      message: '请输入API密钥', 
-      trigger: 'blur' 
+      message: '请输入API密钥',
+      trigger: 'blur'
     }
   ],
   defaultModel: [{ required: true, message: '请输入默认模型', trigger: 'blur' }]
@@ -384,7 +350,7 @@ const resetForm = () => {
 
 const submitForm = async () => {
   if (!formRef.value) return;
-  
+
   await formRef.value.validate(async (valid) => {
     if (!valid) return;
 
@@ -407,7 +373,7 @@ const submitForm = async () => {
         await request.post('/ai/connections', createData);
         ElMessage.success('创建成功');
       }
-      
+
       dialogVisible.value = false;
       // 不在这里调用 resetForm()，由 handleDialogClose 统一处理
       await loadConnections();
@@ -425,7 +391,7 @@ const deleteConnection = async (id) => {
     await ElMessageBox.confirm('确定要删除这个连接吗？', '提示', {
       type: 'warning'
     });
-    
+
     await request.delete(`/ai/connections/${id}`);
     ElMessage.success('删除成功');
     await loadConnections();
@@ -440,10 +406,7 @@ const deleteConnection = async (id) => {
 const validateConnection = async (id) => {
   validating[id] = true;
   try {
-    // Perplexity 验证需要更长时间，设置 60 秒超时
-    const response = await request.post(`/ai/connections/${id}/validate`, {}, {
-      timeout: 60000
-    });
+    const response = await request.post(`/ai/connections/${id}/validate`);
     // response 已经是解析后的数据 { code, message, data }
     // 直接访问 response.data 获取验证结果
     if (response.data.valid) {
@@ -486,6 +449,7 @@ const copyApiKey = async (apiKey) => {
     document.body.removeChild(textArea);
   }
 };
+
 
 // 生命周期
 onMounted(() => {

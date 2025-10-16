@@ -1,7 +1,6 @@
 const AIService = require('./AIService');
 const AIConfig = require('../models/AIConfig');
 const UserAIConnection = require('../models/UserAIConnection');
-const PerplexityProxyService = require('./PerplexityProxyService');
 const logger = require('../utils/logger');
 
 /**
@@ -238,12 +237,7 @@ class AIGatewayService {
         requireUserKey
       });
 
-      // 2. 检查是否为 Perplexity 提供商
-      if (connection.provider === 'perplexity') {
-        return await this.handlePerplexityRequest(connection, messages);
-      }
-
-      // 3. 准备请求参数
+      // 2. 准备请求参数
       const requestParams = {
         provider: connection.provider,
         baseURL: connection.baseURL,
@@ -262,15 +256,15 @@ class AIGatewayService {
         timeout: connection.timeout
       };
 
-      // 4. 调用AI服务
+      // 3. 调用AI服务
       const result = await AIService.generateCompletion(requestParams);
 
-      // 5. 如果成功，更新使用统计
+      // 4. 如果成功，更新使用统计
       if (result.success) {
         await this.updateUsageStats(connection, result.usage);
       }
 
-      // 6. 如果失败且允许降级，尝试降级
+      // 5. 如果失败且允许降级，尝试降级
       if (!result.success && connection.type === 'user' && !requireUserKey) {
         logger.info('用户连接失败，尝试降级到平台服务');
         return await this.generate(userId, {
@@ -363,48 +357,6 @@ class AIGatewayService {
   }
 
   /**
-   * 处理 Perplexity 请求
-   */
-  async handlePerplexityRequest(connection, messages) {
-    try {
-      // 提取最后一条用户消息作为查询
-      const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-      if (!lastUserMessage) {
-        throw new Error('没有找到用户消息');
-      }
-
-      const query = lastUserMessage.content;
-      const sessionToken = connection.apiKey; // apiKey 字段存储 session token
-
-      // 使用 Perplexity 代理服务
-      const result = await PerplexityProxyService.query(query, sessionToken, {
-        mode: connection.requestParams?.mode || 'copilot',
-        model: connection.defaultModel || 'pplx_alpha'
-      });
-
-      // 转换为统一格式
-      const openAIFormat = PerplexityProxyService.toOpenAIFormat(result);
-
-      // 更新使用统计
-      if (connection.type === 'user') {
-        await connection.connection.updateUsage(result.usage, 0, true);
-      }
-
-      return {
-        success: true,
-        ...openAIFormat
-      };
-
-    } catch (error) {
-      logger.error('Perplexity 请求失败:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  /**
    * 验证连接
    */
   async validateConnection(userId, connectionId, isUserConnection = true) {
@@ -419,16 +371,6 @@ class AIGatewayService {
 
         if (!connection) {
           throw new Error('连接不存在');
-        }
-
-        // 特殊处理 Perplexity 验证
-        if (connection.provider === 'perplexity') {
-          const isValid = await PerplexityProxyService.validateToken(connection.apiKey);
-          await connection.updateValidation(isValid, isValid ? null : 'Token 验证失败');
-          return {
-            valid: isValid,
-            error: isValid ? null : 'Session token 无效或已过期'
-          };
         }
 
         const result = await AIService.validateApiKey(

@@ -53,7 +53,7 @@ const userAIConnectionSchema = new mongoose.Schema(
     provider: {
       type: String,
       required: true,
-      enum: ['openai', 'deepseek', 'anthropic', 'google', 'perplexity', 'custom', 'other'],
+      enum: ['openai', 'deepseek', 'anthropic', 'google', 'custom', 'other'],
       default: 'openai'
     },
 
