@@ -322,7 +322,20 @@ export function generateEpisodeCheckPrompt(project, episodeNumber) {
  * @returns {String} 格式化的提示词
  */
 export function generateEpisodeSolutionPrompt(issue, project) {
-  const episodeNumber = parseInt(issue.location.field.match(/\\d+/)[0]);
+  // 检查issue结构
+  if (!issue || !issue.location || !issue.location.field) {
+    console.error('❗ generateEpisodeSolutionPrompt 错误：issue结构不完整', issue);
+    throw new Error('问题对象结构不完整，缺少 location.field 字段');
+  }
+  
+  // 安全解析集数
+  const fieldMatch = issue.location.field.match(/\d+/);
+  if (!fieldMatch) {
+    console.error('❗ 无法解析集数:', { field: issue.location.field, issue });
+    throw new Error(`无法从字段 "${issue.location.field}" 中解析集数，请确保字段格式为"第X集"`);
+  }
+  
+  const episodeNumber = parseInt(fieldMatch[0]);
   const episode = project.episodes.find(ep => ep.number === episodeNumber);
   
   if (!episode) {
