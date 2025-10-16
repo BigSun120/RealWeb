@@ -23,8 +23,8 @@ class PerplexityProxyService {
   async query(query, sessionToken, options = {}) {
     try {
       const {
-        visitorId = uuidv4(),
-        userId = uuidv4(),
+        visitorId = 'ecb11be4-bed8-4627-9f4c-019054e79262', // 使用固定 ID，与你的账号匹配
+        userId = 'fb3abbb1-d384-485e-8362-795f32085f34', // 使用固定 ID，与你的账号匹配
         mode = 'copilot',
         model = 'pplx_alpha',
         language = 'zh-CN',
@@ -36,19 +36,25 @@ class PerplexityProxyService {
       const requestBody = {
         query_str: query,
         params: {
-          version: '2.18',
+          attachments: [],
           language,
           timezone,
-          mode,
-          model_preference: model,
           search_focus: searchFocus,
           sources: ['web'],
+          search_recency_filter: null,
           frontend_uuid: uuidv4(),
+          mode,
+          model_preference: model,
+          is_related_query: false,
+          is_sponsored: false,
           visitor_id: visitorId,
           user_nextauth_id: userId,
+          frontend_context_uuid: uuidv4(),
           prompt_source: 'user',
-          query_source: 'user_input',
+          query_source: 'home',
           is_incognito: false,
+          time_from_first_type: Math.random() * 2000 + 500, // 模拟输入时间
+          local_search_enabled: false,
           use_schematized_api: true,
           send_back_text_in_streaming_api: false,
           supported_block_use_cases: [
@@ -74,10 +80,16 @@ class PerplexityProxyService {
             'canvas_mode',
             'maps_preview'
           ],
+          client_coordinates: null,
+          mentions: [],
+          dsl_query: query, // 与 query_str 相同
           skip_search_enabled: true,
           is_nav_suggestions_disabled: false,
           always_search_override: false,
-          override_no_search: false
+          override_no_search: false,
+          comet_max_assistant_enabled: false,
+          should_ask_for_mcp_tool_confirmation: true,
+          version: '2.18'
         }
       };
 
@@ -87,11 +99,20 @@ class PerplexityProxyService {
       const response = await axios.post(this.perplexityAPI, requestBody, {
         headers: {
           'Accept': 'text/event-stream',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
           'Content-Type': 'application/json',
           'Cookie': `__Secure-next-auth.session-token=${sessionToken}`,
           'Referer': 'https://www.perplexity.ai/',
           'Origin': 'https://www.perplexity.ai',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+          'DNT': '1',
+          'Sec-Ch-Ua': '"Microsoft Edge";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"Windows"',
+          'Sec-Fetch-Dest': 'empty',
+          'Sec-Fetch-Mode': 'cors',
+          'Sec-Fetch-Site': 'same-origin',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0'
         },
         responseType: 'stream',
         timeout: 120000 // 增加到 120 秒（Perplexity 搜索需要时间）

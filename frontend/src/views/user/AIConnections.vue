@@ -272,7 +272,7 @@ const providerDefaults = {
   },
   perplexity: {
     baseURL: 'https://www.perplexity.ai',
-    defaultModel: 'pplx_alpha'
+    defaultModel: 'pplx_pro'
   },
   custom: {
     baseURL: '',
