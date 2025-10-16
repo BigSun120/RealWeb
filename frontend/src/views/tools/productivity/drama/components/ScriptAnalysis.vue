@@ -444,7 +444,236 @@
 
     <!-- 分集检查内容 -->
     <div v-else-if="activeStage === 'episodes'" class="stage-content">
-      <el-empty description="分集检查功能开发中..." :image-size="120" />
+      <!-- 顶部工具栏 -->
+      <div class="action-bar">
+        <!-- 剧集选择器 -->
+        <el-select
+          v-model="episodeCheckState.selectedEpisode"
+          placeholder="选择要检查的剧集"
+          style="width: 250px"
+          :disabled="episodeCheckState.loading"
+        >
+          <el-option
+            v-for="episode in availableEpisodes"
+            :key="episode.number"
+            :label="`第${episode.number}集${episode.title ? '：' + episode.title : ''}`"
+            :value="episode.number"
+          >
+            <span>第{{ episode.number }}集</span>
+            <span v-if="episode.title" style="color: var(--el-text-color-secondary); margin-left: 8px">
+              {{ episode.title }}
+            </span>
+          </el-option>
+        </el-select>
+
+        <!-- 启动诊断按钮 -->
+        <el-button
+          type="primary"
+          :icon="MagicStick"
+          :disabled="!episodeCheckState.selectedEpisode"
+          @click="openExternalAIWorkflow"
+        >
+          启动分集诊断
+        </el-button>
+        
+        <!-- 自定义模板按钮 -->
+        <el-button
+          :icon="Setting"
+          @click="showTemplateManager = true"
+        >
+          自定义模板
+        </el-button>
+
+        <div style="flex: 1"></div>
+
+        <el-alert
+          type="info"
+          :closable="false"
+          style="flex: 1; max-width: 500px"
+        >
+          <template #title>
+            <span style="font-size: 13px">
+              共 {{ availableEpisodes.length }} 个已完成剧集可检查
+            </span>
+          </template>
+        </el-alert>
+      </div>
+
+      <!-- 空状态提示 -->
+      <el-empty
+        v-if="availableEpisodes.length === 0"
+        description="暂无可检查的剧集"
+        :image-size="120"
+      >
+        <template #description>
+          <p>只有状态为"已完成"或"已审核"的剧集才能进行诊断</p>
+          <p style="margin-top: 8px; color: var(--el-text-color-secondary)">
+            请先在【剧集管理】中完成剧集创作并标记为已完成
+          </p>
+        </template>
+      </el-empty>
+
+      <!-- 问题列表（按集数分组） -->
+      <el-card v-else-if="Object.keys(issuesByEpisode).length > 0" class="sub-tabs-card" shadow="never">
+        <el-tabs type="border-card">
+          <el-tab-pane
+            v-for="(issues, episodeNum) in issuesByEpisode"
+            :key="episodeNum"
+            :label="`第${episodeNum}集（${issues.length}）`"
+          >
+            <div class="episode-issues-container">
+              <!-- 问题卡片列表 -->
+              <div
+                v-for="(issue, index) in issues"
+                :key="index"
+                class="ai-issue-item"
+                :class="{ 'ignored': issue.status === 'ignored' }"
+              >
+                <div class="ai-issue-header">
+                  <el-tag
+                    :type="getIssueSeverityType(issue.severity)"
+                    size="large"
+                  >
+                    {{ getIssueSeverityText(issue.severity) }}
+                  </el-tag>
+                  <h4>{{ issue.title }}</h4>
+                  <el-tag v-if="issue.status === 'ignored'" type="info" size="small">
+                    已忽略
+                  </el-tag>
+                  <el-tag v-else-if="issue.status === 'solved' || issue.status === 'completed'" type="success" size="small">
+                    ✅ 已完成
+                  </el-tag>
+                </div>
+
+                <h4 class="ai-issue-title">{{ issue.title }}</h4>
+                <p class="ai-issue-desc">{{ issue.description }}</p>
+
+                <div class="ai-issue-location">
+                  <el-icon><Location /></el-icon>
+                  <span>位置：{{ issue.location.field }}</span>
+                </div>
+
+                <!-- 解决方案区域 -->
+                <div v-if="issue.solution" class="solution-preview">
+                  <div class="solution-header">
+                    <h5>💡 AI建议的解决方案</h5>
+                    <el-radio-group 
+                      v-model="issue._displayMode" 
+                      size="small"
+                      @change="() => toggleEpisodeSolutionDisplay(issue)"
+                    >
+                      <el-radio-button label="formatted">📋 格式化显示</el-radio-button>
+                      <el-radio-button label="json">🔧 JSON原始数据</el-radio-button>
+                    </el-radio-group>
+                  </div>
+                  <div class="solution-content">
+                    <p><strong>修改内容：</strong></p>
+                    <pre :class="{ 'json-mode': issue._displayMode === 'json' }">{{ issue._displayContent || issue.solution.suggestedContent }}</pre>
+                    <p style="margin-top: 12px"><strong>说明：</strong></p>
+                    <p>{{ issue.solution.explanation }}</p>
+                  </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="ai-issue-actions">
+                  <template v-if="issue.status === 'ignored'">
+                    <el-button type="success" size="small" @click="restoreEpisodeIssue(issue)">
+                      恢复问题
+                    </el-button>
+                  </template>
+                  <template v-else-if="issue.status === 'solved' || issue.status === 'completed'">
+                    <el-button type="primary" size="small" @click="viewEpisodeSolution(issue)">
+                      查看方案
+                    </el-button>
+                    <el-button size="small" @click="restoreEpisodeIssue(issue)">
+                      恢复待处理
+                    </el-button>
+                  </template>
+                  <template v-else>
+                    <!-- 如果已有解决方案，显示查看方案按钮 -->
+                    <el-button
+                      v-if="issue.solution"
+                      type="primary"
+                      size="small"
+                      @click="viewEpisodeSolution(issue)"
+                    >
+                      查看方案
+                    </el-button>
+                    <!-- 如果没有解决方案，显示生成按钮 -->
+                    <el-button
+                      v-else
+                      type="primary"
+                      size="small"
+                      :loading="issue.generating"
+                      @click="generateEpisodeSolution(issue)"
+                    >
+                      {{ issue.generating ? '生成中...' : '生成解决方案' }}
+                    </el-button>
+                    <!-- 重新生成按钮 -->
+                    <el-button
+                      v-if="issue.solution"
+                      size="small"
+                      type="warning"
+                      :loading="issue.generating"
+                      @click="generateEpisodeSolution(issue)"
+                    >
+                      重新生成
+                    </el-button>
+                    <!-- 标记为已完成 -->
+                    <el-button
+                      v-if="issue.solution"
+                      type="success"
+                      size="small"
+                      @click="markEpisodeIssueAsCompleted(issue)"
+                    >
+                      ✅ 标记为已完成
+                    </el-button>
+                    <el-button size="small" @click="ignoreEpisodeIssue(issue)">
+                      忽略此问题
+                    </el-button>
+                  </template>
+                </div>
+
+                <el-divider v-if="index < issues.length - 1" />
+              </div>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
+
+      <!-- 未诊断状态 -->
+      <el-empty
+        v-else
+        description="暂无诊断结果"
+        :image-size="120"
+      >
+        <template #description>
+          <p>选择一个已完成的剧集，然后点击"启动分集诊断"开始检查</p>
+        </template>
+        <el-button
+          type="primary"
+          :disabled="!episodeCheckState.selectedEpisode"
+          @click="openExternalAIWorkflow"
+        >
+          立即开始诊断
+        </el-button>
+      </el-empty>
+
+      <!-- 外部AI工作流对话框 -->
+      <ExternalAIWorkflowDialog
+        v-model:visible="episodeCheckState.externalWorkflowVisible"
+        :project="project"
+        :episode-number="episodeCheckState.selectedEpisode"
+        @issues-imported="handleImportEpisodeIssues"
+      />
+      
+      <!-- 外部AI解决方案对话框 -->
+      <ExternalAISolutionDialog
+        v-model:visible="episodeCheckState.solutionDialogVisible"
+        :issue="episodeCheckState.currentIssue || {}"
+        :project="project"
+        @solution-imported="handleSolutionImported"
+      />
     </div>
 
     <!-- 整体检查内容 -->
@@ -523,6 +752,12 @@
     <!-- AI回答导入对话框 -->
     <AIResponseParser v-model="showImportDialog" mode="diagnosis" title="导入AI诊断结果" description="粘贴AI返回的诊断结果，系统将自动解析问题列表"
       @parsed="handleDiagnosisParsed" />
+    
+    <!-- 提示词模板管理器 -->
+    <PromptTemplateManager
+      v-model:visible="showTemplateManager"
+      @templates-updated="handleTemplatesUpdated"
+    />
   </div>
 </template>
 
@@ -568,12 +803,16 @@ import {
   MagicStick,
   Location,
   DocumentCopy,
-  Upload
+  Upload,
+  Setting
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useClipboard } from '@vueuse/core';
 import PromptDialog from './PromptDialog.vue';
 import AIResponseParser from './AIResponseParser.vue';
+import PromptTemplateManager from './PromptTemplateManager.vue';
+import ExternalAIWorkflowDialog from './ExternalAIWorkflowDialog.vue';
+import ExternalAISolutionDialog from './ExternalAISolutionDialog.vue';
 import {
   analyzeBasicStats,
   analyzeCompleteness,
@@ -593,7 +832,9 @@ import { DataService } from '../services/DataService';
 import { AIService } from '../services/AIService';
 import { UpdateStrategyFactory } from '../services/UpdateStrategyFactory';
 import { FieldMapper } from '../mappers/FieldMapper';
+import { generateEpisodeSolutionPrompt } from '../utils/episodeCheckPrompts';
 import { DIAGNOSIS_ISSUES_SCHEMA } from '../schemas/aiResponseSchemas';
+import { useEpisodeCheck } from '../composables/useEpisodeCheck';
 
 // Props
 const props = defineProps({
@@ -641,6 +882,43 @@ const promptDialogTitle = ref('AI 提示词');
 const promptSupportsPaste = ref(false);
 const promptPasteMode = ref('solution');
 const currentPromptIssue = ref(null); // 当前正在处理的问题（用于外部AI对接）
+
+// 模板管理器
+const showTemplateManager = ref(false);
+
+// ========================================
+// 🎬 分集检查功能（使用Composable）
+// ========================================
+const {
+  episodeCheckState,
+  availableEpisodes,
+  issuesByEpisode,
+  loadEpisodesIssues,
+  openExternalAIWorkflow,
+  handleImportEpisodeIssues,
+  generateEpisodeSolution,
+  handleSolutionImported: _handleSolutionImported,
+  applyEpisodeSolution,
+  initEpisodeCheck
+} = useEpisodeCheck(computed(() => props.project), emit);
+
+// 包装handleSolutionImported，导入后自动打开对比弹窗
+const handleSolutionImported = async (solution) => {
+  try {
+    const issue = await _handleSolutionImported(solution);
+    if (issue) {
+      // 清空currentIssue，准备打开对比弹窗
+      episodeCheckState.value.currentIssue = null;
+      
+      // 延迟200ms打开对比弹窗，确保导入对话框已关闭
+      setTimeout(() => {
+        viewEpisodeSolution(issue);
+      }, 200);
+    }
+  } catch (error) {
+    // 错误已在composable中处理
+  }
+};
 
 // 剪贴板
 const { copy, isSupported: clipboardSupported } = useClipboard();
@@ -697,8 +975,128 @@ const runQuickAnalysis = async () => {
 // Tab切换处理
 const handleStageChange = (stage) => {
   console.log('切换到阶段:', stage);
-  // 注意：不清空结果，保留用户之前的分析结果
-  // 如果需要重新分析，用户可以手动点击“快速检查”按钮
+  
+  // 切换到episodes阶段时，初始化分集检查
+  if (stage === 'episodes') {
+    initEpisodeCheck();
+  }
+};
+
+// 切换分集检查解决方案的显示模式
+const toggleEpisodeSolutionDisplay = (issue) => {
+  if (!issue._displayMode) {
+    issue._displayMode = 'formatted';
+  }
+  
+  const mode = issue._displayMode;
+  
+  if (mode === 'json') {
+    // 切换到JSON模式
+    issue._displayContent = issue.solution.suggestedContent;
+  } else {
+    // 切换到格式化模式
+    try {
+      const parsed = JSON.parse(issue.solution.suggestedContent);
+      issue._displayContent = formatSuggestedContent('episodes', parsed);
+    } catch (e) {
+      // 如果解析失败，直接显示原始内容
+      issue._displayContent = issue.solution.suggestedContent;
+    }
+  }
+};
+
+// ========================================
+// 🎬 分集检查：状态管理方法
+// ========================================
+
+// 查看分集问题的解决方案
+const viewEpisodeSolution = (issue) => {
+  if (!issue.solution) {
+    ElMessage.warning('没有可查看的解决方案');
+    return;
+  }
+
+  // 获取原文案（episode完整内容）
+  const episode = props.project.episodes.find(
+    ep => ep.number === issue.location.episodeNumber
+  );
+
+  if (!episode) {
+    ElMessage.error(`未找到第${issue.location.episodeNumber}集`);
+    return;
+  }
+
+  // 格式化原文案
+  const formatEpisodeContent = (ep, format = 'formatted') => {
+    if (format === 'json') {
+      return JSON.stringify(ep.content || {}, null, 2);
+    }
+    
+    let text = `# 第${ep.number}集${ep.title ? '：' + ep.title : ''}\n\n`;
+    
+    if (ep.content) {
+      if (ep.content.summary) {
+        text += `## 简介\n${ep.content.summary}\n\n`;
+      }
+      if (ep.content.script) {
+        text += `## 剧本内容\n${ep.content.script}\n\n`;
+      }
+      if (ep.content.scenes && ep.content.scenes.length > 0) {
+        text += `## 场景列表\n`;
+        ep.content.scenes.forEach((scene, idx) => {
+          text += `### 场景${scene.number || idx + 1}${scene.location ? ' - ' + scene.location : ''}\n`;
+          if (scene.content) text += scene.content + '\n';
+          text += '\n';
+        });
+      }
+    }
+    
+    if (ep.wordCount) {
+      text += `**字数**：${ep.wordCount}字\n`;
+    }
+    
+    return text;
+  };
+
+  // 设置当前解决方案（复用前期检查的对话框）
+  currentSolution.value = {
+    issue,
+    originalContent: formatEpisodeContent(episode, displayMode.value),
+    suggestedContent: issue.solution.suggestedContent,
+    suggestedDisplayContent: issue.solution.suggestedContent,
+    explanation: issue.solution.explanation
+  };
+
+  // 重置显示模式
+  displayMode.value = 'formatted';
+  suggestionDisplayMode.value = 'formatted';
+  solutionModified.value = false;
+  originalSuggestedContent.value = issue.solution.suggestedContent;
+  showSolution.value = true;
+};
+
+// 忽略分集问题
+const ignoreEpisodeIssue = (issue) => {
+  issue.status = 'ignored';
+  ElMessage.info('已忽略此问题');
+};
+
+// 标记分集问题为已完成
+const markEpisodeIssueAsCompleted = (issue) => {
+  issue.status = 'completed';
+  ElMessage.success('✅ 已标记为已完成');
+};
+
+// 恢复分集问题
+const restoreEpisodeIssue = (issue) => {
+  issue.status = 'pending';
+  ElMessage.success('已恢复此问题');
+};
+
+// 处理模板更新
+const handleTemplatesUpdated = () => {
+  console.log('✅ 提示词模板已更新');
+  // 模板更新后不需要特别处理，下次生成提示词时会自动使用新模板
 };
 
 // ========================================
@@ -1450,27 +1848,46 @@ const saveSolutionEdit = () => {
     const { module } = issue.location;
 
     // 根据当前显示模式解析内容
-    let newSuggestedContent;
+    let newSuggestedContentObj; // 对象格式
+    let newSuggestedContentStr; // JSON字符串格式
 
     if (suggestionDisplayMode.value === 'json') {
       // JSON模式：解析JSON
       try {
-        newSuggestedContent = JSON.parse(suggestedDisplayContent);
+        newSuggestedContentObj = JSON.parse(suggestedDisplayContent);
+        newSuggestedContentStr = JSON.stringify(newSuggestedContentObj, null, 2);
       } catch (e) {
         ElMessage.error('JSON 格式错误，请检查后保存');
         return;
       }
     } else {
-      // formatted模式：直接使用文本
-      newSuggestedContent = suggestedDisplayContent;
+      // formatted模式：需要从 issue.solution 中获取原始 JSON
+      // 因为 formatted 是显示用的格式化文本，不是 JSON
+      if (issue.solution && issue.solution.suggestedContent) {
+        try {
+          // 尝试从原始 JSON 字符串解析
+          newSuggestedContentObj = JSON.parse(issue.solution.suggestedContent);
+          newSuggestedContentStr = issue.solution.suggestedContent; // 保持原有 JSON 字符串
+          console.log('⚠️ formatted模式下不支持直接修改，请切换到JSON模式编辑');
+          ElMessage.warning('请切换到 JSON 模式编辑后再保存修改');
+          return;
+        } catch (e) {
+          ElMessage.error('无法解析原始解决方案，请切换到JSON模式编辑');
+          return;
+        }
+      } else {
+        ElMessage.error('未找到原始解决方案');
+        return;
+      }
     }
 
-    // 更新suggestedContent
-    currentSolution.value.suggestedContent = newSuggestedContent;
+    // 更新currentSolution - 保存对象格式用于显示
+    currentSolution.value.suggestedContent = newSuggestedContentStr;
 
-    // 保存到issue.solution
+    // 保存到issue.solution - 必须是JSON字符串格式
     if (issue.solution) {
-      issue.solution.suggestedContent = newSuggestedContent;
+      issue.solution.suggestedContent = newSuggestedContentStr;
+      console.log('💾 已将修改保存为JSON字符串格式:', newSuggestedContentStr.substring(0, 100));
     }
 
     // 重置修改标记
@@ -2690,7 +3107,19 @@ watch(activeStage, () => {
 onMounted(() => {
   runQuickAnalysis();
   loadAIDiagnosisFromServer();
+  
+  // 如果当前阶段是episodes，加载数据
+  if (activeStage.value === 'episodes') {
+    initEpisodeCheck();
+  }
 });
+
+// 监听project变化，重新加载问题
+watch(() => props.project, (newProject) => {
+  if (newProject && activeStage.value === 'episodes') {
+    loadEpisodesIssues();
+  }
+}, { deep: true });
 </script>
 
 <style scoped lang="scss">
@@ -3244,6 +3673,67 @@ onMounted(() => {
     color: #606266;
     line-height: 1.8;
     margin: 0;
+  }
+}
+
+// ========================================
+// 🎬 分集检查样式
+// ========================================
+.episode-issues-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+
+.solution-preview {
+  background: var(--el-fill-color-light);
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 12px;
+
+  .solution-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    h5 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--el-color-success);
+    }
+
+    .el-radio-group {
+      :deep(.el-radio-button__inner) {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+    }
+  }
+
+  .solution-content {
+    pre {
+      background: white;
+      border: 1px solid var(--el-border-color);
+      border-radius: 4px;
+      padding: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 8px 0;
+
+      &.json-mode {
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 12px;
+        background: #f6f8fa;
+        color: #24292f;
+      }
+    }
   }
 }
 </style>

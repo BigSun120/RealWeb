@@ -308,16 +308,51 @@ class EpisodeUpdateStrategy {
     const episodes = [...project.episodes];
 
     const episodeIndex = episodes.findIndex(e => e.number === episodeNumber);
-    if (episodeIndex >= 0) {
-      const englishField = FieldMapper.getEnglishField('episodes', field);
-      episodes[episodeIndex][englishField] = content;
-      
-      await patchDramaEpisodes(projectId, episodes);
-      console.log(`✅ 第${episodeNumber}集的"${field}"已更新`);
-      return '分集更新成功';
+    if (episodeIndex < 0) {
+      throw new Error(`未找到第${episodeNumber}集`);
     }
 
-    throw new Error(`未找到第${episodeNumber}集`);
+    // 处理分集字段更新
+    // 如果field是"第X集"格式，表示更新整个content对象
+    const episodePattern = /^第\d+集$/;
+    
+    if (episodePattern.test(field)) {
+      // 更新整个content对象
+      console.log(`🔄 检测到分集字段"${field}"，将更新content对象`);
+      
+      // 解析content：如果是JSON字符串则解析，否则直接使用
+      let contentObj;
+      if (typeof content === 'string') {
+        try {
+          contentObj = JSON.parse(content);
+          console.log('✅ 成功解析JSON字符串为content对象');
+        } catch (e) {
+          console.error('❌ JSON解析失败，将直接使用字符串:', e);
+          contentObj = content;
+        }
+      } else {
+        contentObj = content;
+      }
+      
+      // 更新content字段
+      episodes[episodeIndex].content = contentObj;
+      console.log(`💾 准备更新第${episodeNumber}集的content:`, 
+        JSON.stringify(contentObj).substring(0, 200) + '...');
+    } else {
+      // 更新content对象中的具体字段（如"简介"、"剧本"等）
+      const englishField = FieldMapper.getEnglishField('episodes', field);
+      
+      if (!episodes[episodeIndex].content) {
+        episodes[episodeIndex].content = {};
+      }
+      
+      episodes[episodeIndex].content[englishField] = content;
+      console.log(`💾 更新第${episodeNumber}集的content.${englishField}`);
+    }
+    
+    await patchDramaEpisodes(projectId, episodes);
+    console.log(`✅ 第${episodeNumber}集的\"${field}\"已更新`);
+    return '分集更新成功';
   }
 }
 
