@@ -137,7 +137,11 @@
               <Tickets />
             </el-icon>
             <span>分集剧本</span>
-            <el-badge v-if="episodes.length" :value="episodes.length" class="item-badge" />
+            <el-badge 
+              v-if="episodes.length" 
+              :value="`${completedEpisodesCount}/${episodes.length}`" 
+              class="item-badge episode-badge" 
+            />
           </el-menu-item>
           <el-menu-item index="analysis">
             <el-icon>
@@ -403,6 +407,13 @@ const fullProjectData = computed(() => ({
   outline: outline.value,
   episodes: episodes.value
 }));
+
+// 计算已完成的集数
+const completedEpisodesCount = computed(() => {
+  return episodes.value.filter(
+    ep => ep.status === 'completed' || ep.status === 'reviewed'
+  ).length;
+});
 
 // 获取状态类型
 const getStatusType = (status) => {
@@ -1450,6 +1461,18 @@ onBeforeUnmount(() => {
 
 .item-badge {
   margin-left: auto;
+}
+
+/* 分集剧本badge特殊样式 */
+.episode-badge {
+  :deep(.el-badge__content) {
+    font-size: 11px;
+    padding: 0 6px;
+    height: 18px;
+    line-height: 18px;
+    min-width: 32px;
+    border-radius: 9px;
+  }
 }
 
 .main-content {
