@@ -447,18 +447,10 @@
       <!-- 顶部工具栏 -->
       <div class="action-bar">
         <!-- 剧集选择器 -->
-        <el-select
-          v-model="episodeCheckState.selectedEpisode"
-          placeholder="选择要检查的剧集"
-          style="width: 250px"
-          :disabled="episodeCheckState.loading"
-        >
-          <el-option
-            v-for="episode in availableEpisodes"
-            :key="episode.number"
-            :label="`第${episode.number}集${episode.title ? '：' + episode.title : ''}`"
-            :value="episode.number"
-          >
+        <el-select v-model="episodeCheckState.selectedEpisode" placeholder="选择要检查的剧集" style="width: 250px"
+          :disabled="episodeCheckState.loading">
+          <el-option v-for="episode in availableEpisodes" :key="episode.number"
+            :label="`第${episode.number}集${episode.title ? '：' + episode.title : ''}`" :value="episode.number">
             <span>第{{ episode.number }}集</span>
             <span v-if="episode.title" style="color: var(--el-text-color-secondary); margin-left: 8px">
               {{ episode.title }}
@@ -467,30 +459,19 @@
         </el-select>
 
         <!-- 启动诊断按钮 -->
-        <el-button
-          type="primary"
-          :icon="MagicStick"
-          :disabled="!episodeCheckState.selectedEpisode"
-          @click="openExternalAIWorkflow"
-        >
+        <el-button type="primary" :icon="MagicStick" :disabled="!episodeCheckState.selectedEpisode"
+          @click="openExternalAIWorkflow">
           启动分集诊断
         </el-button>
-        
+
         <!-- 自定义模板按钮 -->
-        <el-button
-          :icon="Setting"
-          @click="showTemplateManager = true"
-        >
+        <el-button :icon="Setting" @click="showTemplateManager = true">
           自定义模板
         </el-button>
 
         <div style="flex: 1"></div>
 
-        <el-alert
-          type="info"
-          :closable="false"
-          style="flex: 1; max-width: 500px"
-        >
+        <el-alert type="info" :closable="false" style="flex: 1; max-width: 500px">
           <template #title>
             <span style="font-size: 13px">
               共 {{ availableEpisodes.length }} 个已完成剧集可检查
@@ -500,11 +481,7 @@
       </div>
 
       <!-- 空状态提示 -->
-      <el-empty
-        v-if="availableEpisodes.length === 0"
-        description="暂无可检查的剧集"
-        :image-size="120"
-      >
+      <el-empty v-if="availableEpisodes.length === 0" description="暂无可检查的剧集" :image-size="120">
         <template #description>
           <p>只有状态为"已完成"或"已审核"的剧集才能进行诊断</p>
           <p style="margin-top: 8px; color: var(--el-text-color-secondary)">
@@ -516,31 +493,22 @@
       <!-- 问题列表（按集数分组） -->
       <el-card v-else-if="Object.keys(issuesByEpisode).length > 0" class="sub-tabs-card" shadow="never">
         <el-tabs type="border-card">
-          <el-tab-pane
-            v-for="(issues, episodeNum) in issuesByEpisode"
-            :key="episodeNum"
-            :label="`第${episodeNum}集（${issues.length}）`"
-          >
+          <el-tab-pane v-for="(issues, episodeNum) in issuesByEpisode" :key="episodeNum"
+            :label="`第${episodeNum}集（${issues.length}）`">
             <div class="episode-issues-container">
               <!-- 问题卡片列表 -->
-              <div
-                v-for="(issue, index) in issues"
-                :key="index"
-                class="ai-issue-item"
-                :class="{ 'ignored': issue.status === 'ignored' }"
-              >
+              <div v-for="(issue, index) in issues" :key="index" class="ai-issue-item"
+                :class="{ 'ignored': issue.status === 'ignored' }">
                 <div class="ai-issue-header">
-                  <el-tag
-                    :type="getIssueSeverityType(issue.severity)"
-                    size="large"
-                  >
+                  <el-tag :type="getIssueSeverityType(issue.severity)" size="large">
                     {{ getIssueSeverityText(issue.severity) }}
                   </el-tag>
                   <h4>{{ issue.title }}</h4>
                   <el-tag v-if="issue.status === 'ignored'" type="info" size="small">
                     已忽略
                   </el-tag>
-                  <el-tag v-else-if="issue.status === 'solved' || issue.status === 'completed'" type="success" size="small">
+                  <el-tag v-else-if="issue.status === 'solved' || issue.status === 'completed'" type="success"
+                    size="small">
                     ✅ 已完成
                   </el-tag>
                 </div>
@@ -549,7 +517,9 @@
                 <p class="ai-issue-desc">{{ issue.description }}</p>
 
                 <div class="ai-issue-location">
-                  <el-icon><Location /></el-icon>
+                  <el-icon>
+                    <Location />
+                  </el-icon>
                   <span>位置：{{ issue.location.field }}</span>
                 </div>
 
@@ -557,18 +527,16 @@
                 <div v-if="issue.solution" class="solution-preview">
                   <div class="solution-header">
                     <h5>💡 AI建议的解决方案</h5>
-                    <el-radio-group 
-                      v-model="issue._displayMode" 
-                      size="small"
-                      @change="() => toggleEpisodeSolutionDisplay(issue)"
-                    >
+                    <el-radio-group v-model="issue._displayMode" size="small"
+                      @change="() => toggleEpisodeSolutionDisplay(issue)">
                       <el-radio-button label="formatted">📋 格式化显示</el-radio-button>
                       <el-radio-button label="json">🔧 JSON原始数据</el-radio-button>
                     </el-radio-group>
                   </div>
                   <div class="solution-content">
                     <p><strong>修改内容：</strong></p>
-                    <pre :class="{ 'json-mode': issue._displayMode === 'json' }">{{ issue._displayContent || issue.solution.suggestedContent }}</pre>
+                    <pre :class="{ 'json-mode': issue._displayMode === 'json' }">{{ issue._displayContent ||
+                      issue.solution.suggestedContent }}</pre>
                     <p style="margin-top: 12px"><strong>说明：</strong></p>
                     <p>{{ issue.solution.explanation }}</p>
                   </div>
@@ -591,41 +559,22 @@
                   </template>
                   <template v-else>
                     <!-- 如果已有解决方案，显示查看方案按钮 -->
-                    <el-button
-                      v-if="issue.solution"
-                      type="primary"
-                      size="small"
-                      @click="viewEpisodeSolution(issue)"
-                    >
+                    <el-button v-if="issue.solution" type="primary" size="small" @click="viewEpisodeSolution(issue)">
                       查看方案
                     </el-button>
                     <!-- 如果没有解决方案，显示生成按钮 -->
-                    <el-button
-                      v-else
-                      type="primary"
-                      size="small"
-                      :loading="issue.generating"
-                      @click="generateEpisodeSolution(issue)"
-                    >
+                    <el-button v-else type="primary" size="small" :loading="issue.generating"
+                      @click="generateEpisodeSolution(issue)">
                       {{ issue.generating ? '生成中...' : '生成解决方案' }}
                     </el-button>
                     <!-- 重新生成按钮 -->
-                    <el-button
-                      v-if="issue.solution"
-                      size="small"
-                      type="warning"
-                      :loading="issue.generating"
-                      @click="generateEpisodeSolution(issue)"
-                    >
+                    <el-button v-if="issue.solution" size="small" type="warning" :loading="issue.generating"
+                      @click="generateEpisodeSolution(issue)">
                       重新生成
                     </el-button>
                     <!-- 标记为已完成 -->
-                    <el-button
-                      v-if="issue.solution"
-                      type="success"
-                      size="small"
-                      @click="markEpisodeIssueAsCompleted(issue)"
-                    >
+                    <el-button v-if="issue.solution" type="success" size="small"
+                      @click="markEpisodeIssueAsCompleted(issue)">
                       ✅ 标记为已完成
                     </el-button>
                     <el-button size="small" @click="ignoreEpisodeIssue(issue)">
@@ -642,38 +591,22 @@
       </el-card>
 
       <!-- 未诊断状态 -->
-      <el-empty
-        v-else
-        description="暂无诊断结果"
-        :image-size="120"
-      >
+      <el-empty v-else description="暂无诊断结果" :image-size="120">
         <template #description>
           <p>选择一个已完成的剧集，然后点击"启动分集诊断"开始检查</p>
         </template>
-        <el-button
-          type="primary"
-          :disabled="!episodeCheckState.selectedEpisode"
-          @click="openExternalAIWorkflow"
-        >
+        <el-button type="primary" :disabled="!episodeCheckState.selectedEpisode" @click="openExternalAIWorkflow">
           立即开始诊断
         </el-button>
       </el-empty>
 
       <!-- 外部AI工作流对话框 -->
-      <ExternalAIWorkflowDialog
-        v-model:visible="episodeCheckState.externalWorkflowVisible"
-        :project="project"
-        :episode-number="episodeCheckState.selectedEpisode"
-        @issues-imported="handleImportEpisodeIssues"
-      />
-      
+      <ExternalAIWorkflowDialog v-model:visible="episodeCheckState.externalWorkflowVisible" :project="project"
+        :episode-number="episodeCheckState.selectedEpisode" @issues-imported="handleImportEpisodeIssues" />
+
       <!-- 外部AI解决方案对话框 -->
-      <ExternalAISolutionDialog
-        v-model:visible="episodeCheckState.solutionDialogVisible"
-        :issue="episodeCheckState.currentIssue || {}"
-        :project="project"
-        @solution-imported="handleSolutionImported"
-      />
+      <ExternalAISolutionDialog v-model:visible="episodeCheckState.solutionDialogVisible"
+        :issue="episodeCheckState.currentIssue || {}" :project="project" @solution-imported="handleSolutionImported" />
     </div>
 
     <!-- 整体检查内容 -->
@@ -752,12 +685,9 @@
     <!-- AI回答导入对话框 -->
     <AIResponseParser v-model="showImportDialog" mode="diagnosis" title="导入AI诊断结果" description="粘贴AI返回的诊断结果，系统将自动解析问题列表"
       @parsed="handleDiagnosisParsed" />
-    
+
     <!-- 提示词模板管理器 -->
-    <PromptTemplateManager
-      v-model:visible="showTemplateManager"
-      @templates-updated="handleTemplatesUpdated"
-    />
+    <PromptTemplateManager v-model:visible="showTemplateManager" @templates-updated="handleTemplatesUpdated" />
   </div>
 </template>
 
@@ -909,7 +839,7 @@ const handleSolutionImported = async (solution) => {
     if (issue) {
       // 清空currentIssue，准备打开对比弹窗
       episodeCheckState.value.currentIssue = null;
-      
+
       // 延迟200ms打开对比弹窗，确保导入对话框已关闭
       setTimeout(() => {
         viewEpisodeSolution(issue);
@@ -975,7 +905,7 @@ const runQuickAnalysis = async () => {
 // Tab切换处理
 const handleStageChange = (stage) => {
   console.log('切换到阶段:', stage);
-  
+
   // 切换到episodes阶段时，初始化分集检查
   if (stage === 'episodes') {
     initEpisodeCheck();
@@ -987,9 +917,9 @@ const toggleEpisodeSolutionDisplay = (issue) => {
   if (!issue._displayMode) {
     issue._displayMode = 'formatted';
   }
-  
+
   const mode = issue._displayMode;
-  
+
   if (mode === 'json') {
     // 切换到JSON模式
     issue._displayContent = issue.solution.suggestedContent;
@@ -1031,9 +961,9 @@ const viewEpisodeSolution = (issue) => {
     if (format === 'json') {
       return JSON.stringify(ep.content || {}, null, 2);
     }
-    
+
     let text = `# 第${ep.number}集${ep.title ? '：' + ep.title : ''}\n\n`;
-    
+
     if (ep.content) {
       if (ep.content.summary) {
         text += `## 简介\n${ep.content.summary}\n\n`;
@@ -1050,11 +980,11 @@ const viewEpisodeSolution = (issue) => {
         });
       }
     }
-    
+
     if (ep.wordCount) {
       text += `**字数**：${ep.wordCount}字\n`;
     }
-    
+
     return text;
   };
 
@@ -2276,18 +2206,19 @@ ${formatOutline(outline)}
 请作为专业的短剧编剧，仔细分析以上【世界观设定】、【角色设定】、【角色关系图谱】和【剧情大纲】。
 
 ## 评估标准
-- 世界观是否完整、自洽？
-- 角色设定是否鲜明、有冲突性？
+- 世界观是否完整、自洽，是否存在逻辑或设定漏洞？
+- 角色设定是否鲜明、有冲突性，人物弧光是否合理？
 - 角色关系是否清晰、合理，是否能推动剧情发展？
-- 大纲是否逻辑清晰、节奏合理？
+- 大纲是否逻辑清晰、节奏合理，情绪与高潮节点是否有张力？
 - 是否符合【${type}】类型的核心要素？
-- 核心剧情上是否存在漏洞？
+- 核心剧情上是否存在漏洞或关键节点缺失，是否会影响观众代入感？
 
 ## 诊断原则
 1. **优先质量而非数量**：只列出真正影响剧本质量的问题
 2. **如果内容已经很完善**，可以返回空数组 []
 3. **如果存在问题**，如果是严重问题无论多少个都要完整显示，一般总数低于10个
 4. **不要为了凑数而挑剔**：宁缺母滥
+5. **深度分析**：对于发现的问题，尽量指出**具体原因、潜在风险**
 
 ## 字段约束（严格遵守）
 ${generateFieldConstraints(project)}
@@ -2318,7 +2249,7 @@ ${generateFieldConstraints(project)}
 2. **真实问题**：只列出真正需要修复的、影响剧本质量的问题
 3. **优先级准确**：critical 应为严重问题，medium 为中等问题，low 为轻微问题
 4. **描述具体**：每个问题要可操作，给出明确的修改方向
-5. **数量控制**：如有问题，建议5-8个，最多不超过10个(如果是严重问题无论多少个都要完整显示)`;
+5. **数量控制**：如有问题，建议5-8个，最多不超过10个(严重问题无论多少个都要完整显示)`;
   } else if (stage === 'episodes') {
     // 分集检查
     const completedEpisodes = episodes?.filter(ep => ep.status === 'completed' || ep.status === 'reviewed') || [];
@@ -2350,7 +2281,7 @@ ${episodeSummary || '暂无已完成剧集'}
 
 ## 诊断原则
 1. **如果质量达标**，可以返回空数组
-2. **如果存在问题**，请列出最重要的3-5个
+2. **如果存在问题**，严重、中等问题无论多少个都要细致罗列出来
 3. **优先质量而非数量**：不要为了凑数而挑剔
 
 ${generateFieldConstraints(project)}
@@ -2387,7 +2318,7 @@ ${generateFieldConstraints(project)}
 
 ## 诊断原则
 1. **如果整体结构已经很好**，可以返回空数组
-2. **如果有优化空间**，请提出战略性的优化建议（3-5个）
+2. **如果有优化空间**，请提出战略性的优化建议
 3. **优先质量而非数量**：不要为了凑数而挑剔
 
 ${generateFieldConstraints(project)}
@@ -2412,7 +2343,7 @@ const generateSolutionPrompt = (issue, project) => {
     if (!characters || characters.length === 0) {
       return '暂无角色';
     }
-    
+
     return characters.map((c, index) => {
       let info = [`${index + 1}. **${c.name || '未命名'}**`];
       if (c.role) info.push(`定位：${c.role}`);
@@ -2423,13 +2354,13 @@ const generateSolutionPrompt = (issue, project) => {
       return info.join(' | ');
     }).join('\n');
   };
-  
+
   // 格式化关系图谱（简略版）
   const formatRelationshipGraph = (relationshipGraph) => {
     if (!relationshipGraph || relationshipGraph.length === 0) {
       return '暂无关系图谱';
     }
-    
+
     return relationshipGraph.slice(0, 10).map((rel, index) => {
       return `${index + 1}. ${rel.from} → ${rel.to}：${rel.type}${rel.description ? ` (${rel.description.substring(0, 30)}${rel.description.length > 30 ? '...' : ''})` : ''}`;
     }).join('\n') + (relationshipGraph.length > 10 ? `\n... 还有${relationshipGraph.length - 10}条关系` : '');
@@ -2564,7 +2495,7 @@ ${formatOutlineForSolution(project.outline)}
    - **不要只返回框架或大纲结构**，要返回具体内容
 
 2. **保持原有风格和结构**
-   - 字数相近（八成3倒）
+   - 字数相近
    - 文风一致
    - 结构完整
 
@@ -3107,7 +3038,7 @@ watch(activeStage, () => {
 onMounted(() => {
   runQuickAnalysis();
   loadAIDiagnosisFromServer();
-  
+
   // 如果当前阶段是episodes，加载数据
   if (activeStage.value === 'episodes') {
     initEpisodeCheck();
