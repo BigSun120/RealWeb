@@ -613,6 +613,11 @@ const handleImportConfirm = () => {
 // 重置布局
 const handleReset = () => {
   if (chartInstance.value) {
+    // 隐藏可能粘住的tooltip
+    chartInstance.value.dispatchAction({
+      type: 'hideTip'
+    });
+    // 重置图表大小
     chartInstance.value.resize();
     ElMessage.success('已重置布局');
   }
@@ -835,11 +840,27 @@ const convertToGraphData = (relationships) => {
       if (!processedNames.has(name)) {
         const char = characterMap.get(name);
         if (char) {
+          // 严格清理和截断字段内容，防止大段描述污染label
+          const cleanName = String(char.name || name)
+            .split('\n')[0]           // 只取第一行
+            .split('（')[0]            // 移除括号及后续内容
+            .split('(')[0]             // 移除英文括号
+            .split('：')[0]            // 移除冒号及后续
+            .split(':')[0]             // 移除英文冒号
+            .trim()
+            .substring(0, 20);         // 最多20个字符
+
+          const cleanRole = String(char.role || '')
+            .split('\n')[0]            // 只取第一行
+            .trim()
+            .substring(0, 15);         // 最多15个字符
+
           nodes.push({
             id: char._id || char.id || name,
-            name: char.name,
-            value: char.name,
-            role: char.role,
+            name: cleanName,           // ✅ 使用清理后的名字
+            value: cleanName,          // ✅ 使用清理后的名字
+            role: cleanRole,           // ✅ 使用清理后的角色定位
+            originalChar: char,        // 保留原始数据供tooltip使用
             symbolSize: getRoleSymbolSize(char.role),
             itemStyle: {
               color: getRoleColor(char.role)
@@ -847,7 +868,7 @@ const convertToGraphData = (relationships) => {
             label: {
               show: true,  // 默认显示所有角色标签
               position: 'bottom',
-              formatter: `{name|${char.name}}\\n{role|${char.role || ''}}`,
+              formatter: `{name|${cleanName}}\\n{role|${cleanRole}}`,  // ✅ 使用清理后的字段
               color: '#333',  // 标签文本颜色
               backgroundColor: 'rgba(255, 255, 255, 0.9)',  // 背景色
               padding: [4, 8],
@@ -881,7 +902,7 @@ const convertToGraphData = (relationships) => {
             }
           });
           processedNames.add(name);
-          console.log(`  ✅ 添加节点: ${name} (${char.role})`);
+          console.log(`  ✅ 添加节点: ${cleanName} (${cleanRole})`);
         } else {
           missingCharacters.add(name);
           console.warn(`  ⚠️ 找不到角色: ${name}`);
@@ -1048,6 +1069,16 @@ const initChart = () => {
   if (!chartInstance.value) {
     chartInstance.value = echarts.init(chartRef.value);
     console.log('✅ 图表初始化成功');
+
+    // 添加点击空白区域隐藏tooltip的事件监听
+    chartInstance.value.getZr().on('click', (event) => {
+      // 如果点击的不是图表元素（即点击空白区域）
+      if (!event.target) {
+        chartInstance.value.dispatchAction({
+          type: 'hideTip'
+        });
+      }
+    });
   }
   updateChart();
 };
@@ -1090,6 +1121,19 @@ const updateChart = () => {
 
   const option = {
     tooltip: {
+      show: true,
+      trigger: 'item',
+      triggerOn: 'mousemove|click', // 鼠标移动或点击时触发
+      hideDelay: 100, // 鼠标离开后100ms隐藏
+      enterable: false, // 鼠标不可进入tooltip，避免粘住
+      confine: true, // 限制在图表区域内
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#ddd',
+      borderWidth: 1,
+      padding: 0,
+      textStyle: {
+        color: '#333'
+      },
       formatter: (params) => {
         if (params.dataType === 'edge') {
           const strength = '⭐'.repeat(params.data.strength || 3);

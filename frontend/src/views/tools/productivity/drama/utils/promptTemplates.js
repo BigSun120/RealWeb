@@ -1135,12 +1135,14 @@ export function generateRelationshipGraphPrompt(data) {
     characters
   } = data;
 
+  const charCount = characters.length;
+
   let prompt = `# 角色关系推断任务\n\n`;
 
   prompt += `## 项目信息\n`;
   prompt += `- 剧本名称：${projectName || '未命名'}\n`;
   prompt += `- 剧本类型：${projectType || '未指定'}\n`;
-  prompt += `- 角色数量：${characters.length}个\n\n`;
+  prompt += `- 角色数量：${charCount}个\n\n`;
 
   // 世界观信息
   if (worldview && Object.keys(worldview).length > 0) {
@@ -1178,13 +1180,15 @@ export function generateRelationshipGraphPrompt(data) {
   }
 
   prompt += `## 任务要求\n\n`;
-  prompt += `基于以上信息，请为这些角色设计合理的人际关系网络。要求：\n\n`;
+  prompt += `基于以上信息，请为这些角色设计**精简而有力**的人际关系网络。\n\n`;
+  prompt += `⚠️ **核心原则：质量优于数量！只创建对剧情发展真正重要的关系。**\n\n`;
 
-  prompt += `### 1. 关系类型多样化\n`;
-  prompt += `- **情感关系**：爱情、暗恋、前任、亲情、友情、闺蜜\n`;
-  prompt += `- **对抗关系**：仇恨、竞争、商业竞争、利用、误会\n`;
-  prompt += `- **职业关系**：上下级、合作伙伴、雇佣\n`;
-  prompt += `- **特殊关系**：秘密、保护、嫉妒\n\n`;
+  prompt += `### 1. 关系类型指南（优先选择符合剧情需要的核心关系）\n`;
+  prompt += `- **核心情感**：爱情/暗恋、亲情、友情\n`;
+  prompt += `- **核心冲突**：仇恨、竞争、利用/背叛\n`;
+  prompt += `- **职场关系**：上下级、合作\n`;
+  prompt += `- **特殊关系**：保护/依赖、秘密\n\n`;
+  prompt += `💡 **注意**：不要为了多样化而强行使用所有类型，应根据角色背景和剧情需要自然选择。同类型的关系可以合并（如"竞争"可以涵盖"商业竞争"）。\n\n`;
 
   prompt += `### 2. 符合剧本基调\n`;
   if (worldview.tone) {
@@ -1198,33 +1202,131 @@ export function generateRelationshipGraphPrompt(data) {
   prompt += `- 避免关系设定矛盾\n`;
   prompt += `- 预留剧情发展空间\n\n`;
 
-  prompt += `### 4. 关系密度建议（注意不要刻意增加不必要的关系，要符合逻辑和常理即可，以下关系数量仅为参考）\n`;
-  prompt += `- 男主角/女主角：4-6个关系（核心位置）\n`;
-  prompt += `- 主要配角：3-4个关系\n`;
-  prompt += `- 次要配角：2-3个关系\n`;
-  prompt += `- 反派：3-5个关系（冲突源）\n\n`;
+  // 根据角色数量动态调整关系密度建议（P1-4修复）
+  let relationshipGuidance = '';
+  let totalRelationsSuggestion = '';
+  let exampleRelations = '';
+
+  if (charCount <= 3) {
+    relationshipGuidance = `### 4. 关系设计指南（少量角色 - ${charCount}人）\n`;
+    relationshipGuidance += `由于本剧角色较少，关系网络应当**极度精简**：\n`;
+    relationshipGuidance += `- **主角**：1-2个核心关系（聚焦最重要的情感线和冲突线）\n`;
+    relationshipGuidance += `- **配角/反派**：1个关系即可\n`;
+    relationshipGuidance += `- **总关系数建议**：${charCount}-${charCount + 1}个（避免为了凑数创造虚假关系）\n\n`;
+    relationshipGuidance += `💡 **示例**：3人短剧（男主、女主、反派）→ 男主↔女主(爱情)、男主↔反派(对抗) 即可构成完整剧情\n\n`;
+
+    // 3人示例
+    exampleRelations = `【角色：${characters[0]?.name || '陆景琛'}】（男主角）\n`;
+    exampleRelations += `关系1：${characters[1]?.name || '夏晴'} | 类型：暗恋 | 方向：单向 | 强度：5 | 描述：对女主一见钟情，但因身份差异不敢表白\n`;
+    if (charCount >= 3) {
+      exampleRelations += `关系2：${characters[2]?.name || '宋凯'} | 类型：竞争 | 方向：双向 | 强度：4 | 描述：公司控制权的竞争对手\n\n`;
+    } else {
+      exampleRelations += `\n`;
+    }
+
+    exampleRelations += `【角色：${characters[1]?.name || '夏晴'}】（女主角）\n`;
+    exampleRelations += `关系1：${characters[0]?.name || '陆景琛'} | 类型：上下级 | 方向：双向 | 强度：3 | 描述：老板与秘书的职场关系\n`;
+    exampleRelations += `// 注意：女主可以只有1个关系，不必与所有角色建立联系\n\n`;
+
+    if (charCount >= 3) {
+      exampleRelations += `【角色：${characters[2]?.name || '宋凯'}】（反派）\n`;
+      exampleRelations += `// 反派的关系已在男主的"关系2"中描述（双向关系只需从一方描述）\n`;
+      exampleRelations += `// 如需补充其他关系，可在此添加\n\n`;
+    }
+
+  } else if (charCount <= 6) {
+    relationshipGuidance = `### 4. 关系设计指南（中等规模 - ${charCount}人）\n`;
+    relationshipGuidance += `本剧有${charCount}个角色，关系网络应该**层次分明、聚焦核心**：\n`;
+    relationshipGuidance += `- **主角（男/女主）**：2-4个核心关系\n`;
+    relationshipGuidance += `- **主要配角**：2-3个关系\n`;
+    relationshipGuidance += `- **次要配角/龙套**：1-2个关系\n`;
+    relationshipGuidance += `- **总关系数建议**：${Math.floor(charCount * 1.2)}-${Math.floor(charCount * 1.8)}个\n\n`;
+
+    // 6人示例
+    exampleRelations = `【角色：${characters[0]?.name || '张晨阳'}】（男主角）\n`;
+    exampleRelations += `关系1：${characters[1]?.name || '林诗雨'} | 类型：暗恋 | 方向：单向 | 强度：5 | 描述：对女主一见钟情\n`;
+    exampleRelations += `关系2：${characters[2]?.name || '宋凯'} | 类型：竞争 | 方向：双向 | 强度：4 | 描述：公司控制权争夺战\n`;
+    if (charCount >= 4) {
+      exampleRelations += `关系3：${characters[3]?.name || '张母'} | 类型：亲情 | 方向：双向 | 强度：4 | 描述：母子关系紧张但互相关心\n\n`;
+    } else {
+      exampleRelations += `\n`;
+    }
+
+    exampleRelations += `【角色：${characters[1]?.name || '林诗雨'}】（女主角）\n`;
+    exampleRelations += `关系1：${characters[0]?.name || '张晨阳'} | 类型：上下级 | 方向：双向 | 强度：3 | 描述：老板与秘书\n`;
+    if (charCount >= 5) {
+      exampleRelations += `关系2：${characters[4]?.name || '苏婉'} | 类型：友情 | 方向：双向 | 强度：5 | 描述：大学闺蜜，互相扶持\n\n`;
+    } else {
+      exampleRelations += `\n`;
+    }
+
+    if (charCount >= 5) {
+      exampleRelations += `【角色：${characters[4]?.name || '苏婉'}】（配角）\n`;
+      exampleRelations += `关系1：${characters[1]?.name || '林诗雨'} | 类型：友情 | 方向：双向 | 强度：5 | 描述：闺蜜关系\n`;
+      exampleRelations += `// 配角只有1个核心关系，不必与所有人建立联系\n\n`;
+    }
+
+    exampleRelations += `// 其他角色类似，次要角色可以只有1-2个关系\n\n`;
+
+  } else {
+    relationshipGuidance = `### 4. 关系设计指南（复杂角色群 - ${charCount}人）\n`;
+    relationshipGuidance += `本剧有${charCount}个角色，需要构建**有层次的**关系网络：\n`;
+    relationshipGuidance += `- **核心角色（男女主）**：3-5个关系\n`;
+    relationshipGuidance += `- **重要配角**：2-4个关系\n`;
+    relationshipGuidance += `- **普通角色**：1-2个关系\n`;
+    relationshipGuidance += `- **总关系数建议**：${Math.floor(charCount * 1.5)}-${Math.floor(charCount * 2.2)}个\n`;
+    relationshipGuidance += `- ⚠️ **重要**：不是每个角色都要与所有人建立联系，避免关系网过于密集\n\n`;
+
+    // 多人示例（使用前几个角色）
+    exampleRelations = `【角色：${characters[0]?.name || '主角A'}】（核心角色）\n`;
+    exampleRelations += `关系1：${characters[1]?.name || '主角B'} | 类型：爱情 | 方向：双向 | 强度：5 | 描述：核心情感线\n`;
+    exampleRelations += `关系2：${characters[2]?.name || '配角C'} | 类型：竞争 | 方向：双向 | 强度：4 | 描述：重要冲突线\n`;
+    exampleRelations += `关系3：${characters[3]?.name || '配角D'} | 类型：亲情 | 方向：双向 | 强度：4 | 描述：家庭背景\n\n`;
+
+    exampleRelations += `【角色：${characters[1]?.name || '主角B'}】（核心角色）\n`;
+    exampleRelations += `关系1：${characters[0]?.name || '主角A'} | 类型：爱情 | 方向：双向 | 强度：5 | 描述：核心情感线\n`;
+    exampleRelations += `关系2：${characters[4]?.name || '配角E'} | 类型：友情 | 方向：双向 | 强度：4 | 描述：重要支线\n\n`;
+
+    exampleRelations += `// 其他配角根据重要性分配1-3个关系\n`;
+    exampleRelations += `// 次要角色只需1个关系即可\n\n`;
+  }
+
+  prompt += relationshipGuidance;
+
+  prompt += `### 5. 关系强度定义（重要！请严格遵守）\n`;
+  prompt += `- **强度5**：核心情感线，推动主线剧情（如：男女主爱情、生死仇敌）\n`;
+  prompt += `  ⚠️ 仅用于2-3对最关键的关系\n\n`;
+  prompt += `- **强度4**：重要关系，影响剧情走向（如：主角与主要配角的冲突、重要的亲情/友情）\n`;
+  prompt += `  建议3-5对关系\n\n`;
+  prompt += `- **强度3**：日常关系，构成故事背景（如：同事、普通朋友、职场关系）\n`;
+  prompt += `  可用于大部分关系\n\n`;
+  prompt += `- **强度2**：背景关系，偶尔出现（如：远房亲戚、偶遇的熟人）\n`;
+  prompt += `  用于次要角色的边缘关系\n\n`;
+  prompt += `- **强度1**：几乎无关，仅在特定场景出现（如：路人、一次性角色）\n`;
+  prompt += `  通常不需要记录\n\n`;
+  prompt += `💡 **强度分布建议**：5(极少)、4(少量)、3(主体)、2(少量)、1(几乎不用)\n\n`;
 
   prompt += `## ⚠️ 重要：请严格按照以下格式输出\n\n`;
-  prompt += `请为每个角色列出其与其他角色的关系，格式如下：\n\n`;
+  prompt += `### 输出示例：\n\n`;
+  prompt += exampleRelations;
 
-  prompt += `【角色：${characters[0]?.name || '张三'}】\n`;
-  prompt += `关系1：${characters[1]?.name || '李四'} | 类型：暗恋 | 方向：单向 | 强度：5 | 描述：对TA一见钟情，但因身份差异不敢表白\n`;
-  prompt += `关系2：${characters[2]?.name || '王五'} | 类型：商业竞争 | 方向：双向 | 强度：4 | 描述：争夺公司控制权的竞争对手\n\n`;
+  prompt += `---\n\n`;
+  prompt += `### 格式要求：\n`;
+  prompt += `- 每个角色使用【角色：XXX】标记\n`;
+  prompt += `- 关系格式：关系N：目标角色 | 类型：XX | 方向：单向/双向 | 强度：1-5 | 描述：XX\n`;
+  prompt += `- **方向说明**：\n`;
+  prompt += `  - 单向（A→B）：关系只从A指向B（如：A暗恋B）\n`;
+  prompt += `  - 双向（A↔B）：关系是相互的（如：友情、竞争）\n`;
+  prompt += `- **描述要求**：简要说明关系的具体内容，20-40字\n\n`;
 
-  prompt += `【角色：${characters[1]?.name || '李四'}】\n`;
-  prompt += `关系1：${characters[0]?.name || '张三'} | 类型：雇佣关系 | 方向：双向 | 强度：3 | 描述：作为秘书工作，初期关系疏离\n`;
-  prompt += `关系2：${characters[2]?.name || '王五'} | 类型：闺蜜 | 方向：双向 | 强度：5 | 描述：大学时期的好友，互相扶持\n\n`;
+  prompt += `### 🚨 关键注意事项：\n`;
+  prompt += `1. **双向关系只需从一方描述**：如果A→B是"友情-双向"，则不需要再写B→A的友情关系\n`;
+  prompt += `2. **不要凑数**：次要角色可以只有1个关系，不是每个角色都必须连接所有人\n`;
+  prompt += `3. **聚焦核心**：优先确保主角的核心关系（情感线、冲突线）清晰有力\n`;
+  prompt += `4. **避免矛盾**：同一对角色之间不要同时存在逻辑矛盾的关系（如既是爱情又是仇恨）\n`;
+  prompt += `5. **质量>数量**：2-3个深刻的关系 > 5-6个平庸的关系\n\n`;
 
-  prompt += `...（继续其他角色）\n\n`;
-
-  prompt += `## 字段说明\n`;
-  prompt += `- **方向**：单向（A→B）或 双向（A↔B）\n`;
-  prompt += `- **强度**：1-5（1最弱，5最强）\n`;
-  prompt += `- **类型**：必须使用上述推荐的关系类型\n`;
-  prompt += `- **描述**：简要说明关系的具体内容，30-50字\n\n`;
-
-  prompt += `请确保每个角色至少有2-3个关系，主角应有4-6个关系。\n`;
-  prompt += `关系设定要合理，避免逻辑矛盾，为剧情发展预留空间。`;
+  prompt += `现在请开始创作，记住：**精简、聚焦、有力**！`;
 
   return prompt;
 }
@@ -1291,8 +1393,62 @@ export function parseRelationshipResponse(content) {
     console.log(`  总计解析到 ${relationCount} 条关系`);
   }
 
-  console.log(`最终解析结果: ${relationships.length} 条关系`);
-  return relationships;
+  console.log(`解析完成，原始关系数: ${relationships.length}`);
+
+  // 去重：移除冗余的双向关系
+  const deduplicated = deduplicateBidirectionalRelationships(relationships);
+  console.log(`去重后关系数: ${deduplicated.length}`);
+
+  return deduplicated;
+}
+
+/**
+ * 去重双向关系（避免A→B和B→A同时存在）
+ * @param {Array} relationships 原始关系数组
+ * @returns {Array} 去重后的关系数组
+ */
+function deduplicateBidirectionalRelationships(relationships) {
+  const seen = new Set();
+  const deduplicated = [];
+  const duplicates = []; // 记录被移除的重复关系
+
+  for (const rel of relationships) {
+    // 为双向关系创建标准化的键（按字母顺序排序角色名）
+    const isBidirectional = rel.direction === 'bidirectional';
+
+    let key;
+    if (isBidirectional) {
+      // 双向关系：按字母顺序排序，确保A→B和B→A生成相同的key
+      const [char1, char2] = [rel.from, rel.to].sort();
+      key = `${char1}↔${char2}:${rel.type}`;
+    } else {
+      // 单向关系：保持原方向
+      key = `${rel.from}→${rel.to}:${rel.type}`;
+    }
+
+    if (seen.has(key)) {
+      // 发现重复关系
+      duplicates.push({
+        from: rel.from,
+        to: rel.to,
+        type: rel.type,
+        reason: isBidirectional ? '双向关系重复' : '单向关系重复'
+      });
+      console.log(`  ⚠️ 移除重复关系: ${rel.from} ↔ ${rel.to} (${rel.type})`);
+    } else {
+      seen.add(key);
+      deduplicated.push(rel);
+    }
+  }
+
+  if (duplicates.length > 0) {
+    console.log(`📊 去重统计: 移除了 ${duplicates.length} 条重复关系`);
+    duplicates.forEach(dup => {
+      console.log(`   - ${dup.from} ↔ ${dup.to}: ${dup.type} (${dup.reason})`);
+    });
+  }
+
+  return deduplicated;
 }
 
 /**
