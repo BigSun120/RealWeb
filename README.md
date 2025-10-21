@@ -208,7 +208,7 @@ npm run format
 
 ## 📞 联系方式
 
-- 邮箱：1461020599@qq.com
+- 邮箱：1302998041@qq.com
 
 ## 🙏 致谢
 
@@ -289,7 +289,7 @@ chore: 构建过程或辅助工具的变动
 
 ## 📞 联系方式
 
-- 📧 **邮箱**: 1461020599@qq.com
+- 📧 **邮箱**: 1302998041@qq.com
 - 🐙 **GitHub**: [项目地址](https://github.com/yourusername/personal-website)
 - 📝 **博客**: [个人博客](https://yourdomain.com)
 

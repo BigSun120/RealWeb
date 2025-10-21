@@ -1,10 +1,16 @@
 <template>
   <div class="articles-list">
-    <div v-for="a in articles" :key="a._id" class="list-item" @click="$emit('open', a._id)">
+    <div
+      v-for="a in articles"
+      :key="a._id"
+      :class="['list-item', { 'is-top': a.isTop }]"
+      @click="$emit('open', a._id)"
+    >
       <div class="list-content">
         <!-- 标题、所有信息和摘要都在一行内展示 -->
         <div class="list-single-line">
           <h3 class="list-title">{{ a.title }}</h3>
+          <span v-if="a.isTop" class="top-badge">置顶</span>
           <div class="list-meta">
             <span class="author" v-if="a.author">{{ getAuthorName(a.author) }}</span>
             <span class="separator" v-if="a.author">·</span>
@@ -130,6 +136,12 @@ const getAuthorName = (author) => {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
+.list-item.is-top {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.25);
+}
+
 .list-content {
   flex: 1;
   min-width: 0;
@@ -139,8 +151,18 @@ const getAuthorName = (author) => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   overflow: hidden;
+}
+
+.top-badge {
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .list-title {

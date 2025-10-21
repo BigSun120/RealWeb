@@ -1,9 +1,15 @@
 <template>
   <div class="articles-grid">
-    <article v-for="a in articles" :key="a._id" class="article-card" @click="$emit('open', a._id)">
+    <article
+      v-for="a in articles"
+      :key="a._id"
+      :class="['article-card', { 'is-top': a.isTop }]"
+      @click="$emit('open', a._id)"
+    >
       <!-- 标题和所有信息在一行内展示 -->
       <div class="article-single-line">
         <h3 class="article-title">{{ a.title }}</h3>
+        <span v-if="a.isTop" class="top-badge">置顶</span>
         <div class="article-meta">
           <span class="author" v-if="a.author">{{ getAuthorName(a.author) }}</span>
           <span class="separator" v-if="a.author">•</span>
@@ -124,6 +130,12 @@ const getAuthorName = (author) => {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
+.article-card.is-top {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  box-shadow: 0 10px 28px rgba(245, 158, 11, 0.25);
+}
+
 .article-single-line {
   display: flex;
   align-items: flex-start;
@@ -150,6 +162,16 @@ const getAuthorName = (author) => {
   font-size: 0.75rem;
   color: #2d3748;
   flex-shrink: 0;
+}
+
+.top-badge {
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .tags {

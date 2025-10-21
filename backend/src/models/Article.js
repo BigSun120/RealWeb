@@ -59,6 +59,15 @@ const articleSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    topAt: {
+      type: Date,
+      default: null
+    },
+    topBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
     publishedAt: {
       type: Date
     },
@@ -118,7 +127,7 @@ articleSchema.index({ status: 1, publishedAt: -1 });
 articleSchema.index({ title: 'text', content: 'text' }); // 全文搜索索引
 articleSchema.index({ viewCount: -1 });
 articleSchema.index({ likeCount: -1 });
-articleSchema.index({ isTop: -1, publishedAt: -1 });
+articleSchema.index({ isTop: -1, topAt: -1, publishedAt: -1 });
 articleSchema.index({ isDeleted: 1, deletedAt: -1 });
 
 // 实例方法：软删除
@@ -127,6 +136,9 @@ articleSchema.methods.softDelete = function (deletedBy, reason = null) {
   this.deletedAt = new Date();
   this.deletedBy = deletedBy;
   this.deleteReason = reason;
+  this.isTop = false;
+  this.topAt = null;
+  this.topBy = null;
   return this.save();
 };
 
@@ -154,6 +166,23 @@ articleSchema.pre('save', function (next) {
   // 发布时设置发布时间
   if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
     this.publishedAt = new Date();
+  }
+
+  // 状态改为非发布时自动取消置顶
+  if (this.isModified('status') && this.status !== 'published') {
+    this.isTop = false;
+    this.topAt = null;
+    this.topBy = null;
+  }
+
+  // 设置置顶时间
+  if (this.isModified('isTop') && this.isTop && !this.topAt) {
+    this.topAt = new Date();
+  }
+
+  if (this.isModified('isTop') && !this.isTop) {
+    this.topAt = null;
+    this.topBy = null;
   }
 
   // 发布时验证必填字段

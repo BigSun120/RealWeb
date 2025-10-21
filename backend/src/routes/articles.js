@@ -526,7 +526,10 @@ router.post('/batch', adminAuth, async (req, res, next) => {
           {
             isDeleted: true,
             deletedAt: new Date(),
-            deletedBy: req.user._id
+            deletedBy: req.user._id,
+            isTop: false,
+            topAt: null,
+            topBy: null
           }
         );
         message = `成功删除 ${result.modifiedCount} 篇文章，已移动到回收站`;
@@ -550,7 +553,10 @@ router.post('/batch', adminAuth, async (req, res, next) => {
           { _id: { $in: articleIds } },
           {
             status: 'draft',
-            publishedAt: null
+            publishedAt: null,
+            isTop: false,
+            topAt: null,
+            topBy: null
           }
         );
         message = `成功取消发布 ${result.modifiedCount} 篇文章`;
@@ -637,6 +643,36 @@ router.post('/batch', adminAuth, async (req, res, next) => {
           }
         );
         message = `成功恢复 ${result.modifiedCount} 篇文章`;
+        break;
+
+      case 'setTop': {
+        const now = new Date();
+        result = await Article.updateMany(
+          {
+            _id: { $in: articleIds },
+            status: 'published',
+            isDeleted: { $ne: true }
+          },
+          {
+            isTop: true,
+            topAt: now,
+            topBy: req.user._id
+          }
+        );
+        message = `成功置顶 ${result.modifiedCount} 篇文章`;
+        break;
+      }
+
+      case 'unsetTop':
+        result = await Article.updateMany(
+          { _id: { $in: articleIds } },
+          {
+            isTop: false,
+            topAt: null,
+            topBy: null
+          }
+        );
+        message = `成功取消置顶 ${result.modifiedCount} 篇文章`;
         break;
 
       default:

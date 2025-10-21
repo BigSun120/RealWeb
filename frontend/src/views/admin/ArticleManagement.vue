@@ -261,6 +261,14 @@
                       <el-icon><Close /></el-icon>
                       批量取消发布
                     </el-dropdown-item>
+                    <el-dropdown-item command="setTop" :disabled="!canBatchSetTop">
+                      <el-icon><StarFilled /></el-icon>
+                      批量置顶
+                    </el-dropdown-item>
+                    <el-dropdown-item command="unsetTop" :disabled="!canBatchUnsetTop">
+                      <el-icon><Close /></el-icon>
+                      批量取消置顶
+                    </el-dropdown-item>
                     <el-dropdown-item command="updateCategory" divided>
                       <el-icon><Folder /></el-icon>
                       批量修改分类
@@ -299,6 +307,9 @@
                 <el-tag :type="getStatusTagType(row.status)" size="small" style="margin-left: 8px">
                   {{ getStatusText(row.status) }}
                 </el-tag>
+                <el-tag v-if="row.isTop" type="warning" size="small" effect="dark">
+                  置顶
+                </el-tag>
               </div>
             </template>
           </el-table-column>
@@ -333,7 +344,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" width="280" fixed="right">
+          <el-table-column label="操作" width="340" fixed="right">
             <template #default="{ row }">
               <!-- 已删除文章的操作 -->
               <template v-if="activeTab === 'deleted'">
@@ -348,6 +359,16 @@
               <!-- 正常文章的操作 -->
               <template v-else>
                 <el-button size="small" @click="editArticle(row)"> 编辑 </el-button>
+
+                <el-button
+                  size="small"
+                  type="primary"
+                  :plain="row.isTop"
+                  :disabled="row.status !== 'published'"
+                  @click="toggleTopStatus(row)"
+                >
+                  {{ row.isTop ? '取消置顶' : '置顶' }}
+                </el-button>
 
                 <el-button
                   v-if="row.status === 'draft'"
@@ -450,7 +471,8 @@ import {
   Close,
   Folder,
   PriceTag,
-  Delete
+  Delete,
+  StarFilled
 } from '@element-plus/icons-vue';
 import api from '@/api';
 import {
@@ -458,7 +480,8 @@ import {
   batchRestoreArticles,
   batchPermanentDeleteArticles,
   getCategories,
-  getTags
+  getTags,
+  updateArticleTopStatus
 } from '@/api/articles';
 
 // 防抖函数
@@ -486,7 +509,8 @@ export default {
     Close,
     Folder,
     PriceTag,
-    Delete
+    Delete,
+    StarFilled
   },
   setup() {
     const router = useRouter();
@@ -548,6 +572,16 @@ export default {
 
     const canBatchUnpublish = computed(() => {
       return selectedArticles.value.some(article => article.status === 'published');
+    });
+
+    const canBatchSetTop = computed(() => {
+      return selectedArticles.value.some(
+        article => !article.isTop && article.status === 'published'
+      );
+    });
+
+    const canBatchUnsetTop = computed(() => {
+      return selectedArticles.value.some(article => article.isTop);
     });
 
     // 获取分类名称
@@ -702,6 +736,30 @@ export default {
       }
     };
 
+    // 置顶/取消置顶文章
+    const toggleTopStatus = async article => {
+      const targetStatus = !article.isTop;
+
+      if (targetStatus && article.status !== 'published') {
+        ElMessage.warning('仅已发布的文章可以置顶');
+        return;
+      }
+
+      try {
+        const response = await updateArticleTopStatus(article.id, targetStatus);
+        const updatedArticle = response.data.data || {};
+
+        article.isTop = updatedArticle.isTop;
+        article.topAt = updatedArticle.topAt;
+        article.topBy = updatedArticle.topBy;
+
+        ElMessage.success(targetStatus ? '文章置顶成功' : '文章取消置顶成功');
+        await loadArticles();
+      } catch (error) {
+        ElMessage.error('更新置顶状态失败：' + (error.response?.data?.message || error.message));
+      }
+    };
+
     // 选择变化处理
     const handleSelectionChange = selection => {
       selectedArticles.value = selection;
@@ -795,6 +853,12 @@ export default {
           case 'unpublish':
             await handleBatchUnpublish(articleIds);
             break;
+          case 'setTop':
+            await handleBatchSetTop(articleIds);
+            break;
+          case 'unsetTop':
+            await handleBatchUnsetTop(articleIds);
+            break;
           case 'updateCategory':
             await showBatchCategoryDialog();
             break;
@@ -862,6 +926,60 @@ export default {
       } catch (error) {
         if (error !== 'cancel') {
           ElMessage.error('批量取消发布失败：' + (error.response?.data?.message || error.message));
+        }
+      }
+    };
+
+    // 批量置顶
+    const handleBatchSetTop = async articleIds => {
+      try {
+        await ElMessageBox.confirm(
+          `确定要置顶选中的 ${articleIds.length} 篇文章吗？仅已发布的文章会被置顶。`,
+          '批量置顶确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        );
+
+        const response = await batchArticleOperation(articleIds, 'setTop');
+
+        if (response.data.success) {
+          ElMessage.success(response.data.message);
+          clearSelection();
+          await loadArticles();
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          ElMessage.error('批量置顶失败：' + (error.response?.data?.message || error.message));
+        }
+      }
+    };
+
+    // 批量取消置顶
+    const handleBatchUnsetTop = async articleIds => {
+      try {
+        await ElMessageBox.confirm(
+          `确定要取消置顶选中的 ${articleIds.length} 篇文章吗？`,
+          '批量取消置顶确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        );
+
+        const response = await batchArticleOperation(articleIds, 'unsetTop');
+
+        if (response.data.success) {
+          ElMessage.success(response.data.message);
+          clearSelection();
+          await loadArticles();
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          ElMessage.error('批量取消置顶失败：' + (error.response?.data?.message || error.message));
         }
       }
     };
@@ -1160,6 +1278,8 @@ export default {
           category: article.category,
           tags: article.tags || [],
           status: article.status,
+          isTop: !!article.isTop,
+          topAt: article.topAt,
           author: article.author
             ? {
                 id: article.author._id,
@@ -1222,6 +1342,9 @@ export default {
       clearSelection,
       canBatchPublish,
       canBatchUnpublish,
+      canBatchSetTop,
+      canBatchUnsetTop,
+      toggleTopStatus,
       batchDialogVisible,
       batchAction,
       batchData,

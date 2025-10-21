@@ -53,6 +53,11 @@ export const batchPermanentDeleteArticles = (articleIds) => {
   return batchArticleOperation(articleIds, 'permanentDelete');
 };
 
+// 更新文章置顶状态（管理员）
+export const updateArticleTopStatus = (articleId, isTop) => {
+  return api.patch(`/admin/articles/${articleId}/top`, { isTop });
+};
+
 // 上传文章图片
 export const uploadArticleImage = (file) => {
   const formData = new FormData();

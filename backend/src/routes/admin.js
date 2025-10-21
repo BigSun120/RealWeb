@@ -1446,6 +1446,66 @@ router.put('/articles/:id/restore', async (req, res, next) => {
   }
 });
 
+// 置顶/取消置顶文章
+router.patch('/articles/:id/top', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { isTop } = req.body;
+
+    if (typeof isTop !== 'boolean') {
+      return res.status(400).json({
+        code: 400,
+        message: '缺少有效的置顶状态'
+      });
+    }
+
+    const article = await Article.findById(id);
+
+    if (!article || article.isDeleted) {
+      return res.status(404).json({
+        code: 404,
+        message: '文章不存在或已被删除'
+      });
+    }
+
+    if (isTop && article.status !== 'published') {
+      return res.status(400).json({
+        code: 400,
+        message: '仅已发布的文章才能置顶'
+      });
+    }
+
+    article.isTop = isTop;
+    if (isTop) {
+      article.topAt = new Date();
+      article.topBy = req.user._id;
+    } else {
+      article.topAt = null;
+      article.topBy = null;
+    }
+
+    await article.save();
+
+    await ActivityLogger.logAdminAction(
+      req.user._id,
+      isTop ? 'pin_article' : 'unpin_article',
+      `${isTop ? '置顶' : '取消置顶'}了文章 "${article.title}"`,
+      req,
+      article._id,
+      'Article'
+    );
+
+    res.json({
+      code: 200,
+      message: isTop ? '文章置顶成功' : '文章取消置顶成功',
+      data: article
+    });
+  } catch (error) {
+    logger.error('更新文章置顶状态失败:', error);
+    next(error);
+  }
+});
+
 // 管理员获取所有文章列表
 router.get('/articles', async (req, res, next) => {
   try {
