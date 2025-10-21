@@ -164,6 +164,7 @@ const dramaProjectSchema = new mongoose.Schema(
           severity: { type: String },
           title: { type: String },
           description: { type: String },
+          dimension: { type: String }, // 诊断维度：主线一致性、角色弧光完整性等
           location: {
             module: { type: String },
             field: { type: String },
@@ -172,8 +173,9 @@ const dramaProjectSchema = new mongoose.Schema(
           status: { type: String, default: 'pending' },
           generating: { type: Boolean, default: false },
           solution: { // AI生成的解决方案
-            suggestedContent: { type: String },
+            suggestedContent: { type: String }, // 旧格式：纯文本方案
             explanation: { type: String },
+            suggestedEpisodes: { type: Array }, // 新格式：结构化剧集数据
             generatedAt: { type: Date }
           }
         }],

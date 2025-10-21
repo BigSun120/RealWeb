@@ -611,7 +611,14 @@
 
     <!-- 整体检查内容 -->
     <div v-else-if="activeStage === 'overall'" class="stage-content">
-      <el-empty description="整体检查功能开发中..." :image-size="120" />
+      <OverallCheck
+        :project="project"
+        @update:issues="handleOverallIssuesUpdate"
+        @open-template-manager="handleOpenTemplateManager"
+        @generate-solution="handleGenerateSolution"
+        @view-solution="handleViewSolution"
+        @content-updated="handleContentUpdated"
+      />
     </div>
 
 
@@ -743,6 +750,7 @@ import AIResponseParser from './AIResponseParser.vue';
 import PromptTemplateManager from './PromptTemplateManager.vue';
 import ExternalAIWorkflowDialog from './ExternalAIWorkflowDialog.vue';
 import ExternalAISolutionDialog from './ExternalAISolutionDialog.vue';
+import OverallCheck from './OverallCheck.vue';
 import {
   analyzeBasicStats,
   analyzeCompleteness,
@@ -3051,6 +3059,49 @@ watch(() => props.project, (newProject) => {
     loadEpisodesIssues();
   }
 }, { deep: true });
+
+// ========================================
+// 整体检查相关方法
+// ========================================
+const handleOverallIssuesUpdate = (issues) => {
+  console.log('整体检查问题已更新:', issues);
+  // 触发项目更新事件，通知父组件
+  emit('content-updated', {
+    field: 'aiDiagnosis.overall',
+    value: { issues, lastUpdated: new Date() }
+  });
+};
+
+// 处理来自OverallCheck的content-updated事件（如应用解决方案修改剧集）
+const handleContentUpdated = (updateInfo) => {
+  console.log('🔄 ScriptAnalysis转发content-updated事件:', updateInfo);
+  // 直接转发给父组件（workbench）
+  emit('content-updated', updateInfo);
+};
+
+const handleOpenTemplateManager = () => {
+  // 打开模板管理器对话框，并切换到整体检查Tab
+  showTemplateManager.value = true;
+  // 注意：需要在PromptTemplateManager组件中添加activeTab prop支持
+};
+
+const handleGenerateSolution = (issue) => {
+  // 由于整体检查的解决方案可能涉及多集修改，这里暂时使用通用方案生成
+  // 后续可以单独实现整体问题的解决方案生成逻辑
+  console.log('生成整体问题解决方案:', issue);
+  ElMessage.info('整体问题的解决方案生成功能开发中...');
+};
+
+const handleViewSolution = (issue) => {
+  // 查看已生成的解决方案
+  console.log('查看整体问题解决方案:', issue);
+  if (issue.solution) {
+    ElMessageBox.alert(issue.solution.explanation || '暂无说明', '解决方案', {
+      confirmButtonText: '确定',
+      type: 'success'
+    });
+  }
+};
 </script>
 
 <style scoped lang="scss">

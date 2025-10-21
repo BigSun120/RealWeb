@@ -67,9 +67,47 @@
               <el-button size="small" type="primary" @click="saveSolutionTemplate">保存模板</el-button>
             </div>
           </div>
-          
+
           <el-input
             v-model="solutionTemplate"
+            type="textarea"
+            :rows="20"
+            placeholder="输入提示词模板..."
+            class="template-textarea"
+          />
+        </div>
+      </el-tab-pane>
+
+      <!-- 整体检查模板 -->
+      <el-tab-pane label="整体检查提示词" name="overallCheck">
+        <el-alert type="info" :closable="false" class="mb-4">
+          <template #default>
+            <p><strong>可用变量</strong>：</p>
+            <ul class="variable-list">
+              <li><code>{{projectName}}</code> - 项目名称</li>
+              <li><code>{{projectType}}</code> - 剧本类型</li>
+              <li><code>{{totalEpisodes}}</code> - 总集数</li>
+              <li><code>{{startEpisode}}</code> - 检查起始集数</li>
+              <li><code>{{endEpisode}}</code> - 检查结束集数</li>
+              <li><code>{{completedCount}}</code> - 已完成集数</li>
+              <li><code>{{completionRate}}</code> - 完成度百分比</li>
+              <li><code>{{coreConflict}}</code> - 核心冲突</li>
+              <li><code>{{mainCharacters}}</code> - 主要角色</li>
+            </ul>
+          </template>
+        </el-alert>
+
+        <div class="template-editor">
+          <div class="editor-header">
+            <span>编辑模板</span>
+            <div class="header-actions">
+              <el-button size="small" @click="resetOverallCheckTemplate">恢复默认</el-button>
+              <el-button size="small" type="primary" @click="saveOverallCheckTemplate">保存模板</el-button>
+            </div>
+          </div>
+
+          <el-input
+            v-model="overallCheckTemplate"
             type="textarea"
             :rows="20"
             placeholder="输入提示词模板..."
@@ -88,10 +126,11 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
-import { 
+import {
   getDefaultEpisodeCheckTemplate,
-  getDefaultSolutionTemplate 
+  getDefaultSolutionTemplate
 } from '../utils/episodeCheckTemplates';
+import { getDefaultOverallCheckTemplate } from '../utils/overallCheckTemplates';
 
 // Props
 const props = defineProps({
@@ -113,14 +152,17 @@ const dialogVisible = computed({
 const activeTab = ref('episodeCheck');
 const episodeCheckTemplate = ref('');
 const solutionTemplate = ref('');
+const overallCheckTemplate = ref('');
 
 // 从localStorage加载模板
 const loadTemplates = () => {
   const savedEpisodeCheck = localStorage.getItem('drama_prompt_template_episodeCheck');
   const savedSolution = localStorage.getItem('drama_prompt_template_solution');
-  
+  const savedOverallCheck = localStorage.getItem('drama_prompt_template_overallCheck');
+
   episodeCheckTemplate.value = savedEpisodeCheck || getDefaultEpisodeCheckTemplate();
   solutionTemplate.value = savedSolution || getDefaultSolutionTemplate();
+  overallCheckTemplate.value = savedOverallCheck || getDefaultOverallCheckTemplate();
 };
 
 // 初始化
@@ -154,6 +196,18 @@ const saveSolutionTemplate = () => {
   }
 };
 
+// 保存整体检查模板
+const saveOverallCheckTemplate = () => {
+  try {
+    localStorage.setItem('drama_prompt_template_overallCheck', overallCheckTemplate.value);
+    ElMessage.success('整体检查模板已保存');
+    emit('templates-updated');
+  } catch (error) {
+    console.error('保存模板失败:', error);
+    ElMessage.error('保存失败：' + error.message);
+  }
+};
+
 // 恢复默认模板
 const resetEpisodeCheckTemplate = () => {
   episodeCheckTemplate.value = getDefaultEpisodeCheckTemplate();
@@ -162,6 +216,11 @@ const resetEpisodeCheckTemplate = () => {
 
 const resetSolutionTemplate = () => {
   solutionTemplate.value = getDefaultSolutionTemplate();
+  ElMessage.info('已恢复为默认模板');
+};
+
+const resetOverallCheckTemplate = () => {
+  overallCheckTemplate.value = getDefaultOverallCheckTemplate();
   ElMessage.info('已恢复为默认模板');
 };
 

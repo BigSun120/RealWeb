@@ -1139,7 +1139,7 @@ const handleRestoreVersion = async (restoreData) => {
 // 处理AI替换内容后的刷新
 const handleContentUpdated = async (updateInfo) => {
   console.log('🔄 内容已更新:', updateInfo);
-  
+
   try {
     // 重新加载项目数据以获取最新内容
     const response = await getDramaProject(route.params.id);
@@ -1157,8 +1157,77 @@ const handleContentUpdated = async (updateInfo) => {
         } else if (module === 'episodes' && response.data.episodes) {
           episodes.value = [...response.data.episodes];
         }
+      } else if (updateInfo && updateInfo.field) {
+        // 新格式：支持嵌套field路径（如 'aiDiagnosis.overall'）
+        const { field, value } = updateInfo;
+
+        // 处理嵌套路径
+        const keys = field.split('.');
+
+        // 如果是简单field（兼容旧逻辑）
+        if (keys.length === 1) {
+          const module = keys[0];
+          if (module === 'worldview') {
+            if (value) {
+              // 保存新值到后端
+              await patchDramaWorldview(route.params.id, value);
+              worldview.value = { ...value };
+              project.worldview = { ...value };
+            } else if (response.data.worldview) {
+              // 从后端加载
+              worldview.value = { ...response.data.worldview };
+              project.worldview = { ...response.data.worldview };
+            }
+          } else if (module === 'characters') {
+            if (value) {
+              await patchDramaCharacters(route.params.id, value);
+              characters.value = [...value];
+              project.characters = [...value];
+            } else if (response.data.characters) {
+              characters.value = [...response.data.characters];
+              project.characters = [...response.data.characters];
+            }
+          } else if (module === 'outline') {
+            if (value) {
+              await patchDramaOutline(route.params.id, value);
+              outline.value = { ...value };
+              project.outline = { ...value };
+            } else if (response.data.outline) {
+              outline.value = { ...response.data.outline };
+              project.outline = { ...response.data.outline };
+            }
+          } else if (module === 'episodes') {
+            if (value) {
+              // 保存新值到后端
+              console.log('🔄 准备保存剧集到后端...', value.length, '集');
+              const saveResponse = await patchDramaEpisodes(route.params.id, value);
+              console.log('💾 后端保存响应:', saveResponse);
+
+              episodes.value = [...value];
+              project.episodes = [...value];
+              console.log('✅ 剧集已保存到后端并更新本地状态:', value.length, '集');
+            } else if (response.data.episodes) {
+              // 从后端加载
+              episodes.value = [...response.data.episodes];
+              project.episodes = [...response.data.episodes];
+            }
+          }
+        } else {
+          // 处理嵌套field（如 'aiDiagnosis.overall'）
+          // 直接从服务器获取最新数据并更新
+          let target = project;
+          for (let i = 0; i < keys.length - 1; i++) {
+            if (!target[keys[i]]) {
+              target[keys[i]] = {};
+            }
+            target = target[keys[i]];
+          }
+          target[keys[keys.length - 1]] = value;
+
+          console.log(`✅ 已更新嵌套字段: ${field}`, value);
+        }
       } else if (updateInfo && updateInfo.module) {
-        // 新格式（传入对象）
+        // 兼容旧格式（传入module字段）
         const { module } = updateInfo;
         if (module === 'worldview' && response.data.worldview) {
           worldview.value = { ...response.data.worldview };
@@ -1174,7 +1243,7 @@ const handleContentUpdated = async (updateInfo) => {
           project.episodes = [...response.data.episodes];
         }
       }
-      
+
       console.log('✅ 内容刷新成功');
       ElMessage.success('内容已更新');
     }
