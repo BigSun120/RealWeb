@@ -611,14 +611,9 @@
 
     <!-- 整体检查内容 -->
     <div v-else-if="activeStage === 'overall'" class="stage-content">
-      <OverallCheck
-        :project="project"
-        @update:issues="handleOverallIssuesUpdate"
-        @open-template-manager="handleOpenTemplateManager"
-        @generate-solution="handleGenerateSolution"
-        @view-solution="handleViewSolution"
-        @content-updated="handleContentUpdated"
-      />
+      <OverallCheck :project="project" @update:issues="handleOverallIssuesUpdate"
+        @open-template-manager="handleOpenTemplateManager" @generate-solution="handleGenerateSolution"
+        @view-solution="handleViewSolution" @content-updated="handleContentUpdated" />
     </div>
 
 
@@ -2227,6 +2222,7 @@ ${formatOutline(outline)}
 3. **如果存在问题**，如果是严重问题无论多少个都要完整显示，一般总数低于10个
 4. **不要为了凑数而挑剔**：宁缺母滥
 5. **深度分析**：对于发现的问题，尽量指出**具体原因、潜在风险**
+6. **其他**：注意! 所有的问题都要是从专业短剧编剧的角度出发，不要因小失大！不要陷入专业名词解释陷阱！注重短剧核心要点！
 
 ## 字段约束（严格遵守）
 ${generateFieldConstraints(project)}
