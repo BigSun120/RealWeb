@@ -320,7 +320,7 @@ router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore();
 
   // 设置页面标题
-  document.title = to.meta.title ? `${to.meta.title} - 网站` : '网站';
+  document.title = to.meta.title ? `${to.meta.title} - 博客、短剧、工具箱` : '网站';
 
   // 如果有token但没有用户信息，尝试获取用户信息
   if (userStore.token && !userStore.user) {
