@@ -2,48 +2,41 @@
   <div class="worldview-editor">
     <div class="editor-header">
       <h3 class="section-title">
-        <el-icon><Document /></el-icon>
+        <el-icon>
+          <Document />
+        </el-icon>
         世界观设定
       </h3>
       <div class="header-actions">
         <!-- AI自动生成按钮（新增）-->
-        <el-dropdown 
-          split-button 
-          type="primary"
-          :loading="aiGenerating"
-          :disabled="aiGenerating"
-          @click="handleAIAutoGenerate"
-          @command="handleAICommand"
-        >
-          <el-icon><MagicStick /></el-icon>
+        <el-dropdown split-button type="primary" :loading="aiGenerating" :disabled="aiGenerating"
+          @click="handleAIAutoGenerate" @command="handleAICommand">
+          <el-icon>
+            <MagicStick />
+          </el-icon>
           {{ aiGenerating ? 'AI生成中...' : 'AI自动生成' }}
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="auto-generate">
-                <el-icon><MagicStick /></el-icon>
+                <el-icon>
+                  <MagicStick />
+                </el-icon>
                 自动生成并填充
               </el-dropdown-item>
               <el-dropdown-item command="generate-prompt" divided>
-                <el-icon><Document /></el-icon>
+                <el-icon>
+                  <Document />
+                </el-icon>
                 生成提示词（手动）
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        
-        <el-button 
-          type="warning" 
-          :icon="Upload"
-          @click="handlePasteAI"
-        >
+
+        <el-button type="warning" :icon="Upload" @click="handlePasteAI">
           粘贴AI回答
         </el-button>
-        <el-button 
-          type="success"
-          :icon="Check"
-          :loading="saving"
-          @click="handleSave"
-        >
+        <el-button type="success" :icon="Check" :loading="saving" @click="handleSave">
           保存
         </el-button>
       </div>
@@ -51,47 +44,35 @@
 
     <div class="editor-content">
       <!-- AI生成状态提示 -->
-      <el-alert
-        v-if="aiGenerating"
-        type="info"
-        :closable="false"
-        class="ai-generating-tip"
-      >
+      <el-alert v-if="aiGenerating" type="info" :closable="false" class="ai-generating-tip">
         <template #title>
           <div class="generating-header">
-            <el-icon class="is-loading"><Loading /></el-icon>
+            <el-icon class="is-loading">
+              <Loading />
+            </el-icon>
             <span>AI正在生成世界观设定，请稍候...</span>
           </div>
         </template>
-        <el-progress 
-          :percentage="generateProgress" 
-          :indeterminate="generateProgress < 10"
-        />
+        <el-progress :percentage="generateProgress" :indeterminate="generateProgress < 10" />
         <div class="generating-tip">
-          <el-icon><InfoFilled /></el-icon>
+          <el-icon>
+            <InfoFilled />
+          </el-icon>
           <span>预计需要20-60秒，请耐心等待（根据AI模型和内容复杂度）</span>
         </div>
       </el-alert>
 
-      <el-form
-        ref="formRef"
-        :model="formData"
-        label-position="top"
-        class="worldview-form"
-      >
+      <el-form ref="formRef" :model="formData" label-position="top" class="worldview-form">
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="📜 故事背景">
-              <el-input
-                v-model="formData.background"
-                type="textarea"
-                :rows="4"
-                :placeholder="getPlaceholder('background')"
-              />
+              <el-input v-model="formData.background" type="textarea" :rows="4"
+                :placeholder="getPlaceholder('background')" />
               <div class="field-tip" :class="{ 'field-warning': formData.background.length > 500 }">
-                💡 提示：包括时代、地点、社会结构等基本信息 
+                💡 提示：包括时代、地点、社会结构等基本信息
                 <span v-if="formData.background.length > 0">
-                  (当前 {{ formData.background.length }} 字<span v-if="formData.background.length > 500" class="warning-text">，建议不超过500字</span>)
+                  (当前 {{ formData.background.length }} 字<span v-if="formData.background.length > 500"
+                    class="warning-text">，建议不超过500字</span>)
                 </span>
               </div>
               <div v-if="getExample('background')" class="field-example">
@@ -102,16 +83,12 @@
 
           <el-col :span="24">
             <el-form-item label="🌍 世界设定">
-              <el-input
-                v-model="formData.setting"
-                type="textarea"
-                :rows="4"
-                :placeholder="getPlaceholder('setting')"
-              />
+              <el-input v-model="formData.setting" type="textarea" :rows="4" :placeholder="getPlaceholder('setting')" />
               <div class="field-tip" :class="{ 'field-warning': formData.setting.length > 500 }">
                 💡 提示：世界的独特规则、价值观、特殊设定
                 <span v-if="formData.setting.length > 0">
-                  (当前 {{ formData.setting.length }} 字<span v-if="formData.setting.length > 500" class="warning-text">，建议不超过500字</span>)
+                  (当前 {{ formData.setting.length }} 字<span v-if="formData.setting.length > 500"
+                    class="warning-text">，建议不超过500字</span>)
                 </span>
               </div>
               <div v-if="getExample('setting')" class="field-example">
@@ -122,16 +99,12 @@
 
           <el-col :xs="24" :sm="12">
             <el-form-item label="🎯 核心主题">
-              <el-input
-                v-model="formData.theme"
-                type="textarea"
-                :rows="3"
-                :placeholder="getPlaceholder('theme')"
-              />
+              <el-input v-model="formData.theme" type="textarea" :rows="3" :placeholder="getPlaceholder('theme')" />
               <div class="field-tip" :class="{ 'field-warning': formData.theme.length > 200 }">
                 💡 提示：故事的核心理念和价值观
                 <span v-if="formData.theme.length > 0">
-                  (当前 {{ formData.theme.length }} 字<span v-if="formData.theme.length > 200" class="warning-text">，建议不超过200字</span>)
+                  (当前 {{ formData.theme.length }} 字<span v-if="formData.theme.length > 200"
+                    class="warning-text">，建议不超过200字</span>)
                 </span>
               </div>
               <div v-if="getExample('theme')" class="field-example">
@@ -142,16 +115,13 @@
 
           <el-col :xs="24" :sm="12">
             <el-form-item label="⚔️ 主要冲突">
-              <el-input
-                v-model="formData.conflict"
-                type="textarea"
-                :rows="3"
-                :placeholder="getPlaceholder('conflict')"
-              />
+              <el-input v-model="formData.conflict" type="textarea" :rows="3"
+                :placeholder="getPlaceholder('conflict')" />
               <div class="field-tip" :class="{ 'field-warning': formData.conflict.length > 200 }">
                 💡 提示：推动剧情发展的核心矛盾
                 <span v-if="formData.conflict.length > 0">
-                  (当前 {{ formData.conflict.length }} 字<span v-if="formData.conflict.length > 200" class="warning-text">，建议不超过200字</span>)
+                  (当前 {{ formData.conflict.length }} 字<span v-if="formData.conflict.length > 200"
+                    class="warning-text">，建议不超过200字</span>)
                 </span>
               </div>
               <div v-if="getExample('conflict')" class="field-example">
@@ -171,18 +141,11 @@
                 <el-radio-button label="爽快打脸">😎 爽快打脸</el-radio-button>
                 <el-radio-button value="custom">✏️ 自定义</el-radio-button>
               </el-radio-group>
-              
+
               <!-- 自定义输入框 -->
-              <el-input
-                v-if="showCustomTone"
-                v-model="customTone"
-                placeholder="请输入自定义的情感基调..."
-                maxlength="20"
-                show-word-limit
-                style="margin-top: 12px;"
-                @blur="handleCustomToneBlur"
-              />
-              
+              <el-input v-if="showCustomTone" v-model="customTone" placeholder="请输入自定义的情感基调..." show-word-limit
+                style="margin-top: 12px;" @blur="handleCustomToneBlur" />
+
               <div class="field-tip">
                 💡 提示：选择剧本的整体情感氛围，或自定义输入
               </div>
@@ -194,7 +157,9 @@
       <!-- 预览卡片 -->
       <div v-if="hasContent" class="preview-card">
         <div class="preview-header">
-          <el-icon><View /></el-icon>
+          <el-icon>
+            <View />
+          </el-icon>
           <span>世界观概览</span>
         </div>
         <div class="preview-content">
@@ -218,28 +183,20 @@
     </div>
 
     <!-- 提示词对话框 -->
-    <PromptDialog
-      v-model="showPromptDialog"
-      :prompt="generatedPrompt"
-      title="世界观设定提示词"
-    />
+    <PromptDialog v-model="showPromptDialog" :prompt="generatedPrompt" title="世界观设定提示词" />
 
     <!-- AI回答解析器 -->
-    <AIResponseParser
-      v-model="showAIParser"
-      mode="worldview"
-      @confirm="handleAIParseConfirm"
-    />
+    <AIResponseParser v-model="showAIParser" mode="worldview" @confirm="handleAIParseConfirm" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
-import { 
-  Document, 
-  MagicStick, 
-  Check, 
+import {
+  Document,
+  MagicStick,
+  Check,
   View,
   Upload,
   Loading,
@@ -297,11 +254,11 @@ const formData = ref({
 
 // 是否有内容
 const hasContent = computed(() => {
-  return formData.value.background || 
-         formData.value.setting || 
-         formData.value.theme || 
-         formData.value.conflict || 
-         formData.value.tone;
+  return formData.value.background ||
+    formData.value.setting ||
+    formData.value.theme ||
+    formData.value.conflict ||
+    formData.value.tone;
 });
 
 // 监听数据变化
@@ -351,7 +308,7 @@ const handleCustomToneBlur = () => {
 // 根据项目类型获取字段提示文本
 const getPlaceholder = (field) => {
   const projectType = props.projectInfo?.type || '';
-  
+
   const placeholders = {
     '霸道总裁': {
       background: '描述故事发生的时代背景、社会环境等...\n例如：现代都市，某顶级跨国集团总部，豪华写字楼里的权力游戏',
@@ -390,22 +347,22 @@ const getPlaceholder = (field) => {
       conflict: '故事的主要矛盾和冲突点...\n例如：职场竞争与合作、个人梦想与现实压力、职场陷阱与险恶'
     }
   };
-  
+
   // 默认提示文本
-const defaultPlaceholders = {
+  const defaultPlaceholders = {
     background: '描述故事发生的时代背景、社会环境等...\n例如：现代都市，某顶级跨国集团总部大楼',
     setting: '描述这个世界的特殊规则、独特设定等...\n例如：豪门世家的等级制度、契约婚姻的社会背景',
     theme: '故事想表达的核心主题...\n例如：爱情与自我救赎、从契约到真爱',
     conflict: '故事的主要矛盾和冲突点...\n例如：男女主的身份差距、家族恩怨、契约限制'
   };
-  
+
   return placeholders[projectType]?.[field] || defaultPlaceholders[field] || '';
 };
 
 // 获取示例文本
 const getExample = (field) => {
   const projectType = props.projectInfo?.type || '';
-  
+
   const examples = {
     '霸道总裁': {
       background: 'A市的经济中心，盛天集团总部占据了整栋88层的摩天大楼，掌控着城市的经济命脉',
@@ -420,7 +377,7 @@ const getExample = (field) => {
       conflict: '探员与凶手的智力博弈，真相逼近时的危险与考验'
     }
   };
-  
+
   return examples[projectType]?.[field] || '';
 };
 
@@ -467,7 +424,7 @@ const handleAIParseConfirm = (parsedData) => {
       formData.value.tone = 'custom';
     }
   }
-  
+
   ElMessage.success('已从AI回答中提取并填充内容');
 };
 
@@ -493,10 +450,10 @@ const handleAICommand = async (command) => {
 // 执行AI生成
 const performAIGenerate = async () => {
   // 1. 检查是否有基础内容
-  const hasBasicInfo = formData.value.background || 
-                       formData.value.setting || 
-                       formData.value.theme;
-  
+  const hasBasicInfo = formData.value.background ||
+    formData.value.setting ||
+    formData.value.theme;
+
   if (!hasBasicInfo) {
     try {
       await ElMessageBox.confirm(
@@ -533,7 +490,7 @@ const performAIGenerate = async () => {
     await performNormalGenerate(messages);
   } catch (error) {
     console.error('AI生成失败:', error);
-    
+
     // 错误处理
     if (error.response?.data?.code === 500 && error.response?.data?.message?.includes('未找到')) {
       try {
@@ -565,7 +522,7 @@ const performAIGenerate = async () => {
 const performNormalGenerate = async (messages) => {
   // 记录开始时间
   const startTime = Date.now();
-  
+
   // 模拟进度
   const progressInterval = setInterval(() => {
     if (generateProgress.value < 90) {
@@ -581,15 +538,15 @@ const performNormalGenerate = async (messages) => {
 
     clearInterval(progressInterval);
     generateProgress.value = 100;
-    
+
     const duration = Date.now() - startTime;
 
     if (response.code === 200 && response.data?.content) {
       const { content, usage, finishReason, latency } = response.data;
-      
+
       // 解析AI回答并填充
       const parsedData = parseWorldviewResponse(content);
-      
+
       // 填充数据
       Object.keys(parsedData).forEach(key => {
         if (parsedData[key]) {
@@ -610,10 +567,10 @@ const performNormalGenerate = async (messages) => {
 
       // 根据finishReason显示不同的提示
       handleGenerationComplete(finishReason, usage, duration, parsedData);
-      
+
       // 显示生成统计信息
       console.log('📊 AI生成统计:', {
-        '耗时': `${(duration/1000).toFixed(1)}秒`,
+        '耗时': `${(duration / 1000).toFixed(1)}秒`,
         'Token使用': usage?.total_tokens || 0,
         '输入Token': usage?.prompt_tokens || 0,
         '输出Token': usage?.completion_tokens || 0,
@@ -638,17 +595,17 @@ const handleGenerationComplete = (finishReason, usage, duration, parsedData) => 
     hasConflict: parsedData.conflict && parsedData.conflict.length > 5,
     hasTone: !!parsedData.tone
   };
-  
+
   const completedFields = Object.values(completenessCheck).filter(Boolean).length;
   const totalFields = Object.keys(completenessCheck).length;
   const completenessRate = (completedFields / totalFields * 100).toFixed(0);
-  
+
   // 根据finishReason和完整性显示不同提示
   if (finishReason === 'stop') {
     // AI正常完成
     if (completedFields === totalFields) {
       ElMessage.success({
-        message: `✅ AI生成成功！已自动填充所有字段（耗时${(duration/1000).toFixed(1)}秒）`,
+        message: `✅ AI生成成功！已自动填充所有字段（耗时${(duration / 1000).toFixed(1)}秒）`,
         duration: 3000
       });
     } else {

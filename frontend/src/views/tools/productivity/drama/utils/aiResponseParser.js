@@ -143,28 +143,21 @@ function extractGender(text) {
 function extractTone(text) {
   if (!text) return '';
   
-  const toneKeywords = {
-    '轻松幽默': ['轻松', '幽默', '搞笑', '欢乐', '诙谐'],
-    '紧张悬疑': ['紧张', '悬疑', '惊悚', '神秘', '烧脑'],
-    '浪漫甜蜜': ['浪漫', '甜蜜', '温馨', '爱情', '唯美'],
-    '热血励志': ['热血', '励志', '奋斗', '激情', '拼搏'],
-    '虐心催泪': ['虐心', '催泪', '悲伤', '感人', '凄美'],
-    '爽快打脸': ['爽快', '打脸', '复仇', '逆袭', '反转']
-  };
-  
-  // 查找基调关键词
-  for (const [tone, keywords] of Object.entries(toneKeywords)) {
-    for (const keyword of keywords) {
-      if (text.includes(keyword)) {
-        return tone;
-      }
-    }
+  // 直接提取AI回答中给出的基调描述
+  const extracted = extractField(text, ['基调', '整体基调', '情感基调', '氛围', '风格', 'tone']);
+  if (extracted) {
+    return extracted.split('\n')[0].trim();
   }
-  
-  // 如果没找到预设基调，尝试提取原文描述
-  const extracted = extractField(text, ['基调', '情感基调', '氛围', '风格']);
-  return extracted || '';
+
+  // 回退：匹配“基调：XXX”格式
+  const toneMatch = text.match(/基调[：:]\s*([^\n]+)/i);
+  if (toneMatch && toneMatch[1]) {
+    return toneMatch[1].trim();
+  }
+
+  return '';
 }
+
 
 /**
  * 清理AI回答中的思考标签和无关内容
