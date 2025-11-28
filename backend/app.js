@@ -154,7 +154,7 @@ app.use(
     origin: [
       process.env.FRONTEND_URL || 'http://localhost:3000',
       'http://localhost:3001', // 支持Vite的备用端口
-      'http://74.48.194.227', // 生产环境IP
+      'http://74.48.7.119', // 生产环境IP
       'https://godaug.fun', // 生产环境域名
       'http://godaug.fun', // 生产环境域名（HTTP）
       'http://localhost' // 本地访问
