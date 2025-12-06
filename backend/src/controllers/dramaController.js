@@ -142,6 +142,9 @@ class DramaController {
         tags = []
       } = req.body;
 
+      // 统一读取模型的默认状态，保证前后端一致
+      const defaultStatus = (DramaProject.schema && DramaProject.schema.path('status') && (DramaProject.schema.path('status').options.default || (DramaProject.schema.path('status').enumValues || [])[0])) || '设定中';
+
       // 检查项目名称是否已存在
       const existing = await DramaProject.findOne({
         userId: req.user._id,
@@ -165,6 +168,9 @@ class DramaController {
         status: '设定中',
         progress: 0
       });
+
+      // 强制使用统一默认状态，避免硬编码带来的不一致
+      try { project.status = defaultStatus; } catch (e) {}
 
       await project.save();
 
@@ -376,6 +382,11 @@ class DramaController {
   async getStatistics(req, res, next) {
     try {
       const userId = req.user._id;
+      // 统一的状态集合（从模型读取），避免前后端硬编码不一致
+      const statusPath = DramaProject.schema && DramaProject.schema.path('status');
+      const enumStatuses = (statusPath && statusPath.enumValues) || ['设定中', '大纲中', '剧本中', '已完成'];
+      const doneStatus = enumStatuses.find(s => s.includes('完成')) || '已完成';
+      const inProgressSet = enumStatuses.filter(s => !s.includes('完成'));
 
       const [
         total,
@@ -397,13 +408,19 @@ class DramaController {
 
       const totalEpisodes = totalEpisodesResult.length > 0 ? totalEpisodesResult[0].total : 0;
 
+      // 使用统一枚举重新统计完成/进行中，确保口径一致
+      const [completedFixed, inProgressFixed] = await Promise.all([
+        DramaProject.countDocuments({ userId, status: doneStatus }),
+        DramaProject.countDocuments({ userId, status: { $in: inProgressSet } })
+      ]);
+
       res.json({
         code: 200,
         message: '获取统计信息成功',
         data: {
           total,
-          completed,
-          inProgress,
+          completed: completedFixed,
+          inProgress: inProgressFixed,
           totalEpisodes
         }
       });
@@ -589,7 +606,29 @@ class DramaController {
       }
 
       const { relationshipGraph } = req.body;
-      project.relationshipGraph = Array.isArray(relationshipGraph) ? relationshipGraph : [];
+      const input = Array.isArray(relationshipGraph) ? relationshipGraph : [];
+      // 对齐字段：type/relationshipType、direction、strength，并清洗内容
+      const normalized = input
+        .map((rel) => {
+          const from = String(rel.from || '').trim();
+          const to = String(rel.to || '').trim();
+          const type = String((rel.type || rel.relationshipType || '')).trim();
+          if (!from || !to || !type) return null;
+          const direction = rel.direction === 'unidirectional' ? 'unidirectional' : 'bidirectional';
+          const s = parseInt(rel.strength, 10);
+          const strength = Number.isFinite(s) ? Math.min(5, Math.max(1, s)) : 3;
+          return {
+            from,
+            to,
+            type,
+            description: rel.description ? String(rel.description).trim() : '',
+            direction,
+            strength
+          };
+        })
+        .filter(Boolean);
+
+      project.relationshipGraph = normalized;
       await project.save();
 
       logger.info('Relationship graph updated', {

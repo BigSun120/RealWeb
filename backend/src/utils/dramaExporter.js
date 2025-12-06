@@ -226,6 +226,19 @@ function formatRelationshipGraph(relationships, characters, format = 'txt') {
     return '';
   }
   
+  // 统一并补全关系字段，确保导出与前端/模型对齐
+  relationships = relationships.map((rel) => {
+    const dir = rel.direction === 'unidirectional' ? 'unidirectional' : 'bidirectional';
+    const s = parseInt(rel.strength, 10);
+    const strength = Number.isFinite(s) ? Math.min(5, Math.max(1, s)) : (rel.strength || 1);
+    return {
+      ...rel,
+      type: rel.type || rel.relationshipType || '未知',
+      direction: dir,
+      strength
+    };
+  });
+
   const isMarkdown = format === 'markdown';
   let content = '';
   

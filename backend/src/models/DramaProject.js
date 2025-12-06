@@ -87,7 +87,9 @@ const dramaProjectSchema = new mongoose.Schema(
         from: { type: String, required: true, trim: true }, // 起始角色
         to: { type: String, required: true, trim: true }, // 目标角色
         type: { type: String, required: true, trim: true }, // 关系类型
-        description: { type: String, trim: true } // 关系描述
+        description: { type: String, trim: true }, // 关系描述
+        direction: { type: String, enum: ['unidirectional', 'bidirectional'], default: 'bidirectional' },
+        strength: { type: Number, min: 1, max: 5, default: 3 }
       }
     ],
     // 剧情大纲

@@ -219,7 +219,7 @@ npm run format
 - MongoDB
 - Element Plus
 
-## � 项目截图
+##  项目截图
 
 ### 🏠 首页展示
 
@@ -238,7 +238,7 @@ npm run format
 - 用户管理、文章管理、系统设置
 - 数据统计和活动监控
 
-## �️ 项目规范
+## ️ 项目规范
 
 ### 📋 代码规范
 
@@ -265,7 +265,7 @@ npm run format
 6. **推送分支** - `git push origin feature/your-feature`
 7. **创建 PR** - 在 GitHub 上创建 Pull Request
 
-### � 提交规范
+###  提交规范
 
 ```bash
 feat: 新功能
@@ -283,7 +283,7 @@ chore: 构建过程或辅助工具的变动
 - 详细描述问题复现步骤
 - 提供错误日志和环境信息
 
-## �📄 许可证
+## 📄 许可证
 
 本项目采用 **MIT 许可证** - 查看 [LICENSE](LICENSE) 文件了解详情
 
