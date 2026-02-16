@@ -5,7 +5,7 @@ const { getStaticTools } = require('../utils/staticTools');
 const logger = require('../utils/logger');
 
 class ToolsController {
-  async ensureToolExists(toolId) {
+  static async ensureToolExists(toolId) {
     let tool = await Tool.findOne({ id: toolId });
     if (tool) return tool;
 
@@ -184,7 +184,7 @@ class ToolsController {
     try {
       const { action = 'use', duration = 0, metadata = {} } = req.body;
 
-      const tool = await this.ensureToolExists(req.params.id);
+      const tool = await ToolsController.ensureToolExists(req.params.id);
       if (!tool) {
         return res.status(404).json({
           code: 404,
