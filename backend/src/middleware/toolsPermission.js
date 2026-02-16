@@ -1,12 +1,52 @@
 const Tool = require('../models/Tool');
 const ToolCategory = require('../models/ToolCategory');
 const ToolConfig = require('../models/ToolConfig');
+const { getStaticTools } = require('../utils/staticTools');
 const logger = require('../utils/logger');
 
 /**
  * 工具箱权限控制中间件
  */
 class ToolsPermission {
+  /**
+   * 当数据库缺少工具记录时，尝试从静态工具配置自动补录
+   */
+  static hydrateToolFromStaticConfig = async (toolId) => {
+    if (!toolId) return null;
+
+    const staticTool = getStaticTools().find(item => item.id === toolId);
+    if (!staticTool) return null;
+
+    const upsertData = {
+      id: staticTool.id,
+      name: staticTool.name,
+      description: staticTool.description,
+      icon: staticTool.icon || '🔧',
+      category: staticTool.category,
+      tags: staticTool.tags || [],
+      route: staticTool.route,
+      component: staticTool.component,
+      status: staticTool.status || 'active',
+      featured: !!staticTool.featured,
+      difficulty: staticTool.difficulty || 'easy',
+      estimatedTime: staticTool.estimatedTime || '1分钟',
+      requiresAuth: !!staticTool.requiresAuth,
+      requiresAdmin: !!staticTool.requiresAdmin,
+      sortOrder: Number.isFinite(staticTool.sortOrder) ? staticTool.sortOrder : 0,
+      isStatic: true
+    };
+
+    return Tool.findOneAndUpdate(
+      { id: toolId },
+      { $set: upsertData },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true
+      }
+    );
+  };
+
   /**
    * 检查工具访问权限
    */
@@ -21,7 +61,10 @@ class ToolsPermission {
       }
 
       // 获取工具信息
-      const tool = await Tool.findOne({ id: toolId });
+      let tool = await Tool.findOne({ id: toolId });
+      if (!tool) {
+        tool = await ToolsPermission.hydrateToolFromStaticConfig(toolId);
+      }
       if (!tool) {
         return res.status(404).json({
           code: 404,
@@ -265,7 +308,11 @@ class ToolsPermission {
   static checkToolUsagePermission = async (req, res, next) => {
     try {
       const toolId = req.params.id;
-      const tool = await Tool.findOne({ id: toolId });
+      let tool = await Tool.findOne({ id: toolId });
+
+      if (!tool) {
+        tool = await ToolsPermission.hydrateToolFromStaticConfig(toolId);
+      }
       
       if (!tool) {
         return res.status(404).json({

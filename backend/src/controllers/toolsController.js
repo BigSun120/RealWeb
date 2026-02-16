@@ -1,9 +1,49 @@
 const Tool = require('../models/Tool');
 const ToolUsage = require('../models/ToolUsage');
 const ToolCategory = require('../models/ToolCategory');
+const { getStaticTools } = require('../utils/staticTools');
 const logger = require('../utils/logger');
 
 class ToolsController {
+  async ensureToolExists(toolId) {
+    let tool = await Tool.findOne({ id: toolId });
+    if (tool) return tool;
+
+    const staticTool = getStaticTools().find(item => item.id === toolId);
+    if (!staticTool) return null;
+
+    tool = await Tool.findOneAndUpdate(
+      { id: toolId },
+      {
+        $set: {
+          id: staticTool.id,
+          name: staticTool.name,
+          description: staticTool.description,
+          icon: staticTool.icon || '🔧',
+          category: staticTool.category,
+          tags: staticTool.tags || [],
+          route: staticTool.route,
+          component: staticTool.component,
+          status: staticTool.status || 'active',
+          featured: !!staticTool.featured,
+          difficulty: staticTool.difficulty || 'easy',
+          estimatedTime: staticTool.estimatedTime || '1分钟',
+          requiresAuth: !!staticTool.requiresAuth,
+          requiresAdmin: !!staticTool.requiresAdmin,
+          sortOrder: Number.isFinite(staticTool.sortOrder) ? staticTool.sortOrder : 0,
+          isStatic: true
+        }
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true
+      }
+    );
+
+    return tool;
+  }
+
   /**
    * 获取工具列表
    */
@@ -144,7 +184,7 @@ class ToolsController {
     try {
       const { action = 'use', duration = 0, metadata = {} } = req.body;
 
-      const tool = await Tool.findOne({ id: req.params.id });
+      const tool = await this.ensureToolExists(req.params.id);
       if (!tool) {
         return res.status(404).json({
           code: 404,
