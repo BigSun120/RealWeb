@@ -169,7 +169,11 @@ app.use(
 if (process.env.NODE_ENV === 'production') {
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15分钟
-    max: 300, // 限制每个IP 300次请求（从100增加到300）
+    max: 1000, // 限制每个IP 1000次请求，避免高频页面初始化被误伤
+    // 背景匹配属于页面渲染高频只读接口，不参与全局限流
+    skip: (req) => req.path === '/backgrounds/match' || req.path === '/health',
+    standardHeaders: true,
+    legacyHeaders: false,
     message: {
       code: 429,
       message: '请求过于频繁，请稍后再试'
