@@ -51,7 +51,7 @@ personal-website/
 │   ├── uploads/             # 文件上传目录
 │   └── package.json
 ├── .env.example             # 环境变量示例
-├── deploy.sh                # 部署脚本
+├── docs/deployment/         # 部署文档
 └── README.md
 ```
 
@@ -97,7 +97,7 @@ npm run dev           # 启动所有服务
 ### 访问地址
 
 - 前端应用: http://localhost:3000
-- 后端 API: http://localhost:8000
+- 后端 API: http://localhost:8001（开发默认）
 - 管理后台: http://localhost:3000/admin
 - 邮箱服务: http://localhost:9000
 
@@ -119,15 +119,14 @@ npm run email:clean    # 清理临时邮箱服务容器
 ### 部署
 
 ```bash
-# 完整部署（推荐）
-npm run deploy
-
-# 仅部署后端（快速）
-npm run deploy:backend
+# 推荐方式：本地构建前端 + 服务器拉取后端并重启 PM2
+cd frontend && npm run build
+scp -r dist/* root@<server>:/var/www/html/
+# 服务器执行：git pull && cd backend && npm install && pm2 restart website-backend
 ```
 
-📖 **详细部署指南**: 查看 [部署更新指南](./docx/部署更新指南.md)
-📧 **邮件服务配置**: 查看 [邮件服务配置指南](./docx/邮件服务配置指南.md)
+📖 **详细部署指南**: 查看 [部署更新指南](./docs/deployment/部署更新指南.md)
+📧 **邮件服务配置**: 查看 [邮件服务配置指南](./docs/deployment/邮件服务配置指南.md)
 
 ## 🔧 环境配置
 
@@ -136,7 +135,7 @@ npm run deploy:backend
 ```bash
 # 应用配置
 NODE_ENV=development
-PORT=8000
+PORT=8001
 
 # 数据库配置
 MONGODB_URI=mongodb://localhost:27017/personal_website_dev

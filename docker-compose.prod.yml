@@ -60,9 +60,9 @@ services:
     ports:
       - '27017:27017'
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=LRxQcGllvNjkGbry0yAncBsT
-      - MONGO_INITDB_DATABASE=personal_website_prod
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
+      - MONGO_INITDB_DATABASE=${MONGO_DATABASE:-personal_website_prod}
     volumes:
       - mongodb-data:/data/db
     restart: unless-stopped
