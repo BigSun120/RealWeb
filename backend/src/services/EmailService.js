@@ -12,6 +12,12 @@ class EmailService {
     this.tempTransporter = null;
     this.templates = new Map();
     this.tempDomains = new Set();
+    this.smtpConfig = {
+      externalHost: process.env.SMTP_HOST || 'localhost',
+      externalPort: parseInt(process.env.SMTP_PORT, 10) || 25,
+      tempHost: process.env.TEMP_SMTP_HOST || 'localhost',
+      tempPort: parseInt(process.env.TEMP_SMTP_PORT, 10) || 2500
+    };
     this.init();
   }
 
@@ -25,8 +31,8 @@ class EmailService {
 
       // 创建外部邮件传输器（使用25端口，Postfix）
       this.transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'localhost',
-        port: parseInt(process.env.SMTP_PORT) || 25,
+        host: this.smtpConfig.externalHost,
+        port: this.smtpConfig.externalPort,
         secure: process.env.SMTP_SECURE === 'true',
         ignoreTLS: process.env.SMTP_IGNORE_TLS !== 'false',
         requireTLS: process.env.SMTP_REQUIRE_TLS === 'true',
@@ -44,8 +50,8 @@ class EmailService {
 
       // 创建临时邮箱传输器（使用2500端口，Inbucket）
       this.tempTransporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'localhost',
-        port: 2500, // 固定使用2500端口连接Inbucket
+        host: this.smtpConfig.tempHost,
+        port: this.smtpConfig.tempPort,
         secure: false,
         ignoreTLS: true,
         requireTLS: false,
@@ -76,27 +82,27 @@ class EmailService {
 
     try {
       await this.transporter.verify();
-      console.log('✅ 外部邮件服务器连接验证成功 (端口25)');
+      console.log(`External SMTP connected (${this.smtpConfig.externalHost}:${this.smtpConfig.externalPort})`);
       externalSuccess = true;
     } catch (error) {
-      console.error('❌ 外部邮件服务器连接验证失败 (端口25):', error.message);
+      console.error(`External SMTP connect failed (${this.smtpConfig.externalHost}:${this.smtpConfig.externalPort}):`, error.message);
     }
 
     try {
       await this.tempTransporter.verify();
-      console.log('✅ 临时邮箱服务器连接验证成功 (端口2500)');
+      console.log(`Temp SMTP connected (${this.smtpConfig.tempHost}:${this.smtpConfig.tempPort})`);
       tempSuccess = true;
     } catch (error) {
-      console.error('❌ 临时邮箱服务器连接验证失败 (端口2500):', error.message);
+      console.error(`Temp SMTP connect failed (${this.smtpConfig.tempHost}:${this.smtpConfig.tempPort}):`, error.message);
     }
 
     if (externalSuccess || tempSuccess) {
-      console.log('✅ 至少一个邮件传输器可用');
+      console.log('At least one SMTP transporter is available');
       return true;
-    } else {
-      console.error('❌ 所有邮件传输器都不可用');
-      return false;
     }
+
+    console.error('All SMTP transporters are unavailable');
+    return false;
   }
 
   /**
@@ -544,12 +550,12 @@ ${resetUrl}
    */
   selectTransporter(toEmail) {
     if (this.isTempEmail(toEmail)) {
-      console.log(`📨 使用临时邮箱传输器发送到: ${toEmail}`);
+      console.log(`Use temp SMTP for ${toEmail} (${this.smtpConfig.tempHost}:${this.smtpConfig.tempPort})`);
       return this.tempTransporter;
-    } else {
-      console.log(`📧 使用外部邮箱传输器发送到: ${toEmail}`);
-      return this.transporter;
     }
+
+    console.log(`Use external SMTP for ${toEmail} (${this.smtpConfig.externalHost}:${this.smtpConfig.externalPort})`);
+    return this.transporter;
   }
 }
 
