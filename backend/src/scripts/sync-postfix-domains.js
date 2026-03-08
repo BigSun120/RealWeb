@@ -143,16 +143,32 @@ function updatePostfixMainConfig(domains) {
       log('移除virtual_mailbox_domains配置');
     }
 
-    // 确保mydestination包含所有需要接收的域名（包括临时邮箱域名）
-    // 临时邮箱域名需要被Postfix接收，然后通过transport_maps转发给Inbucket
-    const allDomains = [...new Set([...domains, 'mail.godaug.fun', 'localhost.godaug.fun', 'localhost'])];
-    const realMailDomains = allDomains.join(', ');
-    if (configContent.includes('mydestination')) {
+    // mydestination 只保留本地域名，临时邮箱域名通过 relay_domains + transport_maps 转发到 Inbucket
+    const localDomains = ['mail.godaug.fun', 'localhost.godaug.fun', 'localhost'];
+    const realMailDomains = localDomains.join(', ');
+    const mydestinationLine = `mydestination = ${realMailDomains}`;
+    if (/^mydestination\s*=.*$/m.test(configContent)) {
       configContent = configContent.replace(
         /^mydestination\s*=.*$/m,
-        `mydestination = ${realMailDomains}`
+        mydestinationLine
       );
-      log(`更新mydestination（包含临时邮箱域名）: ${realMailDomains}`);
+      log(`更新mydestination（仅本地域名）: ${realMailDomains}`);
+    } else {
+      configContent += `\n${mydestinationLine}\n`;
+      log('添加mydestination配置');
+    }
+
+    // relay_domains 仅放临时邮箱域名，交由 transport_maps 转发
+    const relayDomainsLine = `relay_domains = ${domains.join(', ')}`;
+    if (/^relay_domains\s*=.*$/m.test(configContent)) {
+      configContent = configContent.replace(
+        /^relay_domains\s*=.*$/m,
+        relayDomainsLine
+      );
+      log(`更新relay_domains: ${domains.join(', ')}`);
+    } else {
+      configContent += `\n${relayDomainsLine}\n`;
+      log('添加relay_domains配置');
     }
 
     // 添加或更新transport_maps配置
