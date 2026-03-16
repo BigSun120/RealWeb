@@ -14,6 +14,7 @@ const EMAIL_DOMAINS_CONFIG = path.join(__dirname, '../config/email-domains.json'
 const POSTFIX_MAIN_CF = '/etc/postfix/main.cf';
 const POSTFIX_TRANSPORT_FILE = '/etc/postfix/transport_temp_domains';
 const BACKUP_DIR = '/etc/postfix/backups';
+const LOCAL_DELIVERY_DOMAINS = ['mail.godaug.fun', 'localhost.godaug.fun', 'localhost'];
 
 // 日志函数
 function log(message, type = 'INFO') {
@@ -86,6 +87,17 @@ function loadDomainConfig() {
   }
 }
 
+// 规范化域名列表，避免空值、重复以及将本地域名误加入转发域名
+function normalizeRelayDomains(domains = []) {
+  const normalized = [...new Set(
+    domains
+      .map((domain) => String(domain || '').trim().toLowerCase())
+      .filter(Boolean)
+  )];
+
+  return normalized.filter((domain) => !LOCAL_DELIVERY_DOMAINS.includes(domain));
+}
+
 // 创建transport映射文件
 function createTransportMaps(domains) {
   try {
@@ -131,62 +143,34 @@ function updatePostfixMainConfig(domains) {
     fs.copyFileSync(POSTFIX_MAIN_CF, backupFile);
     log(`Postfix配置已备份到: ${backupFile}`);
 
-    // 读取当前配置
-    let configContent = fs.readFileSync(POSTFIX_MAIN_CF, 'utf8');
+    // 使用 postconf -e 强制写入，避免 main.cf 多行/重复键导致配置被旧值污染
+    const relayDomains = normalizeRelayDomains(domains);
+    const localDomainsStr = LOCAL_DELIVERY_DOMAINS.join(', ');
+    const relayDomainsStr = relayDomains.join(', ');
 
-    // 移除virtual_mailbox_domains中的临时邮箱域名
-    if (configContent.includes('virtual_mailbox_domains')) {
-      configContent = configContent.replace(
-        /^virtual_mailbox_domains\s*=.*$/m,
-        '# virtual_mailbox_domains = (已移除，改用transport_maps)'
-      );
-      log('移除virtual_mailbox_domains配置');
+    execSync(`postconf -e "mydestination = ${localDomainsStr}"`, { stdio: 'pipe' });
+    execSync(`postconf -e "relay_domains = ${relayDomainsStr}"`, { stdio: 'pipe' });
+    execSync(`postconf -e "transport_maps = hash:${POSTFIX_TRANSPORT_FILE}"`, { stdio: 'pipe' });
+
+    // 清理旧方案参数，避免与 transport_maps 路由混用
+    try {
+      execSync('postconf -X virtual_mailbox_domains', { stdio: 'pipe' });
+      log('移除旧配置: virtual_mailbox_domains');
+    } catch (error) {
+      log(`移除virtual_mailbox_domains失败（可忽略）: ${error.message}`, 'WARN');
     }
 
-    // mydestination 只保留本地域名，临时邮箱域名通过 relay_domains + transport_maps 转发到 Inbucket
-    const localDomains = ['mail.godaug.fun', 'localhost.godaug.fun', 'localhost'];
-    const realMailDomains = localDomains.join(', ');
-    const mydestinationLine = `mydestination = ${realMailDomains}`;
-    if (/^mydestination\s*=.*$/m.test(configContent)) {
-      configContent = configContent.replace(
-        /^mydestination\s*=.*$/m,
-        mydestinationLine
-      );
-      log(`更新mydestination（仅本地域名）: ${realMailDomains}`);
-    } else {
-      configContent += `\n${mydestinationLine}\n`;
-      log('添加mydestination配置');
+    try {
+      execSync('postconf -X virtual_transport', { stdio: 'pipe' });
+      log('移除旧配置: virtual_transport');
+    } catch (error) {
+      log(`移除virtual_transport失败（可忽略）: ${error.message}`, 'WARN');
     }
 
-    // relay_domains 仅放临时邮箱域名，交由 transport_maps 转发
-    const relayDomainsLine = `relay_domains = ${domains.join(', ')}`;
-    if (/^relay_domains\s*=.*$/m.test(configContent)) {
-      configContent = configContent.replace(
-        /^relay_domains\s*=.*$/m,
-        relayDomainsLine
-      );
-      log(`更新relay_domains: ${domains.join(', ')}`);
-    } else {
-      configContent += `\n${relayDomainsLine}\n`;
-      log('添加relay_domains配置');
-    }
-
-    // 添加或更新transport_maps配置
-    const transportMapsLine = `transport_maps = hash:${POSTFIX_TRANSPORT_FILE}`;
-    if (configContent.includes('transport_maps')) {
-      configContent = configContent.replace(
-        /^transport_maps\s*=.*$/m,
-        transportMapsLine
-      );
-      log('更新transport_maps配置');
-    } else {
-      configContent += `\n# 临时邮箱域名传输映射\n${transportMapsLine}\n`;
-      log('添加transport_maps配置');
-    }
-
-    // 写入配置文件
-    fs.writeFileSync(POSTFIX_MAIN_CF, configContent);
-    log('Postfix主配置文件已更新');
+    log(`更新mydestination（仅本地域名）: ${localDomainsStr}`);
+    log(`更新relay_domains: ${relayDomainsStr}`);
+    log('更新transport_maps配置');
+    log('Postfix主配置已通过postconf写入');
 
     return true;
   } catch (error) {
@@ -228,17 +212,31 @@ function validateConfig(domains) {
       .filter(line => line.trim())
       .map(line => line.split(' ')[0]);
 
-    const allDomainsConfigured = domains.every(domain =>
+    const relayDomains = normalizeRelayDomains(domains);
+    const allDomainsConfigured = relayDomains.every(domain =>
       configuredDomains.includes(domain)
     );
 
-    if (allDomainsConfigured) {
-      log('✅ 配置验证成功，所有域名都已正确配置');
-      return true;
-    } else {
-      log('❌ 配置验证失败，部分域名未配置', 'ERROR');
+    if (!allDomainsConfigured) {
+      log('❌ 配置验证失败，部分域名未配置到transport_maps', 'ERROR');
       return false;
     }
+
+    // 额外安全校验：mydestination 不应包含临时邮箱域名
+    const mydestination = execSync('postconf -h mydestination', { encoding: 'utf8' }).trim();
+    const destinationDomains = mydestination
+      .split(',')
+      .map((domain) => domain.trim().toLowerCase())
+      .filter(Boolean);
+    const leakedRelayDomains = relayDomains.filter((domain) => destinationDomains.includes(domain));
+
+    if (leakedRelayDomains.length > 0) {
+      log(`❌ 配置验证失败，mydestination包含临时邮箱域名: ${leakedRelayDomains.join(', ')}`, 'ERROR');
+      return false;
+    }
+
+    log('✅ 配置验证成功，路由规则正确');
+    return true;
   } catch (error) {
     log(`配置验证失败: ${error.message}`, 'ERROR');
     return false;
@@ -307,6 +305,7 @@ if (require.main === module) {
 module.exports = {
   syncPostfixDomains: main,
   loadDomainConfig,
+  normalizeRelayDomains,
   createTransportMaps,
   updatePostfixMainConfig,
   updatePostfixConfig: updatePostfixMainConfig, // 保持向后兼容
