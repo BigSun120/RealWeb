@@ -20,7 +20,7 @@
     "chart.js": "^4.5.0",
     "dayjs": "^1.11.18",
     "dexie": "^4.2.1",
-    "echarts": "^5.4.3",
+    "echarts": "6.1.0",
     "element-plus": "^2.10.6",
     "ffmpeg": "^0.0.4",
     "gsap": "^3.13.0",
