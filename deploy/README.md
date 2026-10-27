@@ -116,3 +116,32 @@ systemctl enable --now realweb-backend.service
 
 This does not by itself publish the website: Nginx routing, DNS, HTTPS, the
 initial administrator and mail delivery are still separate deployment steps.
+
+## Add the HTTP frontend site
+
+Once the backend health endpoint reports a connected database, run as root:
+
+```bash
+bash -n /opt/realweb/deploy/install-nginx-http.sh
+bash /opt/realweb/deploy/install-nginx-http.sh
+```
+
+The installer requires a readable frontend build, validates the existing Nginx
+configuration, and adds only `sites-available/realweb` and its enablement link.
+It refuses existing destination paths or an existing domain configuration. If
+the new configuration fails `nginx -t`, it removes only those newly created
+files. It does not reload Nginx or change DNS, certificates, or other sites.
+
+After successful preparation, apply and check the API through Nginx:
+
+```bash
+systemctl reload nginx
+curl --fail-with-body -H 'Host: godaug.fun' http://127.0.0.1/api/health
+curl --fail --head -H 'Host: godaug.fun' http://127.0.0.1/
+```
+
+This initial port-80 site serves the Vue build, supports direct navigation to
+Vue routes, and proxies `/api/` and `/uploads/` to `127.0.0.1:8000` without
+stripping their path prefixes. API buffering is disabled for AI streaming.
+Only hashed Vite assets receive long cache lifetimes; `index.html` is revalidated.
+DNS changes and the trusted HTTPS certificate are subsequent deployment steps.
