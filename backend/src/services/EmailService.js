@@ -511,7 +511,7 @@ ${resetUrl}
    */
   async loadTempDomains() {
     try {
-      const configPath = path.join(__dirname, '../config/email-domains.json');
+      const configPath = process.env.EMAIL_DOMAINS_CONFIG || path.join(__dirname, '../config/email-domains.json');
       const configData = await fs.readFile(configPath, 'utf8');
       const config = JSON.parse(configData);
 

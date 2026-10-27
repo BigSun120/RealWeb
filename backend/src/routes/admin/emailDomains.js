@@ -8,7 +8,7 @@ const router = express.Router();
 const { syncPostfixDomains } = require('../../scripts/sync-postfix-domains');
 
 // 域名配置文件路径
-const CONFIG_FILE = path.join(__dirname, '../../config/email-domains.json');
+const CONFIG_FILE = process.env.EMAIL_DOMAINS_CONFIG || path.join(__dirname, '../../config/email-domains.json');
 
 // 默认域名配置
 const DEFAULT_CONFIG = {

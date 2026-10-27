@@ -10,7 +10,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 // 配置文件路径
-const EMAIL_DOMAINS_CONFIG = path.join(__dirname, '../config/email-domains.json');
+const EMAIL_DOMAINS_CONFIG = process.env.EMAIL_DOMAINS_CONFIG || path.join(__dirname, '../config/email-domains.json');
 const POSTFIX_MAIN_CF = '/etc/postfix/main.cf';
 const POSTFIX_TRANSPORT_FILE = '/etc/postfix/transport_temp_domains';
 const BACKUP_DIR = '/etc/postfix/backups';
@@ -250,6 +250,10 @@ function isLinuxEnvironment() {
 
 // 主函数
 function main() {
+  if (process.env.POSTFIX_SYNC_ENABLED === 'false') {
+    log('Postfix自动同步未启用；邮件路由将在邮件部署阶段单独配置');
+    return true;
+  }
   try {
     log('开始同步Postfix域名配置（使用transport_maps）...');
 
@@ -293,7 +297,8 @@ function main() {
 
   } catch (error) {
     log(`同步失败: ${error.message}`, 'ERROR');
-    process.exit(1);
+    if (require.main === module) process.exitCode = 1;
+    return false;
   }
 }
 

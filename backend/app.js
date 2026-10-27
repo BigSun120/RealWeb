@@ -18,6 +18,7 @@ const errorHandler = require('./src/middleware/errorHandler');
 // const initPublicNoticeReadStatus = require('./src/scripts/initPublicNoticeReadStatus');
 const { scheduleTokenPoolCleanup } = require('./src/jobs/tokenPoolCleanup');
 const databaseBackup = require('./src/utils/databaseBackup');
+const { createHealthHandler } = require('./src/utils/health');
 
 // 路由导入
 const authRoutes = require('./src/routes/auth');
@@ -52,6 +53,7 @@ const adminPublicAIConnectionsRoutes = require('./src/routes/admin/publicAIConne
 
 const app = express();
 const PORT = process.env.PORT || 8001;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // 连接数据库并初始化配置
 const initializeDatabase = async () => {
@@ -268,26 +270,11 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/admin/ai-connections', adminPublicAIConnectionsRoutes);
 
 // 健康检查
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    environment: process.env.NODE_ENV
-  });
-});
+const healthHandler = createHealthHandler(mongoose);
+app.get('/health', healthHandler);
 
 // API健康检查（用于Nginx代理）
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    environment: process.env.NODE_ENV
-  });
-});
+app.get('/api/health', healthHandler);
 
 // 前端路由处理（生产环境）- 已由 nginx 处理，禁用以避免 API 路由冲突
 // if (process.env.NODE_ENV === 'production') {
@@ -308,8 +295,8 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 // 启动服务器
-app.listen(PORT, () => {
-  logger.info(`服务器运行在端口 ${PORT}`);
+app.listen(PORT, HOST, () => {
+  logger.info(`服务器监听 ${HOST}:${PORT}`);
   logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`健康检查: http://localhost:${PORT}/health`);
 

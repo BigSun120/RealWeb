@@ -1,0 +1,38 @@
+[Unit]
+Description=RealWeb website backend
+Wants=network-online.target
+After=network-online.target docker.service
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=realweb
+Group=realweb
+WorkingDirectory=/opt/realweb/backend
+Environment=POSTFIX_SYNC_ENABLED=false
+Environment=EMAIL_DOMAINS_CONFIG=/var/lib/realweb/config/email-domains.json
+EnvironmentFile=/opt/realweb/.env
+ExecStartPre=/usr/bin/node /opt/realweb/deploy/check-backend.cjs
+ExecStart=/usr/bin/node /opt/realweb/backend/app.js
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=45s
+TimeoutStopSec=30s
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+CapabilityBoundingSet=
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/realweb /var/backups/realweb
+ReadWritePaths=/opt/realweb/backend/logs /opt/realweb/backend/temp /opt/realweb/backend/config
+MemoryMax=2G
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
