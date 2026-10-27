@@ -16,6 +16,7 @@ build/
 
 # 环境变量文件
 .env
+.env.mongodb
 .env.local
 .env.development
 .env.production

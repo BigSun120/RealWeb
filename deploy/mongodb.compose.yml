@@ -1,0 +1,42 @@
+name: realweb
+
+services:
+  mongodb:
+    image: mongo:7.0.45-jammy
+    restart: unless-stopped
+    command: ["mongod", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.5"]
+    env_file:
+      - ../.env.mongodb
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./mongodb-init.js:/docker-entrypoint-initdb.d/10-realweb-user.js:ro
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - >-
+          const admin = db.getSiblingDB('admin');
+          const auth = admin.auth(process.env.MONGO_INITDB_ROOT_USERNAME, process.env.MONGO_INITDB_ROOT_PASSWORD);
+          if (auth !== 1 && auth?.ok !== 1) quit(1);
+          if (admin.runCommand({ ping: 1 }).ok !== 1) quit(1);
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 12
+    mem_limit: 2g
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mongodb_data:
+  mongodb_config:
