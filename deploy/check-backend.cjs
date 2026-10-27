@@ -15,6 +15,9 @@ function validateEnvironment(env) {
   if (!/^[a-f0-9]{128}$/.test(env.JWT_SECRET || '')) {
     throw new ConfigurationError('JWT_SECRET must be a fresh 64-byte hexadecimal secret');
   }
+  if (typeof env.AUGMENT_TOKEN_ENCRYPTION_KEY !== 'string' || env.AUGMENT_TOKEN_ENCRYPTION_KEY.length < 32) {
+    throw new ConfigurationError('AUGMENT_TOKEN_ENCRYPTION_KEY is missing or too short; run deploy/complete-env.cjs');
+  }
   let uri;
   try { uri = new URL(env.MONGODB_URI); } catch {
     throw new ConfigurationError('Check MONGODB_URI in the production environment');
@@ -31,6 +34,7 @@ async function checkBackend() {
   validateEnvironment(process.env);
   backendRequire('sharp');
   backendRequire('nodemailer');
+  backendRequire('./src/services/AugmentService');
   const mongoose = backendRequire('mongoose');
   try {
     await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 });

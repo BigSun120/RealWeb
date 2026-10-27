@@ -32,6 +32,7 @@ function prepareEnv(projectDirectory) {
     PORT: '8000',
     MONGODB_URI: `mongodb://${applicationUser}:${applicationPassword}@127.0.0.1:27017/${databaseName}?authSource=${databaseName}`,
     JWT_SECRET: crypto.randomBytes(64).toString('hex'),
+    AUGMENT_TOKEN_ENCRYPTION_KEY: crypto.randomBytes(32).toString('hex'),
     FRONTEND_URL: 'https://godaug.fun',
     UPLOAD_PATH: '/var/lib/realweb/uploads',
     BACKUP_DIR: '/var/backups/realweb',

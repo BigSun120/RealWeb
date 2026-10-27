@@ -57,6 +57,20 @@ are subsequent deployment stages.
 
 ## Prepare the backend service
 
+Fresh environment generation includes `AUGMENT_TOKEN_ENCRYPTION_KEY`, required
+when the Augment routes are loaded. For configurations generated before that
+key was included, run as root before restarting the backend:
+
+```bash
+node /opt/realweb/deploy/complete-env.cjs
+```
+
+This update appends a random key only if the variable is absent. It preserves
+existing keys and all other settings, creates a root-only
+`.env.backup-before-augment` recovery copy before appending, and prints no secret
+values. Do not rerun `prepare-env.cjs` or replace existing credentials. The
+backend preflight checks this key and loads the Augment service before startup.
+
 After pulling the backend service configuration, run as root:
 
 ```bash
