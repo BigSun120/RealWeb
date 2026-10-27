@@ -253,3 +253,33 @@ docker compose -f /opt/realweb/deploy/inbucket.compose.yml ps
 This does not configure or start Postfix. Public MX delivery, DKIM signing,
 mail-host TLS, PTR and delivery testing are subsequent mail deployment steps.
 Configuration reference: [Inbucket documentation](https://github.com/inbucket/inbucket/blob/v3.2.0/doc/config.md).
+
+## Obtain the SMTP host certificate
+
+After `mail.godaug.fun` resolves to the server, add its dedicated port-80
+certificate challenge site:
+
+```bash
+bash -n /opt/realweb/deploy/install-mail-acme.sh
+bash /opt/realweb/deploy/install-mail-acme.sh
+```
+
+The installer adds only `realweb-mail-acme` under Nginx's site directories and
+the root-owned webroot `/var/lib/letsencrypt-realweb`. It refuses conflicting
+paths and domain configurations. It validates Nginx before and after adding
+the site, and removes the newly added site if validation fails. Other website
+configurations and certificates are preserved. The site serves only HTTP-01
+challenge files; other URLs return 404. It does not reload Nginx or start SMTP.
+
+After successful preparation:
+
+```bash
+systemctl reload nginx
+certbot certonly --webroot -w /var/lib/letsencrypt-realweb --cert-name realweb-mail -d mail.godaug.fun
+```
+
+This obtains a separate certificate in `/etc/letsencrypt/live/realweb-mail`
+without changing the main website certificate. Keep the challenge site for
+automatic renewals. Postfix TLS configuration and its certificate-renewal
+reload hook are installed in the following mail configuration stage. Reference:
+[Certbot webroot documentation](https://eff-certbot.readthedocs.io/en/stable/using.html#webroot).
