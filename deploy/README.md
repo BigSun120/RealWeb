@@ -283,3 +283,58 @@ without changing the main website certificate. Keep the challenge site for
 automatic renewals. Postfix TLS configuration and its certificate-renewal
 reload hook are installed in the following mail configuration stage. Reference:
 [Certbot webroot documentation](https://eff-certbot.readthedocs.io/en/stable/using.html#webroot).
+
+## Prepare Postfix routing and DKIM
+
+With the SMTP certificate present and host mail packages installed, run as root:
+
+```bash
+node /opt/realweb/deploy/prepare-mail.cjs
+cat /etc/opendkim/realweb-dns.txt
+```
+
+The preparation script preserves an unmanaged existing Postfix configuration
+and stops for inspection. On this fresh `No configuration` installation it
+creates `main.cf`, reuses the package's `master.cf` (or copies its vendor
+template), and backs up existing mail configuration to a root-only directory
+under `/var/backups/realweb-mail-config`. Postfix queue permissions and the
+Debian systemd instance generator are refreshed, without starting SMTP.
+
+The SMTP listener is IPv4 port 25. Only `127.0.0.1/32` is trusted to relay mail
+to external destinations. Remote clients can deliver only to local recipients
+or the explicit temporary-domain allowlist; domain suffix matching is disabled.
+The runtime email-domain list supplies temporary domains, with `godaug.fun`
+and `temp.godaug.fun` always included. Those domains route to Inbucket at
+`127.0.0.1:2500` and are excluded from `mydestination`. Domain values are
+validated as literal DNS names before writing any routing configuration.
+Changing the runtime domain list later requires a separately reviewed root
+configuration update; the web process still has no Postfix or Docker access.
+
+OpenDKIM signs local messages from `godaug.fun` using selector `realweb`. Its
+socket listens only at `127.0.0.1:8891`. A missing RSA key is generated on the
+server; an existing valid key is preserved. The private key is owned by
+`opendkim`, mode `0600`, and is never printed. `/etc/opendkim/realweb-dns.txt`
+contains only public DKIM, SPF and initial monitoring-policy DMARC records for
+DNSPod. Publish those records and verify them before starting mail delivery.
+
+Preparation runs `postfix check` and OpenDKIM's configuration check. It does
+not start or restart either daemon. Port 25 must be free while preparing this
+initial installation. An executable certificate renewal hook reloads a running
+Postfix after `realweb-mail` renews. Mail configuration, DKIM keys and the SMTP
+certificate are included in subsequent private backups when those paths exist.
+Temporary Inbucket messages themselves retain their separate 72-hour lifetime.
+
+Once configuration and public DNS have been verified, explicitly start the
+services, then restart the backend to load its current mail configuration:
+
+```bash
+systemctl enable --now opendkim
+systemctl restart opendkim
+systemctl enable --now postfix
+systemctl restart realweb-backend.service
+```
+
+SMTP TLS validation, external relay rejection, local Inbucket delivery and an
+actual delivery test are required before claiming mail recovery complete.
+Configuration references: [Postfix relay controls](https://www.postfix.org/SMTPD_ACCESS_README.html)
+and [OpenDKIM documentation](https://github.com/trusteddomainproject/OpenDKIM/blob/master/opendkim/opendkim.conf.5.in).

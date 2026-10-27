@@ -14,6 +14,13 @@ const FILES = [
   'etc/nginx/sites-available/realweb',
   'etc/systemd/system/realweb-backend.service'
 ];
+const OPTIONAL_MAIL_FILES = [
+  'etc/postfix', 'etc/opendkim', 'etc/opendkim.conf',
+  'etc/nginx/sites-available/realweb-mail-acme',
+  'etc/letsencrypt/live/realweb-mail', 'etc/letsencrypt/archive/realweb-mail',
+  'etc/letsencrypt/renewal/realweb-mail.conf',
+  'etc/letsencrypt/renewal-hooks/deploy/realweb-mail'
+];
 
 function dumpCommand(env) {
   validateEnvironment(env);
@@ -61,7 +68,8 @@ async function main() {
   assertPrivate(`${PROJECT}/.env.mongodb`);
   const env = parseEnv(fs.readFileSync(`${PROJECT}/.env`, 'utf8'));
   const dump = dumpCommand(env);
-  for (const relative of FILES) fs.accessSync('/' + relative, fs.constants.R_OK);
+  const files = [...FILES, ...OPTIONAL_MAIL_FILES.filter(relative => fs.existsSync('/' + relative))];
+  for (const relative of files) fs.accessSync('/' + relative, fs.constants.R_OK);
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const partial = path.join(DESTINATION, `.partial-${stamp}`);
@@ -78,7 +86,7 @@ async function main() {
   if (fs.statSync(databaseArchive).size === 0) throw new Error('Database archive is empty');
   run('gzip', ['-t', databaseArchive]);
   const filesArchive = path.join(partial, 'files.tar.gz');
-  run('tar', ['-czf', filesArchive, '-C', '/', '--', ...FILES]);
+  run('tar', ['-czf', filesArchive, '-C', '/', '--', ...files]);
   run('tar', ['-tzf', filesArchive]);
 
   const archives = [];
@@ -89,7 +97,7 @@ async function main() {
   const revision = run('git', ['-C', PROJECT, 'rev-parse', 'HEAD'], { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
   const manifest = {
     format: 'realweb-backup-v1', createdAt: new Date().toISOString(), revision,
-    database: 'personal_website_prod', archives, filePaths: FILES,
+    database: 'personal_website_prod', archives, filePaths: files,
     consistency: 'Live logical export; database and uploads are not an atomic snapshot.'
   };
   fs.writeFileSync(path.join(partial, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
