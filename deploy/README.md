@@ -95,9 +95,9 @@ The production endpoint is `127.0.0.1:8000`. `/health` and `/api/health` return
 The service is restricted to its designated writable directories:
 
 - Uploads and runtime configuration: `/var/lib/realweb`.
-- Backup destination: `/var/backups/realweb` (backup execution still requires
-  its own deployment stage; the legacy Docker backup implementation is not
-  configured by this installer).
+- The legacy writable backup path `/var/backups/realweb` is retained for
+  compatibility. Production backups use a separate root-only destination,
+  `/var/backups/realweb-system`, managed by the backup service below.
 - Existing application log, temporary download and cookie directories:
   `/opt/realweb/backend/logs`, `backend/temp`, and `backend/config`.
 
@@ -171,3 +171,56 @@ The script checks user indexes before asking for credentials. User index
 definitions retain the unique username/email constraints and sparse token
 indexes, with each key declared once. This resolves conflicting duplicate
 declarations without dropping any stored index, account or database.
+
+## Prepare daily database and file backups
+
+Run as root:
+
+```bash
+bash -n /opt/realweb/deploy/install-backup.sh
+bash /opt/realweb/deploy/install-backup.sh
+systemd-analyze verify /etc/systemd/system/realweb-backup.service /etc/systemd/system/realweb-backup.timer
+```
+
+The installer creates only the backup units and
+`/var/backups/realweb-system` (root, mode `0700`). It does not start a backup,
+enable the timer, restart the backend or alter existing service definitions.
+The web process has no Docker socket access. The obsolete startup Docker
+backup call has been removed from the backend.
+
+After preparation, run the first backup and inspect its result before enabling
+the daily timer:
+
+```bash
+systemctl start realweb-backup.service
+journalctl -u realweb-backup.service --no-pager -n 20
+systemctl enable --now realweb-backup.timer
+```
+
+The timer runs at 03:30 with up to 15 minutes of random delay, in the server's
+local timezone. `Persistent=true` catches up after downtime. Each successful
+backup creates a new `backup-<UTC-timestamp>` directory containing:
+
+- `mongodb.archive.gz`: authenticated logical export of the application
+  database, including website users, content and settings.
+- `files.tar.gz`: uploads, runtime domain configuration, backend cookie/config
+  files, `.env`, `.env.mongodb`, the website Nginx config and backend unit.
+- `manifest.json`: archive sizes, SHA-256 checksums, included file paths and
+  the source Git revision.
+
+MongoDB credentials are supplied through stdin to `mongodump --config`, not
+command arguments. The job checks gzip and tar integrity, and publishes the
+completed directory only after those checks succeed. Failed partial backups
+remain under `.partial-*` for inspection; completed backups are retained.
+This is a live logical export, not an atomic snapshot across database and
+uploads. A full restoration has not been proven merely by checking archive
+integrity; restoration verification is a separate step. See the official
+[mongodump documentation](https://www.mongodb.com/docs/database-tools/mongodump/)
+and [systemd timer documentation](https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html).
+
+**Backups contain secrets.** Copy each complete backup directory to private
+storage outside the VPS (for example via SFTP). A backup kept only on this VPS
+cannot recover data after the VPS is terminated. Keep credentials out of Git
+and chat. On recovery, use the manifest's Git revision and restore the MongoDB
+archive with compatible Database Tools; recover the private environment and
+runtime files with their intended ownership, then issue new HTTPS certificates.

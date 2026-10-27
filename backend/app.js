@@ -17,7 +17,6 @@ const analyticsScheduler = require('./src/utils/analyticsScheduler');
 const errorHandler = require('./src/middleware/errorHandler');
 // const initPublicNoticeReadStatus = require('./src/scripts/initPublicNoticeReadStatus');
 const { scheduleTokenPoolCleanup } = require('./src/jobs/tokenPoolCleanup');
-const databaseBackup = require('./src/utils/databaseBackup');
 const { createHealthHandler } = require('./src/utils/health');
 
 // 路由导入
@@ -71,10 +70,7 @@ const initializeDatabase = async () => {
 
       logger.info(`数据库状态检查: 用户数量=${userCount}, 是否为空数据库=${isEmptyDatabase}`);
 
-      // 如果不是空数据库，创建启动前备份
-      if (!isEmptyDatabase) {
-        await databaseBackup.autoBackupBeforeStart();
-      }
+      // 数据库及上传文件的生产备份由独立 realweb-backup.timer 任务负责。
 
       // 初始化安全配置（总是执行，因为有upsert逻辑）
       const SecurityConfig = require('./src/models/SecurityConfig');
