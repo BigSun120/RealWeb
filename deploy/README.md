@@ -224,3 +224,32 @@ cannot recover data after the VPS is terminated. Keep credentials out of Git
 and chat. On recovery, use the manifest's Git revision and restore the MongoDB
 archive with compatible Database Tools; recover the private environment and
 runtime files with their intended ownership, then issue new HTTPS certificates.
+
+## Prepare the private temporary mailbox service
+
+Postfix and OpenDKIM are installed separately as host packages. Inbucket runs
+in the separate Compose project `realweb-mail`. Validate before starting:
+
+```bash
+docker compose -f /opt/realweb/deploy/inbucket.compose.yml config --quiet
+```
+
+The image is pinned to the published `3.2.0` multi-platform manifest digest.
+SMTP (`2500`) and HTTP/API (`9000`) are published only on `127.0.0.1`. The
+backend's `INBUCKET_API` setting supplies the API base URL. `full` mailbox
+naming preserves the recipient domain, matching the backend's mailbox URLs.
+Named volumes preserve mail across container restarts. Temporary messages have
+a 72-hour retention period and a maximum of 300 messages per mailbox; these
+limits follow the image defaults. Temporary mail storage is separate from the
+website database/upload backups. No automatic Watchtower updates are enabled.
+
+Once the configuration has been reviewed, start and inspect only this service:
+
+```bash
+docker compose -f /opt/realweb/deploy/inbucket.compose.yml up -d --wait --wait-timeout 120 inbucket
+docker compose -f /opt/realweb/deploy/inbucket.compose.yml ps
+```
+
+This does not configure or start Postfix. Public MX delivery, DKIM signing,
+mail-host TLS, PTR and delivery testing are subsequent mail deployment steps.
+Configuration reference: [Inbucket documentation](https://github.com/inbucket/inbucket/blob/v3.2.0/doc/config.md).

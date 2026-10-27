@@ -7,7 +7,7 @@ const ToolConfig = require('../models/ToolConfig');
 const router = express.Router();
 
 // Inbucket API配置
-const INBUCKET_API = 'http://localhost:9000/api/v1';
+const INBUCKET_API = (process.env.INBUCKET_API || 'http://127.0.0.1:9000/api/v1').replace(/\/+$/, '');
 
 // 默认支持的域名列表
 const DEFAULT_DOMAINS = [
@@ -599,7 +599,7 @@ router.delete('/clear-all', auth, requireTempEmailAccess, async (req, res) => {
 router.get('/status', async (req, res) => {
   try {
     // 简单的健康检查 - 访问Inbucket主页
-    const response = await axios.get('http://localhost:9000/', {
+    const response = await axios.get(new URL(INBUCKET_API).origin, {
       timeout: 3000
     });
 

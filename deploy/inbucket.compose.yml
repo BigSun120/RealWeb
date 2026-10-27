@@ -1,0 +1,48 @@
+name: realweb-mail
+
+services:
+  inbucket:
+    image: inbucket/inbucket:3.2.0@sha256:48063d73be66889d95c43a6ee18ed5db08e3ad01196d8f7aa1e7f1e6e4625d93
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:2500:2500"
+      - "127.0.0.1:9000:9000"
+    environment:
+      INBUCKET_LOGLEVEL: warn
+      INBUCKET_MAILBOXNAMING: full
+      INBUCKET_SMTP_ADDR: "0.0.0.0:2500"
+      INBUCKET_SMTP_DOMAIN: mail.godaug.fun
+      INBUCKET_WEB_ADDR: "0.0.0.0:9000"
+      INBUCKET_WEB_MONITORVISIBLE: "false"
+      INBUCKET_STORAGE_TYPE: file
+      INBUCKET_STORAGE_PARAMS: "path:/storage"
+      INBUCKET_STORAGE_RETENTIONPERIOD: 72h
+      INBUCKET_STORAGE_MAILBOXMSGCAP: "300"
+    volumes:
+      - inbucket_storage:/storage
+      - inbucket_config:/config
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9000/"]
+      interval: 5s
+      timeout: 5s
+      start_period: 10s
+      retries: 12
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  inbucket_storage:
+  inbucket_config:
