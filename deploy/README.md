@@ -145,3 +145,24 @@ Vue routes, and proxies `/api/` and `/uploads/` to `127.0.0.1:8000` without
 stripping their path prefixes. API buffering is disabled for AI streaming.
 Only hashed Vite assets receive long cache lifetimes; `index.html` is revalidated.
 DNS changes and the trusted HTTPS certificate are subsequent deployment steps.
+
+## Create the initial administrator
+
+After HTTPS is working, run interactively as root:
+
+```bash
+node --env-file=/opt/realweb/.env /opt/realweb/deploy/create-initial-admin.cjs
+```
+
+Enter the username, contact email, password and password confirmation directly
+in the server terminal. Password input is hidden and is not accepted through
+command arguments or printed. Use at least 12 characters, with at most 72 UTF-8
+bytes (bcrypt's input limit). The script uses the existing User model's bcrypt
+hook and sets both `role=admin` and `isAdmin=true`.
+
+This one-time bootstrap marks the administrator's email as verified so setup
+does not depend on outbound mail. It refuses to proceed if any administrator
+exists or if the supplied username, email or display name is already occupied;
+it never promotes or overwrites an existing account. Ordinary registration and
+email verification behavior are unchanged. Creating this account does not
+restart the backend. Log in at `/auth/login`, then open `/admin`.
