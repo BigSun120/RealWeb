@@ -166,3 +166,8 @@ exists or if the supplied username, email or display name is already occupied;
 it never promotes or overwrites an existing account. Ordinary registration and
 email verification behavior are unchanged. Creating this account does not
 restart the backend. Log in at `/auth/login`, then open `/admin`.
+
+The script checks user indexes before asking for credentials. User index
+definitions retain the unique username/email constraints and sparse token
+indexes, with each key declared once. This resolves conflicting duplicate
+declarations without dropping any stored index, account or database.

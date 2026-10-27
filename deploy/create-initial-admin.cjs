@@ -72,6 +72,7 @@ async function main() {
     await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
     const User = backendRequire('./src/models/User');
     await ensureNoAdmin(User);
+    await User.init(); // Detect index problems before requesting a password.
     console.log('Create the first administrator. Password input is hidden; do not paste passwords into chat.');
     const username = await ask('Username (3-15 letters/digits/underscores): ');
     const email = await ask('Contact email: ');

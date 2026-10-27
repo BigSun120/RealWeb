@@ -189,13 +189,9 @@ userSchema.virtual('followersCount', {
   count: true
 });
 
-// 索引
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// 字段级选项已声明唯一/稀疏索引；这里只声明额外的复合或排序索引。
+// 避免用不同选项重复声明同名索引，导致 MongoDB IndexKeySpecsConflict。
 userSchema.index({ createdAt: -1 });
-userSchema.index({ emailVerified: 1 });
-userSchema.index({ emailVerificationToken: 1 });
-userSchema.index({ emailVerificationExpires: 1 });
 
 // 密码加密中间件
 userSchema.pre('save', async function (next) {

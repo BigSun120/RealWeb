@@ -7,11 +7,14 @@ const backendRequire = createRequire(path.join(__dirname, '../backend/package.js
 const User = backendRequire('./src/models/User');
 
 const input = { username: 'owner_01', email: 'owner@example.com', password: 'long-test-password-42' };
-function modelWithResults(results) {
+function modelWithResults(results, initError = null) {
   const state = { writes: 0, initialized: false, queries: [], saved: null };
   class TestUser extends User {
     static async exists(query) { state.queries.push(query); return results.shift() || null; }
-    static async init() { state.initialized = true; }
+    static async init() {
+      state.initialized = true;
+      if (initError) throw initError;
+    }
     async save() { state.writes++; state.saved = this; return this; }
   }
   return { Model: TestUser, state };
@@ -53,4 +56,28 @@ test('invalid identity and passwords are rejected before any database query', as
     assert.equal(state.queries.length, 0);
     assert.equal(state.writes, 0);
   }
+});
+
+test('User schema declares each index once and preserves identity and token constraints', () => {
+  const indexes = User.schema.indexes();
+  const seen = new Set();
+  for (const [keys] of indexes) {
+    const signature = JSON.stringify(keys);
+    assert.equal(seen.has(signature), false, `Conflicting repeated index: ${signature}`);
+    seen.add(signature);
+  }
+  const optionsFor = field => indexes.find(([keys]) => JSON.stringify(keys) === JSON.stringify({ [field]: 1 }))?.[1];
+  assert.equal(optionsFor('username').unique, true);
+  assert.equal(optionsFor('email').unique, true);
+  assert.equal(optionsFor('displayName').unique, true);
+  assert.equal(optionsFor('displayName').sparse, true);
+  assert.equal(optionsFor('emailVerificationToken').sparse, true);
+  assert.equal(optionsFor('passwordResetToken').sparse, true);
+});
+
+test('index initialization failure prevents saving the administrator', async () => {
+  const conflict = Object.assign(new Error('index conflict'), { code: 86 });
+  const { Model, state } = modelWithResults([null, null], conflict);
+  await assert.rejects(createInitialAdmin(Model, input), error => error.code === 86);
+  assert.equal(state.writes, 0);
 });
